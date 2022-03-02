@@ -11,25 +11,12 @@ export default {
 </script>
 
 <template>
-	<div id="grid">
+	<div class="bg-black flex flex-row flex-wrap justify-center">
 		<img v-for="tile in tiles" :src="'/src/assets/' + tile.name + '.jpg'" :alt="tile.name" :id="tile.name"
-			@click="$event.target.style.transform = 'translate(20%,30%)'"/>
+			@click="$event.target.style.transform = 'translate(20%,30%)'"
+			class="m-1 flex-auto transition-transform duration-300"/>
 	</div>
 </template>
 
 <style>
-#app {
-	background-color: black;
-}
-#grid {
-	display: flex;
-	flex-flow: row wrap;
-	justify-content: center;
-}
-img {
-	margin: 5px;
-	flex: auto;
-	transition: transform 1s;
-	max-width: 100%;
-}
 </style>
