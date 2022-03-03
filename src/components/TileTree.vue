@@ -24,17 +24,17 @@ export default {
 				this.tree.children.forEach(e => ((e.children && e.children.length > 0) ? nonLeaves : leaves).push(e));
 				//
 				if (nonLeaves.length == 0){
-					return this.basicLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
+					return this.squaresLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
 				} else {
 					let x = 0, y = hOffset, w = this.width, h = this.height - hOffset;
 					let retVal = {};
 					if (leaves.length > 0){
 						let ratio = leaves.length / this.tree.tileCount;
-						retVal = this.basicLayout(leaves, x, y, w*ratio, h);
+						retVal = this.squaresLayout(leaves, x, y, w*ratio, h);
 						x += w*ratio;
 						w -= w*ratio;
 					}
-					retVal = {...retVal, ...this.basicLayout(nonLeaves, x, y, w, h)};
+					retVal = {...retVal, ...this.squaresLayout(nonLeaves, x, y, w, h)};
 					return retVal;
 				}
 			}
@@ -43,24 +43,12 @@ export default {
 		//	if (!this.tree.children || this.tree.children.length == 0)
 		//		return {};
 		//	let hOffset = (this.isRoot ? 0 : this.HEADER_SZ);
-		//	return this.basicLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
+		//	return this.squaresLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
 		//}
 	},
 	methods: {
-		pickNumCols(numTiles, aspectRatio){ //account for tile-spacing?
-			//find number of columns with corresponding aspect-ratio closest to aspectRatio
-			let closest, smallestDiff = Number.MAX_VALUE;
-			for (let numCols = 1; numCols <= numTiles; numCols++){
-				let ratio = numCols/Math.ceil(numTiles/numCols);
-				let diff = Math.abs(ratio - aspectRatio);
-				if (diff < smallestDiff){
-					smallestDiff = diff;
-					closest = numCols;
-				}
-			}
-			return closest;
-		},
-		basicLayout(nodes, x0, y0, width, height){
+		squaresLayout(nodes, x0, y0, width, height){
+			//determine layout for squares in a specified rectangle, with spacing
 			let numCols = this.pickNumCols(nodes.length, width/height);
 			let numRows = Math.ceil(nodes.length / numCols);
 			let tileSz = Math.min(
@@ -74,6 +62,20 @@ export default {
 					h: tileSz
 					}])
 				);
+		},
+		pickNumCols(numTiles, aspectRatio){ //account for tile-spacing?
+			//look for number of columns with highest occupied-fraction of rectangles with aspectRatio
+			let bestNum, bestFrac = 0;
+			for (let numCols = 1; numCols <= numTiles; numCols++){
+				let numRows = Math.ceil(numTiles/numCols);
+				let ar = numCols/numRows;
+				let frac = aspectRatio > ar ? ar/aspectRatio : aspectRatio/ar;
+				if (frac > bestFrac){
+					bestFrac = frac;
+					bestNum = numCols;
+				}
+			}
+			return bestNum;
 		}
 	}
 }
