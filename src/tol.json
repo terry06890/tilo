@@ -1,24 +1,28 @@
-[
-	{"name": "Viruses"},
-	{"name": "Archaea"},
-	{"name": "Bacteria",
-		"children":[
-			{"name":"Cyanobacteria"},
-			{"name":"Proteobacteria"}
-		]
-	},
-	{"name": "Eukaryota",
-		"children":[
-			{"name":"Amoebozoa"},
-			{"name":"Plantae"},
-			{"name":"Fungi"},
-			{"name":"Metazoa",
-				"children":[
-					{"name":"Cnidaria"},
-					{"name":"Arthropoda"},
-					{"name":"Vertebrata"}
-				]
-			}
-		]
-	}
-]
+{
+	"name": "Root",
+	"children":[
+		{"name": "Viruses"},
+		{"name": "Archaea"},
+		{"name": "Bacteria",
+			"children":[
+				{"name":"Cyanobacteria"},
+				{"name":"Proteobacteria"}
+			]
+		},
+		{"name": "Eukaryota",
+			"children":[
+				{"name":"Amoebozoa"},
+				{"name":"Plantae"},
+				{"name":"Fungi"},
+				{"name":"Metazoa",
+					"children":[
+						{"name":"Cnidaria"},
+						{"name":"Arthropoda"},
+						{"name":"Vertebrata"}
+					]
+				}
+			]
+		}
+	]
+}
+

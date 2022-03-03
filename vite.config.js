@@ -3,5 +3,5 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
-	server: {open: true} //open browser when dev server starts
+	//server: {open: true} //open browser when dev server starts
 })
