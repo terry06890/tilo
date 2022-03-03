@@ -17,43 +17,22 @@ export default {
 	},
 	computed: {
 		layout(){
-			if (this.tree.children && this.tree.children.length){
-				let hOffset = (this.isRoot ? 0 : this.HEADER_SZ);
-				//separate leaf and non-leaf nodes
-				let leaves = [], nonLeaves = [];
-				this.tree.children.forEach(e => ((e.children && e.children.length > 0) ? nonLeaves : leaves).push(e));
-				//
-				if (nonLeaves.length == 0){
-					return this.squaresLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
-				} else {
-					let x = 0, y = hOffset, w = this.width, h = this.height - hOffset;
-					let retVal = {};
-					if (leaves.length > 0){
-						let ratio = leaves.length / this.tree.tileCount;
-						retVal = this.squaresLayout(leaves, x, y, w*ratio, h);
-						x += w*ratio;
-						w -= w*ratio;
-					}
-					retVal = {...retVal, ...this.squaresLayout(nonLeaves, x, y, w, h)};
-					return retVal;
-				}
-			}
+			if (!this.tree.children || this.tree.children.length == 0)
+				return {};
+			let hOffset = (this.isRoot ? 0 : this.HEADER_SZ);
+			let x = 0, y = hOffset, w = this.width, h = this.height - hOffset;
+			//return this.basicSquaresLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
+			return this.sweepToSideLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
 		}
-		//layout(){
-		//	if (!this.tree.children || this.tree.children.length == 0)
-		//		return {};
-		//	let hOffset = (this.isRoot ? 0 : this.HEADER_SZ);
-		//	return this.squaresLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
-		//}
 	},
 	methods: {
-		squaresLayout(nodes, x0, y0, width, height){
+		basicSquaresLayout(nodes, x0, y0, w, h){
 			//determine layout for squares in a specified rectangle, with spacing
-			let numCols = this.pickNumCols(nodes.length, width/height);
+			let numCols = this.pickNumCols(nodes.length, w/h);
 			let numRows = Math.ceil(nodes.length / numCols);
 			let tileSz = Math.min(
-				((width - this.TILE_SPACING) / numCols) - this.TILE_SPACING,
-				((height - this.TILE_SPACING) / numRows) - this.TILE_SPACING);
+				((w - this.TILE_SPACING) / numCols) - this.TILE_SPACING,
+				((h - this.TILE_SPACING) / numRows) - this.TILE_SPACING);
 			return Object.fromEntries(
 				nodes.map((el, idx) => [el.name, {
 					x: x0 + (idx % numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING,
@@ -76,6 +55,24 @@ export default {
 				}
 			}
 			return bestNum;
+		},
+		sweepToSideLayout(nodes, x0, y0, w, h){
+			//separate leaf and non-leaf nodes
+			let leaves = [], nonLeaves = [];
+			nodes.forEach(e => ((e.children && e.children.length > 0) ? nonLeaves : leaves).push(e));
+			//determine layout
+			if (nonLeaves.length == 0){ //if all leaves, use squares-layout
+				return this.basicSquaresLayout(this.tree.children, x0, y0, w, h);
+			} else { //if some non-leaves, use rect-layout
+				let retVal = {};
+				if (leaves.length > 0){
+					let ratio = leaves.length / this.tree.tileCount;
+					retVal = this.basicSquaresLayout(leaves, x0, y0, w*ratio, h);
+					x0 += w*ratio;
+					w -= w*ratio;
+				}
+				return {...retVal, ...this.basicSquaresLayout(nonLeaves, x0, y0, w, h)};
+			}
 		}
 	}
 }
