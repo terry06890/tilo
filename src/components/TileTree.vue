@@ -16,24 +16,35 @@ export default {
 		isRoot: Boolean,
 	},
 	computed: {
-		childTiles(){ //add minSize, maxSize, 
+		layout(){
 			if (this.tree.children && this.tree.children.length){
-				let nodes = this.tree.children;
 				let hOffset = (this.isRoot ? 0 : this.HEADER_SZ);
-				let adjustedHeight = this.height - hOffset;
-				let numCols = this.pickNumCols(nodes.length, this.width/adjustedHeight);
-				let numRows = Math.ceil(nodes.length / numCols);
-				let tileSz = Math.min(
-					((this.width - this.TILE_SPACING) / numCols) - this.TILE_SPACING,
-					((adjustedHeight - this.TILE_SPACING) / numRows) - this.TILE_SPACING);
-				return nodes.map((el, idx) => ({
-					node: el,
-					x: (idx % numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING,
-					y: Math.floor(idx / numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING + hOffset,
-					sz: tileSz,
-					}));
+				//separate leaf and non-leaf nodes
+				let leaves = [], nonLeaves = [];
+				this.tree.children.forEach(e => ((e.children && e.children.length > 0) ? nonLeaves : leaves).push(e));
+				//
+				if (nonLeaves.length == 0){
+					return this.basicLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
+				} else {
+					let x = 0, y = hOffset, w = this.width, h = this.height - hOffset;
+					let retVal = {};
+					if (leaves.length > 0){
+						let ratio = leaves.length / this.tree.tileCount;
+						retVal = this.basicLayout(leaves, x, y, w*ratio, h);
+						x += w*ratio;
+						w -= w*ratio;
+					}
+					retVal = {...retVal, ...this.basicLayout(nonLeaves, x, y, w, h)};
+					return retVal;
+				}
 			}
 		}
+		//layout(){
+		//	if (!this.tree.children || this.tree.children.length == 0)
+		//		return {};
+		//	let hOffset = (this.isRoot ? 0 : this.HEADER_SZ);
+		//	return this.basicLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
+		//}
 	},
 	methods: {
 		pickNumCols(numTiles, aspectRatio){ //account for tile-spacing?
@@ -48,6 +59,21 @@ export default {
 				}
 			}
 			return closest;
+		},
+		basicLayout(nodes, x0, y0, width, height){
+			let numCols = this.pickNumCols(nodes.length, width/height);
+			let numRows = Math.ceil(nodes.length / numCols);
+			let tileSz = Math.min(
+				((width - this.TILE_SPACING) / numCols) - this.TILE_SPACING,
+				((height - this.TILE_SPACING) / numRows) - this.TILE_SPACING);
+			return Object.fromEntries(
+				nodes.map((el, idx) => [el.name, {
+					x: x0 + (idx % numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING,
+					y: y0 + Math.floor(idx / numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING,
+					w: tileSz,
+					h: tileSz
+					}])
+				);
 		}
 	}
 }
@@ -57,8 +83,8 @@ export default {
 <div v-if="tree.children && tree.children.length > 0" class="border border-black"
 	:style="{position: 'absolute', left: x + 'px', top: y + 'px', width: + width + 'px', height: height + 'px'}">
 	<div v-if="!isRoot" :style="{height: HEADER_SZ + 'px'}" class="text-center">{{tree.name}}</div>
-	<tile-tree v-for="child in childTiles" :tree="child.node"
-		:x="child.x" :y="child.y" :width="child.sz" :height="child.sz"
+	<tile-tree v-for="child in tree.children" :tree="child"
+		:x="layout[child.name].x" :y="layout[child.name].y" :width="layout[child.name].w" :height="layout[child.name].h"
 		></tile-tree>
 </div>
 <img v-else

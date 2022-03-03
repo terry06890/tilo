@@ -1,5 +1,15 @@
 <script>
 import tol from './tol.json';
+function addTileCounts(tree){
+	if (tree.children && tree.children.length > 0){
+		tree.children.forEach(addTileCounts)
+		tree.tileCount = tree.children.reduce((acc, val) => acc + val.tileCount, 0);
+	} else {
+		tree.tileCount = 1;
+	}
+}
+addTileCounts(tol);
+
 import TileTree from "./components/TileTree.vue";
 export default {
 	data() {
