@@ -14,8 +14,9 @@ import TileTree from "./components/TileTree.vue";
 export default {
 	data() {
 		return {
-			//tree: tol.map(e => ({...e, children:[]})),
-			tree: tol,
+			//tree: {...tol, children:[]},
+			tree: {...tol, children:tol.children.map(e => ({...e, children:[]}))},
+			//tree: tol,
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
 		}
