@@ -12,13 +12,27 @@
 		{"name": "Eukaryota",
 			"children":[
 				{"name":"Amoebozoa"},
-				{"name":"Plantae"},
+				{"name":"Plantae",
+					"children":[
+						{"name":"Conifers"},
+						{"name":"Asparagales"},
+						{"name":"Poaceae"},
+						{"name":"Rosids"},
+						{"name":"Asterids"}
+					]
+				},
 				{"name":"Fungi"},
 				{"name":"Metazoa",
 					"children":[
 						{"name":"Cnidaria"},
 						{"name":"Arthropoda"},
-						{"name":"Vertebrata"}
+						{"name":"Vertebrata",
+							"children":[
+								{"name":"Amphibia"},
+								{"name":"Reptilia"},
+								{"name":"Synapsida"}
+							]
+						}
 					]
 				}
 			]
