@@ -5,10 +5,11 @@ export default {
 		return {
 			TILE_SPACING: 5,
 			HEADER_SZ: 20,
+			tree: this.expandTree(this.treeIn, this.isRoot ? 1 : 0),
 		}
 	},
 	props: {
-		tree: Object,
+		treeIn: Object,
 		x: Number,
 		y: Number,
 		width: Number,
@@ -27,6 +28,19 @@ export default {
 		}
 	},
 	methods: {
+		expandTree(tree, lvl){
+			if (lvl == 0){
+				return tree;
+			} else {
+				let childTrees = tree.tolNode.children.map(e => 
+					this.expandTree({tolNode: e, children: [], tileCount: 1}, lvl-1));
+				return {
+					tolNode: tree,
+					children: childTrees,
+					tileCount: (childTrees.length == 0) ? 1 : childTrees.map(e => e.tileCount).reduce((x,y) => x+y)
+				};
+			}
+		},
 		//determines layout for squares in a specified rectangle, with spacing
 		basicSquaresLayout(nodes, x0, y0, w, h){
 			//get number-of-columns with highest occupied-fraction of rectangles with aspect-ratio w/h
@@ -129,7 +143,11 @@ export default {
 			}
 		},
 		onImgClick(){
-			this.$emit('tile-clicked', [this.tree]);
+			if (!this.isRoot){
+				this.$emit('tile-clicked', [this.tree]);
+			} else {
+				this.onInnerTileClicked([this.tree]);
+			}
 		},
 		onInnerTileClicked(nodeList){
 			if (!this.isRoot){
@@ -151,7 +169,6 @@ export default {
 				for (let i = 1; i < nodeList.length; i++){
 					nodeList[i].tileCount += numNewTiles;
 				}
-				this.tree.tileCount += numNewTiles; //redundant?
 			}
 		},
 		onHeaderClick(){
@@ -169,7 +186,6 @@ export default {
 				for (let i = 1; i < nodeList.length; i++){
 					nodeList[i].tileCount -= tc - 1;
 				}
-				this.tree.tileCount -= tc - 1; //redundant?
 			}
 		}
 	}
@@ -188,7 +204,7 @@ export default {
 			class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 			{{tree.tolNode.name}}
 		</div>
-		<tile-tree v-for="child in tree.children" :key="child.tolNode.name" :tree="child"
+		<tile-tree v-for="child in tree.children" :key="child.tolNode.name" :treeIn="child"
 			:x="layout[child.tolNode.name].x" :y="layout[child.tolNode.name].y"
 			:width="layout[child.tolNode.name].w" :height="layout[child.tolNode.name].h"
 			@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"
