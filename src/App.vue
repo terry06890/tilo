@@ -1,22 +1,19 @@
 <script>
 import tol from './tol.json';
-function addTileCounts(tree){
-	if (tree.children && tree.children.length > 0){
-		tree.children.forEach(addTileCounts)
-		tree.tileCount = tree.children.reduce((acc, val) => acc + val.tileCount, 0);
+function addChildArrays(tree){
+	if (!tree.children){
+		tree.children = [];
 	} else {
-		tree.tileCount = 1;
+		tree.children.forEach(addChildArrays);
 	}
 }
-addTileCounts(tol);
+addChildArrays(tol);
 
 import TileTree from "./components/TileTree.vue";
 export default {
 	data() {
 		return {
-			//tree: {...tol, children:[]},
-			tree: {...tol, children:tol.children.map(e => ({...e, children:[]}))},
-			//tree: tol,
+			tree: this.genTreeForTol(tol, 1), //allow for zero-level?
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
 		}
@@ -25,6 +22,18 @@ export default {
 		onResize(){
 			this.width = document.documentElement.clientWidth;
 			this.height = document.documentElement.clientHeight;
+		},
+		genTreeForTol(tol, lvl){
+			if (lvl == 0){
+				return {tolNode: tol, children: [], tileCount: 1};
+			} else {
+				let childTrees = tol.children.map(e => this.genTreeForTol(e, lvl-1));
+				return {
+					tolNode: tol,
+					children: childTrees,
+					tileCount: (childTrees.length == 0) ? 1 : childTrees.map(e => e.tileCount).reduce((x,y) => x+y)
+				};
+			}
 		}
 	},
 	created(){
