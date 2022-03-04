@@ -22,6 +22,7 @@ export default {
 			let hOffset = (this.isRoot ? 0 : this.HEADER_SZ);
 			let x = 0, y = hOffset, w = this.width, h = this.height - hOffset;
 			//return this.basicSquaresLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
+			//return this.basicRectsLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
 			return this.sweepToSideLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
 		}
 	},
@@ -77,9 +78,12 @@ export default {
 				let score = 0;
 				for (let r = 0; r < nr; r++){
 					for (let c = 0; c < nc; c++){
-						score -= Math.abs(grid[r][c] - (rowProp[r] * colProp[c]));
+						if (grid[r][c] > 0){
+							score -= Math.abs(grid[r][c] - (rowProp[r] * colProp[c]));
+						}
 					}
 				}
+				//also score for w/h occupation?
 				if (score > bestScore){
 					bestScore = score;
 					numCols = nc;
@@ -177,7 +181,7 @@ export default {
 	class="transition-all duration-300 ease-out border border-stone-900">
 	<img v-if="tree.children.length == 0"
 		:src="'/src/assets/' + tree.tolNode.name + '.jpg'" :alt="tree.tolNode.name"
-		class="hover:cursor-pointer" @click="onImgClick"
+		class="h-full hover:cursor-pointer" @click="onImgClick"
 		/>
 	<div v-else>
 		<div v-if="!isRoot" :style="{height: HEADER_SZ + 'px'}"
