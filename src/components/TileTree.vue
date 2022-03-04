@@ -115,7 +115,7 @@ export default {
 			} else { //if some non-leaves, use rect-layout
 				let retVal = {};
 				if (leaves.length > 0){
-					let ratio = leaves.length / this.tree.tileCount;
+					let ratio = leaves.length / (leaves.length + nonLeaves.map(e => e.tileCount).reduce((x,y) => x+y));
 					retVal = this.basicSquaresLayout(leaves, x0, y0, w*ratio, h);
 					x0 += w*ratio - this.TILE_SPACING;
 					w -= (w*ratio - this.TILE_SPACING);
@@ -142,7 +142,7 @@ export default {
 					children: [],
 					tileCount: 1
 				}));
-				//update tile counts
+				//update tile-counts
 				nodeList[0].tileCount = numNewTiles;
 				for (let i = 1; i < nodeList.length; i++){
 					nodeList[i].tileCount += numNewTiles;
@@ -151,7 +151,22 @@ export default {
 			}
 		},
 		onHeaderClick(){
-			console.log('Header clicked');
+			this.$emit('header-clicked', [this.tree]);
+		},
+		onInnerHeaderClicked(nodeList){
+			if (!this.isRoot){
+				this.$emit('header-clicked', nodeList.concat([this.tree]));
+			} else { //nodeList will hold an array of tree-objects, from the clicked-on-tile's tree-object upward
+				let tc = nodeList[0].tileCount;
+				//remove children
+				nodeList[0].children = [];
+				//update tile-counts
+				nodeList.tileCount = 1;
+				for (let i = 1; i < nodeList.length; i++){
+					nodeList[i].tileCount -= tc - 1;
+				}
+				this.tree.tileCount -= tc - 1; //redundant?
+			}
 		}
 	}
 }
@@ -161,19 +176,19 @@ export default {
 <div v-if="tree.children.length > 0" class="border border-black"
 	:style="{position: 'absolute', left: x + 'px', top: y + 'px', width: width + 'px', height: height + 'px'}">
 	<div v-if="!isRoot" :style="{height: HEADER_SZ + 'px'}"
-		class="text-center hover:cursor-pointer" @click="onHeaderClick">
+		class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 		{{tree.tolNode.name}}
 	</div>
 	<tile-tree v-for="child in tree.children" :key="child.tolNode.name" :tree="child"
 		:x="layout[child.tolNode.name].x" :y="layout[child.tolNode.name].y"
 		:width="layout[child.tolNode.name].w" :height="layout[child.tolNode.name].h"
-		@tile-clicked="onInnerTileClicked"
+		@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"
 		></tile-tree>
 </div>
 <img v-else
 	:src="'/src/assets/' + tree.tolNode.name + '.jpg'" :alt="tree.tolNode.name"
 	:style="{position: 'absolute', left: x + 'px', top: y + 'px'}" :width="width" :height="height"
-	class="transition-all duration-300 ease-out border-2 border-amber-900 hover:cursor-pointer"
+	class="transition-all duration-300 ease-out border-2 border-stone-900 hover:cursor-pointer"
 	@click="onImgClick"
 	/>
 </template>
