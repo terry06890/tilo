@@ -1,4 +1,6 @@
 <script>
+let lastChangedTile = null; //used to increase TileTree z-index during a transition
+
 export default {
 	name: 'tile-tree',
 	data(){
@@ -6,6 +8,7 @@ export default {
 			TILE_SPACING: 5,
 			HEADER_SZ: 20,
 			tree: this.expandTree(this.treeIn, this.isRoot ? 1 : 0),
+			zIdx: 0,
 		}
 	},
 	props: {
@@ -35,7 +38,7 @@ export default {
 				let childTrees = tree.tolNode.children.map(e => 
 					this.expandTree({tolNode: e, children: [], tileCount: 1}, lvl-1));
 				return {
-					tolNode: tree,
+					tolNode: tree.tolNode,
 					children: childTrees,
 					tileCount: (childTrees.length == 0) ? 1 : childTrees.map(e => e.tileCount).reduce((x,y) => x+y)
 				};
@@ -148,6 +151,12 @@ export default {
 			} else {
 				this.onInnerTileClicked([this.tree]);
 			}
+			//increase z-index during transition
+			if (lastChangedTile !== null){
+				lastChangedTile.zIdx = 0;
+			}
+			this.zIdx = 1;
+			lastChangedTile = this;
 		},
 		onInnerTileClicked(nodeList){
 			if (!this.isRoot){
@@ -173,6 +182,12 @@ export default {
 		},
 		onHeaderClick(){
 			this.$emit('header-clicked', [this.tree]);
+			//increase z-index during transition
+			if (lastChangedTile !== null){
+				lastChangedTile.zIdx = 0;
+			}
+			this.zIdx = 1;
+			lastChangedTile = this;
 		},
 		onInnerHeaderClicked(nodeList){
 			if (!this.isRoot){
@@ -193,8 +208,9 @@ export default {
 </script>
 
 <template>
-<div :style="{position: 'absolute', left: x + 'px', top: y + 'px', width: width + 'px', height: height + 'px'}"
-	class="transition-all duration-300 ease-out border border-stone-900">
+<div
+	:style="{position: 'absolute', left: x+'px', top: y+'px', width: width+'px', height: height+'px', zIndex: zIdx}"
+	class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white">
 	<img v-if="tree.children.length == 0"
 		:src="'/src/assets/' + tree.tolNode.name + '.jpg'" :alt="tree.tolNode.name"
 		class="h-full hover:cursor-pointer" @click="onImgClick"
