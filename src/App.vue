@@ -9,11 +9,12 @@ function addChildArrays(tree){
 }
 addChildArrays(tol);
 
-import TileTree from "./components/TileTree.vue";
+import {initTree} from './components/layout.js';
+import TileTree from './components/TileTree.vue';
 export default {
 	data() {
 		return {
-			tree: {tolNode: tol, children: []},
+			tree: initTree(tol, 1),
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
 		}
@@ -38,7 +39,7 @@ export default {
 
 <template>
 <div class="h-[100vh]">
-	<tile-tree :treeIn="tree" :x="0" :y="0" :width="width" :height="height" isRoot></tile-tree>
+	<tile-tree :tree="tree" :x="0" :y="0" :width="width" :height="height" isRoot></tile-tree>
 </div>
 </template>
 
