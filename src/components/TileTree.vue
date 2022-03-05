@@ -1,6 +1,6 @@
 <script>
-import tol from '../tol.json';
-import {defaultLayout, initTree} from './layout.js';
+import tol from '/src/tol.json';
+import {defaultLayout, initTree} from '/src/layout.js';
 import Tile from './Tile.vue';
 
 export default {

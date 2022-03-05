@@ -1,5 +1,5 @@
 <script>
-import {defaultLayout} from './layout.js';
+import {defaultLayout} from '/src/layout.js';
 export default {
 	name: 'tile',
 	data(){
