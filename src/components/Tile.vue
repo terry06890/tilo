@@ -51,10 +51,10 @@ export default {
 <template>
 <div
 	:style="{position: 'absolute', left: x+'px', top: y+'px', width: width+'px', height: height+'px', zIndex: zIdx}"
-	class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white">
-	<img v-if="tree.children.length == 0"
-		:src="'/src/assets/' + tree.tolNode.name + '.jpg'" :alt="tree.tolNode.name"
-		class="h-full hover:cursor-pointer" @click="onImgClick"
+	class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white overflow-hidden">
+	<div v-if="tree.children.length == 0"
+		:style="{backgroundImage: 'url(/src/assets/' + tree.tolNode.name + '.jpg)'}"
+		class="hover:cursor-pointer w-full h-full bg-cover" @click="onImgClick"
 		/>
 	<div v-else>
 		<div v-if="!hideHeader" :style="{height: this.layoutSys.HEADER_SZ + 'px'}"
