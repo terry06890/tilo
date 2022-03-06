@@ -8,7 +8,7 @@ const staticSqrLayout = { //determines layout for squares in a specified rectang
 	HEADER_SZ: DEFAULT_HEADER_SZ,
 	genLayout(nodes, x0, y0, w, h, hideHeader){
 		//get number-of-columns with highest occupied-fraction of rectangles with aspect-ratio w/h
-			//account for tile-spacing?, account for parent-box-border?,
+			//account for tile-spacing?, account for parent-box-border?, cache results?,
 		let hOffset = (hideHeader ? 0 : this.HEADER_SZ);
 		let numTiles = nodes.length, ar = w/(h - hOffset);
 		let numCols, numRows, bestFrac = 0;
@@ -27,14 +27,18 @@ const staticSqrLayout = { //determines layout for squares in a specified rectang
 			((w - this.TILE_SPACING) / numCols) - this.TILE_SPACING,
 			((h - this.TILE_SPACING - hOffset) / numRows) - this.TILE_SPACING);
 		//determine layout
-		return Object.fromEntries(
-			nodes.map((el, idx) => [el.tolNode.name, {
-				x: x0 + (idx % numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING,
-				y: y0 + Math.floor(idx / numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING + hOffset,
-				w: tileSz,
-				h: tileSz
+		return {
+			coords: Object.fromEntries(
+				nodes.map((el, idx) => [el.tolNode.name, {
+					x: x0 + (idx % numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING,
+					y: y0 + Math.floor(idx / numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING + hOffset,
+					w: tileSz,
+					h: tileSz
 				}])
-			);
+			),
+			w: numCols * (tileSz + this.TILE_SPACING) + this.TILE_SPACING,
+			h: numRows * (tileSz + this.TILE_SPACING) + this.TILE_SPACING + hOffset,
+		};
 	},
 	initLayoutInfo(tree){
 		return;
@@ -104,20 +108,24 @@ const staticRectLayout = {
 		for (let i = 0; i < colProps.length-1; i++){
 			colNetProps.push(colNetProps[i] + colProps[i]);
 		}
-		return Object.fromEntries(
-			nodes.map((el, idx) => {
-				let cellW = colProps[idx % numCols]*(w - this.TILE_SPACING);
-				let cellH = rowProps[Math.floor(idx / numCols)]*(h - hOffset - this.TILE_SPACING);
-				let cellAR = cellW / cellH;
-				return [el.tolNode.name, {
-					x: x0 + colNetProps[idx % numCols]*(w - this.TILE_SPACING) + this.TILE_SPACING,
-					y: y0 + rowNetProps[Math.floor(idx / numCols)]*(h - hOffset - this.TILE_SPACING) + 
-						this.TILE_SPACING + hOffset,
-					w: (el.children.length == 0 ? (cellAR > 1 ? cellW * 1/cellAR : cellW) : cellW) - this.TILE_SPACING,
-					h: (el.children.length == 0 ? (cellAR > 1 ? cellH : cellH * cellAR) : cellH) - this.TILE_SPACING
-				}];
-			})
-		);
+		return {
+			coords: Object.fromEntries(
+				nodes.map((el, idx) => {
+					let cellW = colProps[idx % numCols]*(w - this.TILE_SPACING);
+					let cellH = rowProps[Math.floor(idx / numCols)]*(h - hOffset - this.TILE_SPACING);
+					let cellAR = cellW / cellH;
+					return [el.tolNode.name, {
+						x: x0 + colNetProps[idx % numCols]*(w - this.TILE_SPACING) + this.TILE_SPACING,
+						y: y0 + rowNetProps[Math.floor(idx / numCols)]*(h - hOffset - this.TILE_SPACING) + 
+							this.TILE_SPACING + hOffset,
+						w: (el.children.length == 0 ? (cellAR>1 ? cellW * 1/cellAR : cellW) : cellW) - this.TILE_SPACING,
+						h: (el.children.length == 0 ? (cellAR>1 ? cellH : cellH * cellAR) : cellH) - this.TILE_SPACING
+					}];
+				})
+			),
+			w: w,
+			h: h
+		};
 	},
 	initLayoutInfo(tree){
 		if (tree.children.length > 0){
@@ -141,23 +149,11 @@ const staticRectLayout = {
 			tree.tileCount = 1;
 			tree.arFromArea = (w, h) => 1;
 		} else {
-			let hOffset = (tree.hideHeader ? 0 : this.HEADER_SZ);
 			tree.tileCount = tree.children.map(e => e.tileCount).reduce((x,y) => x+y);
-			//determine tree.arFromArea
 			if (tree.children.every(e => e.children.length == 0)){
-				tree.arFromArea = (w, h) => { //cache result?
-					let numChildren = tree.children.length, ar = w/(h - hOffset);
-					let bestAR, bestFrac = 0;
-					for (let nc = 1; nc <= numChildren; nc++){
-						let nr = Math.ceil(numChildren/nc);
-						let ar2 = nc/nr;
-						let frac = ar > ar2 ? ar2/ar : ar/ar2;
-						if (frac > bestFrac){
-							bestFrac = frac;
-							bestAR = ar > ar2 ? (ar2/ar * w)/(h + hOffset) : w/(ar/ar2 * h + hOffset)
-						}
-					}
-					return bestAR;
+				tree.arFromArea = (w, h) => {
+					let layout = staticSqrLayout.genLayout(tree.children, 0, 0, w, h, tree.hideHeader);
+					return layout.w / layout.h;
 				}
 			} else {
 				tree.arFromArea = (w, h) => w/h;
@@ -176,23 +172,19 @@ const sweepToSideLayout = {
 		if (nonLeaves.length == 0){ //if all leaves, use squares-layout
 			return staticSqrLayout.genLayout(nodes, x0, y0, w, h, hideHeader);
 		} else { //if some non-leaves, use rect-layout
-			let retVal = {};
-			if (leaves.length > 0){
+			if (leaves.length == 0){
+				return staticRectLayout.genLayout(nonLeaves, x0, y0, w, h, hideHeader);
+			} else {
+				//get swept-area layout
 				let ratio = leaves.length / (leaves.length + nonLeaves.map(e => e.tileCount).reduce((x,y) => x+y));
-				let tentativeLayout = staticSqrLayout.genLayout(leaves, x0, y0, w*ratio, h, hideHeader);
-				//shrink swept-area space to right edge
-				let rightmostPoints = leaves.map(e => e.tolNode.name).map(name => {
-					let coords = tentativeLayout[name];
-					return coords.x + coords.w + this.TILE_SPACING;
-				});
-				let rightMostPoint = Math.max(...rightmostPoints);
-				retVal = staticSqrLayout.genLayout(leaves, x0, y0, rightMostPoint-x0, h, hideHeader);
-				//update coords
-				w -= (rightMostPoint - x0) - this.TILE_SPACING;
-				x0 = rightMostPoint - this.TILE_SPACING;
+				let leavesLayout = staticSqrLayout.genLayout(leaves, x0, y0, w*ratio, h, hideHeader);
+				//get remaining-area layout, with shrunk-to-content-right-edge swept-area
+				let x02 = x0 + leavesLayout.w - this.TILE_SPACING;
+				let w2 = w - leavesLayout.w + this.TILE_SPACING;
+				//let nonLeavesLayout = staticSqrLayout.genLayout(nonLeaves, x02, y0, w2, h, hideHeader);
+				let nonLeavesLayout = staticRectLayout.genLayout(nonLeaves, x02, y0, w2, h, hideHeader);
+				return {coords: {...leavesLayout.coords, ...nonLeavesLayout.coords}, w: w, h: h}
 			}
-			//return {...retVal, ...staticSqrLayout.genLayout(nonLeaves, x0, y0, w, h, hideHeader)};
-			return {...retVal, ...staticRectLayout.genLayout(nonLeaves, x0, y0, w, h, hideHeader)};
 		}
 	},
 	initLayoutInfo(tree){

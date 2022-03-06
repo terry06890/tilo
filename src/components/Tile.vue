@@ -60,8 +60,8 @@ export default {
 			{{tree.tolNode.name}}
 		</div>
 		<tile v-for="child in tree.children" :key="child.tolNode.name" :tree="child"
-			:x="layout[child.tolNode.name].x" :y="layout[child.tolNode.name].y"
-			:width="layout[child.tolNode.name].w" :height="layout[child.tolNode.name].h"
+			:x="layout.coords[child.tolNode.name].x" :y="layout.coords[child.tolNode.name].y"
+			:width="layout.coords[child.tolNode.name].w" :height="layout.coords[child.tolNode.name].h"
 			@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"
 			></tile>
 	</div>
