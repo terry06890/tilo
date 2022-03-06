@@ -10,7 +10,7 @@ const staticSqrLayout = { //determines layout for squares in a specified rectang
 		//get number-of-columns with highest occupied-fraction of rectangles with aspect-ratio w/h
 			//account for tile-spacing?, account for parent-box-border?, cache results?,
 		let hOffset = (hideHeader ? 0 : this.HEADER_SZ);
-		let numTiles = nodes.length, ar = w/(h - hOffset);
+		let numTiles = nodes.length, ar = (w - this.TILE_SPACING)/(h - hOffset - this.TILE_SPACING);
 		let numCols, numRows, bestFrac = 0;
 		for (let nc = 1; nc <= numTiles; nc++){
 			let nr = Math.ceil(numTiles/nc);
@@ -30,8 +30,8 @@ const staticSqrLayout = { //determines layout for squares in a specified rectang
 		return {
 			coords: Object.fromEntries(
 				nodes.map((el, idx) => [el.tolNode.name, {
-					x: x0 + (idx % numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING,
-					y: y0 + Math.floor(idx / numCols)*(tileSz + this.TILE_SPACING) + this.TILE_SPACING + hOffset,
+					x: x0 + this.TILE_SPACING + (idx % numCols)*(tileSz + this.TILE_SPACING),
+					y: y0 + this.TILE_SPACING + hOffset + Math.floor(idx / numCols)*(tileSz + this.TILE_SPACING),
 					w: tileSz,
 					h: tileSz
 				}])
@@ -57,93 +57,122 @@ const staticRectLayout = {
 		if (nodes.every(e => e.children.length == 0)){
 			return staticSqrLayout.genLayout(nodes, x0, y0, w, h, hideHeader);
 		}
-		//if a node has children, find 'best' number-of-columns to use
+		//if a node has children, find 'best' grid-arrangement
 		let hOffset = (hideHeader ? 0 : this.HEADER_SZ);
 		let availW = w - this.TILE_SPACING, availH = h - this.TILE_SPACING - hOffset;
 		let numChildren = nodes.length;
-		let numCols, bestScore = Number.NEGATIVE_INFINITY, numRows, rowProps, colProps, nodeDims;
-		for (let nc = 1; nc <= numChildren; nc++){
-			let nr = Math.ceil(numChildren/nc);
-			//create grid representing each node's tileCount (0 for no tile)
-			let grid = Array(nr).fill().map(e => Array(nc).fill(0));
-			for (let i = 0; i < numChildren; i++){
-				grid[Math.floor(i / nc)][i % nc] = nodes[i].tileCount;
+		let rowBrks = [0]; //holds node indices at which each row starts
+		let rowBreaks, bestScore = Number.NEGATIVE_INFINITY, rowsOfCounts, cellWidths, cellHeights, nodeDims;
+		while (true){
+			//create list-of-lists representing each row's cells' tileCounts
+			let rowsOfCnts = Array(rowBrks.length).fill();
+			for (let r = 0; r < rowBrks.length; r++){
+				let numNodes = (r == rowBrks.length-1) ? numChildren-rowBrks[r] : rowBrks[r+1]-rowBrks[r];
+				let rowNodeIdxs = Array.from({length: numNodes}, (x,i) => i+rowBrks[r]);
+				rowsOfCnts[r] = rowNodeIdxs.map(idx => nodes[idx].tileCount);
 			}
-			//get totals across each row/column divided by tileCount total
+			//get cell dims
 			let totalTileCount = nodes.map(e => e.tileCount).reduce((x,y) => x+y);
-			let rProps = grid.map(row => row.reduce((x, y) => x+y) / totalTileCount);
-			let cProps = [...Array(nc).keys()].map(c =>
-				[...Array(nr).keys()].map(r => grid[r][c]).reduce((x,y) => x+y) / totalTileCount);
-			//get score
+			let cellHs = rowsOfCnts.map(row => row.reduce((x, y) => x+y) / totalTileCount * availH);
+			let cellWs = Array(numChildren).fill();
+			for (let r = 0; r < rowsOfCnts.length; r++){
+				let rowCount = rowsOfCnts[r].reduce((x,y) => x+y);
+				for (let c = 0; c < rowsOfCnts[r].length; c++){
+					cellWs[rowBrks[r]+c] = rowsOfCnts[r][c] / rowCount * availW;
+				}
+			}
+			//get node dims and score
 			let score = 0;
 			let nodeDs = Array(numChildren).fill();
-			for (let i = 0; i < numChildren; i++){ //get occupied-fraction //account for tile-spacing?
-				let cellW = availW * cProps[i % nc];
-				let cellH = availH * rProps[Math.floor(i / nc)];
-				let ar = cellW / cellH;
-				let ar2 = nodes[i].arFromArea(cellW, cellH);
-				let frac = ar > ar2 ? ar2/ar : ar/ar2;
-				score += frac * (cellW * cellH);
-				nodeDs[i] = ar > ar2 ? [cellW*frac, cellH] : [cellW, cellH*frac];
+			for (let r = 0; r < rowBrks.length; r++){
+				for (let c = 0; c < rowsOfCnts[r].length; c++){
+					let nodeIdx = rowBrks[r]+c;
+					let cellW = cellWs[nodeIdx], cellH = cellHs[r];
+					let ar = (cellW - this.TILE_SPACING) / (cellH - this.TILE_SPACING);
+					let ar2 = nodes[nodeIdx].arFromArea(cellW - this.TILE_SPACING, cellH - this.TILE_SPACING);
+					let frac = ar > ar2 ? ar2/ar : ar/ar2;
+					score += frac * (cellW * cellH);
+					nodeDs[nodeIdx] = ar > ar2 ? [cellW*frac, cellH] : [cellW, cellH*frac];
+				}
 			}
 			if (score > bestScore){
 				bestScore = score;
-				numCols = nc;
-				numRows = nr;
-				rowProps = rProps;
-				colProps = cProps;
+				rowBreaks = [...rowBrks];
+				rowsOfCounts = rowsOfCnts;
+				cellWidths = cellWs;
+				cellHeights = cellHs;
 				nodeDims = nodeDs;
 			}
-		}
-		//shift empty space to right/bottom-most cells
-		let empHorz = 0, empVert = 0;
-		for (let c = 0; c < numCols-1; c++){
-			let colW = colProps[c]*availW;
-			let nodeIdxs = Array.from({length: numRows}, (x,i) => i*numRows + c);
-			let empHorzs = nodeIdxs.map(idx => colW - nodeDims[idx][0]);
-			if (empHorzs.every(e => e > 0)){
-				let minEmpHorz = Math.min(...empHorzs);
-				empHorz += minEmpHorz;
-				colProps[c] = (colW - minEmpHorz) / availW;
+			//update rowBrks or exit loop
+			let i = rowBrks.length-1, exitLoop = false;
+			while (true){
+				if (i > 0 && rowBrks[i] < numChildren-1 - (rowBrks.length-1 - i)){
+					rowBrks[i]++;
+					break;
+				} else if (i > 0){
+					i--;
+				} else {
+					if (rowBrks.length < numChildren){
+						rowBrks = Array.from({length: rowBrks.length+1}, (x,i) => i);
+					} else {
+						exitLoop = true;
+					}
+					break;
+				}
 			}
+			if (exitLoop)
+				break;
 		}
-		colProps[numCols-1] = ((colProps[numCols-1]*availW) + empHorz) / availW;
-		for (let r = 0; r < numRows-1; r++){
-			let rowH = rowProps[r]*availH;
-			let nodeIdxs = Array.from({length: numCols}, (x,i) => i + r*numCols);
-			let empVerts = nodeIdxs.map(idx => rowH - nodeDims[idx][1]);
-			if (empVerts.every(e => e > 0)){
-				let minEmpVert = Math.min(...empVerts);
-				empVert += minEmpVert;
-				rowProps[r] = (rowH - minEmpVert) / availH;
+		//for each row, shift empty right-space to rightmost cell
+		for (let r = 0; r < rowBreaks.length; r++){
+			let empHorzTotal = 0;
+			for (let c = 0; c < rowsOfCounts[r].length - 1; c++){
+				let nodeIdx = rowBreaks[r] + c;
+				let empHorz = cellWidths[nodeIdx] - nodeDims[nodeIdx][0];
+				cellWidths[nodeIdx] -= empHorz;
+				empHorzTotal += empHorz;
 			}
+			cellWidths[rowBreaks[r] + rowsOfCounts[r].length - 1] += empHorzTotal;
 		}
-		rowProps[numRows-1] = ((rowProps[numRows-1]*availH) + empVert) / availH;
+		//shift empty bottom-space to bottom-most row
+		let empVertTotal = 0;
+		for (let r = 0; r < rowBreaks.length - 1; r++){
+			let nodeIdxs = Array.from({length: rowsOfCounts[r].length}, (x,i) => rowBreaks[r] + i);
+			let empVerts = nodeIdxs.map(idx => cellHeights[r] - nodeDims[idx][1]);
+			let minEmpVert = Math.min(...empVerts);
+			cellHeights[r] -= minEmpVert;
+			empVertTotal += minEmpVert;
+		}
+		cellHeights[rowBreaks.length - 1] += empVertTotal;
 		//determine layout
-		let rowNetProps = [0];
-		for (let i = 0; i < rowProps.length-1; i++){
-			rowNetProps.push(rowNetProps[i] + rowProps[i]);
+		let cellHorzPoints = Array(cellWidths.length).fill(0);
+		for (let r = 0; r < rowBreaks.length; r++){
+			for (let c = 1; c < rowsOfCounts[r].length; c++){
+				let nodeIdx = rowBreaks[r]+c;
+				cellHorzPoints[nodeIdx] = cellHorzPoints[nodeIdx-1] + cellWidths[nodeIdx-1];
+			}
 		}
-		let colNetProps = [0];
-		for (let i = 0; i < colProps.length-1; i++){
-			colNetProps.push(colNetProps[i] + colProps[i]);
+		let cellVertPoints = Array(cellHeights.length).fill(0);
+		for (let r = 1; r < rowBreaks.length; r++){
+			cellVertPoints[r] = cellVertPoints[r-1] + cellHeights[r-1];
 		}
 		return {
 			coords: Object.fromEntries(
 				nodes.map((el, idx) => {
-					let cellW = colProps[idx % numCols]*availW;
-					let cellH = rowProps[Math.floor(idx / numCols)]*availH;
+					let cellW = cellWidths[idx];
+					let rowIdx = rowBreaks.findIndex((e,i) => i==rowBreaks.length-1 || rowBreaks[i+1] > idx);
+					let cellH = cellHeights[rowIdx];
 					let cellAR = cellW / cellH;
 					return [el.tolNode.name, {
-						x: x0 + colNetProps[idx % numCols]*availW + this.TILE_SPACING,
-						y: y0 + rowNetProps[Math.floor(idx / numCols)]*availH + this.TILE_SPACING + hOffset,
+						x: x0 + this.TILE_SPACING + cellHorzPoints[idx],
+						y: y0 + this.TILE_SPACING + cellVertPoints[rowIdx] + hOffset,
 						w: (el.children.length == 0 ? (cellAR>1 ? cellW * 1/cellAR : cellW) : cellW) - this.TILE_SPACING,
 						h: (el.children.length == 0 ? (cellAR>1 ? cellH : cellH * cellAR) : cellH) - this.TILE_SPACING
 					}];
 				})
 			),
 			w: w,
-			h: h
+			h: h,
 		};
 	},
 	initLayoutInfo(tree){

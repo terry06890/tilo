@@ -1,7 +1,13 @@
 {
 	"name": "Root",
 	"children":[
-		{"name": "Viruses"},
+		{"name": "Viruses",
+			"children":[
+				{"name": "Coronaviridae"},
+				{"name": "Enterovirus"},
+				{"name": "Rabies lyssavirus"}
+			]
+		},
 		{"name": "Archaea"},
 		{"name": "Bacteria",
 			"children":[
