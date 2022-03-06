@@ -20,9 +20,7 @@ export default {
 		layout(){
 			if (this.tree.children.length == 0)
 				return {};
-			let hOffset = (this.hideHeader ? 0 : this.layoutSys.HEADER_SZ);
-			let x = 0, y = hOffset, w = this.width, h = this.height - hOffset;
-			return this.layoutSys.genLayout(this.tree.children, 0, hOffset, this.width, this.height - hOffset);
+			return this.layoutSys.genLayout(this.tree.children, 0, 0, this.width, this.height, this.hideHeader);
 		}
 	},
 	methods: {

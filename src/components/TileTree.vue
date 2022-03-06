@@ -41,8 +41,8 @@ export default {
 		},
 		onInnerHeaderClicked(nodeList){
 			//nodeList will hold an array of tree-objects, from the clicked-on-tile's tree-object upward
-			this.layoutSys.updateLayoutInfoOnCollapse(nodeList);
 			nodeList[0].children = [];
+			this.layoutSys.updateLayoutInfoOnCollapse(nodeList);
 		},
 	},
 	created(){
