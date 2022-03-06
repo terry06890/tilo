@@ -51,7 +51,7 @@ export default {
 	:style="{position: 'absolute', left: x+'px', top: y+'px', width: width+'px', height: height+'px', zIndex: zIdx}"
 	class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white overflow-hidden">
 	<div v-if="tree.children.length == 0"
-		:style="{backgroundImage: 'url(/src/assets/' + tree.tolNode.name + '.jpg)'}"
+		:style="{backgroundImage: 'url(\'/src/assets/' + tree.tolNode.name + '.jpg\')'}"
 		class="hover:cursor-pointer w-full h-full bg-cover" @click="onImgClick"
 		/>
 	<div v-else>

@@ -59,8 +59,9 @@ const staticRectLayout = {
 		}
 		//if a node has children, find 'best' number-of-columns to use
 		let hOffset = (hideHeader ? 0 : this.HEADER_SZ);
+		let availW = w - this.TILE_SPACING, availH = h - this.TILE_SPACING - hOffset;
 		let numChildren = nodes.length;
-		let numCols, bestScore = Number.NEGATIVE_INFINITY, numRows, rowProps, colProps;
+		let numCols, bestScore = Number.NEGATIVE_INFINITY, numRows, rowProps, colProps, nodeDims;
 		for (let nc = 1; nc <= numChildren; nc++){
 			let nr = Math.ceil(numChildren/nc);
 			//create grid representing each node's tileCount (0 for no tile)
@@ -75,30 +76,49 @@ const staticRectLayout = {
 				[...Array(nr).keys()].map(r => grid[r][c]).reduce((x,y) => x+y) / totalTileCount);
 			//get score
 			let score = 0;
+			let nodeDs = Array(numChildren).fill();
 			for (let i = 0; i < numChildren; i++){ //get occupied-fraction //account for tile-spacing?
-				let cellW = (w - this.TILE_SPACING) * cProps[i % nc];
-				let cellH = (h - this.TILE_SPACING - hOffset) * rProps[Math.floor(i / nc)];
+				let cellW = availW * cProps[i % nc];
+				let cellH = availH * rProps[Math.floor(i / nc)];
 				let ar = cellW / cellH;
 				let ar2 = nodes[i].arFromArea(cellW, cellH);
 				let frac = ar > ar2 ? ar2/ar : ar/ar2;
 				score += frac * (cellW * cellH);
+				nodeDs[i] = ar > ar2 ? [cellW*frac, cellH] : [cellW, cellH*frac];
 			}
-			////alternative score-metric
-			//for (let r = 0; r < nr; r++){
-			//	for (let c = 0; c < nc; c++){
-			//		if (grid[r][c] > 0){
-			//			score -= Math.abs(grid[r][c] - rProps[r]*cProps[c]);
-			//		}
-			//	}
-			//}
 			if (score > bestScore){
 				bestScore = score;
 				numCols = nc;
 				numRows = nr;
 				rowProps = rProps;
 				colProps = cProps;
+				nodeDims = nodeDs;
 			}
 		}
+		//shift empty space to right/bottom-most cells
+		let empHorz = 0, empVert = 0;
+		for (let c = 0; c < numCols-1; c++){
+			let colW = colProps[c]*availW;
+			let nodeIdxs = Array.from({length: numRows}, (x,i) => i*numRows + c);
+			let empHorzs = nodeIdxs.map(idx => colW - nodeDims[idx][0]);
+			if (empHorzs.every(e => e > 0)){
+				let minEmpHorz = Math.min(...empHorzs);
+				empHorz += minEmpHorz;
+				colProps[c] = (colW - minEmpHorz) / availW;
+			}
+		}
+		colProps[numCols-1] = ((colProps[numCols-1]*availW) + empHorz) / availW;
+		for (let r = 0; r < numRows-1; r++){
+			let rowH = rowProps[r]*availH;
+			let nodeIdxs = Array.from({length: numCols}, (x,i) => i + r*numCols);
+			let empVerts = nodeIdxs.map(idx => rowH - nodeDims[idx][1]);
+			if (empVerts.every(e => e > 0)){
+				let minEmpVert = Math.min(...empVerts);
+				empVert += minEmpVert;
+				rowProps[r] = (rowH - minEmpVert) / availH;
+			}
+		}
+		rowProps[numRows-1] = ((rowProps[numRows-1]*availH) + empVert) / availH;
 		//determine layout
 		let rowNetProps = [0];
 		for (let i = 0; i < rowProps.length-1; i++){
@@ -111,13 +131,12 @@ const staticRectLayout = {
 		return {
 			coords: Object.fromEntries(
 				nodes.map((el, idx) => {
-					let cellW = colProps[idx % numCols]*(w - this.TILE_SPACING);
-					let cellH = rowProps[Math.floor(idx / numCols)]*(h - hOffset - this.TILE_SPACING);
+					let cellW = colProps[idx % numCols]*availW;
+					let cellH = rowProps[Math.floor(idx / numCols)]*availH;
 					let cellAR = cellW / cellH;
 					return [el.tolNode.name, {
-						x: x0 + colNetProps[idx % numCols]*(w - this.TILE_SPACING) + this.TILE_SPACING,
-						y: y0 + rowNetProps[Math.floor(idx / numCols)]*(h - hOffset - this.TILE_SPACING) + 
-							this.TILE_SPACING + hOffset,
+						x: x0 + colNetProps[idx % numCols]*availW + this.TILE_SPACING,
+						y: y0 + rowNetProps[Math.floor(idx / numCols)]*availH + this.TILE_SPACING + hOffset,
 						w: (el.children.length == 0 ? (cellAR>1 ? cellW * 1/cellAR : cellW) : cellW) - this.TILE_SPACING,
 						h: (el.children.length == 0 ? (cellAR>1 ? cellH : cellH * cellAR) : cellH) - this.TILE_SPACING
 					}];
