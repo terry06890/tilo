@@ -223,15 +223,25 @@ const sweepToSideLayout = {
 			if (leaves.length == 0){
 				return staticRectLayout.genLayout(nonLeaves, x0, y0, w, h, hideHeader);
 			} else {
-				//get swept-area layout
 				let ratio = leaves.length / (leaves.length + nonLeaves.map(e => e.tileCount).reduce((x,y) => x+y));
-				let leavesLayout = staticSqrLayout.genLayout(leaves, x0, y0, w*ratio, h, hideHeader);
-				//get remaining-area layout, with shrunk-to-content-right-edge swept-area
-				let x02 = x0 + leavesLayout.w - this.TILE_SPACING;
-				let w2 = w - leavesLayout.w + this.TILE_SPACING;
-				//let nonLeavesLayout = staticSqrLayout.genLayout(nonLeaves, x02, y0, w2, h, hideHeader);
-				let nonLeavesLayout = staticRectLayout.genLayout(nonLeaves, x02, y0, w2, h, hideHeader);
-				return {coords: {...leavesLayout.coords, ...nonLeavesLayout.coords}, w: w, h: h}
+				let hOffset = (hideHeader ? 0 : this.HEADER_SZ);
+				//get swept-area layout
+				let area = {x: x0, y: y0+hOffset, w: w, h: h-hOffset};
+				let leftLayout = staticSqrLayout.genLayout(leaves, area.x, area.y, area.w*ratio, area.h, true);
+				let topLayout = staticSqrLayout.genLayout(leaves, area.x, area.y, area.w, area.h*ratio, true);
+				//let sweptLayout = leftLayout;
+				let sweptLayout = (leftLayout.w*leftLayout.h > topLayout.w*topLayout.h) ? leftLayout : topLayout;
+				//get remaining-area layout
+				if (sweptLayout == leftLayout){
+					area.x += leftLayout.w - this.TILE_SPACING;
+					area.w += -leftLayout.w + this.TILE_SPACING;
+				} else {
+					area.y += topLayout.h - this.TILE_SPACING;
+					area.h += -topLayout.h + this.TILE_SPACING;
+				}
+				let nonLeavesLayout = staticRectLayout.genLayout(nonLeaves, area.x, area.y, area.w, area.h, true);
+				//return combined layout
+				return {coords: {...sweptLayout.coords, ...nonLeavesLayout.coords}, w: w, h: h};
 			}
 		}
 	},
