@@ -243,6 +243,7 @@ const staticRectLayout = {
 };
 const sweepToSideLayout = {
 	genLayout(node, x, y, w, h, hideHeader){
+		let SWEEP_LEFT_ONLY = false;
 		//separate leaf and non-leaf nodes
 		let leaves = [], nonLeaves = [];
 		node.children.forEach(n => (n.children.length == 0 ? leaves : nonLeaves).push(n));
@@ -259,20 +260,26 @@ const sweepToSideLayout = {
 			//get swept-area layout
 			let area = {x: x, y: y+headerSz, w: w, h: h-headerSz};
 			tempTree = {tolNode: null, children: leaves};
-			let leftLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y,
-				Math.max(area.w*ratio, MIN_TILE_SZ+TILE_SPACING*2), area.h, true);
-			let topLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y,
-				area.w, Math.max(area.h*ratio, MIN_TILE_SZ+TILE_SPACING*2), true);
-			//let sweptLayout = leftLayout;
-			let sweptLayout =
-				(leftLayout && topLayout && (leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout) ||
-				leftLayout || topLayout;
+			let sweptLeft = false, sweptLayout, xyChg;
+			if (SWEEP_LEFT_ONLY){
+				sweptLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y,
+					Math.max(area.w*ratio, MIN_TILE_SZ+TILE_SPACING*2), area.h, true);
+				sweptLeft = true;
+			} else {
+				let leftLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y,
+					Math.max(area.w*ratio, MIN_TILE_SZ+TILE_SPACING*2), area.h, true);
+				let topLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y,
+					area.w, Math.max(area.h*ratio, MIN_TILE_SZ+TILE_SPACING*2), true);
+				sweptLayout =
+					(leftLayout && topLayout && (leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout) ||
+					leftLayout || topLayout;
+				sweptLeft = (sweptLayout == leftLayout);
+			}
 			if (sweptLayout == null)
 				return null;
 			sweptLayout.children.forEach(layout => {layout.y += headerSz});
 			//get remaining-area layout
-			let xyChg;
-			if (sweptLayout == leftLayout){
+			if (sweptLeft){
 				xyChg = [sweptLayout.contentW - TILE_SPACING, 0];
 				area.w += -sweptLayout.contentW + TILE_SPACING;
 			} else {
@@ -295,10 +302,10 @@ const sweepToSideLayout = {
 				x: x, y: y, w: w, h: h, headerSz: headerSz,
 				//children: [...sweptLayout.children, ...nonLeavesLayout.children],
 				children: layoutsInOldOrder,
-				contentW: (sweptLayout == leftLayout) ?
+				contentW: sweptLeft ?
 					sweptLayout.contentW + nonLeavesLayout.contentW - TILE_SPACING :
 					Math.max(sweptLayout.contentW, nonLeavesLayout.contentW),
-				contentH: (sweptLayout == leftLayout) ?
+				contentH: sweptLeft ?
 					Math.max(sweptLayout.contentH, nonLeavesLayout.contentH) :
 					sweptLayout.contentH + nonLeavesLayout.contentH - TILE_SPACING,
 				empSpc: sweptLayout.empSpc + nonLeavesLayout.empSpc
