@@ -2,6 +2,8 @@ export {staticSqrLayout, staticRectLayout, sweepToSideLayout};
 
 const TILE_SPACING = 5;
 const HEADER_SZ = 20;
+const MIN_TILE_SZ = 50;
+const MAX_TILE_SZ = 200;
 
 const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spacing
 	genLayout(node, x, y, w, h, hideHeader){
@@ -15,6 +17,10 @@ const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spaci
 			let ar2 = nc/nr;
 			let frac = ar > ar2 ? ar2/ar : ar/ar2;
 			let tileSz = ar > ar2 ? availH/nr-TILE_SPACING : availW/nc-TILE_SPACING;
+			if (tileSz < MIN_TILE_SZ)
+				continue;
+			else if (tileSz > MAX_TILE_SZ)
+				tileSz = MAX_TILE_SZ;
 			let empSpc = (1-frac)*availW*availH + (nc*nr-numChildren)*(tileSz - TILE_SPACING)**2;
 			if (empSpc < lowestEmp){
 				lowestEmp = empSpc;
@@ -23,6 +29,8 @@ const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spaci
 				tileSize = tileSz;
 			}
 		}
+		if (lowestEmp == Number.POSITIVE_INFINITY)
+			return null;
 		let childLayouts = Array(numChildren).fill();
 		for (let i = 0; i < numChildren; i++){
 			let childX = TILE_SPACING + (i % numCols)*(tileSize + TILE_SPACING);
@@ -35,6 +43,8 @@ const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spaci
 				}
 			} else {
 				childLayouts[i] = this.genLayout(node.children[i], childX, childY, tileSize, tileSize, false);
+				if (childLayouts[i] == null)
+					return null;
 				lowestEmp += childLayouts[i].empSpc;
 			}
 		}
@@ -106,6 +116,17 @@ const staticRectLayout = {
 					cellWs[rowBrks[r]+c] = rowsOfCnts[r][c] / rowCount * availW;
 				}
 			}
+			//impose min-tile-size
+			cellHs = limitVals(cellHs, MIN_TILE_SZ, Number.POSITIVE_INFINITY);
+			if (cellHs == null)
+				continue rowBrksLoop;
+			for (let r = 0; r < rowsOfCnts.length; r++){
+				let temp = limitVals(cellWs.slice(rowBrks[r], rowBrks[r] + rowsOfCnts[r].length),
+					MIN_TILE_SZ, Number.POSITIVE_INFINITY);
+				if (temp == null)
+					continue rowBrksLoop;
+				cellWs.splice(rowBrks[r], rowsOfCnts[r].length, ...temp);
+			}
 			//get cell x/y coords
 			let cellXs = Array(cellWs.length).fill(0);
 			for (let r = 0; r < rowBrks.length; r++){
@@ -129,7 +150,7 @@ const staticRectLayout = {
 					if (child.children.length == 0){
 						let contentSz = Math.min(childW, childH);
 						childLyts[nodeIdx] = {
-							x: childX, y: childY, w: contentSz, h: contentSz, headerSz: 0,
+							x: childX, y: childY, w: childW, h: childH, headerSz: 0,
 							children: [],
 							contentW: contentSz, contentH: contentSz, empSpc: childW*childH - contentSz**2,
 						};
@@ -138,6 +159,8 @@ const staticRectLayout = {
 					} else {
 						childLyts[nodeIdx] = subLayout.genLayout(child, childX, childY, childW, childH, false);
 					}
+					if (childLyts[nodeIdx] == null)
+						continue rowBrksLoop;
 					empSpc += childLyts[nodeIdx].empSpc;
 				}
 			}
@@ -149,6 +172,8 @@ const staticRectLayout = {
 				childLayouts = childLyts;
 			}
 		}
+		if (rowBreaks == null)
+			return null;
 		//for each row, shift empty right-space to rightmost cell
 		let minEmpHorzTotal = Number.POSITIVE_INFINITY;
 		for (let r = 0; r < rowBreaks.length; r++){
@@ -178,6 +203,10 @@ const staticRectLayout = {
 		let lastNodeIdxs = Array.from({length: rowsOfCounts[lastRowIdx].length}, (x,i) => rowBreaks[lastRowIdx] + i);
 		lastNodeIdxs.forEach(idx => childLayouts[idx].y -= empVertTotal);
 		lastNodeIdxs.map(idx => childLayouts[idx].h += empVertTotal);
+		//make no-child tiles have width/height fitting their content
+		childLayouts.forEach(lyt => {
+			if (lyt.children.length == 0){lyt.w = lyt.contentW; lyt.h = lyt.contentH;}
+		});
 		//determine layout
 		return {
 			x: x, y: y, w: w, h: h, headerSz: headerSz,
@@ -230,10 +259,16 @@ const sweepToSideLayout = {
 			//get swept-area layout
 			let area = {x: x, y: y+headerSz, w: w, h: h-headerSz};
 			tempTree = {tolNode: null, children: leaves};
-			let leftLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y, area.w*ratio, area.h, true);
-			let topLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y, area.w, area.h*ratio, true);
+			let leftLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y,
+				Math.max(area.w*ratio, MIN_TILE_SZ+TILE_SPACING*2), area.h, true);
+			let topLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y,
+				area.w, Math.max(area.h*ratio, MIN_TILE_SZ+TILE_SPACING*2), true);
 			//let sweptLayout = leftLayout;
-			let sweptLayout = (leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout;
+			let sweptLayout =
+				(leftLayout && topLayout && (leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout) ||
+				leftLayout || topLayout;
+			if (sweptLayout == null)
+				return null;
 			sweptLayout.children.forEach(layout => {layout.y += headerSz});
 			//get remaining-area layout
 			let xyChg;
@@ -247,6 +282,8 @@ const sweepToSideLayout = {
 			tempTree = {tolNode: null, children: nonLeaves}
 			let nonLeavesLayout = staticRectLayout.genLayout(
 				tempTree, area.x, area.y, area.w, area.h, true, sweepToSideLayout);
+			if (nonLeavesLayout == null)
+				return null;
 			nonLeavesLayout.children.forEach(layout => {layout.x += xyChg[0]; layout.y += xyChg[1] + headerSz;});
 			//return combined layouts
 			let children = leaves.concat(nonLeaves);
@@ -294,3 +331,42 @@ const sweepToSideLayout = {
 	}
 };
 
+//clips values in array to within [min,max], and redistributes to compensate, returning null if unable
+function limitVals(arr, min, max){
+	let vals = [...arr];
+	let clipped = Array(vals.length).fill(false);
+	let owedChg = 0;
+	while (true){
+		for (let i = 0; i < vals.length; i++){
+			if (clipped[i])
+				continue;
+			if (vals[i] < min){
+				owedChg += vals[i] - min;
+				vals[i] = min;
+				clipped[i] = true;
+			} else if (vals[i] > max){
+				owedChg += vals[i] - max;
+				vals[i] = max;
+				clipped[i] = true;
+			}
+		}
+		if (Math.abs(owedChg) < Number.EPSILON)
+			return vals;
+		let indicesToUpdate;
+		if (owedChg > 0){
+			indicesToUpdate = vals.reduce(
+				(arr,n,i) => {if (n < max) arr.push(i); return arr;},
+				[]);
+		} else {
+			indicesToUpdate = vals.reduce(
+				(arr,n,i) => {if (n > min) arr.push(i); return arr;},
+				[]);
+		}
+		if (indicesToUpdate.length == 0)
+			return null;
+		for (let i of indicesToUpdate){
+			vals[i] += owedChg / indicesToUpdate.length;
+		}
+		owedChg = 0;
+	}
+}
