@@ -1,27 +1,13 @@
 <script>
-import {defaultLayout} from '/src/layout.js';
 export default {
 	name: 'tile',
 	data(){
 		return {
 			zIdx: 0,
-			layoutSys: defaultLayout,
 		}
 	},
 	props: {
 		tree: Object,
-		x: Number,
-		y: Number,
-		width: Number,
-		height: Number,
-		hideHeader: Boolean,
-	},
-	computed: {
-		layout(){
-			if (this.tree.children.length == 0)
-				return {};
-			return this.layoutSys.genLayout(this.tree.children, 0, 0, this.width, this.height, this.hideHeader);
-		}
 	},
 	methods: {
 		onImgClick(){
@@ -48,20 +34,19 @@ export default {
 
 <template>
 <div
-	:style="{position: 'absolute', left: x+'px', top: y+'px', width: width+'px', height: height+'px', zIndex: zIdx}"
+	:style="{position: 'absolute', left: tree.x+'px', top: tree.y+'px',
+		width: tree.w+'px', height: tree.h+'px', zIndex: zIdx}"
 	class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white overflow-hidden">
 	<div v-if="tree.children.length == 0"
 		:style="{backgroundImage: 'url(\'/src/assets/' + tree.tolNode.name + '.jpg\')'}"
 		class="hover:cursor-pointer w-full h-full bg-cover" @click="onImgClick"
 		/>
 	<div v-else>
-		<div v-if="!hideHeader" :style="{height: this.layoutSys.HEADER_SZ + 'px'}"
+		<div v-if="tree.headerSz > 0" :style="{height: tree.headerSz+'px'}"
 			class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 			{{tree.tolNode.name}}
 		</div>
 		<tile v-for="child in tree.children" :key="child.tolNode.name" :tree="child"
-			:x="layout.coords[child.tolNode.name].x" :y="layout.coords[child.tolNode.name].y"
-			:width="layout.coords[child.tolNode.name].w" :height="layout.coords[child.tolNode.name].h"
 			@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"
 			></tile>
 	</div>

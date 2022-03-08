@@ -1,29 +1,49 @@
 <script>
-import tol from '/src/tol.json';
-import {defaultLayout, initTree} from '/src/layout.js';
 import Tile from './Tile.vue';
+
+import tol from '/src/tol.json';
+function preprocessTol(tree){
+	if (!tree.children){
+		tree.children = [];
+	} else {
+		tree.children.forEach(preprocessTol);
+	}
+}
+preprocessTol(tol);
+
+import {staticSqrLayout, staticRectLayout, sweepToSideLayout} from '/src/layout.js';
+let LAYOUT_SYS = sweepToSideLayout;
 
 export default {
 	data(){
 		return {
-			tree: initTree(this.preprocessTol(tol), 1),
+			tree: this.initTree(tol, 1),
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
-			layoutSys: defaultLayout,
 		}
 	},
 	methods: {
-		preprocessTol(tree){
-			if (!tree.children){
-				tree.children = [];
-			} else {
-				tree.children.forEach(this.preprocessTol);
+		initTree(tol, lvl){
+			let tree = {
+				tolNode:tol, children:[],
+				x:0, y:0, w:0, h:0, headerSz:0,
+			};
+			function initTreeRec(tree, lvl){
+				if (lvl > 0)
+					tree.children = tree.tolNode.children.map(tNode => initTreeRec({
+						tolNode: tNode, children: [],
+						x:0, y:0, w:0, h:0, headerSz:0,
+					}, lvl-1));
+				return tree;
 			}
+			initTreeRec(tree, lvl);
+			LAYOUT_SYS.initLayoutInfo(tree)
 			return tree;
 		},
 		onResize(){
 			this.width = document.documentElement.clientWidth;
 			this.height = document.documentElement.clientHeight;
+			this.tryLayout(); //use best-effort collapsing-layout?
 		},
 		onInnerTileClicked(nodeList){
 			//nodeList holds an array of tree-objects, from the clicked-on-tile's tree-object upward
@@ -33,20 +53,43 @@ export default {
 				return;
 			}
 			//add children
-			nodeList[0].children = nodeList[0].tolNode.children.map(e => ({
-				tolNode: e,
-				children: [],
+			nodeList[0].children = nodeList[0].tolNode.children.map(tNode => ({
+				tolNode: tNode, children: [],
+				x:0, y:0, w:0, h:0, headerSz:0,
 			}));
-			this.layoutSys.updateLayoutInfoOnExpand(nodeList);
+			LAYOUT_SYS.updateLayoutInfoOnExpand(nodeList);
+			//try to layout tree
+			if (!this.tryLayout())
+				nodeList[0].children = [];
 		},
-		onInnerHeaderClicked(nodeList){
-			//nodeList will hold an array of tree-objects, from the clicked-on-tile's tree-object upward
+		onInnerHeaderClicked(nodeList){ //nodeList is array of tree-objects, from clicked-on-tile's tree-object upward
 			nodeList[0].children = [];
-			this.layoutSys.updateLayoutInfoOnCollapse(nodeList);
+			LAYOUT_SYS.updateLayoutInfoOnCollapse(nodeList);
+			this.tryLayout();
 		},
+		tryLayout(){
+			let layout = LAYOUT_SYS.genLayout(this.tree, 0, 0, this.width, this.height, true);
+			if (layout == null){
+				console.log('Unable to layout tree');
+				return false;
+			} else {
+				this.applyLayout(layout, this.tree);
+				return true;
+			}
+		},
+		applyLayout(layout, tree){
+			//layout format: {x, y, w, h, headerSz, children:[layout1, ...], contentW, contentH, empSpc}
+			tree.x = layout.x;
+			tree.y = layout.y;
+			tree.w = layout.w;
+			tree.h = layout.h;
+			tree.headerSz = layout.headerSz;
+			layout.children.forEach((n,i) => this.applyLayout(n, tree.children[i]));
+		}
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
+		this.tryLayout();
 	},
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);
@@ -59,8 +102,7 @@ export default {
 
 <template>
 <div class="h-[100vh]">
-	<tile :tree="tree" :x="0" :y="0" :width="width" :height="height" hideHeader
-		@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"></tile>
+	<tile :tree="tree" @tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"></tile>
 </div>
 </template>
 
