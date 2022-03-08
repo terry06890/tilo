@@ -10,8 +10,9 @@ const staticSqrLayout = { //determines layout for squares in a specified rectang
 		//get number-of-columns with highest occupied-fraction of rectangles with aspect-ratio w/h
 			//account for tile-spacing?, account for parent-box-border?, cache results?,
 		let hOffset = (hideHeader ? 0 : this.HEADER_SZ);
-		let numTiles = nodes.length, ar = (w - this.TILE_SPACING)/(h - hOffset - this.TILE_SPACING);
-		let numCols, numRows, bestFrac = 0;
+		let availW = w - this.TILE_SPACING, availH = h - hOffset - this.TILE_SPACING;
+		let numTiles = nodes.length, ar = availW/availH;
+		let numCols, numRows, bestFrac = 0, tileSz, empSpc;
 		for (let nc = 1; nc <= numTiles; nc++){
 			let nr = Math.ceil(numTiles/nc);
 			let ar2 = nc/nr;
@@ -20,12 +21,11 @@ const staticSqrLayout = { //determines layout for squares in a specified rectang
 				bestFrac = frac;
 				numCols = nc;
 				numRows = nr;
+				tileSz = ar > ar2 ? availH/numRows-this.TILE_SPACING : availW/numCols-this.TILE_SPACING;
+				empSpc = (1 - frac) * availW * availH;
+				empSpc += (nc*nr - numTiles) * tileSz**2;
 			}
 		}
-		//compute other parameters
-		let tileSz = Math.min(
-			((w - this.TILE_SPACING) / numCols) - this.TILE_SPACING,
-			((h - this.TILE_SPACING - hOffset) / numRows) - this.TILE_SPACING);
 		//determine layout
 		return {
 			coords: Object.fromEntries(
@@ -36,8 +36,9 @@ const staticSqrLayout = { //determines layout for squares in a specified rectang
 					h: tileSz
 				}])
 			),
-			w: numCols * (tileSz + this.TILE_SPACING) + this.TILE_SPACING,
-			h: numRows * (tileSz + this.TILE_SPACING) + this.TILE_SPACING + hOffset,
+			contentW: numCols * (tileSz + this.TILE_SPACING) + this.TILE_SPACING,
+			contentH: numRows * (tileSz + this.TILE_SPACING) + this.TILE_SPACING + hOffset,
+			empSpc: empSpc
 		};
 	},
 	initLayoutInfo(tree){
@@ -62,7 +63,7 @@ const staticRectLayout = {
 		let availW = w - this.TILE_SPACING, availH = h - this.TILE_SPACING - hOffset;
 		let numChildren = nodes.length;
 		let rowBrks = [0]; //holds node indices at which each row starts
-		let rowBreaks, bestScore = Number.NEGATIVE_INFINITY, rowsOfCounts, cellWidths, cellHeights, nodeDims;
+		let rowBreaks, lowestEmp = Number.POSITIVE_INFINITY, rowsOfCounts, cellWidths, cellHeights, nodeDims;
 		while (true){
 			//create list-of-lists representing each row's cells' tileCounts
 			let rowsOfCnts = Array(rowBrks.length).fill();
@@ -81,22 +82,19 @@ const staticRectLayout = {
 					cellWs[rowBrks[r]+c] = rowsOfCnts[r][c] / rowCount * availW;
 				}
 			}
-			//get node dims and score
-			let score = 0;
+			//get node dims and empty-space
+			let emptySpace = 0;
 			let nodeDs = Array(numChildren).fill();
 			for (let r = 0; r < rowBrks.length; r++){
 				for (let c = 0; c < rowsOfCnts[r].length; c++){
 					let nodeIdx = rowBrks[r]+c;
-					let cellW = cellWs[nodeIdx], cellH = cellHs[r];
-					let ar = (cellW - this.TILE_SPACING) / (cellH - this.TILE_SPACING);
-					let ar2 = nodes[nodeIdx].arFromArea(cellW - this.TILE_SPACING, cellH - this.TILE_SPACING);
-					let frac = ar > ar2 ? ar2/ar : ar/ar2;
-					score += frac * (cellW * cellH);
-					nodeDs[nodeIdx] = ar > ar2 ? [cellW*frac, cellH] : [cellW, cellH*frac];
+					let res = nodes[nodeIdx].layoutRes(cellWs[nodeIdx], cellHs[r]);
+					emptySpace += res.empSpc;
+					nodeDs[nodeIdx] = [res.contentW, res.contentH];
 				}
 			}
-			if (score > bestScore){
-				bestScore = score;
+			if (emptySpace < lowestEmp){
+				lowestEmp = emptySpace;
 				rowBreaks = [...rowBrks];
 				rowsOfCounts = rowsOfCnts;
 				cellWidths = cellWs;
@@ -124,6 +122,7 @@ const staticRectLayout = {
 				break;
 		}
 		//for each row, shift empty right-space to rightmost cell
+		let minEmpHorzTotal = Number.POSITIVE_INFINITY;
 		for (let r = 0; r < rowBreaks.length; r++){
 			let empHorzTotal = 0;
 			for (let c = 0; c < rowsOfCounts[r].length - 1; c++){
@@ -133,6 +132,8 @@ const staticRectLayout = {
 				empHorzTotal += empHorz;
 			}
 			cellWidths[rowBreaks[r] + rowsOfCounts[r].length - 1] += empHorzTotal;
+			if (empHorzTotal < minEmpHorzTotal)
+				minEmpHorzTotal = empHorzTotal;
 		}
 		//shift empty bottom-space to bottom-most row
 		let empVertTotal = 0;
@@ -171,8 +172,9 @@ const staticRectLayout = {
 					}];
 				})
 			),
-			w: w,
-			h: h,
+			contentW: w - minEmpHorzTotal,
+			contentH: h - empVertTotal,
+			empSpc: lowestEmp
 		};
 	},
 	initLayoutInfo(tree){
@@ -195,16 +197,28 @@ const staticRectLayout = {
 	updateLayoutInfo(tree){
 		if (tree.children.length == 0){
 			tree.tileCount = 1;
-			tree.arFromArea = (w, h) => 1;
+			tree.layoutRes = (w, h) => {
+				let ar = w / h;
+				let ar2 = 1;
+				let frac = ar > ar2 ? ar2/ar : ar/ar2;
+				return {
+					empSpc: (1 - frac) * w * h,
+					contentW: ar > ar2 ? frac * w : w,
+					contentH: ar > ar2 ? h : frac * h
+				};
+			};
 		} else {
 			tree.tileCount = tree.children.map(e => e.tileCount).reduce((x,y) => x+y);
 			if (tree.children.every(e => e.children.length == 0)){
-				tree.arFromArea = (w, h) => {
+				tree.layoutRes = (w, h) => {
 					let layout = staticSqrLayout.genLayout(tree.children, 0, 0, w, h, tree.hideHeader);
-					return layout.w / layout.h;
-				}
+					return {empSpc: layout.empSpc, contentW: layout.contentW, contentH: layout.contentH};
+				};
 			} else {
-				tree.arFromArea = (w, h) => w/h;
+				tree.layoutRes = (w, h) => {
+					let layout = staticRectLayout.genLayout(tree.children, 0, 0, w, h, tree.hideHeader);
+					return {empSpc: layout.empSpc, contentW: layout.contentW, contentH: layout.contentH};
+				};
 			}
 		}
 	}
@@ -230,29 +244,74 @@ const sweepToSideLayout = {
 				let leftLayout = staticSqrLayout.genLayout(leaves, area.x, area.y, area.w*ratio, area.h, true);
 				let topLayout = staticSqrLayout.genLayout(leaves, area.x, area.y, area.w, area.h*ratio, true);
 				//let sweptLayout = leftLayout;
-				let sweptLayout = (leftLayout.w*leftLayout.h > topLayout.w*topLayout.h) ? leftLayout : topLayout;
+				let sweptLayout = (leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout;
 				//get remaining-area layout
 				if (sweptLayout == leftLayout){
-					area.x += leftLayout.w - this.TILE_SPACING;
-					area.w += -leftLayout.w + this.TILE_SPACING;
+					area.x += sweptLayout.contentW - this.TILE_SPACING;
+					area.w += -sweptLayout.contentW + this.TILE_SPACING;
 				} else {
-					area.y += topLayout.h - this.TILE_SPACING;
-					area.h += -topLayout.h + this.TILE_SPACING;
+					area.y += sweptLayout.contentH - this.TILE_SPACING;
+					area.h += -sweptLayout.contentH + this.TILE_SPACING;
 				}
 				let nonLeavesLayout = staticRectLayout.genLayout(nonLeaves, area.x, area.y, area.w, area.h, true);
 				//return combined layout
-				return {coords: {...sweptLayout.coords, ...nonLeavesLayout.coords}, w: w, h: h};
+				return {
+					coords: {...sweptLayout.coords, ...nonLeavesLayout.coords},
+					contentW: (sweptLayout == leftLayout) ?
+						sweptLayout.contentW + nonLeavesLayout.contentW - this.TILE_SPACING :
+						Math.max(sweptLayout.contentW, nonLeavesLayout.contentW),
+					contentH: (sweptLayout == leftLayout) ?
+						Math.max(sweptLayout.contentH, nonLeavesLayout.contentH) :
+						sweptLayout.contentH + nonLeavesLayout.contentH - this.TILE_SPACING,
+					empSpc: sweptLayout.empSpc + nonLeavesLayout.empSpc
+				};
 			}
 		}
 	},
 	initLayoutInfo(tree){
-		staticRectLayout.initLayoutInfo(tree);
+		if (tree.children.length > 0){
+			tree.children.forEach(e => this.initLayoutInfo(e));
+		}
+		this.updateLayoutInfo(tree);
 	},
 	updateLayoutInfoOnExpand(nodeList){
-		staticRectLayout.updateLayoutInfoOnExpand(nodeList);
+		nodeList[0].children.forEach(this.updateLayoutInfo);
+		for (let node of nodeList){
+			this.updateLayoutInfo(node);
+		}
 	},
 	updateLayoutInfoOnCollapse(nodeList){
-		staticRectLayout.updateLayoutInfoOnCollapse(nodeList);
+		for (let node of nodeList){
+			this.updateLayoutInfo(node);
+		}
+	},
+	updateLayoutInfo(tree){
+		if (tree.children.length == 0){
+			tree.tileCount = 1;
+			tree.layoutRes = (w, h) => {
+				let ar = w / h;
+				let ar2 = 1;
+				let frac = ar > ar2 ? ar2/ar : ar/ar2;
+				return {
+					empSpc: (1 - frac) * w * h,
+					contentW: ar > ar2 ? frac * w : w,
+					contentH: ar > ar2 ? h : frac * h
+				};
+			};
+		} else {
+			tree.tileCount = tree.children.map(e => e.tileCount).reduce((x,y) => x+y);
+			if (tree.children.every(e => e.children.length == 0)){
+				tree.layoutRes = (w, h) => {
+					let layout = staticSqrLayout.genLayout(tree.children, 0, 0, w, h, tree.hideHeader);
+					return {empSpc: layout.empSpc, contentW: layout.contentW, contentH: layout.contentH};
+				}
+			} else {
+				tree.layoutRes = (w, h) => {
+					let layout = sweepToSideLayout.genLayout(tree.children, 0, 0, w, h, tree.hideHeader);
+					return {empSpc: layout.empSpc, contentW: layout.contentW, contentH: layout.contentH};
+				}
+			}
+		}
 	}
 };
 let defaultLayout = sweepToSideLayout;
