@@ -67,7 +67,7 @@ const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spaci
 	}
 };
 const staticRectLayout = {
-	genLayout(node, x, y, w, h, hideHeader, subLayout = staticRectLayout){
+	genLayout(node, x, y, w, h, hideHeader, subLayoutGen = staticRectLayout.genLayout){
 		if (node.children.every(n => n.children.length == 0))
 			return staticSqrLayout.genLayout(node, x, y, w, h, hideHeader);
 		//find grid-arrangement with lowest leftover empty space
@@ -157,7 +157,7 @@ const staticRectLayout = {
 					} else if (child.children.every(n => n.children.length == 0)){
 						childLyts[nodeIdx] = staticSqrLayout.genLayout(child, childX, childY, childW, childH, false);
 					} else {
-						childLyts[nodeIdx] = subLayout.genLayout(child, childX, childY, childW, childH, false);
+						childLyts[nodeIdx] = subLayoutGen(child, childX, childY, childW, childH, false);
 					}
 					if (childLyts[nodeIdx] == null)
 						continue rowBrksLoop;
@@ -242,8 +242,8 @@ const staticRectLayout = {
 	}
 };
 const sweepToSideLayout = {
-	genLayout(node, x, y, w, h, hideHeader){
-		let SWEEP_LEFT_ONLY = false;
+	genLayout(node, x, y, w, h, hideHeader, parentArea = null){
+		let SWEEP_LEFT_ONLY = true, ALLOW_PARENT_AREA = true;
 		//separate leaf and non-leaf nodes
 		let leaves = [], nonLeaves = [];
 		node.children.forEach(n => (n.children.length == 0 ? leaves : nonLeaves).push(n));
@@ -257,41 +257,97 @@ const sweepToSideLayout = {
 		} else {
 			let ratio = leaves.length / (leaves.length + nonLeaves.map(e => e.tileCount).reduce((x,y) => x+y));
 			let headerSz = (hideHeader ? 0 : HEADER_SZ);
-			//get swept-area layout
 			let area = {x: x, y: y+headerSz, w: w, h: h-headerSz};
-			tempTree = {tolNode: null, children: leaves};
-			let sweptLeft = false, sweptLayout, xyChg;
-			if (SWEEP_LEFT_ONLY){
-				sweptLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y,
-					Math.max(area.w*ratio, MIN_TILE_SZ+TILE_SPACING*2), area.h, true);
-				sweptLeft = true;
-			} else {
-				let leftLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y,
-					Math.max(area.w*ratio, MIN_TILE_SZ+TILE_SPACING*2), area.h, true);
-				let topLayout = staticSqrLayout.genLayout(tempTree, area.x, area.y,
-					area.w, Math.max(area.h*ratio, MIN_TILE_SZ+TILE_SPACING*2), true);
-				sweptLayout =
-					(leftLayout && topLayout && (leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout) ||
-					leftLayout || topLayout;
-				sweptLeft = (sweptLayout == leftLayout);
+			let sweptLayout, nonLeavesLayout, sweptLeft = false;
+			//get swept-area layout
+			let usingParentArea = false;
+			if (ALLOW_PARENT_AREA && parentArea != null){
+				tempTree = {tolNode: null, children: leaves};
+				sweptLayout = staticSqrLayout.genLayout(tempTree, 0, 0, parentArea.w, parentArea.h, true);
+				if (sweptLayout != null){
+					sweptLayout.children.forEach(layout => {
+						layout.x += -x+parentArea.x;
+						layout.y += -y+parentArea.y;
+					});
+					//get remaining-area layout
+					tempTree = {tolNode: null, children: nonLeaves};
+					if (nonLeaves.length > 1){
+						nonLeavesLayout = staticRectLayout.genLayout(
+							tempTree, 0, 0, area.w, area.h, true, sweepToSideLayout.genLayout);
+					} else {
+						//get leftover swept-layout-area to propagate
+						let leftOverWidth = parentArea.w - sweptLayout.contentW;
+						let leftOverHeight = parentArea.h - sweptLayout.contentH;
+						let leftOverArea = (leftOverWidth > leftOverHeight) ?
+							{x: parentArea.x+sweptLayout.contentW, y: parentArea.y, w: leftOverWidth, h: parentArea.h} :
+							{x: parentArea.x, y: parentArea.y+sweptLayout.contentH, w: parentArea.w, h: leftOverHeight};
+						leftOverArea.x += -TILE_SPACING;
+						leftOverArea.y += -headerSz - TILE_SPACING*2;
+						//call genLayout
+						nonLeavesLayout = staticRectLayout.genLayout(
+							tempTree, 0, 0, area.w, area.h, true,
+							(n,x,y,w,h,hh) => sweepToSideLayout.genLayout(n,x,y,w,h,hh,leftOverArea));
+					}
+					if (nonLeavesLayout != null){
+						nonLeavesLayout.children.forEach(layout => {layout.y += headerSz});
+						usingParentArea = true;
+					}
+				}
 			}
-			if (sweptLayout == null)
-				return null;
-			sweptLayout.children.forEach(layout => {layout.y += headerSz});
-			//get remaining-area layout
-			if (sweptLeft){
-				xyChg = [sweptLayout.contentW - TILE_SPACING, 0];
-				area.w += -sweptLayout.contentW + TILE_SPACING;
-			} else {
-				xyChg = [0, sweptLayout.contentH - TILE_SPACING];
-				area.h += -sweptLayout.contentH + TILE_SPACING;
+			if (!usingParentArea){
+				tempTree = {tolNode: null, children: leaves};
+				let xyChg, leftOverArea;
+				if (SWEEP_LEFT_ONLY){
+					sweptLayout = staticSqrLayout.genLayout(tempTree, 0, 0,
+						Math.max(area.w*ratio, MIN_TILE_SZ+TILE_SPACING*2), area.h, true);
+					sweptLeft = true;
+				} else {
+					let leftLayout = staticSqrLayout.genLayout(tempTree, 0, 0,
+						Math.max(area.w*ratio, MIN_TILE_SZ+TILE_SPACING*2), area.h, true);
+					let topLayout = staticSqrLayout.genLayout(tempTree, 0, 0,
+						area.w, Math.max(area.h*ratio, MIN_TILE_SZ+TILE_SPACING*2), true);
+					sweptLayout =
+						(leftLayout && topLayout && (leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout) ||
+						leftLayout || topLayout;
+					sweptLeft = (sweptLayout == leftLayout);
+				}
+				if (sweptLayout == null)
+					return null;
+				sweptLayout.children.forEach(layout => {layout.y += headerSz});
+				//get remaining-area layout
+				if (sweptLeft){
+					xyChg = [sweptLayout.contentW - TILE_SPACING, 0];
+					area.w += -sweptLayout.contentW + TILE_SPACING;
+				} else {
+					xyChg = [0, sweptLayout.contentH - TILE_SPACING];
+					area.h += -sweptLayout.contentH + TILE_SPACING;
+				}
+				tempTree = {tolNode: null, children: nonLeaves};
+				if (nonLeaves.length > 1){
+					nonLeavesLayout = staticRectLayout.genLayout(
+						tempTree, 0, 0, area.w, area.h, true, sweepToSideLayout.genLayout);
+				} else {
+					//get leftover swept-layout-area to propagate
+					if (sweptLeft){
+						leftOverArea = { //x and y are relative to a non-leaf child node
+							x: -sweptLayout.contentW + TILE_SPACING, y: sweptLayout.contentH - TILE_SPACING,
+							w: sweptLayout.contentW, h: area.h-sweptLayout.contentH
+						};
+					} else {
+						leftOverArea = {
+							x: sweptLayout.contentW - TILE_SPACING, y: -sweptLayout.contentH + TILE_SPACING,
+							w: area.w-sweptLayout.contentW, h: sweptLayout.contentH
+						};
+					}
+					//call genLayout
+					nonLeavesLayout = staticRectLayout.genLayout(
+						tempTree, 0, 0, area.w, area.h, true,
+						(n,x,y,w,h,hh) => sweepToSideLayout.genLayout(n,x,y,w,h,hh,leftOverArea));
+				}
+				if (nonLeavesLayout == null)
+					return null;
+				nonLeavesLayout.children.forEach(layout => {layout.x += xyChg[0]; layout.y += xyChg[1] + headerSz;});
 			}
-			tempTree = {tolNode: null, children: nonLeaves}
-			let nonLeavesLayout = staticRectLayout.genLayout(
-				tempTree, area.x, area.y, area.w, area.h, true, sweepToSideLayout);
-			if (nonLeavesLayout == null)
-				return null;
-			nonLeavesLayout.children.forEach(layout => {layout.x += xyChg[0]; layout.y += xyChg[1] + headerSz;});
 			//return combined layouts
 			let children = leaves.concat(nonLeaves);
 			let layouts = sweptLayout.children.concat(nonLeavesLayout.children);
@@ -308,7 +364,7 @@ const sweepToSideLayout = {
 				contentH: sweptLeft ?
 					Math.max(sweptLayout.contentH, nonLeavesLayout.contentH) :
 					sweptLayout.contentH + nonLeavesLayout.contentH - TILE_SPACING,
-				empSpc: sweptLayout.empSpc + nonLeavesLayout.empSpc
+				empSpc: sweptLayout.empSpc + nonLeavesLayout.empSpc,
 			};
 		}
 	},

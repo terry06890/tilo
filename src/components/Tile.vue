@@ -4,6 +4,7 @@ export default {
 	data(){
 		return {
 			zIdx: 0,
+			overFlow: 'visible',
 		}
 	},
 	props: {
@@ -12,18 +13,20 @@ export default {
 	methods: {
 		onImgClick(){
 			this.$emit('tile-clicked', [this.tree]);
-			//increase z-index during transition
+			//increase z-index and hide overflow during transition
 			this.zIdx = 1;
-			setTimeout(() => this.zIdx = 0, 300);
+			this.overFlow = 'hidden';
+			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, 300);
 		},
 		onInnerTileClicked(nodeList){
 			this.$emit('tile-clicked', [...nodeList, this.tree]);
 		},
 		onHeaderClick(){
 			this.$emit('header-clicked', [this.tree]);
-			//increase z-index during transition
+			//increase z-index and hide overflow during transition
 			this.zIdx = 1;
-			setTimeout(() => this.zIdx = 0, 300);
+			this.overFlow = 'hidden';
+			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, 300);
 		},
 		onInnerHeaderClicked(nodeList){
 			this.$emit('header-clicked', [...nodeList, this.tree]);
@@ -35,8 +38,8 @@ export default {
 <template>
 <div
 	:style="{position: 'absolute', left: tree.x+'px', top: tree.y+'px',
-		width: tree.w+'px', height: tree.h+'px', zIndex: zIdx}"
-	class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white overflow-hidden">
+		width: tree.w+'px', height: tree.h+'px', zIndex: zIdx, overflow: overFlow}"
+	class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white">
 	<div v-if="tree.children.length == 0"
 		:style="{backgroundImage: 'url(\'/src/assets/' + tree.tolNode.name + '.jpg\')'}"
 		class="hover:cursor-pointer w-full h-full bg-cover" @click="onImgClick"
