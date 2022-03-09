@@ -27,14 +27,14 @@ export default {
 			let tree = {
 				tolNode:tol, children:[],
 				x:0, y:0, w:0, h:0, headerSz:0,
-				sideArea:{x:0, y:0, w:0, h:0, sweptLeft:false, extraSz:0},
+				sideArea:null,
 			};
 			function initTreeRec(tree, lvl){
 				if (lvl > 0)
 					tree.children = tree.tolNode.children.map(tNode => initTreeRec({
 						tolNode: tNode, children: [],
 						x:0, y:0, w:0, h:0, headerSz:0,
-						sideArea:{x:0, y:0, w:0, h:0, sweptLeft:false, extraSz:0},
+						sideArea:null,
 					}, lvl-1));
 				return tree;
 			}
@@ -97,7 +97,7 @@ export default {
 					n.y += layout.sideArea.y;
 				});
 			} else {
-				tree.sideArea = {x:0, y:0, w:0, h:0, sweptLeft:false, extraSz:0};
+				tree.sideArea = null;
 			}
 		}
 	},

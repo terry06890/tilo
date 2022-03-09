@@ -45,7 +45,8 @@ export default {
 		class="hover:cursor-pointer w-full h-full bg-cover" @click="onImgClick"
 		/>
 	<div v-else>
-		<div v-if="tree.headerSz > 0" :style="{height: tree.headerSz+'px'}"
+		<div v-if="(tree.headerSz && !tree.sideArea) || (tree.sideArea && tree.sideArea.sweptLeft)"
+			:style="{height: tree.headerSz+'px'}"
 			class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 			{{tree.tolNode.name}}
 		</div>
@@ -53,10 +54,13 @@ export default {
 			:style="{position: 'absolute', left: tree.sideArea.x+'px', top: tree.sideArea.y+'px',
 				width: (tree.sideArea.w + (tree.sideArea.sweptLeft ? tree.sideArea.extraSz : 0))+'px',
 				height: (tree.sideArea.h + (tree.sideArea.sweptLeft ? 0 : tree.sideArea.extraSz))+'px',
-				borderWidth: tree.sideArea.w > 0 ? '1px' : '0',
 				borderRightColor: (tree.sideArea.sweptLeft ? 'white' : 'currentColor'),
 				borderBottomColor: (tree.sideArea.sweptLeft ? 'currentColor' : 'white')}"
 			class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white">
+			<div v-if="!tree.sideArea.sweptLeft" :style="{height: tree.headerSz+'px'}"
+				class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
+				{{tree.tolNode.name}}
+			</div>
 			<tile v-for="child in tree.sideChildren" :key="'SIDE_' + child.tolNode.name" :tree="child"
 				@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"
 				></tile>
