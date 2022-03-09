@@ -27,12 +27,14 @@ export default {
 			let tree = {
 				tolNode:tol, children:[],
 				x:0, y:0, w:0, h:0, headerSz:0,
+				sideArea:{x:0, y:0, w:0, h:0, sweptLeft:false, extraSz:0},
 			};
 			function initTreeRec(tree, lvl){
 				if (lvl > 0)
 					tree.children = tree.tolNode.children.map(tNode => initTreeRec({
 						tolNode: tNode, children: [],
 						x:0, y:0, w:0, h:0, headerSz:0,
+						sideArea:{x:0, y:0, w:0, h:0, sweptLeft:false, extraSz:0},
 					}, lvl-1));
 				return tree;
 			}
@@ -78,13 +80,25 @@ export default {
 			}
 		},
 		applyLayout(layout, tree){
-			//layout format: {x, y, w, h, headerSz, children:[layout1, ...], contentW, contentH, empSpc}
+			//layout format: {x, y, w, h, headerSz, children:[layout1, ...], contentW, contentH, empSpc, sideArea}
 			tree.x = layout.x;
 			tree.y = layout.y;
 			tree.w = layout.w;
 			tree.h = layout.h;
 			tree.headerSz = layout.headerSz;
 			layout.children.forEach((n,i) => this.applyLayout(n, tree.children[i]));
+			//handle case where leaf nodes placed in leftover space from parent-sweep
+			if (layout.sideArea){
+				//add parent area coords
+				tree.sideArea = layout.sideArea;
+				//move leaf node children to parent area
+				tree.children.filter(n => n.children.length == 0).map(n => {
+					n.x += layout.sideArea.x;
+					n.y += layout.sideArea.y;
+				});
+			} else {
+				tree.sideArea = {x:0, y:0, w:0, h:0, sweptLeft:false, extraSz:0};
+			}
 		}
 	},
 	created(){
