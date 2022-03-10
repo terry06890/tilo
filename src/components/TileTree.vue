@@ -12,7 +12,7 @@ function preprocessTol(tree){
 preprocessTol(tol);
 
 import {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks, shiftEmpty} from '/src/layout.js';
-let LAYOUT_SYS = sweepToSideLayout;
+let LAYOUT_FUNC = sweepToSideLayout;
 
 export default {
 	data(){
@@ -76,7 +76,7 @@ export default {
 			this.tryLayout();
 		},
 		tryLayout(){
-			let layout = LAYOUT_SYS.genLayout(this.tree, 0, 0, this.width, this.height, true);
+			let layout = LAYOUT_FUNC(this.tree, 0, 0, this.width, this.height, true);
 			if (layout == null){
 				console.log('Unable to layout tree');
 				return false;
