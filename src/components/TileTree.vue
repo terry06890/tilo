@@ -71,11 +71,11 @@ export default {
 		},
 		tryLayout(){
 			let layout = LAYOUT_SYS.genLayout(this.tree, 0, 0, this.width, this.height, true);
-			shiftEmpty(layout);
 			if (layout == null){
 				console.log('Unable to layout tree');
 				return false;
 			} else {
+				shiftEmpty(layout);
 				this.applyLayout(layout, this.tree);
 				return true;
 			}

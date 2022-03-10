@@ -4,6 +4,8 @@ const TILE_SPACING = 5;
 const HEADER_SZ = 20;
 const MIN_TILE_SZ = 50;
 const MAX_TILE_SZ = 200;
+const SWEEP_MODE = 'left'; //'left', 'top', 'shorter', 'auto'
+const ALLOW_SWEEP_TO_PARENT = true;
 
 const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spacing
 	genLayout(node, x, y, w, h, hideHeader){
@@ -216,7 +218,6 @@ const staticRectLayout = {
 };
 const sweepToSideLayout = {
 	genLayout(node, x, y, w, h, hideHeader, parentArea = null){
-		let SWEEP_LEFT_ONLY = true, ALLOW_PARENT_AREA = true;
 		//separate leaf and non-leaf nodes
 		let leaves = [], nonLeaves = [];
 		node.children.forEach(n => (n.children.length == 0 ? leaves : nonLeaves).push(n));
@@ -230,16 +231,16 @@ const sweepToSideLayout = {
 		} else {
 			let ratio = leaves.length / (leaves.length + nonLeaves.map(e => e.tileCount).reduce((x,y) => x+y));
 			let headerSz = (hideHeader ? 0 : HEADER_SZ);
-			let sweptLayout, nonLeavesLayout, sweptLeft = false, leftOverArea;
+			let sweptLayout = null, nonLeavesLayout, sweptLeft = false, leftOverArea;
 			//get swept-area layout
 			let usingParentArea = false;
-			if (ALLOW_PARENT_AREA && parentArea != null){
+			if (ALLOW_SWEEP_TO_PARENT && parentArea != null){
 				tempTree = {tolNode: {name: 'SWEEP_' + node.tolNode.name}, children: leaves};
 				sweptLeft = parentArea.sweptLeft;
 				sweptLayout = staticSqrLayout.genLayout(tempTree, 0, 0, parentArea.w, parentArea.h, sweptLeft);
 				if (sweptLayout != null){
 					let area = {x: x, y: y+headerSz, w: w, h: h-headerSz};
-					if (!parentArea.sweptLeft){ //no remaining-area header if swept-upward
+					if (!sweptLeft){ //no remaining-area header if swept-upward
 						area.y = y; area.h = h;
 					}
 					//get remaining-area layout
@@ -273,20 +274,24 @@ const sweepToSideLayout = {
 				let area = {x: x, y: y+headerSz, w: w, h: h-headerSz};
 				tempTree = {tolNode: {name: 'SWEEP_' + node.tolNode.name}, children: leaves};
 				let xyChg;
-				if (SWEEP_LEFT_ONLY){
-					sweptLayout = staticSqrLayout.genLayout(tempTree, 0, 0,
+				//get swept-area layout
+				let leftLayout = null, topLayout = null;
+				let documentAR = document.documentElement.clientWidth / document.documentElement.clientHeight;
+				if (SWEEP_MODE == 'left' || (SWEEP_MODE == 'shorter' && documentAR >= 1) || SWEEP_MODE == 'auto'){
+					leftLayout = staticSqrLayout.genLayout(tempTree, 0, 0,
 						Math.max(area.w*ratio, MIN_TILE_SZ+TILE_SPACING*2), area.h, true);
-					sweptLeft = true;
-				} else {
-					let leftLayout = staticSqrLayout.genLayout(tempTree, 0, 0,
-						Math.max(area.w*ratio, MIN_TILE_SZ+TILE_SPACING*2), area.h, true);
-					let topLayout = staticSqrLayout.genLayout(tempTree, 0, 0,
+				} else if (SWEEP_MODE == 'top' || (SWEEP_MODE == 'shorter' && documentAR < 1) || SWEEP_MODE == 'auto'){
+					topLayout = staticSqrLayout.genLayout(tempTree, 0, 0,
 						area.w, Math.max(area.h*ratio, MIN_TILE_SZ+TILE_SPACING*2), true);
-					sweptLayout =
-						(leftLayout && topLayout && (leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout) ||
-						leftLayout || topLayout;
-					sweptLeft = (sweptLayout == leftLayout);
 				}
+				if (SWEEP_MODE == 'auto'){
+					sweptLayout =
+						(leftLayout && topLayout && ((leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout)) ||
+						leftLayout || topLayout;
+				} else {
+					sweptLayout = leftLayout || topLayout;
+				}
+				sweptLeft = (sweptLayout == leftLayout);
 				if (sweptLayout == null)
 					return null;
 				sweptLayout.children.forEach(layout => {layout.y += headerSz});
@@ -340,7 +345,7 @@ const sweepToSideLayout = {
 				contentW: usingParentArea ? nonLeavesLayout.contentW : (sweptLeft ?
 					sweptLayout.contentW + nonLeavesLayout.contentW - TILE_SPACING :
 					Math.max(sweptLayout.contentW, nonLeavesLayout.contentW)),
-				contentH: usingParentArea ? nonLeavesLayout.contentH : (sweptLeft ?
+				contentH: usingParentArea ? nonLeavesLayout.contentH + headerSz : (sweptLeft ?
 					Math.max(sweptLayout.contentH, nonLeavesLayout.contentH) + headerSz :
 					sweptLayout.contentH + nonLeavesLayout.contentH - TILE_SPACING + headerSz),
 				empSpc: sweptLayout.empSpc + nonLeavesLayout.empSpc,
