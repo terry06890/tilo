@@ -1,4 +1,4 @@
-export {staticSqrLayout, staticRectLayout, sweepToSideLayout};
+export {staticSqrLayout, staticRectLayout, sweepToSideLayout, shiftEmpty};
 
 const TILE_SPACING = 5;
 const HEADER_SZ = 20;
@@ -10,6 +10,8 @@ const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spaci
 		//get number-of-columns with lowest leftover empty space
 		let headerSz = (hideHeader ? 0 : HEADER_SZ);
 		let availW = w - TILE_SPACING, availH = h - headerSz - TILE_SPACING;
+		if (availW*availH <= 0)
+			return null;
 		let numChildren = node.children.length, ar = availW/availH;
 		let lowestEmp = Number.POSITIVE_INFINITY, numCols, numRows, tileSize;
 		for (let nc = 1; nc <= numChildren; nc++){
@@ -49,11 +51,13 @@ const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spaci
 			}
 		}
 		return {
+			name: node.tolNode.name,
 			x: x, y: y, w: w, h: h, headerSz: headerSz,
 			children: childLayouts,
 			contentW: numCols * (tileSize + TILE_SPACING) + TILE_SPACING,
 			contentH: numRows * (tileSize + TILE_SPACING) + TILE_SPACING + headerSz,
 			empSpc: lowestEmp,
+			postProcessData: {type: 'staticSqr'},
 		}
 	},
 	initLayoutInfo(tree){
@@ -174,46 +178,15 @@ const staticRectLayout = {
 		}
 		if (rowBreaks == null)
 			return null;
-		//for each row, shift empty right-space to rightmost cell
-		let minEmpHorzTotal = Number.POSITIVE_INFINITY;
-		for (let r = 0; r < rowBreaks.length; r++){
-			let empHorzTotal = 0, leftShiftTotal = 0;
-			for (let c = 0; c < rowsOfCounts[r].length - 1; c++){
-				let nodeIdx = rowBreaks[r] + c;
-				let empHorz = childLayouts[nodeIdx].w - childLayouts[nodeIdx].contentW;
-				childLayouts[nodeIdx].w -= empHorz;
-				empHorzTotal += empHorz;
-				childLayouts[nodeIdx+1].x -= empHorzTotal;
-			}
-			childLayouts[rowBreaks[r] + rowsOfCounts[r].length - 1].w += empHorzTotal;
-			if (empHorzTotal < minEmpHorzTotal)
-				minEmpHorzTotal = empHorzTotal;
-		}
-		//shift empty bottom-space to bottom-most row
-		let empVertTotal = 0;
-		for (let r = 0; r < rowBreaks.length - 1; r++){
-			let nodeIdxs = Array.from({length: rowsOfCounts[r].length}, (x,i) => rowBreaks[r] + i);
-			nodeIdxs.forEach(idx => childLayouts[idx].y -= empVertTotal);
-			let empVerts = nodeIdxs.map(idx => childLayouts[idx].h - childLayouts[idx].contentH);
-			let minEmpVert = Math.min(...empVerts);
-			nodeIdxs.forEach(idx => childLayouts[idx].h -= minEmpVert);
-			empVertTotal += minEmpVert;
-		}
-		let lastRowIdx = rowBreaks.length-1;
-		let lastNodeIdxs = Array.from({length: rowsOfCounts[lastRowIdx].length}, (x,i) => rowBreaks[lastRowIdx] + i);
-		lastNodeIdxs.forEach(idx => childLayouts[idx].y -= empVertTotal);
-		lastNodeIdxs.map(idx => childLayouts[idx].h += empVertTotal);
-		//make no-child tiles have width/height fitting their content
-		childLayouts.forEach(lyt => {
-			if (lyt.children.length == 0){lyt.w = lyt.contentW; lyt.h = lyt.contentH;}
-		});
 		//determine layout
 		return {
+			name: node.tolNode.name,
 			x: x, y: y, w: w, h: h, headerSz: headerSz,
 			children: childLayouts,
-			contentW: w - minEmpHorzTotal,
-			contentH: h - empVertTotal,
+			contentW: w,
+			contentH: h,
 			empSpc: lowestEmp,
+			postProcessData: {type: 'staticRect', rowBreaks, rowsOfCounts, childLayouts},
 		}
 	},
 	initLayoutInfo(tree){
@@ -252,7 +225,7 @@ const sweepToSideLayout = {
 		if (nonLeaves.length == 0){ //if all leaves, use squares-layout
 			return staticSqrLayout.genLayout(node, x, y, w, h, hideHeader);
 		} else if (leaves.length == 0){
-			tempTree = {tolNode: null, children: nonLeaves};
+			tempTree = {tolNode: {name: 'SWEEP_REM_' + node.tolNode.name}, children: nonLeaves};
 			return staticRectLayout.genLayout(tempTree, x, y, w, h, hideHeader);
 		} else {
 			let ratio = leaves.length / (leaves.length + nonLeaves.map(e => e.tileCount).reduce((x,y) => x+y));
@@ -261,7 +234,7 @@ const sweepToSideLayout = {
 			//get swept-area layout
 			let usingParentArea = false;
 			if (ALLOW_PARENT_AREA && parentArea != null){
-				tempTree = {tolNode: null, children: leaves};
+				tempTree = {tolNode: {name: 'SWEEP_' + node.tolNode.name}, children: leaves};
 				sweptLeft = parentArea.sweptLeft;
 				sweptLayout = staticSqrLayout.genLayout(tempTree, 0, 0, parentArea.w, parentArea.h, sweptLeft);
 				if (sweptLayout != null){
@@ -270,7 +243,7 @@ const sweepToSideLayout = {
 						area.y = y; area.h = h;
 					}
 					//get remaining-area layout
-					tempTree = {tolNode: null, children: nonLeaves};
+					tempTree = {tolNode: {name: 'SWEEP_REM_' + node.tolNode.name}, children: nonLeaves};
 					if (nonLeaves.length > 1){
 						nonLeavesLayout = staticRectLayout.genLayout(
 							tempTree, 0, 0, area.w, area.h, true, sweepToSideLayout.genLayout);
@@ -298,7 +271,7 @@ const sweepToSideLayout = {
 			}
 			if (!usingParentArea){
 				let area = {x: x, y: y+headerSz, w: w, h: h-headerSz};
-				tempTree = {tolNode: null, children: leaves};
+				tempTree = {tolNode: {name: 'SWEEP_' + node.tolNode.name}, children: leaves};
 				let xyChg;
 				if (SWEEP_LEFT_ONLY){
 					sweptLayout = staticSqrLayout.genLayout(tempTree, 0, 0,
@@ -325,7 +298,7 @@ const sweepToSideLayout = {
 					xyChg = [0, sweptLayout.contentH - TILE_SPACING];
 					area.h += -sweptLayout.contentH + TILE_SPACING;
 				}
-				tempTree = {tolNode: null, children: nonLeaves};
+				tempTree = {tolNode: {name: 'SWEEP_REM_' + node.tolNode.name}, children: nonLeaves};
 				if (nonLeaves.length > 1){
 					nonLeavesLayout = staticRectLayout.genLayout(
 						tempTree, 0, 0, area.w, area.h, true, sweepToSideLayout.genLayout);
@@ -342,6 +315,8 @@ const sweepToSideLayout = {
 							w: area.w-sweptLayout.contentW - TILE_SPACING, h: sweptLayout.contentH - TILE_SPACING*2
 						};
 					}
+					leftOverArea.w = Math.max(0, leftOverArea.w);
+					leftOverArea.h = Math.max(0, leftOverArea.h);
 					leftOverArea.sweptLeft = sweptLeft;
 					//call genLayout
 					nonLeavesLayout = staticRectLayout.genLayout(
@@ -359,20 +334,22 @@ const sweepToSideLayout = {
 				.map(i => children.findIndex(n => n == node.children[i]))
 				.map(i => layouts[i]);
 			return {
+				name: node.tolNode.name,
 				x: x, y: y, w: w, h: h, headerSz: headerSz,
 				children: layoutsInOldOrder,
-				contentW: sweptLeft ?
+				contentW: usingParentArea ? nonLeavesLayout.contentW : (sweptLeft ?
 					sweptLayout.contentW + nonLeavesLayout.contentW - TILE_SPACING :
-					Math.max(sweptLayout.contentW, nonLeavesLayout.contentW),
-				contentH: sweptLeft ?
-					Math.max(sweptLayout.contentH, nonLeavesLayout.contentH) :
-					sweptLayout.contentH + nonLeavesLayout.contentH - TILE_SPACING,
+					Math.max(sweptLayout.contentW, nonLeavesLayout.contentW)),
+				contentH: usingParentArea ? nonLeavesLayout.contentH : (sweptLeft ?
+					Math.max(sweptLayout.contentH, nonLeavesLayout.contentH) + headerSz :
+					sweptLayout.contentH + nonLeavesLayout.contentH - TILE_SPACING + headerSz),
 				empSpc: sweptLayout.empSpc + nonLeavesLayout.empSpc,
 				sideArea: !usingParentArea ? null : {
 					x: parentArea.parentX, y: parentArea.parentY,
 					w: parentArea.w, h: parentArea.h,
 					sweptLeft: sweptLeft, extraSz: TILE_SPACING+1,
 				},
+				postProcessData: {type: 'sweepToSide', nonLeavesData: nonLeavesLayout.postProcessData},
 			};
 		}
 	},
@@ -440,4 +417,51 @@ function limitVals(arr, min, max){
 		}
 		owedChg = 0;
 	}
+}
+function shiftEmpty(layout){ //shift empty right/bottom-space to right/bottom-most-children, and recurse on children
+	let type = layout.postProcessData?.type;
+	let rowBreaks, rowsOfCounts, childLayouts;
+	if (type == 'staticRect'){
+		({rowBreaks, rowsOfCounts, childLayouts} = layout.postProcessData);
+	} else if (type == 'sweepToSide'){
+		({rowBreaks, rowsOfCounts, childLayouts} = layout.postProcessData.nonLeavesData);
+	} else {
+		layout.children.filter(n => n.children.length > 0).forEach(lyt => shiftEmpty(lyt));
+		return;
+	}
+	//for each row, shift empty right-space to rightmost cell
+	let minEmpHorzTotal = Number.POSITIVE_INFINITY;
+	for (let r = 0; r < rowBreaks.length; r++){
+		let empHorzTotal = 0, leftShiftTotal = 0;
+		for (let c = 0; c < rowsOfCounts[r].length - 1; c++){
+			let nodeIdx = rowBreaks[r] + c;
+			let empHorz = childLayouts[nodeIdx].w - childLayouts[nodeIdx].contentW;
+			childLayouts[nodeIdx].w -= empHorz;
+			empHorzTotal += empHorz;
+			childLayouts[nodeIdx+1].x -= empHorzTotal;
+		}
+		childLayouts[rowBreaks[r] + rowsOfCounts[r].length - 1].w += empHorzTotal + layout.w - layout.contentW;
+		if (empHorzTotal < minEmpHorzTotal)
+			minEmpHorzTotal = empHorzTotal;
+	}
+	//shift empty bottom-space to bottom-most row
+	let empVertTotal = 0;
+	for (let r = 0; r < rowBreaks.length - 1; r++){
+		let nodeIdxs = Array.from({length: rowsOfCounts[r].length}, (x,i) => rowBreaks[r] + i);
+		nodeIdxs.forEach(idx => childLayouts[idx].y -= empVertTotal);
+		let empVerts = nodeIdxs.map(idx => childLayouts[idx].h - childLayouts[idx].contentH);
+		let minEmpVert = Math.min(...empVerts);
+		nodeIdxs.forEach(idx => childLayouts[idx].h -= minEmpVert);
+		empVertTotal += minEmpVert;
+	}
+	let lastRowIdx = rowBreaks.length-1;
+	let lastNodeIdxs = Array.from({length: rowsOfCounts[lastRowIdx].length}, (x,i) => rowBreaks[lastRowIdx] + i);
+	lastNodeIdxs.forEach(idx => childLayouts[idx].y -= empVertTotal);
+	lastNodeIdxs.map(idx => childLayouts[idx].h += empVertTotal + layout.h - layout.contentH);
+	//make no-child tiles have width/height fitting their content
+	childLayouts.forEach(lyt => {
+		if (lyt.children.length == 0){lyt.w = lyt.contentW; lyt.h = lyt.contentH;}
+	});
+	//recurse on children
+	layout.children.filter(n => n.children.length > 0).forEach(lyt => shiftEmpty(lyt));
 }
