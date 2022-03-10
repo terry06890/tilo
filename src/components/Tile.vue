@@ -10,6 +10,9 @@ export default {
 	props: {
 		tree: Object,
 	},
+	computed: {
+		name(){return this.tree.tolNode.name.replaceAll('\'', '\\\'')}
+	},
 	methods: {
 		onImgClick(){
 			this.$emit('tile-clicked', [this.tree]);
@@ -41,7 +44,7 @@ export default {
 		width: tree.w+'px', height: tree.h+'px', zIndex: zIdx, overflow: overFlow}"
 	class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white">
 	<div v-if="tree.children.length == 0"
-		:style="{backgroundImage: 'url(\'/src/assets/' + tree.tolNode.name + '.jpg\')'}"
+		:style="{backgroundImage: 'url(\'/src/assets/' + name + '.jpg\')'}"
 		class="hover:cursor-pointer w-full h-full bg-cover" @click="onImgClick"
 		/>
 	<div v-else>
