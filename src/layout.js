@@ -231,7 +231,7 @@ function sweepToSideLayout(node, x, y, w, h, hideHeader, parentArea = null){
 		return staticSqrLayout(node, x, y, w, h, hideHeader);
 	} else if (leaves.length == 0){
 		tempTree = {tolNode: {name: 'SWEEP_REM_' + node.tolNode.name}, children: nonLeaves};
-		return staticRectLayout(tempTree, x, y, w, h, hideHeader);
+		return staticRectLayout(tempTree, x, y, w, h, hideHeader, sweepToSideLayout);
 	} else {
 		let ratio = leaves.length / (leaves.length + nonLeaves.map(e => e.tileCount).reduce((x,y) => x+y));
 		let headerSz = (hideHeader ? 0 : HEADER_SZ);
@@ -255,7 +255,7 @@ function sweepToSideLayout(node, x, y, w, h, hideHeader, parentArea = null){
 					//get leftover swept-layout-area to propagate
 					let leftOverWidth = parentArea.w - sweptLayout.contentW;
 					let leftOverHeight = parentArea.h - sweptLayout.contentH;
-					leftOverArea = (leftOverWidth < leftOverHeight) ?
+					leftOverArea = sweptLeft ?
 						{...parentArea, parentY:parentArea.parentY+sweptLayout.contentH-TILE_SPACING-headerSz,
 							h:leftOverHeight-TILE_SPACING} :
 						{...parentArea,

@@ -47,7 +47,7 @@ export default {
 			if (!this.resizeThrottled){
 				this.width = document.documentElement.clientWidth;
 				this.height = document.documentElement.clientHeight;
-				this.tryLayout(); //use best-effort collapsing-layout?
+				this.tryLayout();
 				//prevent re-triggering until after a delay
 				this.resizeThrottled = true;
 				setTimeout(() => {this.resizeThrottled = false;}, 100);
@@ -71,9 +71,11 @@ export default {
 				nodeList[0].children = [];
 		},
 		onInnerHeaderClicked(nodeList){ //nodeList is array of tree-objects, from clicked-on-tile's tree-object upward
+			let children = nodeList[0].children;
 			nodeList[0].children = [];
 			layoutInfoHooks.updateLayoutInfoOnCollapse(nodeList);
-			this.tryLayout();
+			if (!this.tryLayout())
+				nodeList[0].children = children;
 		},
 		tryLayout(){
 			let layout = LAYOUT_FUNC(this.tree, 0, 0, this.width, this.height, true);
