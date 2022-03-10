@@ -1,9 +1,11 @@
 <script>
+const TRANSITION_DURATION = 300;
 export default {
 	name: 'tile',
 	data(){
 		return {
 			zIdx: 0,
+			transitionDuration: TRANSITION_DURATION,
 			overFlow: 'visible',
 		}
 	},
@@ -19,7 +21,7 @@ export default {
 			//increase z-index and hide overflow during transition
 			this.zIdx = 1;
 			this.overFlow = 'hidden';
-			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, 300);
+			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, this.transitionDuration);
 		},
 		onInnerTileClicked(nodeList){
 			this.$emit('tile-clicked', [...nodeList, this.tree]);
@@ -29,7 +31,7 @@ export default {
 			//increase z-index and hide overflow during transition
 			this.zIdx = 1;
 			this.overFlow = 'hidden';
-			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, 300);
+			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, this.transitionDuration);
 		},
 		onInnerHeaderClicked(nodeList){
 			this.$emit('header-clicked', [...nodeList, this.tree]);
@@ -40,11 +42,13 @@ export default {
 
 <template>
 <div
-	:style="{position: 'absolute', left: tree.x+'px', top: tree.y+'px',
-		width: tree.w+'px', height: tree.h+'px', zIndex: zIdx, overflow: overFlow}"
-	class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white">
+	:style="{position: 'absolute',
+		left: tree.x+'px', top: tree.y+'px', width: tree.w+'px', height: tree.h+'px',
+		zIndex: zIdx, overflow: overFlow, transitionDuration: transitionDuration+'ms'}"
+	class="transition-[left,top,width,height] ease-out border border-stone-900 bg-white">
 	<div v-if="tree.children.length == 0"
-		:style="{backgroundImage: 'url(\'/src/assets/' + name + '.jpg\')'}"
+		:style="{backgroundImage: 'url(\'/src/assets/' + name + '.jpg\')',
+			opacity: (tree.tolNode.children.length > 0 ? 1 : 0.7)}"
 		class="hover:cursor-pointer w-full h-full bg-cover" @click="onImgClick"
 		/>
 	<div v-else>
@@ -58,8 +62,9 @@ export default {
 				width: (tree.sideArea.w + (tree.sideArea.sweptLeft ? tree.sideArea.extraSz : 0))+'px',
 				height: (tree.sideArea.h + (tree.sideArea.sweptLeft ? 0 : tree.sideArea.extraSz))+'px',
 				borderRightColor: (tree.sideArea.sweptLeft ? 'white' : 'currentColor'),
-				borderBottomColor: (tree.sideArea.sweptLeft ? 'currentColor' : 'white')}"
-			class="transition-[left,top,width,height] duration-300 ease-out border border-stone-900 bg-white">
+				borderBottomColor: (tree.sideArea.sweptLeft ? 'currentColor' : 'white'),
+				transitionDuration: transitionDuration+'ms'}"
+			class="transition-[left,top,width,height] ease-out border border-stone-900 bg-white">
 			<div v-if="!tree.sideArea.sweptLeft" :style="{height: tree.headerSz+'px'}"
 				class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 				{{tree.tolNode.name}}
