@@ -4,6 +4,7 @@ const TILE_SPACING = 5;
 const HEADER_SZ = 20;
 const MIN_TILE_SZ = 50;
 const MAX_TILE_SZ = 200;
+const RECT_MODE = 'auto'; //'horz', 'vert', 'linear', 'auto'
 const SWEEP_MODE = 'left'; //'left', 'top', 'shorter', 'auto'
 const ALLOW_SWEEP_TO_PARENT = true;
 
@@ -86,22 +87,35 @@ const staticRectLayout = {
 		while (true){
 			//update rowBrks or exit loop
 			if (rowBrks == null){
-				rowBrks = [0];
+				if (RECT_MODE == 'vert'){
+					rowBrks = [...Array(numChildren).keys()];
+				} else {
+					rowBrks = [0];
+				}
 			} else {
-				let i = rowBrks.length-1;
-				while (true){
-					if (i > 0 && rowBrks[i] < numChildren-1 - (rowBrks.length-1 - i)){
-						rowBrks[i]++;
-						break;
-					} else if (i > 0){
-						i--;
-					} else {
-						if (rowBrks.length < numChildren){
-							rowBrks = Array.from({length: rowBrks.length+1}, (x,i) => i);
+				if (RECT_MODE == 'horz' || RECT_MODE == 'vert'){
+					break rowBrksLoop;
+				} else if (RECT_MODE == 'linear'){
+					if (rowBrks.length == 1 && numChildren > 1)
+						rowBrks = [...Array(numChildren).keys()];
+					else
+						break rowBrksLoop;
+				} else {
+					let i = rowBrks.length-1;
+					while (true){
+						if (i > 0 && rowBrks[i] < numChildren-1 - (rowBrks.length-1 - i)){
+							rowBrks[i]++;
+							break;
+						} else if (i > 0){
+							i--;
 						} else {
-							break rowBrksLoop;
+							if (rowBrks.length < numChildren){
+								rowBrks = Array.from({length: rowBrks.length+1}, (x,i) => i);
+							} else {
+								break rowBrksLoop;
+							}
+							break;
 						}
-						break;
 					}
 				}
 			}
