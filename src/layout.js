@@ -1,4 +1,4 @@
-export {staticSqrLayout, staticRectLayout, sweepToSideLayout, shiftEmpty};
+export {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks, shiftEmpty};
 
 const TILE_SPACING = 5;
 const HEADER_SZ = 20;
@@ -7,6 +7,33 @@ const MAX_TILE_SZ = 200;
 const RECT_MODE = 'auto'; //'horz', 'vert', 'linear', 'auto'
 const SWEEP_MODE = 'left'; //'left', 'top', 'shorter', 'auto'
 const ALLOW_SWEEP_TO_PARENT = true;
+
+const layoutInfoHooks = { //made common-across-layout-types for layout inter-usability
+	initLayoutInfo(tree){
+		if (tree.children.length > 0){
+			tree.children.forEach(e => this.initLayoutInfo(e));
+		}
+		this.updateLayoutInfo(tree);
+	},
+	updateLayoutInfoOnExpand(nodeList){ //given list of tree-nodes from expanded_child-to-parent, update layout-info
+		nodeList[0].children.forEach(this.updateLayoutInfo);
+		for (let node of nodeList){
+			this.updateLayoutInfo(node);
+		}
+	},
+	updateLayoutInfoOnCollapse(nodeList){ //given list of tree-nodes from child_to_collapse-to-parent, update layout-info
+		for (let node of nodeList){
+			this.updateLayoutInfo(node);
+		}
+	},
+	updateLayoutInfo(tree){
+		if (tree.children.length == 0){
+			tree.tileCount = 1;
+		} else {
+			tree.tileCount = tree.children.map(e => e.tileCount).reduce((x,y) => x+y);
+		}
+	}
+}
 
 const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spacing
 	genLayout(node, x, y, w, h, hideHeader){
@@ -62,15 +89,6 @@ const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spaci
 			empSpc: lowestEmp,
 			postProcessData: {type: 'staticSqr'},
 		}
-	},
-	initLayoutInfo(tree){
-		return;
-	},
-	updateLayoutInfoOnExpand(nodeList){
-		return;
-	},
-	updateLayoutInfoOnCollapse(nodeList){
-		return;
 	}
 };
 const staticRectLayout = {
@@ -203,30 +221,6 @@ const staticRectLayout = {
 			contentH: h,
 			empSpc: lowestEmp,
 			postProcessData: {type: 'staticRect', rowBreaks, rowsOfCounts, childLayouts},
-		}
-	},
-	initLayoutInfo(tree){
-		if (tree.children.length > 0){
-			tree.children.forEach(e => this.initLayoutInfo(e));
-		}
-		this.updateLayoutInfo(tree);
-	},
-	updateLayoutInfoOnExpand(nodeList){ //given list of tree-nodes from expanded_child-to-parent, update layout-info
-		nodeList[0].children.forEach(this.updateLayoutInfo);
-		for (let node of nodeList){
-			this.updateLayoutInfo(node);
-		}
-	},
-	updateLayoutInfoOnCollapse(nodeList){ //given list of tree-nodes from child_to_collapse-to-parent, update layout-info
-		for (let node of nodeList){
-			this.updateLayoutInfo(node);
-		}
-	},
-	updateLayoutInfo(tree){
-		if (tree.children.length == 0){
-			tree.tileCount = 1;
-		} else {
-			tree.tileCount = tree.children.map(e => e.tileCount).reduce((x,y) => x+y);
 		}
 	}
 };
@@ -370,30 +364,6 @@ const sweepToSideLayout = {
 				},
 				postProcessData: {type: 'sweepToSide', nonLeavesData: nonLeavesLayout.postProcessData},
 			};
-		}
-	},
-	initLayoutInfo(tree){
-		if (tree.children.length > 0){
-			tree.children.forEach(e => this.initLayoutInfo(e));
-		}
-		this.updateLayoutInfo(tree);
-	},
-	updateLayoutInfoOnExpand(nodeList){
-		nodeList[0].children.forEach(this.updateLayoutInfo);
-		for (let node of nodeList){
-			this.updateLayoutInfo(node);
-		}
-	},
-	updateLayoutInfoOnCollapse(nodeList){
-		for (let node of nodeList){
-			this.updateLayoutInfo(node);
-		}
-	},
-	updateLayoutInfo(tree){
-		if (tree.children.length == 0){
-			tree.tileCount = 1;
-		} else {
-			tree.tileCount = tree.children.map(e => e.tileCount).reduce((x,y) => x+y);
 		}
 	}
 };

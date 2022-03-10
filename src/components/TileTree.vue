@@ -11,7 +11,7 @@ function preprocessTol(tree){
 }
 preprocessTol(tol);
 
-import {staticSqrLayout, staticRectLayout, sweepToSideLayout, shiftEmpty} from '/src/layout.js';
+import {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks, shiftEmpty} from '/src/layout.js';
 let LAYOUT_SYS = sweepToSideLayout;
 
 export default {
@@ -40,7 +40,7 @@ export default {
 				return tree;
 			}
 			initTreeRec(tree, lvl);
-			LAYOUT_SYS.initLayoutInfo(tree)
+			layoutInfoHooks.initLayoutInfo(tree)
 			return tree;
 		},
 		onResize(){
@@ -65,14 +65,14 @@ export default {
 				tolNode: tNode, children: [],
 				x:0, y:0, w:0, h:0, headerSz:0,
 			}));
-			LAYOUT_SYS.updateLayoutInfoOnExpand(nodeList);
+			layoutInfoHooks.updateLayoutInfoOnExpand(nodeList);
 			//try to layout tree
 			if (!this.tryLayout())
 				nodeList[0].children = [];
 		},
 		onInnerHeaderClicked(nodeList){ //nodeList is array of tree-objects, from clicked-on-tile's tree-object upward
 			nodeList[0].children = [];
-			LAYOUT_SYS.updateLayoutInfoOnCollapse(nodeList);
+			layoutInfoHooks.updateLayoutInfoOnCollapse(nodeList);
 			this.tryLayout();
 		},
 		tryLayout(){
