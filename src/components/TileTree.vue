@@ -10,6 +10,7 @@ function preprocessTol(tree){
 	}
 }
 preprocessTol(tol);
+//tol-node format: {name: string1, children: [node1, ...]}
 
 import {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks, shiftEmpty} from '/src/layout.js';
 let LAYOUT_FUNC = sweepToSideLayout;
@@ -89,7 +90,6 @@ export default {
 			}
 		},
 		applyLayout(layout, tree){
-			//layout format: {x, y, w, h, headerSz, children:[layout1, ...], contentW, contentH, empSpc, sideArea}
 			tree.x = layout.x;
 			tree.y = layout.y;
 			tree.w = layout.w;

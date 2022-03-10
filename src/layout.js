@@ -8,6 +8,23 @@ const RECT_MODE = 'auto'; //'horz', 'vert', 'linear', 'auto'
 const SWEEP_MODE = 'left'; //'left', 'top', 'shorter', 'auto'
 const ALLOW_SWEEP_TO_PARENT = true;
 
+class LayoutNode {
+	constructor({name, x, y, w, h, headerSz, children, contentW, contentH, empSpc, sideArea, postProcessData}){
+		this.name = name;
+		this.x = x;
+		this.y = y;
+		this.w = w;
+		this.h = h;
+		this.headerSz = headerSz;
+		this.children = children;
+		this.contentW = contentW;
+		this.contentH = contentH;
+		this.empSpc = empSpc;
+		this.sideArea = sideArea;
+		this.postProcessData = postProcessData;
+	}
+}
+
 const layoutInfoHooks = { //made common-across-layout-types for layout inter-usability
 	initLayoutInfo(tree){
 		if (tree.children.length > 0){
@@ -80,7 +97,7 @@ function staticSqrLayout(node, x, y, w, h, hideHeader){
 			lowestEmp += childLayouts[i].empSpc;
 		}
 	}
-	return {
+	return new LayoutNode({
 		name: node.tolNode.name,
 		x: x, y: y, w: w, h: h, headerSz: headerSz,
 		children: childLayouts,
@@ -88,8 +105,9 @@ function staticSqrLayout(node, x, y, w, h, hideHeader){
 		contentH: numRows * (tileSize + TILE_SPACING) + TILE_SPACING + headerSz,
 		empSpc: lowestEmp,
 		postProcessData: {type: 'staticSqr'},
-	}
+	});
 }
+//lays out nodes as rectangles organised into rows, partially using other layouts for children
 function staticRectLayout(node, x, y, w, h, hideHeader, subLayoutGen = staticRectLayout){
 	if (node.children.every(n => n.children.length == 0))
 		return staticSqrLayout(node, x, y, w, h, hideHeader);
@@ -211,7 +229,7 @@ function staticRectLayout(node, x, y, w, h, hideHeader, subLayoutGen = staticRec
 	if (rowBreaks == null)
 		return null;
 	//determine layout
-	return {
+	return new LayoutNode({
 		name: node.tolNode.name,
 		x: x, y: y, w: w, h: h, headerSz: headerSz,
 		children: childLayouts,
@@ -219,8 +237,9 @@ function staticRectLayout(node, x, y, w, h, hideHeader, subLayoutGen = staticRec
 		contentH: h,
 		empSpc: lowestEmp,
 		postProcessData: {type: 'staticRect', rowBreaks, rowsOfCounts, childLayouts},
-	}
+	});
 }
+//lays out nodes by pushing leaves to one side, partially using other layouts for children
 function sweepToSideLayout(node, x, y, w, h, hideHeader, parentArea = null){
 	//separate leaf and non-leaf nodes
 	let leaves = [], nonLeaves = [];
@@ -340,7 +359,7 @@ function sweepToSideLayout(node, x, y, w, h, hideHeader, parentArea = null){
 		let layoutsInOldOrder = seq(node.children.length)
 			.map(i => children.findIndex(n => n == node.children[i]))
 			.map(i => layouts[i]);
-		return {
+		return new LayoutNode({
 			name: node.tolNode.name,
 			x: x, y: y, w: w, h: h, headerSz: headerSz,
 			children: layoutsInOldOrder,
@@ -357,7 +376,7 @@ function sweepToSideLayout(node, x, y, w, h, hideHeader, parentArea = null){
 				sweptLeft: sweptLeft, extraSz: TILE_SPACING+1,
 			},
 			postProcessData: {type: 'sweepToSide', nonLeavesData: nonLeavesLayout.postProcessData},
-		};
+		});
 	}
 }
 
