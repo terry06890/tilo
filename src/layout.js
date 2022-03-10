@@ -36,7 +36,7 @@ const staticSqrLayout = { //lays out nodes as squares in a rectangle, with spaci
 		}
 		if (lowestEmp == Number.POSITIVE_INFINITY)
 			return null;
-		let childLayouts = Array(numChildren).fill();
+		let childLayouts = arrayOf(0, numChildren);
 		for (let i = 0; i < numChildren; i++){
 			let childX = TILE_SPACING + (i % numCols)*(tileSize + TILE_SPACING);
 			let childY = TILE_SPACING + headerSz + Math.floor(i / numCols)*(tileSize + TILE_SPACING);
@@ -88,7 +88,7 @@ const staticRectLayout = {
 			//update rowBrks or exit loop
 			if (rowBrks == null){
 				if (RECT_MODE == 'vert'){
-					rowBrks = [...Array(numChildren).keys()];
+					rowBrks = seq(numChildren);
 				} else {
 					rowBrks = [0];
 				}
@@ -97,7 +97,7 @@ const staticRectLayout = {
 					break rowBrksLoop;
 				} else if (RECT_MODE == 'linear'){
 					if (rowBrks.length == 1 && numChildren > 1)
-						rowBrks = [...Array(numChildren).keys()];
+						rowBrks = seq(numChildren);
 					else
 						break rowBrksLoop;
 				} else {
@@ -110,7 +110,7 @@ const staticRectLayout = {
 							i--;
 						} else {
 							if (rowBrks.length < numChildren){
-								rowBrks = Array.from({length: rowBrks.length+1}, (x,i) => i);
+								rowBrks = seq(rowBrks.length+1);
 							} else {
 								break rowBrksLoop;
 							}
@@ -120,16 +120,16 @@ const staticRectLayout = {
 				}
 			}
 			//create list-of-lists representing each row's cells' tileCounts
-			let rowsOfCnts = Array(rowBrks.length).fill();
+			let rowsOfCnts = arrayOf(0, rowBrks.length);
 			for (let r = 0; r < rowBrks.length; r++){
 				let numNodes = (r == rowBrks.length-1) ? numChildren-rowBrks[r] : rowBrks[r+1]-rowBrks[r];
-				let rowNodeIdxs = Array.from({length: numNodes}, (x,i) => i+rowBrks[r]);
+				let rowNodeIdxs = seq(numNodes).map(i => i+rowBrks[r]);
 				rowsOfCnts[r] = rowNodeIdxs.map(idx => node.children[idx].tileCount);
 			}
 			//get cell dims
 			let totalTileCount = node.children.map(n => n.tileCount).reduce((x,y) => x+y);
 			let cellHs = rowsOfCnts.map(row => row.reduce((x, y) => x+y) / totalTileCount * availH);
-			let cellWs = Array(numChildren).fill();
+			let cellWs = arrayOf(0, numChildren);
 			for (let r = 0; r < rowsOfCnts.length; r++){
 				let rowCount = rowsOfCnts[r].reduce((x,y) => x+y);
 				for (let c = 0; c < rowsOfCnts[r].length; c++){
@@ -148,19 +148,19 @@ const staticRectLayout = {
 				cellWs.splice(rowBrks[r], rowsOfCnts[r].length, ...temp);
 			}
 			//get cell x/y coords
-			let cellXs = Array(cellWs.length).fill(0);
+			let cellXs = arrayOf(0, cellWs.length);
 			for (let r = 0; r < rowBrks.length; r++){
 				for (let c = 1; c < rowsOfCnts[r].length; c++){
 					let nodeIdx = rowBrks[r]+c;
 					cellXs[nodeIdx] = cellXs[nodeIdx-1] + cellWs[nodeIdx-1];
 				}
 			}
-			let cellYs = Array(cellHs.length).fill(0);
+			let cellYs = arrayOf(0, cellHs.length);
 			for (let r = 1; r < rowBrks.length; r++){
 				cellYs[r] = cellYs[r-1] + cellHs[r-1];
 			}
 			//get child layouts and empty-space
-			let childLyts = Array(numChildren).fill(), empSpc = 0;
+			let childLyts = arrayOf(0, numChildren), empSpc = 0;
 			for (let r = 0; r < rowBrks.length; r++){
 				for (let c = 0; c < rowsOfCnts[r].length; c++){
 					let nodeIdx = rowBrks[r]+c;
@@ -349,7 +349,7 @@ const sweepToSideLayout = {
 			//return combined layouts
 			let children = leaves.concat(nonLeaves);
 			let layouts = sweptLayout.children.concat(nonLeavesLayout.children);
-			let layoutsInOldOrder = [...Array(node.children.length).keys()]
+			let layoutsInOldOrder = seq(node.children.length)
 				.map(i => children.findIndex(n => n == node.children[i]))
 				.map(i => layouts[i]);
 			return {
@@ -401,7 +401,7 @@ const sweepToSideLayout = {
 //clips values in array to within [min,max], and redistributes to compensate, returning null if unable
 function limitVals(arr, min, max){
 	let vals = [...arr];
-	let clipped = Array(vals.length).fill(false);
+	let clipped = arrayOf(false, vals.length);
 	let owedChg = 0;
 	while (true){
 		for (let i = 0; i < vals.length; i++){
@@ -466,7 +466,7 @@ function shiftEmpty(layout){ //shift empty right/bottom-space to right/bottom-mo
 	//shift empty bottom-space to bottom-most row
 	let empVertTotal = 0;
 	for (let r = 0; r < rowBreaks.length - 1; r++){
-		let nodeIdxs = Array.from({length: rowsOfCounts[r].length}, (x,i) => rowBreaks[r] + i);
+		let nodeIdxs = seq(rowsOfCounts[r].length).map(i => rowBreaks[r]+i);
 		nodeIdxs.forEach(idx => childLayouts[idx].y -= empVertTotal);
 		let empVerts = nodeIdxs.map(idx => childLayouts[idx].h - childLayouts[idx].contentH);
 		let minEmpVert = Math.min(...empVerts);
@@ -474,7 +474,7 @@ function shiftEmpty(layout){ //shift empty right/bottom-space to right/bottom-mo
 		empVertTotal += minEmpVert;
 	}
 	let lastRowIdx = rowBreaks.length-1;
-	let lastNodeIdxs = Array.from({length: rowsOfCounts[lastRowIdx].length}, (x,i) => rowBreaks[lastRowIdx] + i);
+	let lastNodeIdxs = seq(rowsOfCounts[lastRowIdx].length).map(i => rowBreaks[lastRowIdx] + i);
 	lastNodeIdxs.forEach(idx => childLayouts[idx].y -= empVertTotal);
 	lastNodeIdxs.map(idx => childLayouts[idx].h += empVertTotal + layout.h - layout.contentH);
 	//make no-child tiles have width/height fitting their content
@@ -483,4 +483,10 @@ function shiftEmpty(layout){ //shift empty right/bottom-space to right/bottom-mo
 	});
 	//recurse on children
 	layout.children.filter(n => n.children.length > 0).forEach(lyt => shiftEmpty(lyt));
+}
+function arrayOf(val, len){ //returns an array of 'len' 'val's
+	return Array(len).fill(val);
+}
+function seq(len){ //returns [0, ..., len]
+	return [...Array(len).keys()];
 }

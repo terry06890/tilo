@@ -20,6 +20,7 @@ export default {
 			tree: this.initTree(tol, 1),
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
+			resizeThrottled: false,
 		}
 	},
 	methods: {
@@ -43,9 +44,14 @@ export default {
 			return tree;
 		},
 		onResize(){
-			this.width = document.documentElement.clientWidth;
-			this.height = document.documentElement.clientHeight;
-			this.tryLayout(); //use best-effort collapsing-layout?
+			if (!this.resizeThrottled){
+				this.width = document.documentElement.clientWidth;
+				this.height = document.documentElement.clientHeight;
+				this.tryLayout(); //use best-effort collapsing-layout?
+				//prevent re-triggering until after a delay
+				this.resizeThrottled = true;
+				setTimeout(() => {this.resizeThrottled = false;}, 100);
+			}
 		},
 		onInnerTileClicked(nodeList){
 			//nodeList holds an array of tree-objects, from the clicked-on-tile's tree-object upward
