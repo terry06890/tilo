@@ -1,4 +1,4 @@
-export {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks, shiftEmpty};
+export {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks};
 
 const TILE_SPACING = 5;
 const HEADER_SZ = 20;
@@ -7,6 +7,7 @@ const MAX_TILE_SZ = 200;
 const RECT_MODE = 'auto'; //'horz', 'vert', 'linear', 'auto'
 const SWEEP_MODE = 'left'; //'left', 'top', 'shorter', 'auto'
 const ALLOW_SWEEP_TO_PARENT = true;
+const RECT_SPC_SHIFTING = true;
 
 class LayoutNode {
 	constructor({name, x, y, w, h, headerSz, children, contentW, contentH, empSpc, sideArea, postProcessData}){
@@ -194,8 +195,10 @@ function staticRectLayout(node, x, y, w, h, hideHeader, subLayoutGen = staticRec
 			cellYs[r] = cellYs[r-1] + cellHs[r-1];
 		}
 		//get child layouts and empty-space
-		let childLyts = arrayOf(0, numChildren), empSpc = 0;
+		let childLyts = arrayOf(0, numChildren);
+		let empVTotal = 0, empSpc = 0;
 		for (let r = 0; r < rowBrks.length; r++){
+			let empHorzTotal = 0;
 			for (let c = 0; c < rowsOfCnts[r].length; c++){
 				let nodeIdx = rowBrks[r]+c;
 				let child = node.children[nodeIdx];
@@ -215,9 +218,45 @@ function staticRectLayout(node, x, y, w, h, hideHeader, subLayoutGen = staticRec
 				}
 				if (childLyts[nodeIdx] == null)
 					continue rowBrksLoop;
-				empSpc += childLyts[nodeIdx].empSpc;
+				//handle horizontal empty-space-shifting
+				if (RECT_SPC_SHIFTING){
+					let empHorz = childLyts[nodeIdx].w - childLyts[nodeIdx].contentW;
+					childLyts[nodeIdx].w -= empHorz;
+					childLyts[nodeIdx].empSpc -= empHorz * childLyts[nodeIdx].h;
+					if (c < rowsOfCnts[r].length-1){
+						cellXs[nodeIdx+1] -= empHorz;
+						cellWs[nodeIdx+1] += empHorz;
+					} else {
+						empHorzTotal = empHorz;
+					}
+				}
+			}
+			//handle vertical empty-space-shifting
+			if (RECT_SPC_SHIFTING){
+				let nodeIdxs = seq(rowsOfCnts[r].length).map(i => rowBrks[r]+i);
+				let empVerts = nodeIdxs.map(idx => childLyts[idx].h - childLyts[idx].contentH);
+				let minEmpVert = Math.min(...empVerts);
+				nodeIdxs.forEach(idx => {
+					childLyts[idx].h -= minEmpVert;
+					childLyts[idx].empSpc -= minEmpVert * childLyts[idx].w;
+				});
+				if (r < rowBrks.length-1){
+					cellYs[r+1] -= minEmpVert;
+					cellHs[r+1] += minEmpVert;
+				} else {
+					empVTotal = minEmpVert;
+				}
+			}
+			//other updates
+			empSpc += empHorzTotal * childLyts[rowBrks[r]].h;
+		}
+		//get empty-space
+		for (let r = 0; r < rowBrks.length; r++){
+			for (let c = 0; c < rowsOfCnts[r].length; c++){
+				empSpc += childLyts[rowBrks[r]+c].empSpc;
 			}
 		}
+		empSpc += empVTotal * availW;
 		//check with best-so-far
 		if (empSpc < lowestEmp){
 			lowestEmp = empSpc;
@@ -228,12 +267,14 @@ function staticRectLayout(node, x, y, w, h, hideHeader, subLayoutGen = staticRec
 	}
 	if (rowBreaks == null)
 		return null;
+	//make no-child tiles have width/height fitting their content
+	childLayouts.filter(l => l.children.length == 0).forEach(l => {l.w = l.contentW; l.h = l.contentH;});
 	//determine layout
 	return new LayoutNode({
 		name: node.tolNode.name,
 		x: x, y: y, w: w, h: h, headerSz: headerSz,
 		children: childLayouts,
-		contentW: w,
+		contentW: w, //trying to shrink this causes problems with swept-to-parent-area div-alignment
 		contentH: h,
 		empSpc: lowestEmp,
 		postProcessData: {type: 'staticRect', rowBreaks, rowsOfCounts, childLayouts},
@@ -418,53 +459,6 @@ function limitVals(arr, min, max){
 		}
 		owedChg = 0;
 	}
-}
-function shiftEmpty(layout){ //shift empty right/bottom-space to right/bottom-most-children, and recurse on children
-	let type = layout.postProcessData?.type;
-	let rowBreaks, rowsOfCounts, childLayouts;
-	if (type == 'staticRect'){
-		({rowBreaks, rowsOfCounts, childLayouts} = layout.postProcessData);
-	} else if (type == 'sweepToSide'){
-		({rowBreaks, rowsOfCounts, childLayouts} = layout.postProcessData.nonLeavesData);
-	} else {
-		layout.children.filter(n => n.children.length > 0).forEach(lyt => shiftEmpty(lyt));
-		return;
-	}
-	//for each row, shift empty right-space to rightmost cell
-	let minEmpHorzTotal = Number.POSITIVE_INFINITY;
-	for (let r = 0; r < rowBreaks.length; r++){
-		let empHorzTotal = 0, leftShiftTotal = 0;
-		for (let c = 0; c < rowsOfCounts[r].length - 1; c++){
-			let nodeIdx = rowBreaks[r] + c;
-			let empHorz = childLayouts[nodeIdx].w - childLayouts[nodeIdx].contentW;
-			childLayouts[nodeIdx].w -= empHorz;
-			empHorzTotal += empHorz;
-			childLayouts[nodeIdx+1].x -= empHorzTotal;
-		}
-		childLayouts[rowBreaks[r] + rowsOfCounts[r].length - 1].w += empHorzTotal + layout.w - layout.contentW;
-		if (empHorzTotal < minEmpHorzTotal)
-			minEmpHorzTotal = empHorzTotal;
-	}
-	//shift empty bottom-space to bottom-most row
-	let empVertTotal = 0;
-	for (let r = 0; r < rowBreaks.length - 1; r++){
-		let nodeIdxs = seq(rowsOfCounts[r].length).map(i => rowBreaks[r]+i);
-		nodeIdxs.forEach(idx => childLayouts[idx].y -= empVertTotal);
-		let empVerts = nodeIdxs.map(idx => childLayouts[idx].h - childLayouts[idx].contentH);
-		let minEmpVert = Math.min(...empVerts);
-		nodeIdxs.forEach(idx => childLayouts[idx].h -= minEmpVert);
-		empVertTotal += minEmpVert;
-	}
-	let lastRowIdx = rowBreaks.length-1;
-	let lastNodeIdxs = seq(rowsOfCounts[lastRowIdx].length).map(i => rowBreaks[lastRowIdx] + i);
-	lastNodeIdxs.forEach(idx => childLayouts[idx].y -= empVertTotal);
-	lastNodeIdxs.map(idx => childLayouts[idx].h += empVertTotal + layout.h - layout.contentH);
-	//make no-child tiles have width/height fitting their content
-	childLayouts.forEach(lyt => {
-		if (lyt.children.length == 0){lyt.w = lyt.contentW; lyt.h = lyt.contentH;}
-	});
-	//recurse on children
-	layout.children.filter(n => n.children.length > 0).forEach(lyt => shiftEmpty(lyt));
 }
 function arrayOf(val, len){ //returns an array of 'len' 'val's
 	return Array(len).fill(val);
