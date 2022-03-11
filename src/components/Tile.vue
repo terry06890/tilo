@@ -47,7 +47,7 @@ export default {
 		zIndex: zIdx, overflow: overFlow, transitionDuration: transitionDuration+'ms'}"
 	class="transition-[left,top,width,height] ease-out border border-stone-900 bg-white">
 	<div v-if="tree.children.length == 0"
-		:style="{backgroundImage: 'url(\'/src/assets/' + name + '.jpg\')',
+		:style="{backgroundImage: 'url(\'/img/' + name + '.jpg\')',
 			opacity: (tree.tolNode.children.length > 0 ? 1 : 0.7)}"
 		class="hover:cursor-pointer w-full h-full bg-cover" @click="onImgClick"
 		/>

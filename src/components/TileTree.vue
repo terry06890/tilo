@@ -1,7 +1,7 @@
 <script>
 import Tile from './Tile.vue';
 
-import tol from '/src/tol.json';
+import tol from '../tol.json';
 function preprocessTol(tree){
 	if (!tree.children){
 		tree.children = [];
@@ -12,7 +12,7 @@ function preprocessTol(tree){
 preprocessTol(tol);
 //tol-node format: {name: string1, children: [node1, ...]}
 
-import {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks} from '/src/layout.js';
+import {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks} from '../layout.js';
 let LAYOUT_FUNC = sweepToSideLayout;
 
 export default {
