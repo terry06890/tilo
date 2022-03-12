@@ -1,5 +1,5 @@
 export {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks};
-export type {TolNode, TreeNode, LayoutNode};
+import {TolNode, TreeNode, LayoutNode, SideArea, LeftoverArea} from './types';
 
 let TILE_SPACING = 5;
 let HEADER_SZ = 20;
@@ -9,50 +9,6 @@ let RECT_MODE = 'auto'; //'horz', 'vert', 'linear', 'auto'
 let SWEEP_MODE = 'left'; //'left', 'top', 'shorter', 'auto'
 let ALLOW_SWEEP_TO_PARENT = true;
 let RECT_SPC_SHIFTING = true;
-
-interface TolNode {
-	name: string;
-	children: TolNode[];
-}
-interface TreeNode {
-	tolNode: TolNode;
-	children: TreeNode[];
-	x: number;
-	y: number;
-	w: number;
-	h: number;
-	headerSz: number;
-	sideArea: SideArea | null;
-	tileCount: number;
-}
-interface LayoutNode {
-	name: string;
-	x: number;
-	y: number;
-	w: number;
-	h: number;
-	headerSz: number;
-	children: LayoutNode[];
-	contentW: number;
-	contentH: number;
-	empSpc: number;
-	sideArea: SideArea | null;
-}
-interface SideArea {
-	x: number;
-	y: number;
-	w: number;
-	h: number;
-	sweptLeft: boolean;
-	extraSz: number;
-}
-interface LeftoverArea {
-	parentX: number;
-	parentY: number;
-	w: number;
-	h: number;
-	sweptLeft: boolean;
-}
 
 const layoutInfoHooks = { //made common-across-layout-types for layout inter-usability
 	initLayoutInfo(tree: TreeNode){
@@ -129,15 +85,12 @@ function staticSqrLayout(node: TreeNode, x: number, y: number, w: number, h: num
 			lowestEmp += childLayouts[i].empSpc;
 		}
 	}
-	return {
-		name: node.tolNode.name,
-		x: x, y: y, w: w, h: h, headerSz: headerSz,
-		children: childLayouts,
+	return new LayoutNode(node.tolNode.name, childLayouts, x, y, w, h, {
+		headerSz, 
 		contentW: numCols * (tileSize + TILE_SPACING) + TILE_SPACING,
 		contentH: numRows * (tileSize + TILE_SPACING) + TILE_SPACING + headerSz,
 		empSpc: lowestEmp,
-		sideArea: null,
-	};
+	});
 }
 //lays out nodes as rectangles organised into rows, partially using other layouts for children
 function staticRectLayout(node: TreeNode, x: number, y: number, w: number, h: number, hideHeader: boolean,
@@ -304,15 +257,9 @@ function staticRectLayout(node: TreeNode, x: number, y: number, w: number, h: nu
 	//make no-child tiles have width/height fitting their content
 	childLayouts.filter(l => l.children.length == 0).forEach(l => {l.w = l.contentW; l.h = l.contentH;});
 	//determine layout
-	return {
-		name: node.tolNode.name,
-		x: x, y: y, w: w, h: h, headerSz: headerSz,
-		children: childLayouts,
-		contentW: w, //trying to shrink this causes problems with swept-to-parent-area div-alignment
-		contentH: h,
-		empSpc: lowestEmp,
-		sideArea: null,
-	};
+	return new LayoutNode(node.tolNode.name, childLayouts, x, y, w, h, 
+		{headerSz, contentW: w, contentH: h, empSpc: lowestEmp});
+		//trying to shrink contentW and contentH causes problems with swept-to-parent-area div-alignment
 }
 //lays out nodes by pushing leaves to one side, partially using other layouts for children
 function sweepToSideLayout(node: TreeNode, x: number, y: number, w: number, h: number, hideHeader: boolean,
@@ -443,10 +390,8 @@ function sweepToSideLayout(node: TreeNode, x: number, y: number, w: number, h: n
 		let layoutsInOldOrder = seq(node.children.length)
 			.map(i => children.findIndex(n => n == node.children[i]))
 			.map(i => layouts[i]);
-		return {
-			name: node.tolNode.name,
-			x: x, y: y, w: w, h: h, headerSz: headerSz,
-			children: layoutsInOldOrder,
+		return new LayoutNode(node.tolNode.name, layoutsInOldOrder, x, y, w, h, {
+			headerSz, 
 			contentW: usingParentArea ? nonLeavesLayout.contentW : (sweptLeft ?
 				sweptLayout.contentW + nonLeavesLayout.contentW - TILE_SPACING :
 				Math.max(sweptLayout.contentW, nonLeavesLayout.contentW)),
@@ -454,12 +399,14 @@ function sweepToSideLayout(node: TreeNode, x: number, y: number, w: number, h: n
 				Math.max(sweptLayout.contentH, nonLeavesLayout.contentH) + headerSz :
 				sweptLayout.contentH + nonLeavesLayout.contentH - TILE_SPACING + headerSz),
 			empSpc: sweptLayout.empSpc + nonLeavesLayout.empSpc,
-			sideArea: usingParentArea && parentArea != null ? {
-				x: parentArea.parentX, y: parentArea.parentY,
-				w: parentArea.w, h: parentArea.h,
-				sweptLeft: sweptLeft, extraSz: TILE_SPACING+1,
-			}: null,
-		};
+			sideArea: (usingParentArea && parentArea != null) ? 
+				{
+					x: parentArea.parentX, y: parentArea.parentY,
+					w: parentArea.w, h: parentArea.h,
+					sweptLeft: sweptLeft, extraSz: TILE_SPACING+1,
+				}:
+				null,
+		});
 	}
 }
 

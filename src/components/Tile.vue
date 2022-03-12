@@ -1,6 +1,6 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
-import {TreeNode} from '../layout';
+import {TreeNode} from '../types';
 
 const TRANSITION_DURATION = 300;
 export default defineComponent({
@@ -13,7 +13,7 @@ export default defineComponent({
 		}
 	},
 	props: {
-		tree: {type: Object as PropType<TreeNode>, required:true},
+		tree: {type: Object as PropType<TreeNode>, required: true},
 	},
 	computed: {
 		name(){return this.tree.tolNode.name.replaceAll('\'', '\\\'')}

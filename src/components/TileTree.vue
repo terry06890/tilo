@@ -6,7 +6,7 @@ import {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks} f
 	//for importing f1.ts:
 		//using 'import f1.ts' makes vue-tsc complain, and 'import f1.js' makes vite complain
 		//using 'import f1' might cause problems with build systems other than vite
-import type {TolNode, TreeNode, LayoutNode} from '../layout';
+import {TolNode, TreeNode, LayoutNode} from '../types';
 let LAYOUT_FUNC = sweepToSideLayout;
 
 import tol from '../tol.json';
@@ -30,18 +30,11 @@ export default defineComponent({
 	},
 	methods: {
 		initTree(tol: TolNode, lvl: number): TreeNode {
-			let tree = {
-				tolNode:tol, children:[],
-				x:0, y:0, w:0, h:0, headerSz:0,
-				sideArea:null, tileCount:0,
-			};
+			let tree = new TreeNode(tol, []);
 			function initTreeRec(tree: TreeNode, lvl: number){
 				if (lvl > 0)
-					tree.children = tree.tolNode.children.map((tNode: TolNode) => initTreeRec({
-						tolNode: tNode, children: [],
-						x:0, y:0, w:0, h:0, headerSz:0,
-						sideArea:null, tileCount:0,
-					}, lvl-1));
+					tree.children = tree.tolNode.children.map(
+						(n: TolNode) => initTreeRec(new TreeNode(n, []), lvl-1));
 				return tree;
 			}
 			initTreeRec(tree, lvl);
@@ -66,11 +59,7 @@ export default defineComponent({
 				return;
 			}
 			//add children
-			nodeList[0].children = nodeList[0].tolNode.children.map((tNode: TolNode) => ({
-				tolNode: tNode, children: [],
-				x:0, y:0, w:0, h:0, headerSz:0,
-				sideArea: null, tileCount:0,
-			}));
+			nodeList[0].children = nodeList[0].tolNode.children.map((n: TolNode) => new TreeNode(n, []));
 			layoutInfoHooks.updateLayoutInfoOnExpand(nodeList);
 			//try to layout tree
 			if (!this.tryLayout())
