@@ -1,0 +1,15 @@
+{
+	"include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
+	"compilerOptions": {
+		"strict": true,
+		"moduleResolution": "node",
+		"target": "esnext",
+		"module": "esnext",
+		"sourceMap": true,
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
+		"isolatedModules": true,
+		"lib": ["esnext", "dom"],
+		"skipLibCheck": true
+	}
+}

@@ -1,6 +1,9 @@
-<script>
+<script lang="ts">
+import {defineComponent, PropType} from 'vue';
+import {TreeNode} from '../layout';
+
 const TRANSITION_DURATION = 300;
-export default {
+export default defineComponent({
 	name: 'tile',
 	data(){
 		return {
@@ -10,7 +13,7 @@ export default {
 		}
 	},
 	props: {
-		tree: Object,
+		tree: {type: Object as PropType<TreeNode>, required:true},
 	},
 	computed: {
 		name(){return this.tree.tolNode.name.replaceAll('\'', '\\\'')}
@@ -23,7 +26,7 @@ export default {
 			this.overFlow = 'hidden';
 			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, this.transitionDuration);
 		},
-		onInnerTileClicked(nodeList){
+		onInnerTileClicked(nodeList: TreeNode[]){
 			this.$emit('tile-clicked', [...nodeList, this.tree]);
 		},
 		onHeaderClick(){
@@ -33,11 +36,11 @@ export default {
 			this.overFlow = 'hidden';
 			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, this.transitionDuration);
 		},
-		onInnerHeaderClicked(nodeList){
+		onInnerHeaderClicked(nodeList: TreeNode[]){
 			this.$emit('header-clicked', [...nodeList, this.tree]);
 		}
 	}
-}
+})
 </script>
 
 <template>
@@ -69,9 +72,6 @@ export default {
 				class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 				{{tree.tolNode.name}}
 			</div>
-			<tile v-for="child in tree.sideChildren" :key="'SIDE_' + child.tolNode.name" :tree="child"
-				@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"
-				></tile>
 		</div>
 		<tile v-for="child in tree.children" :key="child.tolNode.name" :tree="child"
 			@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"

@@ -1,8 +1,16 @@
-<script>
+<script lang="ts">
+import {defineComponent} from 'vue';
 import Tile from './Tile.vue';
 
+import {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks} from '../layout';
+	//for importing f1.ts:
+		//using 'import f1.ts' makes vue-tsc complain, and 'import f1.js' makes vite complain
+		//using 'import f1' might cause problems with build systems other than vite
+import type {TolNode, TreeNode, LayoutNode} from '../layout';
+let LAYOUT_FUNC = sweepToSideLayout;
+
 import tol from '../tol.json';
-function preprocessTol(tree){
+function preprocessTol(tree: any): void {
 	if (!tree.children){
 		tree.children = [];
 	} else {
@@ -10,33 +18,29 @@ function preprocessTol(tree){
 	}
 }
 preprocessTol(tol);
-//tol-node format: {name: string1, children: [node1, ...]}
 
-import {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks} from '../layout.js';
-let LAYOUT_FUNC = sweepToSideLayout;
-
-export default {
+export default defineComponent({
 	data(){
 		return {
-			tree: this.initTree(tol, 1),
+			tree: this.initTree(tol as TolNode, 1),
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
 			resizeThrottled: false,
 		}
 	},
 	methods: {
-		initTree(tol, lvl){
+		initTree(tol: TolNode, lvl: number): TreeNode {
 			let tree = {
 				tolNode:tol, children:[],
 				x:0, y:0, w:0, h:0, headerSz:0,
-				sideArea:null,
+				sideArea:null, tileCount:0,
 			};
-			function initTreeRec(tree, lvl){
+			function initTreeRec(tree: TreeNode, lvl: number){
 				if (lvl > 0)
-					tree.children = tree.tolNode.children.map(tNode => initTreeRec({
+					tree.children = tree.tolNode.children.map((tNode: TolNode) => initTreeRec({
 						tolNode: tNode, children: [],
 						x:0, y:0, w:0, h:0, headerSz:0,
-						sideArea:null,
+						sideArea:null, tileCount:0,
 					}, lvl-1));
 				return tree;
 			}
@@ -54,7 +58,7 @@ export default {
 				setTimeout(() => {this.resizeThrottled = false;}, 100);
 			}
 		},
-		onInnerTileClicked(nodeList){
+		onInnerTileClicked(nodeList: TreeNode[]){
 			//nodeList holds an array of tree-objects, from the clicked-on-tile's tree-object upward
 			let numNewTiles = nodeList[0].tolNode.children.length;
 			if (numNewTiles == 0){
@@ -62,16 +66,17 @@ export default {
 				return;
 			}
 			//add children
-			nodeList[0].children = nodeList[0].tolNode.children.map(tNode => ({
+			nodeList[0].children = nodeList[0].tolNode.children.map((tNode: TolNode) => ({
 				tolNode: tNode, children: [],
 				x:0, y:0, w:0, h:0, headerSz:0,
+				sideArea: null, tileCount:0,
 			}));
 			layoutInfoHooks.updateLayoutInfoOnExpand(nodeList);
 			//try to layout tree
 			if (!this.tryLayout())
 				nodeList[0].children = [];
 		},
-		onInnerHeaderClicked(nodeList){ //nodeList is array of tree-objects, from clicked-on-tile's tree-object upward
+		onInnerHeaderClicked(nodeList: TreeNode[]){ //nodeList is array of tree-objects, from clicked-on-tile's tree-object upward
 			let children = nodeList[0].children;
 			nodeList[0].children = [];
 			layoutInfoHooks.updateLayoutInfoOnCollapse(nodeList);
@@ -88,7 +93,7 @@ export default {
 				return true;
 			}
 		},
-		applyLayout(layout, tree){
+		applyLayout(layout: LayoutNode, tree: TreeNode){
 			tree.x = layout.x;
 			tree.y = layout.y;
 			tree.w = layout.w;
@@ -96,13 +101,13 @@ export default {
 			tree.headerSz = layout.headerSz;
 			layout.children.forEach((n,i) => this.applyLayout(n, tree.children[i]));
 			//handle case where leaf nodes placed in leftover space from parent-sweep
-			if (layout.sideArea){
+			if (layout.sideArea != null){
 				//add parent area coords
 				tree.sideArea = layout.sideArea;
 				//move leaf node children to parent area
 				tree.children.filter(n => n.children.length == 0).map(n => {
-					n.x += layout.sideArea.x;
-					n.y += layout.sideArea.y;
+					n.x += layout.sideArea!.x;
+					n.y += layout.sideArea!.y;
 				});
 			} else {
 				tree.sideArea = null;
@@ -119,7 +124,7 @@ export default {
 	components: {
 		Tile
 	}
-}
+})
 </script>
 
 <template>
