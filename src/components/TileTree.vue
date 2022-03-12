@@ -2,12 +2,11 @@
 import {defineComponent} from 'vue';
 import Tile from './Tile.vue';
 
-import {staticSqrLayout, staticRectLayout, sweepToSideLayout, layoutInfoHooks} from '../layout';
-	//for importing f1.ts:
-		//using 'import f1.ts' makes vue-tsc complain, and 'import f1.js' makes vite complain
-		//using 'import f1' might cause problems with build systems other than vite
 import {TolNode, TreeNode, LayoutNode} from '../types';
-let LAYOUT_FUNC = sweepToSideLayout;
+import {genLayout, layoutInfoHooks} from '../layout';
+//regarding importing a file f1.ts:
+	//using 'import f1.ts' makes vue-tsc complain, and 'import f1.js' makes vite complain
+	//using 'import f1' might cause problems with build systems other than vite
 
 import tol from '../tol.json';
 function preprocessTol(tree: any): void {
@@ -73,7 +72,7 @@ export default defineComponent({
 				nodeList[0].children = children;
 		},
 		tryLayout(){
-			let layout = LAYOUT_FUNC(this.tree, 0, 0, this.width, this.height, true);
+			let layout = genLayout(this.tree, 0, 0, this.width, this.height, true);
 			if (layout == null){
 				console.log('Unable to layout tree');
 				return false;

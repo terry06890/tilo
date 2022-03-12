@@ -1,7 +1,7 @@
 export class TolNode {
 	name: string;
 	children: TolNode[];
-	constructor(name: string, children: TolNode[]){
+	constructor(name: string, children: TolNode[] = []){
 		this.name = name;
 		this.children = children;
 	}
@@ -16,7 +16,7 @@ export class TreeNode {
 	headerSz: number;
 	sideArea: SideArea | null;
 	tileCount: number;
-	constructor(tolNode: TolNode, children: TreeNode[], x=0, y=0, w=0, h=0, 
+	constructor(tolNode: TolNode, children: TreeNode[], x=0, y=0, w=0, h=0,
 		{headerSz=0, sideArea=null, tileCount=1} = {}){
 		this.tolNode = tolNode;
 		this.children = children;
@@ -41,7 +41,7 @@ export class LayoutNode {
 	contentH: number;
 	empSpc: number;
 	sideArea: SideArea | null;
-	constructor(name: string, children: LayoutNode[], x=0, y=0, w=0, h=0, 
+	constructor(name: string, children: LayoutNode[], x=0, y=0, w=0, h=0,
 		{headerSz=0, contentW=0, contentH=0, empSpc=0, sideArea=null as SideArea|null} = {}){
 		this.name = name;
 		this.x = x;
