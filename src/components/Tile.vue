@@ -46,7 +46,8 @@ export default defineComponent({
 <template>
 <div
 	:style="{position: 'absolute',
-		left: layoutNode.x+'px', top: layoutNode.y+'px', width: layoutNode.w+'px', height: layoutNode.h+'px',
+		left: layoutNode.pos[0]+'px', top: layoutNode.pos[1]+'px',
+		width: layoutNode.dims[0]+'px', height: layoutNode.dims[1]+'px',
 		zIndex: zIdx, overflow: overFlow, transitionDuration: transitionDuration+'ms'}"
 	class="transition-[left,top,width,height] ease-out border border-stone-900 bg-white">
 	<div v-if="layoutNode.children.length == 0"
@@ -56,17 +57,18 @@ export default defineComponent({
 		/>
 	<div v-else>
 		<div
-			v-if="(layoutNode.headerSz && !layoutNode.sepSweptArea) || 
+			v-if="(layoutNode.headerSz && !layoutNode.sepSweptArea) ||
 				(layoutNode.sepSweptArea && layoutNode.sepSweptArea.sweptLeft)"
 			:style="{height: layoutNode.headerSz+'px'}"
 			class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 			{{layoutNode.tolNode.name}}
 		</div>
 		<div v-if="layoutNode.sepSweptArea"
-			:style="{position: 'absolute', left: layoutNode.sepSweptArea.x+'px', top: layoutNode.sepSweptArea.y+'px',
-				width: (layoutNode.sepSweptArea.w +
+			:style="{position: 'absolute',
+				left: layoutNode.sepSweptArea.pos[0]+'px', top: layoutNode.sepSweptArea.pos[1]+'px',
+				width: (layoutNode.sepSweptArea.dims[0] +
 					(layoutNode.sepSweptArea.sweptLeft ? layoutNode.sepSweptArea.tileSpacing+1 : 0))+'px',
-				height: (layoutNode.sepSweptArea.h +
+				height: (layoutNode.sepSweptArea.dims[1] +
 					(layoutNode.sepSweptArea.sweptLeft ? 0 : layoutNode.sepSweptArea.tileSpacing+1))+'px',
 				borderRightColor: (layoutNode.sepSweptArea.sweptLeft ? 'white' : 'currentColor'),
 				borderBottomColor: (layoutNode.sepSweptArea.sweptLeft ? 'currentColor' : 'white'),

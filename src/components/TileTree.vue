@@ -73,7 +73,7 @@ export default defineComponent({
 				nodeList[0].children = children;
 		},
 		tryLayout(){
-			let newLayout = genLayout(this.layoutTree, 0, 0, this.width, this.height, true);
+			let newLayout = genLayout(this.layoutTree, [0,0], [this.width,this.height], true);
 			if (newLayout == null){
 				console.log('Unable to layout tree');
 				return false;
@@ -83,10 +83,8 @@ export default defineComponent({
 			}
 		},
 		applyLayout(newLayout: LayoutNode, layoutTree: LayoutNode){
-			layoutTree.x = newLayout.x;
-			layoutTree.y = newLayout.y;
-			layoutTree.w = newLayout.w;
-			layoutTree.h = newLayout.h;
+			layoutTree.pos = newLayout.pos;
+			layoutTree.dims = newLayout.dims;
 			layoutTree.headerSz = newLayout.headerSz;
 			newLayout.children.forEach((n,i) => this.applyLayout(n, layoutTree.children[i]));
 			//handle case where leaf nodes placed in leftover space from parent-sweep
@@ -95,8 +93,8 @@ export default defineComponent({
 				layoutTree.sepSweptArea = newLayout.sepSweptArea;
 				//move leaf node children to parent area
 				layoutTree.children.filter(n => n.children.length == 0).map(n => {
-					n.x += newLayout.sepSweptArea!.x;
-					n.y += newLayout.sepSweptArea!.y;
+					n.pos[0] += newLayout.sepSweptArea!.pos[0],
+					n.pos[1] += newLayout.sepSweptArea!.pos[1]
 				});
 			} else {
 				layoutTree.sepSweptArea = null;

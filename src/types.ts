@@ -10,48 +10,40 @@ export class LayoutNode {
 	//set by TileTree and LayoutFn funcs, eventually used by Tile
 	tolNode: TolNode;
 	children: LayoutNode[];
-	x: number;
-	y: number;
-	w: number;
-	h: number;
+	pos: [number, number];
+	dims: [number, number];
 	headerSz: number;
 	//set by layoutInfoHooks, used by LayoutFn funcs
 	tileCount: number;
 	//set_by/internal_to LayoutFn funcs
-	contentW: number;
-	contentH: number;
+	usedDims: [number, number];
 	empSpc: number;
 	//set by LayoutFn funcs, eventually used by Tile
 	sepSweptArea: SepSweptArea | null;
 	//
-	constructor(tolNode: TolNode, children: LayoutNode[], x=0, y=0, w=0, h=0,
-		{headerSz=0, tileCount=0, contentW=0, contentH=0, empSpc=0, sepSweptArea=null as SepSweptArea|null} = {}){
+	constructor(
+		tolNode: TolNode, children: LayoutNode[], pos:[number,number]=[0,0], dims:[number,number]=[0,0],
+		{headerSz=0, tileCount=0, usedDims=[0,0] as [number,number],
+			empSpc=0, sepSweptArea=null as SepSweptArea|null} = {}){
 		this.tolNode = tolNode;
 		this.children = children;
-		this.x = x;
-		this.y = y;
-		this.w = w;
-		this.h = h;
+		this.pos = pos;
+		this.dims = dims;
 		this.headerSz = headerSz;
 		this.tileCount = tileCount;
-		this.contentW = contentW;
-		this.contentH = contentH;
+		this.usedDims = usedDims;
 		this.empSpc = empSpc;
 		this.sepSweptArea = sepSweptArea;
 	}
 }
 export class SepSweptArea {
-	x: number;
-	y: number;
-	w: number;
-	h: number;
+	pos: [number, number];
+	dims: [number, number];
 	sweptLeft: boolean;
 	tileSpacing: number;
-	constructor(x: number, y: number, w: number, h: number, sweptLeft: boolean, tileSpacing: number){
-		this.x = x;
-		this.y = y;
-		this.w = w;
-		this.h = h;
+	constructor(pos: [number, number], dims: [number, number], sweptLeft: boolean, tileSpacing: number){
+		this.pos = pos;
+		this.dims = dims;
 		this.sweptLeft = sweptLeft;
 		this.tileSpacing = tileSpacing;
 	}
