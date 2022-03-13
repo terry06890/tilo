@@ -61,16 +61,20 @@ export default defineComponent({
 			nodeList[0].children = nodeList[0].tolNode.children.map((n: TolNode) => new LayoutNode(n, []));
 			layoutInfoHooks.updateLayoutInfoOnExpand(nodeList);
 			//try to re-layout
-			if (!this.tryLayout())
+			if (!this.tryLayout()){
 				nodeList[0].children = [];
+				layoutInfoHooks.updateLayoutInfoOnCollapse(nodeList);
+			}
 		},
 		onInnerHeaderClicked(nodeList: LayoutNode[]){
 			//nodeList is an array of layout-nodes, from the clicked-on-tile's node upward
 			let children = nodeList[0].children;
 			nodeList[0].children = [];
 			layoutInfoHooks.updateLayoutInfoOnCollapse(nodeList);
-			if (!this.tryLayout())
+			if (!this.tryLayout()){
 				nodeList[0].children = children;
+				layoutInfoHooks.updateLayoutInfoOnExpand(nodeList);
+			}
 		},
 		tryLayout(){
 			let newLayout = genLayout(this.layoutTree, [0,0], [this.width,this.height], true);
