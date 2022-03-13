@@ -89,16 +89,16 @@ export default defineComponent({
 			tree.headerSz = layout.headerSz;
 			layout.children.forEach((n,i) => this.applyLayout(n, tree.children[i]));
 			//handle case where leaf nodes placed in leftover space from parent-sweep
-			if (layout.sideArea != null){
+			if (layout.sepSweptArea != null){
 				//add parent area coords
-				tree.sideArea = layout.sideArea;
+				tree.sepSweptArea = layout.sepSweptArea;
 				//move leaf node children to parent area
 				tree.children.filter(n => n.children.length == 0).map(n => {
-					n.x += layout.sideArea!.x;
-					n.y += layout.sideArea!.y;
+					n.x += layout.sepSweptArea!.x;
+					n.y += layout.sepSweptArea!.y;
 				});
 			} else {
-				tree.sideArea = null;
+				tree.sepSweptArea = null;
 			}
 		}
 	},

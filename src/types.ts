@@ -14,10 +14,10 @@ export class TreeNode {
 	w: number;
 	h: number;
 	headerSz: number;
-	sideArea: SideArea | null;
+	sepSweptArea: SepSweptArea | null;
 	tileCount: number;
 	constructor(tolNode: TolNode, children: TreeNode[], x=0, y=0, w=0, h=0,
-		{headerSz=0, sideArea=null, tileCount=1} = {}){
+		{headerSz=0, sepSweptArea=null, tileCount=1} = {}){
 		this.tolNode = tolNode;
 		this.children = children;
 		this.x = x;
@@ -25,7 +25,7 @@ export class TreeNode {
 		this.w = w;
 		this.h = h;
 		this.headerSz = headerSz;
-		this.sideArea = sideArea;
+		this.sepSweptArea = sepSweptArea;
 		this.tileCount = tileCount;
 	}
 }
@@ -40,9 +40,9 @@ export class LayoutNode {
 	contentW: number;
 	contentH: number;
 	empSpc: number;
-	sideArea: SideArea | null;
+	sepSweptArea: SepSweptArea | null;
 	constructor(name: string, children: LayoutNode[], x=0, y=0, w=0, h=0,
-		{headerSz=0, contentW=0, contentH=0, empSpc=0, sideArea=null as SideArea|null} = {}){
+		{headerSz=0, contentW=0, contentH=0, empSpc=0, sepSweptArea=null as SepSweptArea|null} = {}){
 		this.name = name;
 		this.x = x;
 		this.y = y;
@@ -53,36 +53,22 @@ export class LayoutNode {
 		this.contentW = contentW;
 		this.contentH = contentH;
 		this.empSpc = empSpc;
-		this.sideArea = sideArea;
+		this.sepSweptArea = sepSweptArea;
 	}
 }
-export class SideArea {
+export class SepSweptArea {
 	x: number;
 	y: number;
 	w: number;
 	h: number;
 	sweptLeft: boolean;
-	extraSz: number;
-	constructor(x: number, y: number, w: number, h: number, sweptLeft: boolean, extraSz: number){
+	tileSpacing: number;
+	constructor(x: number, y: number, w: number, h: number, sweptLeft: boolean, tileSpacing: number){
 		this.x = x;
 		this.y = y;
 		this.w = w;
 		this.h = h;
 		this.sweptLeft = sweptLeft;
-		this.extraSz = extraSz;
-	}
-}
-export class LeftoverArea {
-	parentX: number;
-	parentY: number;
-	w: number;
-	h: number;
-	sweptLeft: boolean;
-	constructor(parentX: number, parentY: number, w: number, h: number, sweptLeft: boolean){
-		this.parentX = parentX;
-		this.parentY = parentY;
-		this.w = w;
-		this.h = h;
-		this.sweptLeft = sweptLeft;
+		this.tileSpacing = tileSpacing;
 	}
 }

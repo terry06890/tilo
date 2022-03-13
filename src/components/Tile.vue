@@ -55,20 +55,22 @@ export default defineComponent({
 		class="hover:cursor-pointer w-full h-full bg-cover" @click="onImgClick"
 		/>
 	<div v-else>
-		<div v-if="(tree.headerSz && !tree.sideArea) || (tree.sideArea && tree.sideArea.sweptLeft)"
+		<div v-if="(tree.headerSz && !tree.sepSweptArea) || (tree.sepSweptArea && tree.sepSweptArea.sweptLeft)"
 			:style="{height: tree.headerSz+'px'}"
 			class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 			{{tree.tolNode.name}}
 		</div>
-		<div v-if="tree.sideArea"
-			:style="{position: 'absolute', left: tree.sideArea.x+'px', top: tree.sideArea.y+'px',
-				width: (tree.sideArea.w + (tree.sideArea.sweptLeft ? tree.sideArea.extraSz : 0))+'px',
-				height: (tree.sideArea.h + (tree.sideArea.sweptLeft ? 0 : tree.sideArea.extraSz))+'px',
-				borderRightColor: (tree.sideArea.sweptLeft ? 'white' : 'currentColor'),
-				borderBottomColor: (tree.sideArea.sweptLeft ? 'currentColor' : 'white'),
+		<div v-if="tree.sepSweptArea"
+			:style="{position: 'absolute', left: tree.sepSweptArea.x+'px', top: tree.sepSweptArea.y+'px',
+				width: (tree.sepSweptArea.w +
+					(tree.sepSweptArea.sweptLeft ? tree.sepSweptArea.tileSpacing+1 : 0))+'px',
+				height: (tree.sepSweptArea.h +
+					(tree.sepSweptArea.sweptLeft ? 0 : tree.sepSweptArea.tileSpacing+1))+'px',
+				borderRightColor: (tree.sepSweptArea.sweptLeft ? 'white' : 'currentColor'),
+				borderBottomColor: (tree.sepSweptArea.sweptLeft ? 'currentColor' : 'white'),
 				transitionDuration: transitionDuration+'ms'}"
 			class="transition-[left,top,width,height] ease-out border border-stone-900 bg-white">
-			<div v-if="!tree.sideArea.sweptLeft" :style="{height: tree.headerSz+'px'}"
+			<div v-if="!tree.sepSweptArea.sweptLeft" :style="{height: tree.headerSz+'px'}"
 				class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 				{{tree.tolNode.name}}
 			</div>
