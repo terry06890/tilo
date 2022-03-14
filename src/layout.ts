@@ -21,9 +21,9 @@ export class LayoutTree {
 	tryLayout(pos: [number,number], dims: [number,number]){
 		let newLayout: LayoutNode | null;
 		switch (this.options.layoutType){
-			case 'sqr':   newLayout =   sqrLayoutFn(this.root, pos, dims, false, this.options); break;
-			case 'rect':  newLayout =  rectLayoutFn(this.root, pos, dims, false, this.options); break;
-			case 'sweep': newLayout = sweepLayoutFn(this.root, pos, dims, false, this.options); break;
+			case 'sqr':   newLayout =   sqrLayoutFn(this.root, pos, dims, true, this.options); break;
+			case 'rect':  newLayout =  rectLayoutFn(this.root, pos, dims, true, this.options); break;
+			case 'sweep': newLayout = sweepLayoutFn(this.root, pos, dims, true, this.options); break;
 		}
 		if (newLayout == null)
 			return false;
@@ -77,7 +77,6 @@ export class LayoutTree {
 }
 export type LayoutOptions = {
 	tileSpacing: number;
-	//showHeader: 'all' | 'non-root' | 'expanded' | 'expanded non-root' | 'leaf' | 'none'?
 	headerSz: number;
 	minTileSz: number;
 	maxTileSz: number;
@@ -133,6 +132,12 @@ type LayoutFn = (node: LayoutNode, pos: [number, number], dims: [number, number]
 
 //lays out nodes as squares in a rectangle, with spacing
 let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
+	if (node.children.length == 0){
+		let tileSz = Math.min(dims[0], dims[1], opts.maxTileSz);
+		if (tileSz < opts.minTileSz)
+			return null;
+		return new LayoutNode(node.tolNode, [], pos, [tileSz,tileSz], {usedDims: [tileSz,tileSz], empSpc: 0});
+	}
 	//get number-of-columns with lowest leftover empty space
 	let headerSz = showHeader ? opts.headerSz : 0;
 	let availW = dims[0] - opts.tileSpacing, availH = dims[1] - headerSz - opts.tileSpacing;
@@ -164,15 +169,10 @@ let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
 		let child = node.children[i];
 		let childX = opts.tileSpacing + (i % numCols)*(tileSize + opts.tileSpacing);
 		let childY = opts.tileSpacing + headerSz + Math.floor(i / numCols)*(tileSize + opts.tileSpacing);
-		if (child.children.length == 0){
-			childLayouts[i] = new LayoutNode(child.tolNode, [], [childX,childY], [tileSize,tileSize],
-				{usedDims: [tileSize,tileSize], empSpc: 0});
-		} else {
-			childLayouts[i] = sqrLayoutFn(child, [childX,childY], [tileSize,tileSize], true, opts);
-			if (childLayouts[i] == null)
-				return null;
-			lowestEmp += childLayouts[i].empSpc;
-		}
+		childLayouts[i] = sqrLayoutFn(child, [childX,childY], [tileSize,tileSize], true, opts);
+		if (childLayouts[i] == null)
+			return null;
+		lowestEmp += childLayouts[i].empSpc;
 	}
 	let newNode = new LayoutNode(node.tolNode, childLayouts, pos, dims, {
 		showHeader,
@@ -373,7 +373,7 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 			tempTree = new LayoutNode(new TolNode('SWEEP_' + node.tolNode.name), leaves);
 				//not updating the children to point to tempTree as a parent seems acceptable here
 			sweptLeft = parentArea.sweptLeft;
-			sweptLayout = sqrLayoutFn(tempTree, [0,0], parentArea.dims, sweptLeft, opts);
+			sweptLayout = sqrLayoutFn(tempTree, [0,0], parentArea.dims, !sweptLeft, opts);
 			if (sweptLayout != null){
 				//move leaves to parent area
 				sweptLayout.children.map(n => {
@@ -486,12 +486,12 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 		let newNode = new LayoutNode(node.tolNode, layoutsInOldOrder, pos, dims, {
 			showHeader,
 			usedDims: [
-				usingParentArea ? nonLeavesLayout.dims[0] : (sweptLeft ?
-					sweptLayout.dims[0] + nonLeavesLayout.dims[0] - opts.tileSpacing :
-					Math.max(sweptLayout.dims[0], nonLeavesLayout.dims[0])),
-				usingParentArea ? nonLeavesLayout.dims[1] + headerSz : (sweptLeft ?
-					Math.max(sweptLayout.dims[1], nonLeavesLayout.dims[1]) + headerSz :
-					sweptLayout.dims[1] + nonLeavesLayout.dims[1] - opts.tileSpacing + headerSz),
+				usingParentArea ? nonLeavesLayout.usedDims[0] : (sweptLeft ?
+					sweptLayout.usedDims[0] + nonLeavesLayout.usedDims[0] - opts.tileSpacing :
+					Math.max(sweptLayout.usedDims[0], nonLeavesLayout.usedDims[0])),
+				usingParentArea ? nonLeavesLayout.usedDims[1] + headerSz : (sweptLeft ?
+					Math.max(sweptLayout.usedDims[1], nonLeavesLayout.usedDims[1]) + headerSz :
+					sweptLayout.usedDims[1] + nonLeavesLayout.usedDims[1] - opts.tileSpacing + headerSz),
 			],
 			empSpc: sweptLayout.empSpc + nonLeavesLayout.empSpc,
 			sepSweptArea: (usingParentArea && parentArea) ? parentArea : null,

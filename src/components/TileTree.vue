@@ -39,7 +39,7 @@ export default defineComponent({
 		return {
 			layoutOptions: defaultLayoutOptions,
 			otherOptions: defaultOtherOptions,
-			layoutTree: new LayoutTree(tol as TolNode, 1, defaultLayoutOptions),
+			layoutTree: new LayoutTree(tol as TolNode, 0, defaultLayoutOptions),
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
 			resizeThrottled: false,
