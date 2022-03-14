@@ -15,6 +15,7 @@ export default defineComponent({
 		transitionDuration: {type: Number, required: true},
 		headerSz: {type: Number, required: true},
 		tileSpacing: {type: Number, required: true},
+		center: {type: Array, default: null},
 	},
 	computed: {
 		name(){return this.layoutNode.tolNode.name.replaceAll('\'', '\\\'')}
@@ -47,7 +48,8 @@ export default defineComponent({
 <template>
 <div
 	:style="{position: 'absolute',
-		left: layoutNode.pos[0]+'px', top: layoutNode.pos[1]+'px',
+		left: (center ? (center[0]-layoutNode.dims[0])/2 : layoutNode.pos[0]) + 'px',
+		top: (center ? (center[1]-layoutNode.dims[1])/2 : layoutNode.pos[1]) + 'px',
 		width: layoutNode.dims[0]+'px', height: layoutNode.dims[1]+'px',
 		zIndex: zIdx, overflow: overFlow, transitionDuration: transitionDuration+'ms'}"
 	class="transition-[left,top,width,height] ease-out border border-stone-900 bg-white">

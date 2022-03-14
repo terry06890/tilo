@@ -86,7 +86,7 @@ export default defineComponent({
 <div class="h-[100vh]">
 	<tile :layoutNode="layoutTree.root"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing"
-		:transitionDuration="otherOptions.transitionDuration"
+		:transitionDuration="otherOptions.transitionDuration" :center="[width,height]"
 		@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"></tile>
 </div>
 </template>
