@@ -1,43 +1,44 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
-import {LayoutNode} from '../types';
+import {LayoutNode} from '../layout';
 
-const TRANSITION_DURATION = 300;
 export default defineComponent({
 	name: 'tile',
 	data(){
 		return {
 			zIdx: 0,
-			transitionDuration: TRANSITION_DURATION,
 			overFlow: 'visible',
 		}
 	},
 	props: {
 		layoutNode: {type: Object as PropType<LayoutNode>, required: true},
+		transitionDuration: {type: Number, required: true},
+		headerSz: {type: Number, required: true},
+		tileSpacing: {type: Number, required: true},
 	},
 	computed: {
 		name(){return this.layoutNode.tolNode.name.replaceAll('\'', '\\\'')}
 	},
 	methods: {
 		onImgClick(){
-			this.$emit('tile-clicked', [this.layoutNode]);
+			this.$emit('tile-clicked', this.layoutNode);
 			//increase z-index and hide overflow during transition
 			this.zIdx = 1;
 			this.overFlow = 'hidden';
 			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, this.transitionDuration);
 		},
-		onInnerTileClicked(nodeList: LayoutNode[]){
-			this.$emit('tile-clicked', [...nodeList, this.layoutNode]);
+		onInnerTileClicked(node: LayoutNode){
+			this.$emit('tile-clicked', node);
 		},
 		onHeaderClick(){
-			this.$emit('header-clicked', [this.layoutNode]);
+			this.$emit('header-clicked', this.layoutNode);
 			//increase z-index and hide overflow during transition
 			this.zIdx = 1;
 			this.overFlow = 'hidden';
 			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, this.transitionDuration);
 		},
-		onInnerHeaderClicked(nodeList: LayoutNode[]){
-			this.$emit('header-clicked', [...nodeList, this.layoutNode]);
+		onInnerHeaderClicked(node: LayoutNode){
+			this.$emit('header-clicked', node);
 		}
 	}
 })
@@ -57,32 +58,30 @@ export default defineComponent({
 		/>
 	<div v-else>
 		<div
-			v-if="(layoutNode.headerSz && !layoutNode.sepSweptArea) ||
+			v-if="(layoutNode.showHeader && !layoutNode.sepSweptArea) ||
 				(layoutNode.sepSweptArea && layoutNode.sepSweptArea.sweptLeft)"
-			:style="{height: layoutNode.headerSz+'px'}"
+			:style="{height: headerSz+'px'}"
 			class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 			{{layoutNode.tolNode.name}}
 		</div>
 		<div v-if="layoutNode.sepSweptArea"
 			:style="{position: 'absolute',
 				left: layoutNode.sepSweptArea.pos[0]+'px', top: layoutNode.sepSweptArea.pos[1]+'px',
-				width: (layoutNode.sepSweptArea.dims[0] +
-					(layoutNode.sepSweptArea.sweptLeft ? layoutNode.sepSweptArea.tileSpacing+1 : 0))+'px',
-				height: (layoutNode.sepSweptArea.dims[1] +
-					(layoutNode.sepSweptArea.sweptLeft ? 0 : layoutNode.sepSweptArea.tileSpacing+1))+'px',
+				width: (layoutNode.sepSweptArea.dims[0]+(layoutNode.sepSweptArea.sweptLeft ? tileSpacing+1 : 0))+'px',
+				height: (layoutNode.sepSweptArea.dims[1]+(layoutNode.sepSweptArea.sweptLeft ? 0 : tileSpacing+1))+'px',
 				borderRightColor: (layoutNode.sepSweptArea.sweptLeft ? 'white' : 'currentColor'),
 				borderBottomColor: (layoutNode.sepSweptArea.sweptLeft ? 'currentColor' : 'white'),
 				transitionDuration: transitionDuration+'ms'}"
 			class="transition-[left,top,width,height] ease-out border border-stone-900 bg-white">
-			<div v-if="!layoutNode.sepSweptArea.sweptLeft" :style="{height: layoutNode.headerSz+'px'}"
+			<div v-if="!layoutNode.sepSweptArea.sweptLeft" :style="{height: headerSz+'px'}"
 				class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
 				{{layoutNode.tolNode.name}}
 			</div>
 		</div>
 		<tile v-for="child in layoutNode.children" :key="child.tolNode.name" :layoutNode="child"
+			:headerSz="headerSz" :tileSpacing="tileSpacing" :transitionDuration="transitionDuration"
 			@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"
 			></tile>
 	</div>
 </div>
 </template>
-

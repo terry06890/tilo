@@ -2,12 +2,7 @@
 import {defineComponent} from 'vue';
 import Tile from './Tile.vue';
 
-import {TolNode, LayoutNode} from '../types';
-import {genLayout, layoutInfoHooks} from '../layout';
-//regarding importing a file f1.ts:
-	//using 'import f1.ts' makes vue-tsc complain, and 'import f1.js' makes vite complain
-	//using 'import f1' might cause problems with build systems other than vite
-
+import {TolNode} from '../types';
 import tol from '../tol.json';
 function preprocessTol(tree: any): void {
 	if (!tree.children){
@@ -18,96 +13,67 @@ function preprocessTol(tree: any): void {
 }
 preprocessTol(tol);
 
+import {LayoutTree, LayoutNode} from '../layout';
+import type {LayoutOptions} from '../layout';
+//regarding importing a file f1.ts:
+	//using 'import f1.ts' makes vue-tsc complain, and 'import f1.js' makes vite complain
+	//using 'import f1' might cause problems with build systems other than vite
+
+let defaultLayoutOptions: LayoutOptions = {
+	tileSpacing: 5,
+	headerSz: 20,
+	minTileSz: 50,
+	maxTileSz: 200,
+	layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
+	rectMode: 'auto', //'horz' | 'vert' | 'linear' | 'auto'
+	rectSpaceShifting: true,
+	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
+	sweepingToParent: true,
+};
+let defaultOtherOptions = {
+	transitionDuration: 300,
+};
+
 export default defineComponent({
 	data(){
 		return {
-			layoutTree: this.initLayoutTree(tol as TolNode, 1),
+			layoutOptions: defaultLayoutOptions,
+			otherOptions: defaultOtherOptions,
+			layoutTree: new LayoutTree(tol as TolNode, 1, defaultLayoutOptions),
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
 			resizeThrottled: false,
 		}
 	},
 	methods: {
-		initLayoutTree(tol: TolNode, lvl: number): LayoutNode {
-			let node = new LayoutNode(tol, []);
-			function initRec(node: LayoutNode, lvl: number){
-				if (lvl > 0)
-					node.children = node.tolNode.children.map(
-						(n: TolNode) => initRec(new LayoutNode(n, []), lvl-1));
-				return node;
-			}
-			initRec(node, lvl);
-			layoutInfoHooks.initLayoutInfo(node)
-			return node;
-		},
 		onResize(){
 			if (!this.resizeThrottled){
 				this.width = document.documentElement.clientWidth;
 				this.height = document.documentElement.clientHeight;
-				this.tryLayout();
+				if (!this.layoutTree.tryLayout([0,0], [this.width,this.height]))
+					console.log('Unable to layout tree');
 				//prevent re-triggering until after a delay
 				this.resizeThrottled = true;
 				setTimeout(() => {this.resizeThrottled = false;}, 100);
 			}
 		},
-		onInnerTileClicked(nodeList: LayoutNode[]){
-			//nodeList is an array of layout-nodes, from the clicked-on-tile's node upward
-			let numNewTiles = nodeList[0].tolNode.children.length;
-			if (numNewTiles == 0){
+		onInnerTileClicked(node: LayoutNode){
+			if (node.tolNode.children.length == 0){
 				console.log('Tile-to-expand has no children');
 				return;
 			}
-			//add children
-			nodeList[0].children = nodeList[0].tolNode.children.map((n: TolNode) => new LayoutNode(n, []));
-			layoutInfoHooks.updateLayoutInfoOnExpand(nodeList);
-			//try to re-layout
-			if (!this.tryLayout()){
-				nodeList[0].children = [];
-				layoutInfoHooks.updateLayoutInfoOnCollapse(nodeList);
-			}
-		},
-		onInnerHeaderClicked(nodeList: LayoutNode[]){
-			//nodeList is an array of layout-nodes, from the clicked-on-tile's node upward
-			let children = nodeList[0].children;
-			nodeList[0].children = [];
-			layoutInfoHooks.updateLayoutInfoOnCollapse(nodeList);
-			if (!this.tryLayout()){
-				nodeList[0].children = children;
-				layoutInfoHooks.updateLayoutInfoOnExpand(nodeList);
-			}
-		},
-		tryLayout(){
-			let newLayout = genLayout(this.layoutTree, [0,0], [this.width,this.height], true);
-			if (newLayout == null){
+			if (!this.layoutTree.tryLayoutOnExpand([0,0], [this.width,this.height], node))
 				console.log('Unable to layout tree');
-				return false;
-			} else {
-				this.applyLayout(newLayout, this.layoutTree);
-				return true;
-			}
 		},
-		applyLayout(newLayout: LayoutNode, layoutTree: LayoutNode){
-			layoutTree.pos = newLayout.pos;
-			layoutTree.dims = newLayout.dims;
-			layoutTree.headerSz = newLayout.headerSz;
-			newLayout.children.forEach((n,i) => this.applyLayout(n, layoutTree.children[i]));
-			//handle case where leaf nodes placed in leftover space from parent-sweep
-			if (newLayout.sepSweptArea != null){
-				//add parent area coords
-				layoutTree.sepSweptArea = newLayout.sepSweptArea;
-				//move leaf node children to parent area
-				layoutTree.children.filter(n => n.children.length == 0).map(n => {
-					n.pos[0] += newLayout.sepSweptArea!.pos[0],
-					n.pos[1] += newLayout.sepSweptArea!.pos[1]
-				});
-			} else {
-				layoutTree.sepSweptArea = null;
-			}
-		}
+		onInnerHeaderClicked(node: LayoutNode){
+			if (!this.layoutTree.tryLayoutOnCollapse([0,0], [this.width,this.height], node))
+				console.log('Unable to layout tree');
+		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
-		this.tryLayout();
+		if (!this.layoutTree.tryLayout([0,0], [this.width,this.height]))
+			console.log('Unable to layout tree');
 	},
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);
@@ -120,7 +86,9 @@ export default defineComponent({
 
 <template>
 <div class="h-[100vh]">
-	<tile :layoutNode="layoutTree" @tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"></tile>
+	<tile :layoutNode="layoutTree.root"
+		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing"
+		:transitionDuration="otherOptions.transitionDuration"
+		@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"></tile>
 </div>
 </template>
-
