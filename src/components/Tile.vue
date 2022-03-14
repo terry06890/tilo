@@ -1,6 +1,6 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
-import {LayoutNode} from '../layout';
+import {LayoutNode} from '../lib';
 
 export default defineComponent({
 	name: 'tile',

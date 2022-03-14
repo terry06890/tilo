@@ -1,8 +1,12 @@
 <script lang="ts">
 import {defineComponent} from 'vue';
 import Tile from './Tile.vue';
+import {TolNode, LayoutTree, LayoutNode} from '../lib';
+import type {LayoutOptions} from '../lib';
+//regarding importing a file f1.ts:
+	//using 'import f1.ts' makes vue-tsc complain, and 'import f1.js' makes vite complain
+	//using 'import f1' might cause problems with build systems other than vite
 
-import {TolNode} from '../types';
 import tol from '../tol.json';
 function preprocessTol(tree: any): void {
 	if (!tree.children){
@@ -12,12 +16,6 @@ function preprocessTol(tree: any): void {
 	}
 }
 preprocessTol(tol);
-
-import {LayoutTree, LayoutNode} from '../layout';
-import type {LayoutOptions} from '../layout';
-//regarding importing a file f1.ts:
-	//using 'import f1.ts' makes vue-tsc complain, and 'import f1.js' makes vite complain
-	//using 'import f1' might cause problems with build systems other than vite
 
 let defaultLayoutOptions: LayoutOptions = {
 	tileSpacing: 5,

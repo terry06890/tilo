@@ -1,5 +1,11 @@
-import {TolNode} from './types';
-
+export class TolNode {
+	name: string;
+	children: TolNode[];
+	constructor(name: string, children: TolNode[] = []){
+		this.name = name;
+		this.children = children;
+	}
+}
 export class LayoutTree {
 	root: LayoutNode;
 	options: LayoutOptions;
@@ -120,7 +126,7 @@ export class SepSweptArea {
 	pos: [number, number];
 	dims: [number, number];
 	sweptLeft: boolean;
-	constructor(pos: [number, number], dims: [number, number], sweptLeft: boolean, tileSpacing: number){
+	constructor(pos: [number, number], dims: [number, number], sweptLeft: boolean){
 		this.pos = pos;
 		this.dims = dims;
 		this.sweptLeft = sweptLeft;
