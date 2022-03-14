@@ -67,8 +67,8 @@ export default defineComponent({
 		<div v-if="layoutNode.sepSweptArea"
 			:style="{position: 'absolute',
 				left: layoutNode.sepSweptArea.pos[0]+'px', top: layoutNode.sepSweptArea.pos[1]+'px',
-				width: (layoutNode.sepSweptArea.dims[0]+(layoutNode.sepSweptArea.sweptLeft ? tileSpacing+1 : 0))+'px',
-				height: (layoutNode.sepSweptArea.dims[1]+(layoutNode.sepSweptArea.sweptLeft ? 0 : tileSpacing+1))+'px',
+				width: (layoutNode.sepSweptArea.dims[0]+(layoutNode.sepSweptArea.sweptLeft ? 1 : 0))+'px',
+				height: (layoutNode.sepSweptArea.dims[1]+(layoutNode.sepSweptArea.sweptLeft ? 0 : 1))+'px',
 				borderRightColor: (layoutNode.sepSweptArea.sweptLeft ? 'white' : 'currentColor'),
 				borderBottomColor: (layoutNode.sepSweptArea.sweptLeft ? 'currentColor' : 'white'),
 				transitionDuration: transitionDuration+'ms'}"
