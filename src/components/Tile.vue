@@ -67,16 +67,20 @@ export default defineComponent({
 			@click="onHeaderClick">
 			{{layoutNode.tolNode.name}}
 		</div>
-		<div v-if="layoutNode.sepSweptArea"
+		<div
 			:style="{position: 'absolute',
-				left: layoutNode.sepSweptArea.pos[0]+'px', top: layoutNode.sepSweptArea.pos[1]+'px',
-				width: (layoutNode.sepSweptArea.dims[0]+(layoutNode.sepSweptArea.sweptLeft ? 1 : 0))+'px',
-				height: (layoutNode.sepSweptArea.dims[1]+(layoutNode.sepSweptArea.sweptLeft ? 0 : 1))+'px',
-				borderRightColor: (layoutNode.sepSweptArea.sweptLeft ? 'white' : 'currentColor'),
-				borderBottomColor: (layoutNode.sepSweptArea.sweptLeft ? 'currentColor' : 'white'),
+				left: layoutNode.sepSweptArea ? layoutNode.sepSweptArea.pos[0]+'px' : 0,
+				top: layoutNode.sepSweptArea ? layoutNode.sepSweptArea.pos[1]+'px' : headerSz+'px',
+				width: layoutNode.sepSweptArea ?
+					(layoutNode.sepSweptArea.dims[0]+(layoutNode.sepSweptArea.sweptLeft ? 1 : 0))+'px' : 0,
+				height: layoutNode.sepSweptArea ?
+					(layoutNode.sepSweptArea.dims[1]+(layoutNode.sepSweptArea.sweptLeft ? 0 : 1))+'px' : 0,
+				borderWidth: layoutNode.sepSweptArea ? '1px' : 0,
+				borderRightColor: (layoutNode.sepSweptArea && layoutNode.sepSweptArea.sweptLeft ? 'white' : 'currentColor'),
+				borderBottomColor: (layoutNode.sepSweptArea && layoutNode.sepSweptArea.sweptLeft ? 'currentColor' : 'white'),
 				transitionDuration: transitionDuration+'ms'}"
-			class="transition-[left,top,width,height] ease-out border border-stone-900 bg-white">
-			<div v-if="!layoutNode.sepSweptArea.sweptLeft" :style="{height: headerSz+'px'}"
+			class="transition-[left,top,width,height] ease-out border-solid border-stone-900 bg-white">
+			<div v-if="layoutNode.sepSweptArea && !layoutNode.sepSweptArea.sweptLeft" :style="{height: headerSz+'px'}"
 				class="text-center overflow-hidden text-ellipsis hover:cursor-pointer bg-stone-300"
 				@click="onHeaderClick">
 				{{layoutNode.tolNode.name}}
