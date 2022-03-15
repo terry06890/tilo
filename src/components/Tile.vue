@@ -63,7 +63,8 @@ export default defineComponent({
 			v-if="(layoutNode.showHeader && !layoutNode.sepSweptArea) ||
 				(layoutNode.sepSweptArea && layoutNode.sepSweptArea.sweptLeft)"
 			:style="{height: headerSz+'px'}"
-			class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
+			class="text-center overflow-hidden text-ellipsis hover:cursor-pointer bg-stone-300"
+			@click="onHeaderClick">
 			{{layoutNode.tolNode.name}}
 		</div>
 		<div v-if="layoutNode.sepSweptArea"
@@ -76,7 +77,8 @@ export default defineComponent({
 				transitionDuration: transitionDuration+'ms'}"
 			class="transition-[left,top,width,height] ease-out border border-stone-900 bg-white">
 			<div v-if="!layoutNode.sepSweptArea.sweptLeft" :style="{height: headerSz+'px'}"
-				class="text-center hover:cursor-pointer bg-stone-300" @click="onHeaderClick">
+				class="text-center overflow-hidden text-ellipsis hover:cursor-pointer bg-stone-300"
+				@click="onHeaderClick">
 				{{layoutNode.tolNode.name}}
 			</div>
 		</div>
