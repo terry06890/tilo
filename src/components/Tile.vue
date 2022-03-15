@@ -15,7 +15,7 @@ export default defineComponent({
 		transitionDuration: {type: Number, required: true},
 		headerSz: {type: Number, required: true},
 		tileSpacing: {type: Number, required: true},
-		center: {type: Array, default: null},
+		center: {type: Array as unknown as PropType<[number,number]>, default: null},
 	},
 	computed: {
 		name(){return this.layoutNode.tolNode.name.replaceAll('\'', '\\\'')}

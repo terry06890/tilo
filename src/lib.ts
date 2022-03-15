@@ -172,15 +172,16 @@ let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
 	if (minOuterEmp == Number.POSITIVE_INFINITY)
 		return null;
 	//get child layouts
-	let childLayouts = arrayOf(null, numChildren);
+	let childLayouts: LayoutNode[] = new Array(numChildren);
 	let empSpc = (numCols*numRows-numChildren)*(tileSize-opts.tileSpacing)**2;
 	for (let i = 0; i < numChildren; i++){
 		let child = node.children[i];
 		let childX = opts.tileSpacing + (i % numCols)*(tileSize + opts.tileSpacing);
 		let childY = opts.tileSpacing + headerSz + Math.floor(i / numCols)*(tileSize + opts.tileSpacing);
-		childLayouts[i] = sqrLayoutFn(child, [childX,childY], [tileSize,tileSize], true, opts);
-		if (childLayouts[i] == null)
+		let lyt = sqrLayoutFn(child, [childX,childY], [tileSize,tileSize], true, opts);
+		if (lyt == null)
 			return null;
+		childLayouts[i] = lyt;
 		empSpc += childLayouts[i].empSpc;
 	}
 	let newNode = new LayoutNode(node.tolNode, childLayouts, pos,
@@ -239,7 +240,7 @@ let rectLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpt
 			}
 		}
 		//create list-of-lists representing each row's cells' dCounts
-		let rowsOfCnts: number[][] = arrayOf([], rowBrks.length);
+		let rowsOfCnts: number[][] = new Array(rowBrks.length).fill([]);
 		for (let r = 0; r < rowBrks.length; r++){
 			let numNodes = (r == rowBrks.length-1) ? numChildren-rowBrks[r] : rowBrks[r+1]-rowBrks[r];
 			let rowNodeIdxs = seq(numNodes).map(i => i+rowBrks![r]);
@@ -248,7 +249,7 @@ let rectLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpt
 		//get cell dims
 		let totalTileCount = node.children.map(n => n.dCount).reduce((x,y) => x+y);
 		let cellHs = rowsOfCnts.map(row => row.reduce((x,y) => x+y) / totalTileCount * availH);
-		let cellWs = arrayOf(0, numChildren);
+		let cellWs: number[] = new Array(numChildren);
 		for (let r = 0; r < rowsOfCnts.length; r++){
 			let rowCount = rowsOfCnts[r].reduce((x,y) => x+y);
 			for (let c = 0; c < rowsOfCnts[r].length; c++){
@@ -267,19 +268,19 @@ let rectLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpt
 			cellWs.splice(rowBrks[r], rowsOfCnts[r].length, ...temp);
 		}
 		//get cell x/y coords
-		let cellXs = arrayOf(0, cellWs.length);
+		let cellXs: number[] = new Array(cellWs.length).fill(0);
 		for (let r = 0; r < rowBrks.length; r++){
 			for (let c = 1; c < rowsOfCnts[r].length; c++){
 				let nodeIdx = rowBrks[r]+c;
 				cellXs[nodeIdx] = cellXs[nodeIdx-1] + cellWs[nodeIdx-1];
 			}
 		}
-		let cellYs = arrayOf(0, cellHs.length);
+		let cellYs: number[] = new Array(cellHs.length).fill(0);
 		for (let r = 1; r < rowBrks.length; r++){
 			cellYs[r] = cellYs[r-1] + cellHs[r-1];
 		}
 		//get child layouts and empty-space
-		let childLyts = arrayOf(null, numChildren);
+		let childLyts: LayoutNode[] = new Array(numChildren);
 		let minEmpH = Number.POSITIVE_INFINITY, lastEmpV = 0, empSpc = 0;
 		for (let r = 0; r < rowBrks.length; r++){
 			let minEmpVert = Number.POSITIVE_INFINITY;
@@ -288,18 +289,19 @@ let rectLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpt
 				let child = node.children[nodeIdx];
 				let childX = cellXs[nodeIdx] + opts.tileSpacing, childY = cellYs[r] + opts.tileSpacing + headerSz,
 					childW = cellWs[nodeIdx] - opts.tileSpacing, childH = cellHs[r] - opts.tileSpacing;
+				let newChild: LayoutNode | null = null;
 				if (child.children.length == 0){
 					let contentSz = Math.min(childW, childH, opts.maxTileSz);
-					childLyts[nodeIdx] = new LayoutNode(child.tolNode, [], [childX,childY], [contentSz,contentSz]);
+					newChild = new LayoutNode(child.tolNode, [], [childX,childY], [contentSz,contentSz]);
 				} else if (child.children.every(n => n.children.length == 0)){
-					childLyts[nodeIdx] = sqrLayoutFn(child, [childX,childY], [childW,childH], true, opts);
+					newChild = sqrLayoutFn(child, [childX,childY], [childW,childH], true, opts);
 				} else {
 					let layoutFn = (ownOpts && ownOpts.subLayoutFn) || rectLayoutFn;
-					childLyts[nodeIdx] = layoutFn(child, [childX,childY], [childW,childH], true, opts);
+					newChild = layoutFn(child, [childX,childY], [childW,childH], true, opts);
 				}
-				if (childLyts[nodeIdx] == null)
+				if (newChild == null)
 					continue rowBrksLoop;
-				let newChild = childLyts[nodeIdx];
+				childLyts[nodeIdx] = newChild;
 				empSpc += newChild.empSpc + (childW*childH)-(newChild.dims[0]*newChild.dims[1]);
 				//handle horizontal empty-space-shifting
 				if (opts.rectSpaceShifting){
@@ -514,7 +516,7 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 //clips values in array to within [min,max], and redistributes to compensate, returning null if unable
 function limitVals(arr: number[], min: number, max: number): number[]|null {
 	let vals = [...arr];
-	let clipped = arrayOf(false, vals.length);
+	let clipped: boolean[] = new Array(vals.length).fill(false);
 	let owedChg = 0;
 	while (true){
 		for (let i = 0; i < vals.length; i++){
@@ -549,9 +551,6 @@ function limitVals(arr: number[], min: number, max: number): number[]|null {
 		}
 		owedChg = 0;
 	}
-}
-function arrayOf(val: any, len: number){ //returns an array of 'len' 'val's
-	return Array(len).fill(val);
 }
 function seq(len: number){ //returns [0, ..., len]
 	return [...Array(len).keys()];
