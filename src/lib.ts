@@ -31,8 +31,9 @@ export class LayoutTree {
 			case 'rect':  newLayout =  rectLayoutFn(this.root, pos, dims, true, this.options); break;
 			case 'sweep': newLayout = sweepLayoutFn(this.root, pos, dims, true, this.options); break;
 		}
-		if (newLayout == null)
+		if (newLayout == null){
 			return false;
+		}
 		this.copyTreeForRender(newLayout, this.root);
 		return true;
 	}
