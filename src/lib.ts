@@ -134,7 +134,8 @@ export class SepSweptArea {
 }
 
 type LayoutFn = (node: LayoutNode, pos: [number, number], dims: [number, number], showHeader: boolean,
-	opts: LayoutOptions, ownOpts?: {subLayoutFn?: LayoutFn, sepSweptArea?: SepSweptArea|null}) => LayoutNode | null;
+	opts: LayoutOptions, ownOpts?: {subLayoutFn?: LayoutFn, sepAreaInfo?: {avail: SepSweptArea, usedLen: number}|null}
+	) => LayoutNode | null;
 
 //lays out nodes as squares in a rectangle, with spacing
 let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
@@ -344,7 +345,7 @@ let rectLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpt
 	return newNode;
 }
 //lays out nodes by pushing leaves to one side, partially using other layouts for children
-let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpts={sepSweptArea: null}){
+let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpts={sepAreaInfo: null}){
 	//separate leaf and non-leaf nodes
 	let leaves: LayoutNode[] = [], nonLeaves: LayoutNode[] = [];
 	node.children.forEach(n => (n.children.length == 0 ? leaves : nonLeaves).push(n));
@@ -359,10 +360,11 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 		let headerSz = showHeader ? opts.headerSz : 0;
 		let sweptLayout = null, nonLeavesLayout = null, sweptLeft = false;
 		//get swept-area layout
-		let usedParentArea = null, usingParentArea = false, sepSweptArea = null;
-		if (opts.sweepingToParent && ownOpts.sepSweptArea){
-			usedParentArea = ownOpts.sepSweptArea.clone();
-			let parentArea = ownOpts.sepSweptArea;
+		let usedParentArea = null, usingParentArea = false;
+		let sepAreaInfo: {avail: SepSweptArea, usedLen: number}|null = null;
+		if (opts.sweepingToParent && ownOpts.sepAreaInfo){
+			let parentArea = ownOpts.sepAreaInfo.avail;
+			usedParentArea = ownOpts.sepAreaInfo.avail.clone();
 			tempTree = new LayoutNode(new TolNode('SWEEP_' + node.tolNode.name), leaves);
 				//not updating the children to point to tempTree as a parent seems acceptable here
 			sweptLeft = parentArea.sweptLeft;
@@ -373,14 +375,14 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 					n.pos[0] += parentArea!.pos[0];
 					n.pos[1] += parentArea!.pos[1];
 				});
-				//update parent-area
+				//update sepAreaInfo
 				if (sweptLeft){
 					parentArea.pos[1] += sweptLayout.dims[1] - opts.tileSpacing - headerSz;
-					parentArea.dims[1] += -sweptLayout.dims[1] - opts.tileSpacing;
+					parentArea.dims[1] = Math.max(0, parentArea.dims[1] - sweptLayout.dims[1] - opts.tileSpacing*2);
 				} else {
 					parentArea.pos[0] += sweptLayout.dims[0] - opts.tileSpacing;
 					parentArea.pos[1] += headerSz;
-					parentArea.dims[0] += -sweptLayout.dims[0] - opts.tileSpacing;
+					parentArea.dims[0] = Math.max(0, parentArea.dims[0] - sweptLayout.dims[0] - opts.tileSpacing*2);
 					parentArea.dims[1] += -headerSz;
 				}
 				//get remaining-area layout
@@ -390,27 +392,36 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 					nonLeavesLayout = rectLayoutFn(tempTree, [0,0], newDims, false, opts, {subLayoutFn: sweepLayoutFn});
 				} else {
 					nonLeavesLayout = rectLayoutFn(tempTree, [0,0], newDims, false, opts,
-						{subLayoutFn: (n,p,d,h,o) => sweepLayoutFn(n,p,d,h,o,{sepSweptArea:parentArea})});
+						{subLayoutFn: (n,p,d,h,o) => sweepLayoutFn(n,p,d,h,o,{sepAreaInfo:ownOpts.sepAreaInfo})});
 				}
 				if (nonLeavesLayout != null){
 					nonLeavesLayout.children.forEach(layout => {layout.pos[1] += (sweptLeft ? headerSz : 0)});
+					//
+					ownOpts.sepAreaInfo.usedLen += sweptLeft ? sweptLayout.dims[1] : sweptLayout.dims[0];
+					let usedLen = ownOpts.sepAreaInfo.usedLen;
 					if (sweptLeft){
-						nonLeavesLayout.dims[1] = Math.max(nonLeavesLayout.dims[1], dims[1] - parentArea.dims[1]);
-						usedParentArea.dims[1] = Math.max(
-							usedParentArea.dims[1] - parentArea.dims[1], 
-							nonLeavesLayout.dims[1] + headerSz - usedParentArea.pos[1]);
+						usedParentArea.dims[1] = usedLen;
+						if (usedParentArea.pos[1] + usedLen > nonLeavesLayout.dims[1] + headerSz){
+							nonLeavesLayout.dims[1] = usedParentArea.pos[1] + usedLen - headerSz
+						} else {
+							usedParentArea.dims[1] = nonLeavesLayout.dims[1] + headerSz - usedParentArea.pos[1];
+						}
+						usedParentArea.dims[0] -= opts.tileSpacing;
 					} else {
-						nonLeavesLayout.dims[0] = Math.max(nonLeavesLayout.dims[0], dims[0] - parentArea.dims[0]);
-						usedParentArea.dims[0] = Math.max(
-							usedParentArea.dims[0] - parentArea.dims[0],
-							nonLeavesLayout.dims[0] - usedParentArea.pos[0]);
+						usedParentArea.dims[0] = usedLen;
+						if (usedParentArea.pos[0] + usedLen > nonLeavesLayout.dims[0]){
+							nonLeavesLayout.dims[0] = usedParentArea.pos[0] + usedLen;
+						} else {
+							usedParentArea.dims[0] = nonLeavesLayout.dims[0] - usedParentArea.pos[0];
+						}
+						usedParentArea.dims[1] -= opts.tileSpacing;
 					}
 					usingParentArea = true;
 				}
 			}
 		}
 		if (!usingParentArea){
-			let newDims: [number,number] = [dims[0] - opts.tileSpacing, dims[1]-opts.tileSpacing-headerSz];
+			let newDims: [number,number] = [dims[0], dims[1]-headerSz];
 			tempTree = new LayoutNode(new TolNode('SWEEP_' + node.tolNode.name), leaves);
 			let xyChg: [number,number];
 			//get swept-area layout
@@ -449,23 +460,25 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 			} else {
 				//get leftover swept-layout-area to propagate
 				if (sweptLeft){
-					sepSweptArea = new SepSweptArea( //pos is relative to the non-leaves-area
-						[-sweptLayout.dims[0]+opts.tileSpacing, sweptLayout.dims[1]-opts.tileSpacing],
-						[sweptLayout.dims[0]-opts.tileSpacing, newDims[1]-sweptLayout.dims[1]-opts.tileSpacing],
-						sweptLeft
-					);
+					sepAreaInfo = {
+						avail: new SepSweptArea( //pos is relative to the non-leaves-area
+							[-sweptLayout.dims[0]+opts.tileSpacing, sweptLayout.dims[1]-opts.tileSpacing],
+							[sweptLayout.dims[0], Math.max(0, newDims[1]-sweptLayout.dims[1]-opts.tileSpacing*2)],
+							sweptLeft),
+						usedLen: 0
+					};
 				} else {
-					sepSweptArea = new SepSweptArea(
-						[sweptLayout.dims[0]-opts.tileSpacing, -sweptLayout.dims[1]+opts.tileSpacing],
-						[newDims[0]-sweptLayout.dims[0]-opts.tileSpacing, sweptLayout.dims[1]-opts.tileSpacing],
-						sweptLeft
-					);
+					sepAreaInfo = {
+						avail: new SepSweptArea(
+							[sweptLayout.dims[0]-opts.tileSpacing, -sweptLayout.dims[1]+opts.tileSpacing],
+							[Math.max(0, newDims[0]-sweptLayout.dims[0]-opts.tileSpacing*2), sweptLayout.dims[1]],
+							sweptLeft),
+						usedLen: 0
+					};
 				}
-				sepSweptArea.dims[0] = Math.abs(sepSweptArea.dims[0]);
-				sepSweptArea.dims[1] = Math.abs(sepSweptArea.dims[1]);
 				//generate layout
 				nonLeavesLayout = rectLayoutFn(tempTree, [0,0], newDims, false, opts,
-					{subLayoutFn: (n,p,d,h,o) => sweepLayoutFn(n,p,d,h,o,{sepSweptArea:sepSweptArea})});
+					{subLayoutFn: (n,p,d,h,o) => sweepLayoutFn(n,p,d,h,o,{sepAreaInfo:sepAreaInfo})});
 			}
 			if (nonLeavesLayout == null)
 				return null;
@@ -483,14 +496,14 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 			.map(i => children.findIndex(n => n == node.children[i]))
 			.map(i => layouts[i]);
 		let newDims: [number,number] = (usingParentArea ?
-			[nonLeavesLayout.dims[0], nonLeavesLayout.dims[1] + headerSz] :
+			[nonLeavesLayout.dims[0], nonLeavesLayout.dims[1] + (sweptLeft ? headerSz : 0)] :
 			(sweptLeft ?
 				[sweptLayout.dims[0] + nonLeavesLayout.dims[0] - opts.tileSpacing,
-					Math.max(dims[1]-sepSweptArea.dims[1], nonLeavesLayout.dims[1]+opts.tileSpacing+headerSz)] :
-				[Math.max(dims[0]-sepSweptArea.dims[0], nonLeavesLayout.dims[0]),
+					Math.max(sweptLayout.dims[1]-(sepAreaInfo ? sepAreaInfo.usedLen : 0),
+						nonLeavesLayout.dims[1]) + headerSz] :
+				[Math.max(sweptLayout.dims[0]-(sepAreaInfo ? sepAreaInfo.usedLen : 0), nonLeavesLayout.dims[0]),
 					sweptLayout.dims[1] + nonLeavesLayout.dims[1] - opts.tileSpacing + headerSz]));
-		let empSpc = sweptLayout.empSpc + nonLeavesLayout.empSpc + (usingParentArea ? 0 : newDims[0]*newDims[1] -
-			sweptLayout.dims[0]*sweptLayout.dims[1] - nonLeavesLayout.dims[0]*nonLeavesLayout.dims[1]);
+		let empSpc = (usingParentArea ? 0 : sweptLayout.empSpc) + nonLeavesLayout.empSpc;
 		let newNode = new LayoutNode(node.tolNode, layoutsInOldOrder, pos, newDims,
 			{showHeader, empSpc, sepSweptArea: usingParentArea ? usedParentArea : null});
 		layoutsInOldOrder.forEach(n => n.parent = newNode);
