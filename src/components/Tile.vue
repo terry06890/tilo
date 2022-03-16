@@ -2,93 +2,176 @@
 import {defineComponent, PropType} from 'vue';
 import {LayoutNode} from '../lib';
 
+//component holds a tree-node structure representing a tile or tile-group to be rendered
 export default defineComponent({
-	name: 'tile',
-	data(){
-		return {
-			zIdx: 0,
-			overFlow: 'visible',
-		}
-	},
+	name: 'tile', //need this to use self in template
 	props: {
 		layoutNode: {type: Object as PropType<LayoutNode>, required: true},
+		isRoot: {type: Boolean, default: false},
+		//settings passed in from parent component
 		transitionDuration: {type: Number, required: true},
 		headerSz: {type: Number, required: true},
 		tileSpacing: {type: Number, required: true},
-		center: {type: Array as unknown as PropType<[number,number]>, default: null},
+	},
+	data(){
+		return {
+			//used during transitions and to emulate/show an apparently-joined div
+			zIdx: 0,
+			overflow: this.isRoot ? 'hidden' : 'visible',
+		}
 	},
 	computed: {
-		name(){return this.layoutNode.tolNode.name.replaceAll('\'', '\\\'')}
+		showHeader(){
+			return (this.layoutNode.showHeader && !this.layoutNode.sepSweptArea) ||
+				(this.layoutNode.sepSweptArea && this.layoutNode.sepSweptArea.sweptLeft);
+		},
+		tileStyles(): Record<string,string> {
+			return {
+				//place using layoutNode, with centering if root
+				position: 'absolute',
+				top: this.isRoot ? '50%' : this.layoutNode.pos[1] + 'px',
+				left: this.isRoot ? '50%' : this.layoutNode.pos[0] + 'px',
+				transform: this.isRoot ? 'translate(-50%, -50%)' : 'none',
+				width: this.layoutNode.dims[0] + 'px',
+				height: this.layoutNode.dims[1] + 'px',
+				//other bindings
+				transitionDuration: this.transitionDuration + 'ms',
+				zIndex: String(this.zIdx),
+				overflow: String(this.overflow),
+				//static
+				outline: 'black solid 1px',
+				backgroundColor: 'white',
+				transitionProperty: 'top, left, width, height',
+				transitionTimingFunction: 'ease-out',
+			};
+		},
+		leafStyles(): Record<string,string> {
+			return {
+				width: '100%',
+				height: '100%',
+				backgroundImage: 'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.jpg\')',
+				backgroundSize: 'cover',
+				opacity: (this.layoutNode.tolNode.children.length > 0) ? '1' : '0.7',
+			};
+		},
+		headerStyles(): Record<string,string> {
+			return {
+				height: this.headerSz + 'px',
+				backgroundColor: 'lightgray',
+				textAlign: 'center',
+				overflow: 'hidden',
+				textOverflow: 'ellipsis',
+				whiteSpace: 'nowrap',
+			};
+		},
+		sepSweptAreaStyles(): Record<string,string> {
+			let commonStyles = {
+				position: 'absolute',
+				backgroundColor: 'white',
+				transitionDuration: this.transitionDuration + 'ms',
+				transitionProperty: 'top, left, width, height',
+				transitionTimingFunction: 'ease-out',
+			};
+			let area = this.layoutNode.sepSweptArea;
+			if (area == null){
+				return {
+					...commonStyles,
+					visibility: 'hidden',
+					top: this.headerSz + 'px',
+					left: '0',
+					width: '0',
+					height: '0',
+				};
+			} else {
+				return {
+					...commonStyles,
+					top: area.pos[1] + 'px',
+					left: area.pos[0] + 'px',
+					width: (area.dims[0] + (area.sweptLeft ? 1 : 0)) + 'px',
+					height: (area.dims[1] + (area.sweptLeft ? 0 : 1)) + 'px',
+				};
+			}
+		},
+		sepSweptAreaOutlineClasses(){
+			let area = this.layoutNode.sepSweptArea;
+			return ['outline-top-left', (area && area.sweptLeft) ? 'outline-bottom-left' : 'outline-top-right'];
+		},
 	},
 	methods: {
-		onImgClick(){
-			this.$emit('tile-clicked', this.layoutNode);
+		onLeafClick(){
+			this.$emit('leaf-clicked', this.layoutNode);
 			//increase z-index and hide overflow during transition
 			this.zIdx = 1;
-			this.overFlow = 'hidden';
-			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, this.transitionDuration);
+			this.overflow = 'hidden';
+			setTimeout(() => {this.zIdx = 0; this.overflow = 'visible'}, this.transitionDuration);
 		},
-		onInnerTileClicked(node: LayoutNode){
-			this.$emit('tile-clicked', node);
+		onInnerLeafClicked(node: LayoutNode){
+			this.$emit('leaf-clicked', node);
 		},
 		onHeaderClick(){
 			this.$emit('header-clicked', this.layoutNode);
 			//increase z-index and hide overflow during transition
 			this.zIdx = 1;
-			this.overFlow = 'hidden';
-			setTimeout(() => {this.zIdx = 0; this.overFlow = 'visible'}, this.transitionDuration);
+			this.overflow = 'hidden';
+			setTimeout(() => {this.zIdx = 0; this.overflow = 'visible'}, this.transitionDuration);
 		},
 		onInnerHeaderClicked(node: LayoutNode){
 			this.$emit('header-clicked', node);
-		}
-	}
-})
+		},
+	},
+});
 </script>
 
 <template>
-<div
-	:style="{position: 'absolute',
-		left: (center ? (center[0]-layoutNode.dims[0])/2 : layoutNode.pos[0]) + 'px',
-		top: (center ? (center[1]-layoutNode.dims[1])/2 : layoutNode.pos[1]) + 'px',
-		width: layoutNode.dims[0]+'px', height: layoutNode.dims[1]+'px',
-		zIndex: zIdx, overflow: overFlow, transitionDuration: transitionDuration+'ms'}"
-	class="transition-[left,top,width,height] ease-out outline outline-1 bg-white">
+<div :style="tileStyles">
 	<div v-if="layoutNode.children.length == 0"
-		:style="{backgroundImage: 'url(\'/img/' + name + '.jpg\')',
-			opacity: (layoutNode.tolNode.children.length > 0 ? 1 : 0.7)}"
-		class="hover:cursor-pointer w-full h-full bg-cover" @click="onImgClick"
-		/>
+		:style="leafStyles" class="hover:cursor-pointer" @click="onLeafClick"/>
 	<div v-else>
-		<div
-			v-if="(layoutNode.showHeader && !layoutNode.sepSweptArea) ||
-				(layoutNode.sepSweptArea && layoutNode.sepSweptArea.sweptLeft)"
-			:style="{height: headerSz+'px'}"
-			class="text-center overflow-hidden text-ellipsis hover:cursor-pointer bg-stone-300"
-			@click="onHeaderClick">
+		<div v-if="showHeader" :style="headerStyles" class="hover:cursor-pointer" @click="onHeaderClick">
 			{{layoutNode.tolNode.name}}
 		</div>
-		<div
-			:style="{position: 'absolute',
-				left: layoutNode.sepSweptArea ? layoutNode.sepSweptArea.pos[0]+'px' : 0,
-				top: layoutNode.sepSweptArea ? layoutNode.sepSweptArea.pos[1]+'px' : headerSz+'px',
-				width: layoutNode.sepSweptArea ?
-					(layoutNode.sepSweptArea.dims[0]+(layoutNode.sepSweptArea.sweptLeft ? 1 : 0))+'px' : 0,
-				height: layoutNode.sepSweptArea ?
-					(layoutNode.sepSweptArea.dims[1]+(layoutNode.sepSweptArea.sweptLeft ? 0 : 1))+'px' : 0,
-				transitionDuration: transitionDuration+'ms'}"
-			class="transition-[left,top,width,height] ease-out bg-white
-				before:absolute before:bg-black before:-top-[1px] before:-left-[1px] before:w-full before:h-full before:-z-10
-				after:absolute after:bg-black after:-bottom-[1px] after:-left-[1px] after:w-full after:h-full after:-z-10">
-			<div v-if="layoutNode.sepSweptArea && !layoutNode.sepSweptArea.sweptLeft" :style="{height: headerSz+'px'}"
-				class="text-center overflow-hidden text-ellipsis hover:cursor-pointer bg-stone-300"
-				@click="onHeaderClick">
+		<div :style="sepSweptAreaStyles" :class="sepSweptAreaOutlineClasses">
+			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
+				:style="headerStyles" class="hover:cursor-pointer" @click="onHeaderClick">
 				{{layoutNode.tolNode.name}}
 			</div>
 		</div>
 		<tile v-for="child in layoutNode.children" :key="child.tolNode.name" :layoutNode="child"
 			:headerSz="headerSz" :tileSpacing="tileSpacing" :transitionDuration="transitionDuration"
-			@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"
-			></tile>
+			@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"/>
 	</div>
 </div>
 </template>
+
+<style>
+.outline-top-left::before {
+	content: '';
+	position: absolute;
+	background-color: black;
+	top: -1px;
+	left: -1px;
+	width: 100%;
+	height: 100%;
+	z-index: -10;
+}
+.outline-bottom-left::after {
+	content: '';
+	position: absolute;
+	background-color: black;
+	bottom: -1px;
+	left: -1px;
+	width: 100%;
+	height: 100%;
+	z-index: -10;
+}
+.outline-top-right::after {
+	content: '';
+	position: absolute;
+	background-color: black;
+	top: -1px;
+	right: -1px;
+	width: 100%;
+	height: 100%;
+	z-index: -10;
+}
+</style>

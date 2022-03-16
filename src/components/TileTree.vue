@@ -3,70 +3,79 @@ import {defineComponent} from 'vue';
 import Tile from './Tile.vue';
 import {TolNode, LayoutTree, LayoutNode} from '../lib';
 import type {LayoutOptions} from '../lib';
-//regarding importing a file f1.ts:
-	//using 'import f1.ts' makes vue-tsc complain, and 'import f1.js' makes vite complain
-	//using 'import f1' might cause problems with build systems other than vite
+//import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
-import tol from '../tol.json';
-function preprocessTol(tree: any): void {
-	if (!tree.children){
-		tree.children = [];
+//obtain tree-of-life data
+import tolRaw from '../tol.json';
+function preprocessTol(node: any): any { //adds 'children' fields if missing
+	if (node.children == null){
+		node.children = [];
 	} else {
-		tree.children.forEach(preprocessTol);
+		node.children.forEach(preprocessTol);
 	}
+	return node;
 }
-preprocessTol(tol);
+const tol: TolNode = preprocessTol(tolRaw);
 
-let defaultLayoutOptions: LayoutOptions = {
+//configurable settings
+let layoutOptions: LayoutOptions = {
+	//integer values specify pixels
 	tileSpacing: 5,
 	headerSz: 20,
-	minTileSz: 50,
-	maxTileSz: 200,
-	layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
+	minTileSz: 20,
+	maxTileSz: 500,
+	layoutType: 'sqr', //'sqr' | 'rect' | 'sweep'
 	rectMode: 'auto', //'horz' | 'vert' | 'linear' | 'auto'
-	rectSpaceShifting: true,
 	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
 	sweptNodesPrio: 'sqrt', //'linear' | 'sqrt' | 'sqrt-when-high'
 	sweepingToParent: true,
 };
-let defaultOtherOptions = {
+let otherOptions = {
+	//integer values specify milliseconds
 	transitionDuration: 300,
+	resizeDelay: 100, //during window-resizing, relayout tiles after this delay instead of continously
 };
 
+//component holds a tree structure representing a subtree of 'tol' to be rendered
+//collects events about tile expansion/collapse and window-resize, and initiates relayout of tiles
 export default defineComponent({
 	data(){
 		return {
-			layoutOptions: defaultLayoutOptions,
-			otherOptions: defaultOtherOptions,
-			layoutTree: new LayoutTree(tol as TolNode, 0, defaultLayoutOptions),
+			layoutTree: new LayoutTree(tol, layoutOptions, 0),
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
+			layoutOptions: layoutOptions,
+			otherOptions: otherOptions,
 			resizeThrottled: false,
 		}
 	},
 	methods: {
 		onResize(){
 			if (!this.resizeThrottled){
+				//update data and relayout tiles
 				this.width = document.documentElement.clientWidth;
 				this.height = document.documentElement.clientHeight;
-				if (!this.layoutTree.tryLayout([0,0], [this.width,this.height]))
+				if (!this.layoutTree.tryLayout([0,0], [this.width,this.height])){
 					console.log('Unable to layout tree');
+				}
 				//prevent re-triggering until after a delay
 				this.resizeThrottled = true;
-				setTimeout(() => {this.resizeThrottled = false;}, 100);
+				setTimeout(() => {this.resizeThrottled = false;}, otherOptions.resizeDelay);
 			}
 		},
-		onInnerTileClicked(node: LayoutNode){
-			if (node.tolNode.children.length == 0){
+		onInnerLeafClicked(clickedNode: LayoutNode){
+			if (clickedNode.tolNode.children.length == 0){
 				console.log('Tile-to-expand has no children');
 				return;
 			}
-			if (!this.layoutTree.tryLayoutOnExpand([0,0], [this.width,this.height], node))
+			if (!this.layoutTree.tryLayoutOnExpand([0,0], [this.width,this.height], clickedNode)){
 				console.log('Unable to layout tree');
+			}
 		},
-		onInnerHeaderClicked(node: LayoutNode){
-			if (!this.layoutTree.tryLayoutOnCollapse([0,0], [this.width,this.height], node))
+		onInnerHeaderClicked(clickedNode: LayoutNode){
+			if (!this.layoutTree.tryLayoutOnCollapse([0,0], [this.width,this.height], clickedNode)){
 				console.log('Unable to layout tree');
+			}
 		},
 	},
 	created(){
@@ -78,16 +87,16 @@ export default defineComponent({
 		window.removeEventListener('resize', this.onResize);
 	},
 	components: {
-		Tile
-	}
-})
+		Tile,
+	},
+});
 </script>
 
 <template>
-<div class="h-[100vh]">
+<div class="h-screen bg-stone-100">
 	<tile :layoutNode="layoutTree.root"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing"
-		:transitionDuration="otherOptions.transitionDuration" :center="[width,height]"
-		@tile-clicked="onInnerTileClicked" @header-clicked="onInnerHeaderClicked"></tile>
+		:transitionDuration="otherOptions.transitionDuration" :isRoot="true"
+		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"/>
 </div>
 </template>

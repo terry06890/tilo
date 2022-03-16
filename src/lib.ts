@@ -1,3 +1,12 @@
+/*
+ * Contains classes used for representing tree-of-life data, and tile-based layouts of such data.
+ *
+ * Generally, given a TolNode with child TolNodes representing tree-of-life T,
+ * a LayoutTree is created for a subtree of T, and represents a tile-based layout of that subtree.
+ * The LayoutTree holds LayoutNodes, each of which holds placement info for a linked TolNode.
+ */
+
+//represents a tree-of-life node/tree
 export class TolNode {
 	name: string;
 	children: TolNode[];
@@ -6,25 +15,29 @@ export class TolNode {
 		this.children = children;
 	}
 }
+//represents a tree of LayoutNode objects, and has methods for (re)computing layout
 export class LayoutTree {
 	root: LayoutNode;
 	options: LayoutOptions;
-	constructor(tol: TolNode, depth: number, options: LayoutOptions){
+	//creates an object representing a TolNode tree, up to a given depth (0 means just the root)
+	constructor(tol: TolNode, options: LayoutOptions, depth: number){
 		this.root = this.initHelper(tol, depth);
 		this.options = options;
 	}
+	//used by constructor to initialise the LayoutNode tree
 	initHelper(tolNode: TolNode, depth: number): LayoutNode {
-		if (depth > 0){
-			let children = tolNode.children.map(
-				(n: TolNode) => this.initHelper(n, depth-1));
+		if (depth == 0){
+			return new LayoutNode(tolNode, []);
+		} else {
+			let children = tolNode.children.map((n: TolNode) => this.initHelper(n, depth-1));
 			let node = new LayoutNode(tolNode, children);
 			children.forEach(n => n.parent = node);
 			return node;
-		} else {
-			return new LayoutNode(tolNode, []);
 		}
 	}
+	//attempts layout of TolNode tree, for an area with given xy-coordinate and width+height (in pixels)
 	tryLayout(pos: [number,number], dims: [number,number]){
+		//create a new LayoutNode tree, keeping the old tree in case of failure
 		let newLayout: LayoutNode | null;
 		switch (this.options.layoutType){
 			case 'sqr':   newLayout =   sqrLayoutFn(this.root, pos, dims, true, this.options); break;
@@ -37,6 +50,7 @@ export class LayoutTree {
 		this.copyTreeForRender(newLayout, this.root);
 		return true;
 	}
+	//attempts layout after adding a node's children to the LayoutNode tree
 	tryLayoutOnExpand(pos: [number,number], dims: [number,number], node: LayoutNode){
 		//add children
 		node.children = node.tolNode.children.map((n: TolNode) => new LayoutNode(n, []));
@@ -50,6 +64,7 @@ export class LayoutTree {
 		}
 		return success;
 	}
+	//attempts layout after removing a node's children from the LayoutNode tree
 	tryLayoutOnCollapse(pos: [number,number], dims: [number,number], node: LayoutNode){
 		//remove children
 		let children = node.children;
@@ -63,17 +78,19 @@ export class LayoutTree {
 		}
 		return success;
 	}
+	//used to copy a new LayoutNode tree's render-relevant data to the old tree
 	copyTreeForRender(node: LayoutNode, target: LayoutNode): void {
 		target.pos = node.pos;
 		target.dims = node.dims;
 		target.showHeader = node.showHeader;
 		target.sepSweptArea = node.sepSweptArea;
-		//these are arguably redundant
+		//these are currently redundant, but maintain data-consistency
 		target.dCount = node.dCount;
 		target.empSpc = node.empSpc;
 		//recurse on children
 		node.children.forEach((n,i) => this.copyTreeForRender(n, target.children[i]));
 	}
+	//used to update a LayoutNode tree's dCount fields after adding/removing a node's children
 	updateDCounts(node: LayoutNode | null, diff: number): void{
 		while (node != null){
 			node.dCount += diff;
@@ -81,32 +98,32 @@ export class LayoutTree {
 		}
 	}
 }
+//contains settings that affect how layout is done
 export type LayoutOptions = {
-	tileSpacing: number;
+	tileSpacing: number; //spacing between tiles, in pixels (ignoring borders)
 	headerSz: number;
-	minTileSz: number;
+	minTileSz: number; //minimum size of a tile edge, in pixels (ignoring borders)
 	maxTileSz: number;
-	layoutType: 'sqr' | 'rect' | 'sweep';
-	rectMode: 'horz' | 'vert' | 'linear' | 'auto';
-	rectSpaceShifting: boolean;
-	sweepMode: 'left' | 'top' | 'shorter' | 'auto';
-	sweptNodesPrio: 'linear' | 'sqrt' | 'sqrt-when-high';
-	sweepingToParent: boolean;
+	layoutType: 'sqr' | 'rect' | 'sweep'; //the LayoutFn function to use
+	rectMode: 'horz' | 'vert' | 'linear' | 'auto'; //layout in 1 row, 1 column, 1 row or column, or multiple rows
+	sweepMode: 'left' | 'top' | 'shorter' | 'auto'; //sweep to left, top, shorter-side, or to minimise empty space
+	sweptNodesPrio: 'linear' | 'sqrt' | 'sqrt-when-high'; //specifies allocation of space to swept-vs-remaining nodes
+	sweepingToParent: boolean; //allow swept nodes to occupy empty space in a parent's swept-leaves area
 };
+//represents a node/tree, and holds layout data for a TolNode node/tree
 export class LayoutNode {
-	//structure-related
 	tolNode: TolNode;
 	children: LayoutNode[];
 	parent: LayoutNode | null;
-	//used for rendering
+	//used for rendering a corresponding tile
 	pos: [number, number];
 	dims: [number, number];
 	showHeader: boolean;
 	sepSweptArea: SepSweptArea | null;
 	//used for layout heuristics
 	dCount: number; //number of descendant leaf nodes
-	empSpc: number;
-	//
+	empSpc: number; //amount of unused space (in pixels)
+	//creates object with given fields ('parent' is generally initialised later, 'dCount' is computed)
 	constructor(
 		tolNode: TolNode, children: LayoutNode[], pos=[0,0] as [number,number], dims=[0,0] as [number,number],
 		{showHeader=false, sepSweptArea=null as SepSweptArea|null, empSpc=0} = {}){
@@ -121,10 +138,11 @@ export class LayoutNode {
 		this.empSpc = empSpc;
 	}
 }
+//used with layout option 'sweepingToParent', and represents, for a LayoutNode, a parent area to place leaf nodes in
 export class SepSweptArea {
 	pos: [number, number];
 	dims: [number, number];
-	sweptLeft: boolean;
+	sweptLeft: boolean; //true if the parent's leaves were swept left
 	constructor(pos: [number, number], dims: [number, number], sweptLeft: boolean){
 		this.pos = pos;
 		this.dims = dims;
@@ -135,10 +153,19 @@ export class SepSweptArea {
 	}
 }
 
-type LayoutFn = (node: LayoutNode, pos: [number, number], dims: [number, number], showHeader: boolean,
-	opts: LayoutOptions, ownOpts?: {subLayoutFn?: LayoutFn, sepAreaInfo?: {avail: SepSweptArea, usedLen: number}|null}
-	) => LayoutNode | null;
-
+//type for functions called by LayoutTree to perform layout
+//returns a new LayoutNode tree for a given LayoutNode's TolNode tree, or null if layout was unsuccessful
+type LayoutFn = (
+	node: LayoutNode,
+	pos: [number, number],
+	dims: [number, number],
+	showHeader: boolean,
+	opts: LayoutOptions,
+	ownOpts?: {
+		subLayoutFn?: LayoutFn,
+		sepAreaInfo?: {avail: SepSweptArea, usedLen: number}|null,
+	},
+) => LayoutNode | null;
 //lays out nodes as squares in a rectangle, with spacing
 let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
 	if (node.children.length == 0){
@@ -306,28 +333,24 @@ let rectLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpt
 				childLyts[nodeIdx] = newChild;
 				empSpc += newChild.empSpc + (childW*childH)-(newChild.dims[0]*newChild.dims[1]);
 				//handle horizontal empty-space-shifting
-				if (opts.rectSpaceShifting){
-					let empHorz = childW - newChild.dims[0];
-					if (c < rowsOfCnts[r].length-1){
-						cellXs[nodeIdx+1] -= empHorz;
-						cellWs[nodeIdx+1] += empHorz;
-						empSpc -= empHorz * childH;
-					} else {
-						minEmpH = Math.min(minEmpH, empHorz);
-					}
+				let empHorz = childW - newChild.dims[0];
+				if (c < rowsOfCnts[r].length-1){
+					cellXs[nodeIdx+1] -= empHorz;
+					cellWs[nodeIdx+1] += empHorz;
+					empSpc -= empHorz * childH;
+				} else {
+					minEmpH = Math.min(minEmpH, empHorz);
 				}
 				//other updates
 				minEmpVert = Math.min(childH-newChild.dims[1], minEmpVert);
 			}
 			//handle vertical empty-space-shifting
-			if (opts.rectSpaceShifting){
-				if (r < rowBrks.length-1){
-					cellYs[r+1] -= minEmpVert;
-					cellHs[r+1] += minEmpVert;
-					empSpc -= minEmpVert * availW;
-				} else {
-					lastEmpV = minEmpVert;
-				}
+			if (r < rowBrks.length-1){
+				cellYs[r+1] -= minEmpVert;
+				cellHs[r+1] += minEmpVert;
+				empSpc -= minEmpVert * availW;
+			} else {
+				lastEmpV = minEmpVert;
 			}
 		}
 		//check with best-so-far
