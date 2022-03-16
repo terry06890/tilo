@@ -22,9 +22,9 @@ let layoutOptions: LayoutOptions = {
 	//integer values specify pixels
 	tileSpacing: 5,
 	headerSz: 20,
-	minTileSz: 20,
-	maxTileSz: 500,
-	layoutType: 'sqr', //'sqr' | 'rect' | 'sweep'
+	minTileSz: 50,
+	maxTileSz: 200,
+	layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
 	rectMode: 'auto', //'horz' | 'vert' | 'linear' | 'auto'
 	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
 	sweptNodesPrio: 'sqrt', //'linear' | 'sqrt' | 'sqrt-when-high'
@@ -80,8 +80,9 @@ export default defineComponent({
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
-		if (!this.layoutTree.tryLayout([0,0], [this.width,this.height]))
+		if (!this.layoutTree.tryLayout([0,0], [this.width,this.height])){
 			console.log('Unable to layout tree');
+		}
 	},
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);
