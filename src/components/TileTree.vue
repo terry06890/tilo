@@ -26,6 +26,7 @@ let defaultLayoutOptions: LayoutOptions = {
 	rectMode: 'auto', //'horz' | 'vert' | 'linear' | 'auto'
 	rectSpaceShifting: true,
 	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
+	sweptNodesPrio: 'sqrt', //'linear' | 'sqrt' | 'sqrt-when-high'
 	sweepingToParent: true,
 };
 let defaultOtherOptions = {

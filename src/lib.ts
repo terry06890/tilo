@@ -90,6 +90,7 @@ export type LayoutOptions = {
 	rectMode: 'horz' | 'vert' | 'linear' | 'auto';
 	rectSpaceShifting: boolean;
 	sweepMode: 'left' | 'top' | 'shorter' | 'auto';
+	sweptNodesPrio: 'linear' | 'sqrt' | 'sqrt-when-high';
 	sweepingToParent: boolean;
 };
 export class LayoutNode {
@@ -359,7 +360,17 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 	} else if (leaves.length == 0){
 		return rectLayoutFn(node, pos, dims, showHeader, opts, {subLayoutFn:sweepLayoutFn});
 	} else {
-		let ratio = leaves.length / (leaves.length + nonLeaves.map(n => n.dCount).reduce((x,y) => x+y));
+		let ratio: number, numNonLeaves = nonLeaves.map(n => n.dCount).reduce((x,y) => x+y);
+		if (opts.sweptNodesPrio == 'linear'){
+			ratio = leaves.length / (leaves.length + numNonLeaves);
+		} else if (opts.sweptNodesPrio == 'sqrt'){
+			ratio = Math.sqrt(leaves.length) / (Math.sqrt(leaves.length) + Math.sqrt(numNonLeaves));
+		} else {
+			ratio = (leaves.length < nonLeaves.length) ?
+				leaves.length / (leaves.length + numNonLeaves) :
+				Math.sqrt(leaves.length) / (Math.sqrt(leaves.length) + Math.sqrt(numNonLeaves));
+		}
+		//
 		let headerSz = showHeader ? opts.headerSz : 0;
 		let sweptLayout = null, nonLeavesLayout = null, sweptLeft = false;
 		//get swept-area layout
