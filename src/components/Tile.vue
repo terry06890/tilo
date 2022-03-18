@@ -16,12 +16,22 @@ export default defineComponent({
 	data(){
 		return {
 			borderRadius: '5px',
+			leafHeaderHorzSpc: 4,
+			leafHeaderVertSpc: 2,
+			leafHeaderColor: 'white',
+			expandableLeafHeaderColor: 'greenyellow', //yellow, turquoise,
 			// Used during transitions and to emulate/show an apparently-joined div
 			zIdx: 0,
 			overflow: this.isRoot ? 'hidden' : 'visible',
 		}
 	},
 	computed: {
+		isLeaf(){
+			return this.layoutNode.children.length == 0;
+		},
+		isExpandable(){
+			return this.layoutNode.tolNode.children.length > this.layoutNode.children;
+		},
 		showHeader(){
 			return (this.layoutNode.showHeader && !this.layoutNode.sepSweptArea) ||
 				(this.layoutNode.sepSweptArea && this.layoutNode.sepSweptArea.sweptLeft);
@@ -51,13 +61,18 @@ export default defineComponent({
 				backgroundImage: 'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',
 				backgroundSize: 'cover',
 				borderRadius: this.borderRadius,
-				opacity: (this.layoutNode.tolNode.children.length > 0) ? '1' : '0.7',
 			};
 		},
 		leafHeaderStyles(): Record<string,string> {
 			return {
+				position: 'absolute',
+				left: this.leafHeaderHorzSpc + 'px',
+				top: this.leafHeaderVertSpc + 'px',
+				maxWidth: (this.layoutNode.dims[0] - this.leafHeaderHorzSpc*2) + 'px',
 				height: this.headerSz + 'px',
-				textAlign: 'center',
+				lineHeight: this.headerSz + 'px',
+				color: this.isExpandable ? this.expandableLeafHeaderColor : this.leafHeaderColor,
+				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
 				whiteSpace: 'nowrap',
@@ -81,9 +96,11 @@ export default defineComponent({
 		nonLeafHeaderStyles(): Record<string,string> {
 			return {
 				height: this.headerSz + 'px',
+				lineHeight: this.headerSz + 'px',
+				textAlign: 'center',
 				backgroundColor: 'lightgray',
 				borderRadius: `${this.borderRadius} ${this.borderRadius} 0 0`,
-				textAlign: 'center',
+				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
 				whiteSpace: 'nowrap',
@@ -149,7 +166,8 @@ export default defineComponent({
 
 <template>
 <div :style="tileStyles">
-	<div v-if="layoutNode.children.length == 0" :style="leafStyles" class="hover:cursor-pointer" @click="onLeafClick">
+	<div v-if="isLeaf" :style="leafStyles" :class="isExpandable ? 'hover:cursor-pointer' : ''" @click="onLeafClick">
+		<div :style="{borderRadius: this.borderRadius}" class="upper-scrim"/>
 		<div :style="leafHeaderStyles">{{layoutNode.tolNode.name}}</div>
 	</div>
 	<div v-else :style="nonLeafStyles">
@@ -188,5 +206,12 @@ export default defineComponent({
 	right: 0;
 	width: 101%;
 	height: 1px;
+}
+.upper-scrim {
+	position: absolute;
+	top: 0;
+	height: 50%;
+	width: 100%;
+	background-image: linear-gradient(to top, rgba(0,0,0,0), rgba(0,0,0,0.4));
 }
 </style>
