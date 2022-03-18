@@ -15,6 +15,7 @@ export default defineComponent({
 	},
 	data(){
 		return {
+			borderRadius: '5px',
 			// Used during transitions and to emulate/show an apparently-joined div
 			zIdx: 0,
 			overflow: this.isRoot ? 'hidden' : 'visible',
@@ -49,7 +50,7 @@ export default defineComponent({
 				height: '100%',
 				backgroundImage: 'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',
 				backgroundSize: 'cover',
-				outline: 'black solid 1px',
+				borderRadius: this.borderRadius,
 				opacity: (this.layoutNode.tolNode.children.length > 0) ? '1' : '0.7',
 			};
 		},
@@ -63,17 +64,25 @@ export default defineComponent({
 			};
 		},
 		nonLeafStyles(): Record<string,string> {
-			return {
+			let temp = {
 				width: '100%',
 				height: '100%',
 				backgroundColor: 'white',
 				outline: 'black solid 1px',
+				borderRadius: this.borderRadius,
 			};
+			if (this.layoutNode.sepSweptArea != null){
+				temp = this.layoutNode.sepSweptArea.sweptLeft ?
+					{...temp, borderRadius: `${this.borderRadius} ${this.borderRadius} ${this.borderRadius} 0`} :
+					{...temp, borderRadius: `${this.borderRadius} 0 ${this.borderRadius} ${this.borderRadius}`};
+			}
+			return temp;
 		},
 		nonLeafHeaderStyles(): Record<string,string> {
 			return {
 				height: this.headerSz + 'px',
 				backgroundColor: 'lightgray',
+				borderRadius: `${this.borderRadius} ${this.borderRadius} 0 0`,
 				textAlign: 'center',
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
@@ -84,6 +93,7 @@ export default defineComponent({
 			let commonStyles = {
 				position: 'absolute',
 				backgroundColor: 'white',
+				outline: 'black solid 1px',
 				transitionDuration: this.transitionDuration + 'ms',
 				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
@@ -103,14 +113,13 @@ export default defineComponent({
 					...commonStyles,
 					left: area.pos[0] + 'px',
 					top: area.pos[1] + 'px',
-					width: (area.dims[0] + (area.sweptLeft ? 1 : 0)) + 'px',
-					height: (area.dims[1] + (area.sweptLeft ? 0 : 1)) + 'px',
+					width: area.dims[0] + 'px',
+					height: area.dims[1] + 'px',
+					borderRadius: area.sweptLeft ?
+						`${this.borderRadius} 0 0 ${this.borderRadius}` :
+						`${this.borderRadius} ${this.borderRadius} 0 0`,
 				};
 			}
-		},
-		sepSweptAreaOutlineClasses(){
-			let area = this.layoutNode.sepSweptArea;
-			return ['outline-top-left', (area && area.sweptLeft) ? 'outline-bottom-left' : 'outline-top-right'];
 		},
 	},
 	methods: {
@@ -147,7 +156,8 @@ export default defineComponent({
 		<div v-if="showHeader" :style="nonLeafHeaderStyles" class="hover:cursor-pointer" @click="onHeaderClick">
 			{{layoutNode.tolNode.name}}
 		</div>
-		<div :style="sepSweptAreaStyles" :class="sepSweptAreaOutlineClasses">
+		<div :style="sepSweptAreaStyles"
+			:class="layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge'">
 			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
 				:style="nonLeafHeaderStyles" class="hover:cursor-pointer" @click="onHeaderClick">
 				{{layoutNode.tolNode.name}}
@@ -161,34 +171,22 @@ export default defineComponent({
 </template>
 
 <style>
-.outline-top-left::before {
+.hide-right-edge::before {
 	content: '';
 	position: absolute;
-	background-color: black;
-	left: -1px;
-	top: -1px;
-	width: 100%;
-	height: 100%;
-	z-index: -10;
-}
-.outline-bottom-left::after {
-	content: '';
-	position: absolute;
-	background-color: black;
-	left: -1px;
-	bottom: -1px;
-	width: 100%;
-	height: 100%;
-	z-index: -10;
-}
-.outline-top-right::after {
-	content: '';
-	position: absolute;
-	background-color: black;
+	background-color: white;
 	right: -1px;
-	top: -1px;
-	width: 100%;
-	height: 100%;
-	z-index: -10;
+	bottom: 0;
+	width: 1px;
+	height: 101%;
+}
+.hide-top-edge::before {
+	content: '';
+	position: absolute;
+	background-color: white;
+	bottom: -1px;
+	right: 0;
+	width: 101%;
+	height: 1px;
 }
 </style>
