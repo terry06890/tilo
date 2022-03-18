@@ -1,13 +1,47 @@
 Root
 	Viruses
-		Coronaviridae
-		Enterovirus
-		Rabies lyssavirus
+		Caudovirales
+		Herpesvirales
+		Ligamenvirales
+		Mononegavirales
+		Nidovirales
+		Picornavirales
+		Tymovirales
 	Archaea
+		Crenarchaeota
+		Euryarchaeota
 	Bacteria
+		Acidobacteria
+		Actinobacteria
+		Aquificae
+		Armatimonadetes
+		Bacteroidetes
+		Caldiserica
+		Chlamydiae
+		Chlorobi
+		Chloroflexi
+		Chrysiogenetes
 		Cyanobacteria
+		Deferribacteres
+		Deinococcus-thermus
+		Dictyoglomi
+		Elusimicrobia
+		Fibrobacteres
+		Firmicutes
+		Fusobacteria
+		Gemmatimonadetes
+		Lentisphaerae
+		Nitrospira
+		Planctomycetes
 		Proteobacteria
+		Spirochaetae
+		Synergistetes
+		Tenericutes
+		Thermodesulfobacteria
+		Thermotogae
+		Verrucomicrobia
 	Eukaryota
+		Diatoms
 		Amoebozoa
 		Plantae
 			Rhodopyhta
@@ -72,6 +106,9 @@ Root
 										Cyperaceae
 										Typhaceae
 										Poaceae
+											Zea mays
+											Triticum
+											Bambusoideae
 								eudicots
 									Ranunculales
 										Papaveraceae
@@ -89,6 +126,8 @@ Root
 													Fabeae
 											Rosales
 												Rosaceae
+													Rosa
+													Malus pumila
 												Ulmaceae
 												Urticaceae
 												Moraceae
@@ -234,10 +273,116 @@ Root
 			Chytridiomycota
 			Neocallimastigomycota
 			Microsporidia
-		Metazoa
+		Animalia
+			Porifera
 			Cnidaria
+			Tardigrada
+			Annelida
+			Mollusca
+				Bivalvia
+				Gastropoda
+				Cephalopoda
 			Arthropoda
-			Vertebrata
-				Amphibia
-				Reptilia
-				Synapsida
+				Arachnida
+					Araneae
+					Opiliones
+					Scorpiones
+					Heterostigmata
+				Crustacea
+					Euphausiacea
+					Brachyura
+					Isopoda
+					Cirripedia
+				Insecta
+					Anisoptera
+					Mantodea
+					Cicadoidea
+					Siphonaptera
+					Cucujoidea
+					Phengodidae
+					Drosophilidae
+					Culicidae
+					Lepidoptera
+					Apini
+					Formicidae
+			Deuterostomia
+				Echinodermata
+					Crinoidea
+					Asteroidea
+					Echinoidea
+					Holothuroidea
+				Vertebrata
+					Chondrichthyes
+						Carcharodon carcharias
+						Rhinocodon typus
+						Batoidea
+						Pristidae
+					Actinopterygii
+						Clupeomorpha
+						Xiphias gladius
+						Siluriformes
+						Carassius auratus
+						Tetraodontidae
+						Molidae
+						Gymnotiformes
+						Lophiiformes
+						Exocoetidae
+						'mudskipper'
+						Hippocampus
+						Psudoliparis swirei
+					Sarcopterygii
+					Tetrapoda
+						Amphibia
+							Gymnophiona
+							Caudata
+								Salamandra
+								Cryptobranchidae
+								Ambystomatidae
+							Anura
+						Reptilia
+							Testudines
+							Plesiosauria
+							Chamaeleonidae
+							Serpentes
+							Crocodilia
+							Dinosauria
+								Triceratops
+								Sauropoda
+								Tyrannosauroidea
+								Aves
+									magpie
+									parrot
+									eagle
+									owl
+									swan
+									chicken
+									penguin
+									hummingbird
+						Synapsida
+							monotreme
+							marsupial
+								kangaroo
+								possum
+								wombat
+							rodent
+								mouse
+								beaver
+							rabbit
+							feline
+							canine
+							bear
+							walrus
+							Artiodactyla
+								pig
+								camel
+								deer
+								giraffe
+							horse
+							elephant
+							cetacean
+							armadillo
+							bat
+							monkey
+							gorilla
+							chimpanzee
+							homo sapien

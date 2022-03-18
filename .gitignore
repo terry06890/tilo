@@ -2,3 +2,6 @@ rem.not
 package-lock.json
 node_modules/
 dist/
+src/tol.json
+public/img/
+public/tolgrid-img/
