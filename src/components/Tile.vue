@@ -39,8 +39,6 @@ export default defineComponent({
 				zIndex: String(this.zIdx),
 				overflow: String(this.overflow),
 				// Static styles
-				outline: 'black solid 1px',
-				backgroundColor: 'white',
 				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
 			};
@@ -49,12 +47,30 @@ export default defineComponent({
 			return {
 				width: '100%',
 				height: '100%',
-				backgroundImage: 'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.jpg\')',
+				backgroundImage: 'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',
 				backgroundSize: 'cover',
+				outline: 'black solid 1px',
 				opacity: (this.layoutNode.tolNode.children.length > 0) ? '1' : '0.7',
 			};
 		},
-		headerStyles(): Record<string,string> {
+		leafHeaderStyles(): Record<string,string> {
+			return {
+				height: this.headerSz + 'px',
+				textAlign: 'center',
+				overflow: 'hidden',
+				textOverflow: 'ellipsis',
+				whiteSpace: 'nowrap',
+			};
+		},
+		nonLeafStyles(): Record<string,string> {
+			return {
+				width: '100%',
+				height: '100%',
+				backgroundColor: 'white',
+				outline: 'black solid 1px',
+			};
+		},
+		nonLeafHeaderStyles(): Record<string,string> {
 			return {
 				height: this.headerSz + 'px',
 				backgroundColor: 'lightgray',
@@ -124,15 +140,16 @@ export default defineComponent({
 
 <template>
 <div :style="tileStyles">
-	<div v-if="layoutNode.children.length == 0"
-		:style="leafStyles" class="hover:cursor-pointer" @click="onLeafClick"/>
-	<div v-else>
-		<div v-if="showHeader" :style="headerStyles" class="hover:cursor-pointer" @click="onHeaderClick">
+	<div v-if="layoutNode.children.length == 0" :style="leafStyles" class="hover:cursor-pointer" @click="onLeafClick">
+		<div :style="leafHeaderStyles">{{layoutNode.tolNode.name}}</div>
+	</div>
+	<div v-else :style="nonLeafStyles">
+		<div v-if="showHeader" :style="nonLeafHeaderStyles" class="hover:cursor-pointer" @click="onHeaderClick">
 			{{layoutNode.tolNode.name}}
 		</div>
 		<div :style="sepSweptAreaStyles" :class="sepSweptAreaOutlineClasses">
 			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
-				:style="headerStyles" class="hover:cursor-pointer" @click="onHeaderClick">
+				:style="nonLeafHeaderStyles" class="hover:cursor-pointer" @click="onHeaderClick">
 				{{layoutNode.tolNode.name}}
 			</div>
 		</div>

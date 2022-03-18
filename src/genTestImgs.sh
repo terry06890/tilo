@@ -11,6 +11,6 @@ cat tol.json | \
 		convert -size 200x200 xc:khaki +repage \
 			-size 150x150  -fill black -background None  \
 			-font Ubuntu-Mono -gravity center caption:"$REPLY" +repage \
-			-gravity Center  -composite -strip ../public/img/"$REPLY".jpg
+			-gravity Center  -composite -strip ../public/img/"$REPLY".png
 	done
 

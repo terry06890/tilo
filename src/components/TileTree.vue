@@ -21,7 +21,7 @@ const tol: TolNode = preprocessTol(tolRaw);
 // Configurable settings
 let layoutOptions: LayoutOptions = {
 	// Integer values specify pixels
-	tileSpacing: 5,
+	tileSpacing: 8,
 	headerSz: 20,
 	minTileSz: 50,
 	maxTileSz: 200,
