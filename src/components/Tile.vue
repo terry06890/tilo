@@ -18,8 +18,11 @@ export default defineComponent({
 			borderRadius: '5px',
 			leafHeaderHorzSpc: 4,
 			leafHeaderVertSpc: 2,
-			leafHeaderColor: 'white',
+			leafHeaderColor: '#fafaf9',
 			expandableLeafHeaderColor: 'greenyellow', //yellow, turquoise,
+			nonLeafBgColor: '#44403c',
+			nonLeafHeaderColor: '#fafaf9',
+			nonLeafHeaderBgColor: '#78716c',
 			// Used during transitions and to emulate/show an apparently-joined div
 			zIdx: 0,
 			overflow: this.isRoot ? 'hidden' : 'visible',
@@ -52,6 +55,8 @@ export default defineComponent({
 				// Static styles
 				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
+				// CSS variables
+				'--nonLeafBgColor': this.nonLeafBgColor,
 			};
 		},
 		leafStyles(): Record<string,string> {
@@ -82,8 +87,8 @@ export default defineComponent({
 			let temp = {
 				width: '100%',
 				height: '100%',
-				backgroundColor: 'white',
-				outline: 'black solid 1px',
+				backgroundColor: this.nonLeafBgColor,
+				outline: this.isRoot ? '' : 'black solid 1px',
 				borderRadius: this.borderRadius,
 			};
 			if (this.layoutNode.sepSweptArea != null){
@@ -98,7 +103,8 @@ export default defineComponent({
 				height: this.headerSz + 'px',
 				lineHeight: this.headerSz + 'px',
 				textAlign: 'center',
-				backgroundColor: 'lightgray',
+				color: this.nonLeafHeaderColor,
+				backgroundColor: this.nonLeafHeaderBgColor,
 				borderRadius: `${this.borderRadius} ${this.borderRadius} 0 0`,
 				// For ellipsis
 				overflow: 'hidden',
@@ -109,7 +115,7 @@ export default defineComponent({
 		sepSweptAreaStyles(): Record<string,string> {
 			let commonStyles = {
 				position: 'absolute',
-				backgroundColor: 'white',
+				backgroundColor: this.nonLeafBgColor,
 				outline: 'black solid 1px',
 				transitionDuration: this.transitionDuration + 'ms',
 				transitionProperty: 'left, top, width, height',
@@ -192,7 +198,7 @@ export default defineComponent({
 .hide-right-edge::before {
 	content: '';
 	position: absolute;
-	background-color: white;
+	background-color: var(--nonLeafBgColor);
 	right: -1px;
 	bottom: 0;
 	width: 1px;
@@ -201,7 +207,7 @@ export default defineComponent({
 .hide-top-edge::before {
 	content: '';
 	position: absolute;
-	background-color: white;
+	background-color: var(--nonLeafBgColor);
 	bottom: -1px;
 	right: 0;
 	width: 101%;

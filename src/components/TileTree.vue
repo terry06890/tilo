@@ -95,7 +95,7 @@ export default defineComponent({
 </script>
 
 <template>
-<div class="h-screen bg-stone-100">
+<div class="h-screen bg-stone-800">
 	<tile :layoutNode="layoutTree.root"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing"
 		:transitionDuration="otherOptions.transitionDuration" :isRoot="true"
