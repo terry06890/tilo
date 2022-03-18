@@ -67,14 +67,15 @@ export class LayoutTree {
 	//attempts layout after removing a node's children from the LayoutNode tree
 	tryLayoutOnCollapse(pos: [number,number], dims: [number,number], node: LayoutNode){
 		//remove children
+		let oldDCount = node.dCount;
 		let children = node.children;
 		node.children = [];
-		this.updateDCounts(node, -children.length+1);
+		this.updateDCounts(node, -oldDCount + 1);
 		//try layout
 		let success = this.tryLayout(pos, dims);
 		if (!success){ //add children
 			node.children = children;
-			this.updateDCounts(node, node.children.length-1);
+			this.updateDCounts(node, oldDCount - 1);
 		}
 		return success;
 	}
@@ -107,7 +108,7 @@ export type LayoutOptions = {
 	layoutType: 'sqr' | 'rect' | 'sweep'; //the LayoutFn function to use
 	rectMode: 'horz' | 'vert' | 'linear' | 'auto'; //layout in 1 row, 1 column, 1 row or column, or multiple rows
 	sweepMode: 'left' | 'top' | 'shorter' | 'auto'; //sweep to left, top, shorter-side, or to minimise empty space
-	sweptNodesPrio: 'linear' | 'sqrt' | 'sqrt-when-high'; //specifies allocation of space to swept-vs-remaining nodes
+	sweptNodesPrio: 'linear' | 'sqrt' | 'pow-2/3'; //specifies allocation of space to swept-vs-remaining nodes
 	sweepingToParent: boolean; //allow swept nodes to occupy empty space in a parent's swept-leaves area
 };
 //represents a node/tree, and holds layout data for a TolNode node/tree
@@ -134,7 +135,7 @@ export class LayoutNode {
 		this.dims = dims;
 		this.showHeader = showHeader;
 		this.sepSweptArea = sepSweptArea;
-		this.dCount = children.length == 0 ? 1 : children.map(n => n.dCount).reduce((x,y) => x+y);
+		this.dCount = children.length == 0 ? 1 : arraySum(children.map(n => n.dCount));
 		this.empSpc = empSpc;
 	}
 }
@@ -154,7 +155,7 @@ export class SepSweptArea {
 }
 
 //type for functions called by LayoutTree to perform layout
-//returns a new LayoutNode tree for a given LayoutNode's TolNode tree, or null if layout was unsuccessful
+	//these return a new LayoutNode tree for a given LayoutNode's TolNode tree, or null if layout was unsuccessful
 type LayoutFn = (
 	node: LayoutNode,
 	pos: [number, number],
@@ -163,7 +164,14 @@ type LayoutFn = (
 	opts: LayoutOptions,
 	ownOpts?: any,
 ) => LayoutNode | null;
-
+//lays out node as one square, ignoring child nodes (used for base cases)
+let oneSqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
+	let tileSz = Math.min(dims[0], dims[1], opts.maxTileSz);
+	if (tileSz < opts.minTileSz){
+		return null;
+	}
+	return new LayoutNode(node.tolNode, [], pos, [tileSz,tileSz]);
+}
 //lays out nodes as squares within a grid with intervening+surrounding spacing
 let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
 	if (node.children.length == 0){
@@ -179,7 +187,7 @@ let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
 	//find number of rows/columns with least empty space
 	let numChildren = node.children.length;
 	let areaAR = newDims[0] / newDims[1]; //aspect ratio
-	let lowestEmpSpc = Number.POSITIVE_INFINITY, bestNumCols = 0, bestNumRows = 0, bestTileSz = 0;
+	let lowestEmpSpc = Number.POSITIVE_INFINITY, usedNumCols = 0, usedNumRows = 0, usedTileSz = 0;
 	for (let numCols = 1; numCols <= numChildren; numCols++){
 		let numRows = Math.ceil(numChildren / numCols);
 		let gridAR = numCols / numRows;
@@ -198,9 +206,9 @@ let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
 		//compare with best-so-far
 		if (empSpc < lowestEmpSpc){
 			lowestEmpSpc = empSpc;
-			bestNumCols = numCols;
-			bestNumRows = numRows;
-			bestTileSz = tileSz;
+			usedNumCols = numCols;
+			usedNumRows = numRows;
+			usedTileSz = tileSz;
 		}
 	}
 	if (lowestEmpSpc == Number.POSITIVE_INFINITY){
@@ -210,13 +218,13 @@ let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
 	let childLayouts: LayoutNode[] = new Array(numChildren);
 	for (let i = 0; i < numChildren; i++){
 		let child = node.children[i];
-		let childX = newPos[0] + (i % bestNumCols) * (bestTileSz + opts.tileSpacing);
-		let childY = newPos[1] + Math.floor(i / bestNumCols) * (bestTileSz + opts.tileSpacing);
+		let childX = newPos[0] + (i % usedNumCols) * (usedTileSz + opts.tileSpacing);
+		let childY = newPos[1] + Math.floor(i / usedNumCols) * (usedTileSz + opts.tileSpacing);
 		if (child.children.length == 0){
-			let lyt = oneSqrLayoutFn(node, [childX,childY], [bestTileSz,bestTileSz], false, opts);
+			let lyt = oneSqrLayoutFn(node, [childX,childY], [usedTileSz,usedTileSz], false, opts);
 			childLayouts[i] = lyt!;
 		} else {
-			let lyt = sqrLayoutFn(child, [childX,childY], [bestTileSz,bestTileSz], true, opts);
+			let lyt = sqrLayoutFn(child, [childX,childY], [usedTileSz,usedTileSz], true, opts);
 			if (lyt == null){
 				return null;
 			}
@@ -225,371 +233,442 @@ let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
 	}
 	//create layout
 	let usedDims: [number, number] = [
-		bestNumCols * (bestTileSz + opts.tileSpacing) + opts.tileSpacing,
-		bestNumRows * (bestTileSz + opts.tileSpacing) + opts.tileSpacing + headerSz,
+		usedNumCols * (usedTileSz + opts.tileSpacing) + opts.tileSpacing,
+		usedNumRows * (usedTileSz + opts.tileSpacing) + opts.tileSpacing + headerSz,
 	];
 	let empSpc = //empty space within usedDims area
-		(bestNumCols * bestNumRows - numChildren) * (bestTileSz - opts.tileSpacing)**2 + 
-		childLayouts.map(lyt => lyt.empSpc).reduce((x,y) => x+y);
+		(usedNumCols * usedNumRows - numChildren) * (usedTileSz - opts.tileSpacing)**2 + 
+		arraySum(childLayouts.map(lyt => lyt.empSpc));
 	let newNode = new LayoutNode(node.tolNode, childLayouts, pos, usedDims, {showHeader, empSpc});
 	childLayouts.forEach(n => n.parent = newNode);
 	return newNode;
 }
-//lays out node as one square, ignoring child nodes
-let oneSqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
-	let tileSz = Math.min(dims[0], dims[1], opts.maxTileSz);
-	if (tileSz < opts.minTileSz){
+//lays out nodes as rows of rectangles, deferring to sqrLayoutFn() or oneSqrLayoutFn() for simpler cases
+	//'subLayoutFn' allows other LayoutFns to use this layout, but transfer control back to themselves on recursion
+let rectLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpts?: {subLayoutFn?: LayoutFn;}){
+	//check for simpler cases
+	if (node.children.length == 0){
+		return oneSqrLayoutFn(node, pos, dims, false, opts);
+	} else if (node.children.every(n => n.children.length == 0)){
+		return sqrLayoutFn(node, pos, dims, showHeader, opts);
+	}
+	//consider area excluding header and top/left spacing
+	let headerSz = showHeader ? opts.headerSz : 0;
+	let newPos = [opts.tileSpacing, opts.tileSpacing + headerSz];
+	let newDims = [dims[0] - opts.tileSpacing, dims[1] - opts.tileSpacing - headerSz];
+	if (newDims[0] * newDims[1] <= 0){
 		return null;
 	}
-	return new LayoutNode(node.tolNode, [], pos, [tileSz,tileSz]);
-}
-
-//lays out nodes as rows of rectangles, deferring to sqrLayoutFn() or oneSqrLayoutFn() for simpler cases
-let rectLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts,
-	ownOpts?: {subLayoutFn?: LayoutFn;}){
-	if (node.children.every(n => n.children.length == 0))
-		return sqrLayoutFn(node, pos, dims, showHeader, opts);
-	//find arrangement with least empty space
-	let headerSz = showHeader ? opts.headerSz : 0;
-	let availW = dims[0] - opts.tileSpacing, availH = dims[1] - opts.tileSpacing - headerSz;
+	//try finding arrangement with low empty space
+		//done by searching possible row groupings, allocating within rows using dCounts, and trimming empty space
 	let numChildren = node.children.length;
-	let rowBrks: number[]|null = null; //will holds node indices at which each row starts
-	let lowestTotalEmp = Number.POSITIVE_INFINITY, rowBreaks = null, childLayouts = null;
-	let minEmpHorz = 0, lastEmpVert = 0;
+	let rowBrks: number[] = []; //will hold indices for nodes at which each row starts
+	let lowestEmpSpc = Number.POSITIVE_INFINITY;
+	let usedChildLyts = null, usedEmpRight = 0, usedEmpBottom = 0;
 	rowBrksLoop:
 	while (true){
 		//update rowBrks or exit loop
-		if (rowBrks == null){
-			if (opts.rectMode == 'vert'){
-				rowBrks = seq(numChildren);
-			} else {
-				rowBrks = [0];
-			}
-		} else {
-			if (opts.rectMode == 'horz' || opts.rectMode == 'vert'){
-				break rowBrksLoop;
-			} else if (opts.rectMode == 'linear'){
-				if (rowBrks.length == 1 && numChildren > 1){
-					rowBrks = seq(numChildren);
+		switch (opts.rectMode){
+			case 'horz':
+				if (rowBrks.length == 0){
+					rowBrks = [0];
 				} else {
 					break rowBrksLoop;
 				}
-			} else {
-				let i = rowBrks.length-1;
-				while (true){
-					if (i > 0 && rowBrks[i] < numChildren-1 - (rowBrks.length-1 - i)){
-						rowBrks[i]++;
-						break;
-					} else if (i > 0){
-						i--;
-					} else {
-						if (rowBrks.length < numChildren){
-							rowBrks = seq(rowBrks.length+1);
-						} else {
-							break rowBrksLoop;
-						}
-						break;
+				break;
+			case 'vert':
+				if (rowBrks.length == 0){
+					rowBrks = range(numChildren);
+				} else {
+					break rowBrksLoop;
+				}
+				break;
+			case 'linear':
+				if (rowBrks.length == 0){
+					rowBrks = [0];
+				} else if (rowBrks.length == numChildren){
+					rowBrks = range(numChildren);
+				} else {
+					break rowBrksLoop;
+				}
+				break;
+			case 'auto':
+				if (rowBrks.length == 0){
+					rowBrks = [0];
+				} else {
+					let updated = updateAscSeq(rowBrks, numChildren);
+					if (!updated){
+						break rowBrksLoop;
 					}
 				}
+				break;
+		}
+		//create array-of-arrays representing each rows' cells' dCounts
+		let rowsOfCnts: number[][] = new Array(rowBrks.length);
+		for (let rowIdx = 0; rowIdx < rowBrks.length; rowIdx++){
+			let numNodes = (rowIdx < rowBrks.length - 1) ?
+				rowBrks[rowIdx + 1] - rowBrks[rowIdx] :
+				numChildren - rowBrks[rowIdx];
+			let rowNodeIdxs = range(numNodes).map(i => i + rowBrks![rowIdx]);
+			rowsOfCnts[rowIdx] = rowNodeIdxs.map(idx => node.children[idx].dCount);
+		}
+		//get initial cell dims
+		let cellWs: number[][] = new Array(rowsOfCnts.length);
+		for (let rowIdx = 0; rowIdx < rowsOfCnts.length; rowIdx++){
+			let rowCount = arraySum(rowsOfCnts[rowIdx]);
+			cellWs[rowIdx] = range(rowsOfCnts[rowIdx].length).map(
+				colIdx => rowsOfCnts[rowIdx][colIdx] / rowCount * newDims[0]);
+		}
+		let totalDCount = arraySum(node.children.map(n => n.dCount));
+		let cellHs = rowsOfCnts.map(rowOfCnts => arraySum(rowOfCnts) / totalDCount * newDims[1]);
+		//check min-tile-size, attempting to reallocate space if needed
+		for (let rowIdx = 0; rowIdx < rowsOfCnts.length; rowIdx++){
+			let newWs = limitVals(cellWs[rowIdx], opts.minTileSz + opts.tileSpacing, Number.POSITIVE_INFINITY);
+			if (newWs == null){
+				continue rowBrksLoop;
 			}
+			cellWs[rowIdx] = newWs;
 		}
-		//create list-of-lists representing each row's cells' dCounts
-		let rowsOfCnts: number[][] = new Array(rowBrks.length).fill([]);
-		for (let r = 0; r < rowBrks.length; r++){
-			let numNodes = (r == rowBrks.length-1) ? numChildren-rowBrks[r] : rowBrks[r+1]-rowBrks[r];
-			let rowNodeIdxs = seq(numNodes).map(i => i+rowBrks![r]);
-			rowsOfCnts[r] = rowNodeIdxs.map(idx => node.children[idx].dCount);
-		}
-		//get cell dims
-		let totalTileCount = node.children.map(n => n.dCount).reduce((x,y) => x+y);
-		let cellHs = rowsOfCnts.map(row => row.reduce((x,y) => x+y) / totalTileCount * availH);
-		let cellWs: number[] = new Array(numChildren);
-		for (let r = 0; r < rowsOfCnts.length; r++){
-			let rowCount = rowsOfCnts[r].reduce((x,y) => x+y);
-			for (let c = 0; c < rowsOfCnts[r].length; c++){
-				cellWs[rowBrks[r]+c] = rowsOfCnts[r][c] / rowCount * availW;
-			}
-		}
-		//impose min-tile-size
-		cellHs = limitVals(cellHs, opts.minTileSz, Number.POSITIVE_INFINITY)!;
+		cellHs = limitVals(cellHs, opts.minTileSz + opts.tileSpacing, Number.POSITIVE_INFINITY)!;
 		if (cellHs == null){
 			continue rowBrksLoop;
 		}
-		for (let r = 0; r < rowsOfCnts.length; r++){
-			let temp = limitVals(cellWs.slice(rowBrks[r], rowBrks[r] + rowsOfCnts[r].length),
-				opts.minTileSz, Number.POSITIVE_INFINITY);
-			if (temp == null){
-				continue rowBrksLoop;
-			}
-			cellWs.splice(rowBrks[r], rowsOfCnts[r].length, ...temp);
-		}
-		//get cell x/y coords
-		let cellXs: number[] = new Array(cellWs.length).fill(0);
-		for (let r = 0; r < rowBrks.length; r++){
-			for (let c = 1; c < rowsOfCnts[r].length; c++){
-				let nodeIdx = rowBrks[r]+c;
-				cellXs[nodeIdx] = cellXs[nodeIdx-1] + cellWs[nodeIdx-1];
+		//get cell xy-coordinates
+		let cellXs: number[][] = new Array(rowsOfCnts.length);
+		for (let rowIdx = 0; rowIdx < rowBrks.length; rowIdx++){
+			cellXs[rowIdx] = [0];
+			for (let colIdx = 1; colIdx < rowsOfCnts[rowIdx].length; colIdx++){
+				cellXs[rowIdx].push(cellXs[rowIdx][colIdx - 1] + cellWs[rowIdx][colIdx - 1]);
 			}
 		}
-		let cellYs: number[] = new Array(cellHs.length).fill(0);
-		for (let r = 1; r < rowBrks.length; r++){
-			cellYs[r] = cellYs[r-1] + cellHs[r-1];
+		let cellYs: number[] = new Array(rowsOfCnts.length).fill(0);
+		for (let rowIdx = 1; rowIdx < rowBrks.length; rowIdx++){
+			cellYs[rowIdx] = cellYs[rowIdx - 1] + cellHs[rowIdx - 1];
 		}
-		//get child layouts and empty-space
+		//determine child layouts, resizing cells to reduce empty space
 		let childLyts: LayoutNode[] = new Array(numChildren);
-		let minEmpH = Number.POSITIVE_INFINITY, lastEmpV = 0, empSpc = 0;
-		for (let r = 0; r < rowBrks.length; r++){
-			let minEmpVert = Number.POSITIVE_INFINITY;
-			for (let c = 0; c < rowsOfCnts[r].length; c++){
-				let nodeIdx = rowBrks[r]+c;
+		let empRight = Number.POSITIVE_INFINITY, empBottom = 0;
+		for (let rowIdx = 0; rowIdx < rowBrks.length; rowIdx++){
+			for (let colIdx = 0; colIdx < rowsOfCnts[rowIdx].length; colIdx++){
+				let nodeIdx = rowBrks[rowIdx] + colIdx;
 				let child = node.children[nodeIdx];
-				let childX = cellXs[nodeIdx] + opts.tileSpacing, childY = cellYs[r] + opts.tileSpacing + headerSz,
-					childW = cellWs[nodeIdx] - opts.tileSpacing, childH = cellHs[r] - opts.tileSpacing;
+				let childPos: [number, number] = [newPos[0] + cellXs[rowIdx][colIdx], newPos[1] + cellYs[rowIdx]];
+				let childDims: [number, number] = [
+					cellWs[rowIdx][colIdx] - opts.tileSpacing,
+					cellHs[rowIdx] - opts.tileSpacing
+				];
 				let newChild: LayoutNode | null = null;
 				if (child.children.length == 0){
-					let contentSz = Math.min(childW, childH, opts.maxTileSz);
-					newChild = new LayoutNode(child.tolNode, [], [childX,childY], [contentSz,contentSz]);
+					newChild = oneSqrLayoutFn(child, childPos, childDims, false, opts);
 				} else if (child.children.every(n => n.children.length == 0)){
-					newChild = sqrLayoutFn(child, [childX,childY], [childW,childH], true, opts);
+					newChild = sqrLayoutFn(child, childPos, childDims, true, opts);
 				} else {
 					let layoutFn = (ownOpts && ownOpts.subLayoutFn) || rectLayoutFn;
-					newChild = layoutFn(child, [childX,childY], [childW,childH], true, opts);
+					newChild = layoutFn(child, childPos, childDims, true, opts);
 				}
 				if (newChild == null){
 					continue rowBrksLoop;
 				}
 				childLyts[nodeIdx] = newChild;
-				empSpc += newChild.empSpc + (childW*childH)-(newChild.dims[0]*newChild.dims[1]);
-				//handle horizontal empty-space-shifting
-				let empHorz = childW - newChild.dims[0];
-				if (c < rowsOfCnts[r].length-1){
-					cellXs[nodeIdx+1] -= empHorz;
-					cellWs[nodeIdx+1] += empHorz;
-					empSpc -= empHorz * childH;
+				//remove horizontal empty space by trimming cell and moving/expanding any next cell
+				let horzEmp = childDims[0] - newChild.dims[0];
+				cellWs[rowIdx][colIdx] -= horzEmp;
+				if (colIdx < rowsOfCnts[rowIdx].length - 1){
+					cellXs[rowIdx][colIdx + 1] -= horzEmp;
+					cellWs[rowIdx][colIdx + 1] += horzEmp;
 				} else {
-					minEmpH = Math.min(minEmpH, empHorz);
+					empRight = Math.min(empRight, horzEmp);
 				}
-				//other updates
-				minEmpVert = Math.min(childH-newChild.dims[1], minEmpVert);
 			}
-			//handle vertical empty-space-shifting
-			if (r < rowBrks.length-1){
-				cellYs[r+1] -= minEmpVert;
-				cellHs[r+1] += minEmpVert;
-				empSpc -= minEmpVert * availW;
+			//remove vertical empty space by trimming row and moving/expanding any next row
+			let childUsedHs = range(rowsOfCnts[rowIdx].length).map(
+				colIdx => childLyts[rowBrks[rowIdx] + colIdx].dims[1]);
+			let vertEmp = cellHs[rowIdx] - opts.tileSpacing - Math.max(...childUsedHs);
+			cellHs[rowIdx] -= vertEmp;
+			if (rowIdx < rowBrks.length - 1){
+				cellYs[rowIdx + 1] -= vertEmp;
+				cellHs[rowIdx + 1] += vertEmp;
 			} else {
-				lastEmpV = minEmpVert;
+				empBottom = vertEmp;
 			}
 		}
+		//get empty space
+		let usedSpc = arraySum(childLyts.map(l => (l.dims[0] + opts.tileSpacing) * (l.dims[1] + opts.tileSpacing)));
+		let empSpc = newDims[0] * newDims[1] - usedSpc;
 		//check with best-so-far
-		if (empSpc < lowestTotalEmp){
-			lowestTotalEmp = empSpc;
-			rowBreaks = [...rowBrks];
-			childLayouts = childLyts;
-			minEmpHorz = minEmpH;
-			lastEmpVert = lastEmpV;
+		if (empSpc < lowestEmpSpc){
+			lowestEmpSpc = empSpc;
+			usedChildLyts = childLyts;
+			usedEmpRight = empRight;
+			usedEmpBottom = empBottom;
 		}
 	}
-	if (rowBreaks == null || childLayouts == null){ //redundant hinting for tsc
+	if (usedChildLyts == null){ //hint for tsc
 		return null;
 	}
-	//determine layout
-	let newDims: [number,number] = [dims[0]-minEmpHorz, dims[1]-lastEmpVert];
-	let newNode = new LayoutNode(node.tolNode, childLayouts, pos, newDims,
-		{showHeader, empSpc: lowestTotalEmp - (availW*availH - newDims[0]*newDims[1])});
-	childLayouts.forEach(n => n.parent = newNode);
+	//create layout
+	let usedDims: [number,number] = [dims[0] - usedEmpRight, dims[1] - usedEmpBottom];
+	let newNode = new LayoutNode(node.tolNode, usedChildLyts, pos, usedDims, {showHeader, empSpc: lowestEmpSpc});
+	usedChildLyts.forEach(n => n.parent = newNode);
+	return newNode;
+}
+//lays out nodes by pushing leaves to one side, and using rectLayoutFn() for the non-leaves
+	//with layout option 'sweepingToParent', leaves from child nodes may occupy a parent's leaf-section
+	//'sepArea' represents a usable leaf-section area from a direct parent, 
+		//and is altered to represent the area used, which provides the parent information for reducing empty space
+let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpts?: {sepArea?: SepSweptArea}){
+	//separate leaf and non-leaf nodes
+	let leaves: LayoutNode[] = [], nonLeaves: LayoutNode[] = [];
+	let reverseMap: {isLeaf: boolean, idx: number}[] = []; //used to put separated nodes into old order
+	node.children.forEach(child => {
+		if (child.children.length == 0){
+			leaves.push(child);
+			reverseMap.push({isLeaf: true, idx: leaves.length-1});
+		} else {
+			nonLeaves.push(child);
+			reverseMap.push({isLeaf: false, idx: nonLeaves.length-1});
+		}
+	});
+	//check for simpler cases
+	if (node.children.length == 0){
+		return oneSqrLayoutFn(node, pos, dims, false, opts);
+	} else if (nonLeaves.length == 0){
+		return sqrLayoutFn(node, pos, dims, showHeader, opts);
+	} else if (leaves.length == 0){
+		return rectLayoutFn(node, pos, dims, showHeader, opts, {subLayoutFn: sweepLayoutFn});
+	}
+	//some variables
+	let headerSz = showHeader ? opts.headerSz : 0;
+	let leavesLyt: LayoutNode | null = null, nonLeavesLyt: LayoutNode | null = null, sweptLeft = false;
+	let sepArea: SepSweptArea | null = null, sepAreaUsed = false; //represents leaf-section area provided for a child
+	//try using parent-provided area
+	let parentArea = (opts.sweepingToParent && ownOpts) ? ownOpts.sepArea : null; //represents area provided by parent
+	let usingParentArea = false; 
+	if (parentArea != null){
+		//attempt leaves layout
+		sweptLeft = parentArea.sweptLeft;
+		let tempTree = new LayoutNode(new TolNode('SWEEP_' + node.tolNode.name), leaves);
+			//not updating child nodes to point to tempTree as a parent seems acceptable here
+		leavesLyt = sqrLayoutFn(tempTree, [0,0], parentArea.dims, !sweptLeft, opts);
+		if (leavesLyt != null){
+			//move leaves to parent area
+			leavesLyt.children.map(lyt => {
+				lyt.pos[0] += parentArea!.pos[0];
+				lyt.pos[1] += parentArea!.pos[1];
+			});
+			//attempt non-leaves layout
+			let newDims: [number,number] = [dims[0], dims[1] - (sweptLeft ? headerSz : 0)];
+			tempTree = new LayoutNode(new TolNode('SWEEP_REM_' + node.tolNode.name), nonLeaves);
+			let sepAreaLen = 0;
+			if (nonLeaves.length > 1){
+				nonLeavesLyt = rectLayoutFn(tempTree, [0,0], newDims, false, opts, {subLayoutFn: sweepLayoutFn});
+			} else {
+				//get leftover area usable by non-leaf child
+				if (sweptLeft){
+					sepArea = new SepSweptArea(
+						[parentArea.pos[0], parentArea.pos[1] + leavesLyt.dims[1] - (opts.tileSpacing + headerSz)],
+							//the y-coord subtraction is to make the position relative to a direct non-leaf child
+						[parentArea.dims[0], parentArea.dims[1] - leavesLyt.dims[1] - opts.tileSpacing*2],
+						sweptLeft
+					);
+					sepAreaLen = sepArea.dims[1];
+				} else {
+					sepArea = new SepSweptArea(
+						[parentArea.pos[0] + leavesLyt.dims[0] - opts.tileSpacing, parentArea.pos[1] + headerSz],
+						[parentArea.dims[0] - leavesLyt.dims[0] - opts.tileSpacing*2, parentArea.dims[1] - headerSz],
+						sweptLeft
+					);
+					sepAreaLen = sepArea.dims[0];
+				}
+				//attempt layout
+				nonLeavesLyt = rectLayoutFn(tempTree, [0,0], newDims, false, opts, {subLayoutFn:
+					((n,p,d,h,o) => sweepLayoutFn(n,p,d,h,o,{sepArea:sepArea})) as LayoutFn});
+			}
+			if (nonLeavesLyt != null){
+				usingParentArea = true;
+				//adjust child positions
+				if (sweptLeft){
+					nonLeavesLyt.children.forEach(lyt => {lyt.pos[1] += headerSz});
+				}
+				//update parentArea to represent space used
+				if (sweptLeft){
+					parentArea.dims[1] = leavesLyt.dims[1];
+					if (sepArea != null && sepAreaLen > sepArea.dims[1]){ //if space used by child
+						parentArea.dims[1] += sepArea.dims[1] + opts.tileSpacing*2;
+					}
+				} else {
+					parentArea.dims[0] = leavesLyt.dims[0];
+					if (sepArea != null && sepAreaLen > sepArea.dims[0]){
+						parentArea.dims[0] += sepArea.dims[0] + opts.tileSpacing*2;
+					}
+				}
+				//align parentArea size with non-leaves area
+				if (sweptLeft){
+					if (parentArea.pos[1] + parentArea.dims[1] > nonLeavesLyt.dims[1] + headerSz){
+						nonLeavesLyt.dims[1] = parentArea.pos[1] + parentArea.dims[1] - headerSz;
+					} else {
+						parentArea.dims[1] = nonLeavesLyt.dims[1] + headerSz - parentArea.pos[1];
+					}
+				} else {
+					if (parentArea.pos[0] + parentArea.dims[0] > nonLeavesLyt.dims[0]){
+						nonLeavesLyt.dims[0] = parentArea.pos[0] + parentArea.dims[0];
+					} else {
+						parentArea.dims[0] = nonLeavesLyt.dims[0] - parentArea.pos[0];
+					}
+				}
+				//adjust area to avoid overlap with non-leaves
+				if (sweptLeft){
+					parentArea.dims[0] -= opts.tileSpacing;
+				} else {
+					parentArea.dims[1] -= opts.tileSpacing;
+				}
+			}
+		}
+	}
+	//try using own area
+	if (!usingParentArea){
+		//choose proportion of area to use for leaves
+		let ratio: number; //area-for-leaves / area-for-non-leaves
+		let nonLeavesTiles = arraySum(nonLeaves.map(n => n.dCount));
+		switch (opts.sweptNodesPrio){
+			case 'linear': 
+				ratio = leaves.length / (leaves.length + nonLeavesTiles);
+				break;
+			case 'sqrt':
+				ratio = Math.sqrt(leaves.length) / (Math.sqrt(leaves.length) + Math.sqrt(nonLeavesTiles));
+				break;
+			case 'pow-2/3':
+				ratio = Math.pow(leaves.length, 2/3) /
+					(Math.pow(leaves.length, 2/3) + Math.pow(nonLeavesTiles, 2/3));
+				break;
+		}
+		//attempt leaves layout
+		let newPos = [0, headerSz];
+		let newDims: [number,number] = [dims[0], dims[1] - headerSz];
+		let tempTree = new LayoutNode(new TolNode('SWEEP_' + node.tolNode.name), leaves);
+		let minSz = opts.minTileSz + opts.tileSpacing*2;
+		let sweptW = Math.max(minSz, newDims[0] * ratio), sweptH = Math.max(minSz, newDims[1] * ratio);
+		switch (opts.sweepMode){
+			case 'left':
+				leavesLyt = sqrLayoutFn(tempTree, [0,0], [sweptW, newDims[1]], false, opts);
+				sweptLeft = true;
+				break;
+			case 'top':
+				leavesLyt = sqrLayoutFn(tempTree, [0,0], [newDims[0], sweptH], false, opts);
+				sweptLeft = false;
+				break;
+			case 'shorter':
+				let documentAR = document.documentElement.clientWidth / document.documentElement.clientHeight;
+				if (documentAR >= 1){
+					leavesLyt = sqrLayoutFn(tempTree, [0,0], [sweptW, newDims[1]], false, opts);
+					sweptLeft = true;
+				} else {
+					leavesLyt = sqrLayoutFn(tempTree, [0,0], [newDims[0], sweptH], false, opts);
+					sweptLeft = false;
+				}
+				break;
+			case 'auto':
+				let leftLayout = sqrLayoutFn(tempTree, [0,0], [sweptW, newDims[1]], false, opts);
+				let topLayout = sqrLayoutFn(tempTree, [0,0], [newDims[0], sweptH], false, opts);
+				if (leftLayout != null && topLayout != null){
+					leavesLyt = (leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout;
+				} else {
+					leavesLyt = leftLayout || topLayout;
+				}
+				sweptLeft = (leavesLyt == leftLayout);
+				break;
+		}
+		if (leavesLyt == null){
+			return null;
+		}
+		leavesLyt.children.forEach(lyt => {lyt.pos[1] += headerSz});
+		//attempt non-leaves layout
+		if (sweptLeft){
+			newPos[0] += leavesLyt.dims[0] - opts.tileSpacing;
+			newDims[0] += -leavesLyt.dims[0] + opts.tileSpacing;
+		} else {
+			newPos[1] += leavesLyt.dims[1] - opts.tileSpacing;
+			newDims[1] += -leavesLyt.dims[1] + opts.tileSpacing
+		}
+		tempTree = new LayoutNode(new TolNode('SWEEP_REM_' + node.tolNode.name), nonLeaves);
+		if (nonLeaves.length > 1){
+			nonLeavesLyt = rectLayoutFn(tempTree, [0,0], newDims, false, opts, {subLayoutFn: sweepLayoutFn});
+		} else {
+			//get leftover area usable by non-leaf child
+			let sepAreaLen;
+			if (sweptLeft){
+				sepAreaLen = newDims[1] - leavesLyt.dims[1] - opts.tileSpacing;
+				sepArea = new SepSweptArea( //position relative to a non-leaf child
+					[-leavesLyt.dims[0] + opts.tileSpacing, leavesLyt.dims[1] - opts.tileSpacing],
+					[leavesLyt.dims[0], sepAreaLen],
+					sweptLeft
+				);
+			} else {
+				sepAreaLen = newDims[0] - leavesLyt.dims[0] - opts.tileSpacing;
+				sepArea = new SepSweptArea(
+					[leavesLyt.dims[0] - opts.tileSpacing, -leavesLyt.dims[1] + opts.tileSpacing],
+					[sepAreaLen, leavesLyt.dims[1]],
+					sweptLeft
+				);
+			}
+			//attempt layout
+			nonLeavesLyt = rectLayoutFn(tempTree, [0,0], newDims, false, opts, {subLayoutFn:
+				((n,p,d,h,o) => sweepLayoutFn(n,p,d,h,o,{sepArea:sepArea})) as LayoutFn});
+			if ((sweptLeft && sepAreaLen > sepArea.dims[1]) || (!sweptLeft && sepAreaLen > sepArea.dims[0])){
+				sepAreaUsed = true;
+			}
+		}
+		if (nonLeavesLyt == null){
+			return null;
+		}
+		nonLeavesLyt.children.forEach(lyt => {
+			lyt.pos[0] += newPos[0];
+			lyt.pos[1] += newPos[1];
+		});
+	}
+	//return combined layouts
+	if (leavesLyt == null || nonLeavesLyt == null){ //hint for tsc
+		return null;
+	}
+	let layoutsInOldOrder = reverseMap.map(({isLeaf, idx}) => (isLeaf ? leavesLyt : nonLeavesLyt)!.children[idx]);
+	let usedDims: [number, number];
+	if (usingParentArea){
+		usedDims = [nonLeavesLyt.dims[0], nonLeavesLyt.dims[1] + (sweptLeft ? headerSz : 0)];
+	} else {
+		if (sweptLeft){
+			usedDims = [
+				leavesLyt.dims[0] + nonLeavesLyt.dims[0] - opts.tileSpacing,
+				Math.max(leavesLyt.dims[1] + (sepAreaUsed ? sepArea!.dims[1] : 0), nonLeavesLyt.dims[1]) + headerSz
+			];
+		} else {
+			usedDims = [
+				Math.max(leavesLyt.dims[0] + (sepAreaUsed ? sepArea!.dims[0] : 0), nonLeavesLyt.dims[0]),
+				leavesLyt.dims[1] + nonLeavesLyt.dims[1] - opts.tileSpacing + headerSz
+			];
+		}
+	}
+	let empSpc = (!usingParentArea ? leavesLyt.empSpc : 0) + nonLeavesLyt.empSpc;
+	let newNode = new LayoutNode(node.tolNode, layoutsInOldOrder, pos, usedDims,
+		{showHeader, empSpc, sepSweptArea: usingParentArea ? parentArea! : null});
+	layoutsInOldOrder.forEach(n => n.parent = newNode);
 	return newNode;
 }
 
-//lays out nodes by pushing leaves to one side, partially using other layouts for children
-let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts,
-	ownOpts?: {sepAreaInfo?: {avail: SepSweptArea, usedLen: number} | null}){
-	//separate leaf and non-leaf nodes
-	let leaves: LayoutNode[] = [], nonLeaves: LayoutNode[] = [];
-	node.children.forEach(n => (n.children.length == 0 ? leaves : nonLeaves).push(n));
-	//determine layout
-	let tempTree: LayoutNode;
-	if (nonLeaves.length == 0){
-		return sqrLayoutFn(node, pos, dims, showHeader, opts);
-	} else if (leaves.length == 0){
-		return rectLayoutFn(node, pos, dims, showHeader, opts, {subLayoutFn:sweepLayoutFn});
-	} else {
-		let ratio: number, numNonLeaves = nonLeaves.map(n => n.dCount).reduce((x,y) => x+y);
-		if (opts.sweptNodesPrio == 'linear'){
-			ratio = leaves.length / (leaves.length + numNonLeaves);
-		} else if (opts.sweptNodesPrio == 'sqrt'){
-			ratio = Math.sqrt(leaves.length) / (Math.sqrt(leaves.length) + Math.sqrt(numNonLeaves));
-		} else {
-			ratio = (leaves.length < nonLeaves.length) ?
-				leaves.length / (leaves.length + numNonLeaves) :
-				Math.sqrt(leaves.length) / (Math.sqrt(leaves.length) + Math.sqrt(numNonLeaves));
-		}
-		//
-		let headerSz = showHeader ? opts.headerSz : 0;
-		let sweptLayout = null, nonLeavesLayout = null, sweptLeft = false;
-		//get swept-area layout
-		let usedParentArea = null, usingParentArea = false;
-		let sepAreaInfo: {avail: SepSweptArea, usedLen: number}|null = null;
-		if (opts.sweepingToParent && ownOpts && ownOpts.sepAreaInfo){
-			let parentArea = ownOpts.sepAreaInfo.avail;
-			usedParentArea = ownOpts.sepAreaInfo.avail.clone();
-			tempTree = new LayoutNode(new TolNode('SWEEP_' + node.tolNode.name), leaves);
-				//not updating the children to point to tempTree as a parent seems acceptable here
-			sweptLeft = parentArea.sweptLeft;
-			sweptLayout = sqrLayoutFn(tempTree, [0,0], parentArea.dims, !sweptLeft, opts);
-			if (sweptLayout != null){
-				//move leaves to parent area
-				sweptLayout.children.map(n => {
-					n.pos[0] += parentArea!.pos[0];
-					n.pos[1] += parentArea!.pos[1];
-				});
-				//update sepAreaInfo
-				if (sweptLeft){
-					parentArea.pos[1] += sweptLayout.dims[1] - opts.tileSpacing - headerSz;
-					parentArea.dims[1] = Math.max(0, parentArea.dims[1] - sweptLayout.dims[1] - opts.tileSpacing*2);
-				} else {
-					parentArea.pos[0] += sweptLayout.dims[0] - opts.tileSpacing;
-					parentArea.pos[1] += headerSz;
-					parentArea.dims[0] = Math.max(0, parentArea.dims[0] - sweptLayout.dims[0] - opts.tileSpacing*2);
-					parentArea.dims[1] += -headerSz;
-				}
-				//get remaining-area layout
-				let newDims: [number,number] = [dims[0], dims[1] - (sweptLeft ? headerSz : 0)];
-				tempTree = new LayoutNode(new TolNode('SWEEP_REM_' + node.tolNode.name), nonLeaves);
-				if (nonLeaves.length > 1){
-					nonLeavesLayout = rectLayoutFn(tempTree, [0,0], newDims, false, opts, {subLayoutFn: sweepLayoutFn});
-				} else {
-					nonLeavesLayout = rectLayoutFn(tempTree, [0,0], newDims, false, opts,
-						{subLayoutFn:
-							((n,p,d,h,o) => sweepLayoutFn(n,p,d,h,o,{sepAreaInfo:ownOpts.sepAreaInfo})) as LayoutFn});
-				}
-				if (nonLeavesLayout != null){
-					nonLeavesLayout.children.forEach(layout => {layout.pos[1] += (sweptLeft ? headerSz : 0)});
-					//
-					ownOpts.sepAreaInfo.usedLen += sweptLeft ? sweptLayout.dims[1] : sweptLayout.dims[0];
-					let usedLen = ownOpts.sepAreaInfo.usedLen;
-					if (sweptLeft){
-						usedParentArea.dims[1] = usedLen;
-						if (usedParentArea.pos[1] + usedLen > nonLeavesLayout.dims[1] + headerSz){
-							nonLeavesLayout.dims[1] = usedParentArea.pos[1] + usedLen - headerSz
-						} else {
-							usedParentArea.dims[1] = nonLeavesLayout.dims[1] + headerSz - usedParentArea.pos[1];
-						}
-						usedParentArea.dims[0] -= opts.tileSpacing;
-					} else {
-						usedParentArea.dims[0] = usedLen;
-						if (usedParentArea.pos[0] + usedLen > nonLeavesLayout.dims[0]){
-							nonLeavesLayout.dims[0] = usedParentArea.pos[0] + usedLen;
-						} else {
-							usedParentArea.dims[0] = nonLeavesLayout.dims[0] - usedParentArea.pos[0];
-						}
-						usedParentArea.dims[1] -= opts.tileSpacing;
-					}
-					usingParentArea = true;
-				}
-			}
-		}
-		if (!usingParentArea){
-			let newDims: [number,number] = [dims[0], dims[1]-headerSz];
-			tempTree = new LayoutNode(new TolNode('SWEEP_' + node.tolNode.name), leaves);
-			let xyChg: [number,number];
-			//get swept-area layout
-			let leftLayout = null, topLayout = null;
-			let documentAR = document.documentElement.clientWidth / document.documentElement.clientHeight;
-			if (opts.sweepMode=='left' || (opts.sweepMode=='shorter' && documentAR >= 1) || opts.sweepMode=='auto'){
-				leftLayout = sqrLayoutFn(tempTree, [0,0],
-					[Math.max(newDims[0]*ratio, opts.minTileSz+opts.tileSpacing*2), newDims[1]], false, opts);
-			}
-			if (opts.sweepMode=='top' || (opts.sweepMode=='shorter' && documentAR < 1) || opts.sweepMode=='auto'){
-				topLayout = sqrLayoutFn(tempTree, [0,0],
-					[newDims[0], Math.max(newDims[1]*ratio, opts.minTileSz+opts.tileSpacing*2)], false, opts);
-			}
-			if (opts.sweepMode == 'auto'){
-				sweptLayout =
-					(leftLayout && topLayout && ((leftLayout.empSpc < topLayout.empSpc) ? leftLayout : topLayout)) ||
-					leftLayout || topLayout;
-			} else {
-				sweptLayout = leftLayout || topLayout;
-			}
-			sweptLeft = (sweptLayout == leftLayout);
-			if (sweptLayout == null){
-				return null;
-			}
-			sweptLayout.children.forEach(layout => {layout.pos[1] += headerSz});
-			//get remaining-area layout
-			if (sweptLeft){
-				xyChg = [sweptLayout.dims[0] - opts.tileSpacing, 0];
-				newDims[0] += -sweptLayout.dims[0] + opts.tileSpacing;
-			} else {
-				xyChg = [0, sweptLayout.dims[1] - opts.tileSpacing];
-				newDims[1] += -sweptLayout.dims[1] + opts.tileSpacing;
-			}
-			tempTree = new LayoutNode(new TolNode('SWEEP_REM_' + node.tolNode.name), nonLeaves);
-			if (nonLeaves.length > 1){
-				nonLeavesLayout = rectLayoutFn(tempTree, [0,0], newDims, false, opts, {subLayoutFn:sweepLayoutFn});
-			} else {
-				//get leftover swept-layout-area to propagate
-				if (sweptLeft){
-					sepAreaInfo = {
-						avail: new SepSweptArea( //pos is relative to the non-leaves-area
-							[-sweptLayout.dims[0]+opts.tileSpacing, sweptLayout.dims[1]-opts.tileSpacing],
-							[sweptLayout.dims[0], Math.max(0, newDims[1]-sweptLayout.dims[1]-opts.tileSpacing*2)],
-							sweptLeft),
-						usedLen: 0
-					};
-				} else {
-					sepAreaInfo = {
-						avail: new SepSweptArea(
-							[sweptLayout.dims[0]-opts.tileSpacing, -sweptLayout.dims[1]+opts.tileSpacing],
-							[Math.max(0, newDims[0]-sweptLayout.dims[0]-opts.tileSpacing*2), sweptLayout.dims[1]],
-							sweptLeft),
-						usedLen: 0
-					};
-				}
-				//generate layout
-				nonLeavesLayout = rectLayoutFn(tempTree, [0,0], newDims, false, opts,
-					{subLayoutFn:
-						((n,p,d,h,o) => sweepLayoutFn(n,p,d,h,o,{sepAreaInfo:sepAreaInfo})) as LayoutFn});
-			}
-			if (nonLeavesLayout == null){
-				return null;
-			}
-			nonLeavesLayout.children.forEach(layout => {
-				layout.pos[0] += xyChg[0];
-				layout.pos[1] += xyChg[1] + headerSz;
-			});
-		}
-		if (sweptLayout == null || nonLeavesLayout == null){ //hint for tsc
-			return null;
-		}
-		//return combined layouts
-		let children = leaves.concat(nonLeaves);
-		let layouts = sweptLayout.children.concat(nonLeavesLayout.children);
-		let layoutsInOldOrder = seq(node.children.length)
-			.map(i => children.findIndex(n => n == node.children[i]))
-			.map(i => layouts[i]);
-		let newDims: [number,number] = (usingParentArea ?
-			[nonLeavesLayout.dims[0], nonLeavesLayout.dims[1] + (sweptLeft ? headerSz : 0)] :
-			(sweptLeft ?
-				[sweptLayout.dims[0] + nonLeavesLayout.dims[0] - opts.tileSpacing,
-					Math.max(sweptLayout.dims[1]-(sepAreaInfo ? sepAreaInfo.usedLen : 0),
-						nonLeavesLayout.dims[1]) + headerSz] :
-				[Math.max(sweptLayout.dims[0]-(sepAreaInfo ? sepAreaInfo.usedLen : 0), nonLeavesLayout.dims[0]),
-					sweptLayout.dims[1] + nonLeavesLayout.dims[1] - opts.tileSpacing + headerSz]));
-		let empSpc = (usingParentArea ? 0 : sweptLayout.empSpc) + nonLeavesLayout.empSpc;
-		let newNode = new LayoutNode(node.tolNode, layoutsInOldOrder, pos, newDims,
-			{showHeader, empSpc, sepSweptArea: usingParentArea ? usedParentArea : null});
-		layoutsInOldOrder.forEach(n => n.parent = newNode);
-		return newNode;
-	}
+//returns [0, ..., len]
+function range(len: number){
+	return [...Array(len).keys()];
 }
-
-//clips values in array to within [min,max], and redistributes to compensate, returning null if unable
-function limitVals(arr: number[], min: number, max: number): number[]|null {
+//returns sum of array values
+function arraySum(array: number[]){
+	return array.reduce((x,y) => x+y);
+}
+//returns array copy with vals clipped to within [min,max], redistributing to compensate (returns null on failure)
+function limitVals(arr: number[], min: number, max: number){
 	let vals = [...arr];
-	let clipped: boolean[] = new Array(vals.length).fill(false);
-	let owedChg = 0;
+	let clipped = new Array(vals.length).fill(false);
+	let owedChg = 0; //stores total change made after clipping values
 	while (true){
+		//clip values
 		for (let i = 0; i < vals.length; i++){
 			if (clipped[i]){
 				continue;
@@ -607,16 +686,10 @@ function limitVals(arr: number[], min: number, max: number): number[]|null {
 		if (Math.abs(owedChg) < Number.EPSILON){
 			return vals;
 		}
-		let indicesToUpdate;
-		if (owedChg > 0){
-			indicesToUpdate = vals.reduce(
-				(arr: number[], n, i) => {if (n < max) arr.push(i); return arr;},
-				[]);
-		} else {
-			indicesToUpdate = vals.reduce(
-				(arr: number[], n, i) => {if (n > min) arr.push(i); return arr;},
-				[]);
-		}
+		//compensate for changes made
+		let indicesToUpdate = (owedChg > 0) ?
+			range(vals.length).filter(idx => vals[idx] < max) :
+			range(vals.length).filter(idx => vals[idx] > min);
 		if (indicesToUpdate.length == 0){
 			return null;
 		}
@@ -626,7 +699,25 @@ function limitVals(arr: number[], min: number, max: number): number[]|null {
 		owedChg = 0;
 	}
 }
-//
-function seq(len: number){ //returns [0, ..., len]
-	return [...Array(len).keys()];
+//usable to iterate through possible int arrays with ascending values in the range 0 to maxLen-1, starting with [0]
+	//eg: with maxLen 3, updates [0] to [0,1], then to [0,2], then [0,1,2], then null
+function updateAscSeq(seq: number[], maxLen: number){
+	//try increasing last element, then preceding elements, then extending the array
+	let i = seq.length - 1;
+	while (true){
+		if (i > 0 && seq[i] < (maxLen - 1) - (seq.length - 1 - i)){
+			seq[i]++;
+			return true;
+		} else if (i > 0){
+			i--;
+		} else {
+			if (seq.length < maxLen){
+				seq.push(0);
+				seq.splice(0, seq.length, ...range(seq.length));
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
 }

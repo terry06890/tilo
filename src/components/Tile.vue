@@ -29,8 +29,8 @@ export default defineComponent({
 			return {
 				//place using layoutNode, with centering if root
 				position: 'absolute',
-				top: this.isRoot ? '50%' : this.layoutNode.pos[1] + 'px',
 				left: this.isRoot ? '50%' : this.layoutNode.pos[0] + 'px',
+				top: this.isRoot ? '50%' : this.layoutNode.pos[1] + 'px',
 				transform: this.isRoot ? 'translate(-50%, -50%)' : 'none',
 				width: this.layoutNode.dims[0] + 'px',
 				height: this.layoutNode.dims[1] + 'px',
@@ -41,7 +41,7 @@ export default defineComponent({
 				//static
 				outline: 'black solid 1px',
 				backgroundColor: 'white',
-				transitionProperty: 'top, left, width, height',
+				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
 			};
 		},
@@ -69,7 +69,7 @@ export default defineComponent({
 				position: 'absolute',
 				backgroundColor: 'white',
 				transitionDuration: this.transitionDuration + 'ms',
-				transitionProperty: 'top, left, width, height',
+				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
 			};
 			let area = this.layoutNode.sepSweptArea;
@@ -77,16 +77,16 @@ export default defineComponent({
 				return {
 					...commonStyles,
 					visibility: 'hidden',
-					top: this.headerSz + 'px',
 					left: '0',
+					top: this.headerSz + 'px',
 					width: '0',
 					height: '0',
 				};
 			} else {
 				return {
 					...commonStyles,
-					top: area.pos[1] + 'px',
 					left: area.pos[0] + 'px',
+					top: area.pos[1] + 'px',
 					width: (area.dims[0] + (area.sweptLeft ? 1 : 0)) + 'px',
 					height: (area.dims[1] + (area.sweptLeft ? 0 : 1)) + 'px',
 				};
@@ -148,8 +148,8 @@ export default defineComponent({
 	content: '';
 	position: absolute;
 	background-color: black;
-	top: -1px;
 	left: -1px;
+	top: -1px;
 	width: 100%;
 	height: 100%;
 	z-index: -10;
@@ -158,8 +158,8 @@ export default defineComponent({
 	content: '';
 	position: absolute;
 	background-color: black;
-	bottom: -1px;
 	left: -1px;
+	bottom: -1px;
 	width: 100%;
 	height: 100%;
 	z-index: -10;
@@ -168,8 +168,8 @@ export default defineComponent({
 	content: '';
 	position: absolute;
 	background-color: black;
-	top: -1px;
 	right: -1px;
+	top: -1px;
 	width: 100%;
 	height: 100%;
 	z-index: -10;
