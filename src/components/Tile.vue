@@ -2,20 +2,20 @@
 import {defineComponent, PropType} from 'vue';
 import {LayoutNode} from '../lib';
 
-//component holds a tree-node structure representing a tile or tile-group to be rendered
+// Component holds a tree-node structure representing a tile or tile-group to be rendered
 export default defineComponent({
-	name: 'tile', //need this to use self in template
+	name: 'tile', // Need this to use self in template
 	props: {
 		layoutNode: {type: Object as PropType<LayoutNode>, required: true},
 		isRoot: {type: Boolean, default: false},
-		//settings passed in from parent component
+		// Settings passed in from parent component
 		transitionDuration: {type: Number, required: true},
 		headerSz: {type: Number, required: true},
 		tileSpacing: {type: Number, required: true},
 	},
 	data(){
 		return {
-			//used during transitions and to emulate/show an apparently-joined div
+			// Used during transitions and to emulate/show an apparently-joined div
 			zIdx: 0,
 			overflow: this.isRoot ? 'hidden' : 'visible',
 		}
@@ -27,18 +27,18 @@ export default defineComponent({
 		},
 		tileStyles(): Record<string,string> {
 			return {
-				//place using layoutNode, with centering if root
+				// Places div using layoutNode, with centering if root
 				position: 'absolute',
 				left: this.isRoot ? '50%' : this.layoutNode.pos[0] + 'px',
 				top: this.isRoot ? '50%' : this.layoutNode.pos[1] + 'px',
 				transform: this.isRoot ? 'translate(-50%, -50%)' : 'none',
 				width: this.layoutNode.dims[0] + 'px',
 				height: this.layoutNode.dims[1] + 'px',
-				//other bindings
+				// Other bindings
 				transitionDuration: this.transitionDuration + 'ms',
 				zIndex: String(this.zIdx),
 				overflow: String(this.overflow),
-				//static
+				// Static styles
 				outline: 'black solid 1px',
 				backgroundColor: 'white',
 				transitionProperty: 'left, top, width, height',
@@ -100,7 +100,7 @@ export default defineComponent({
 	methods: {
 		onLeafClick(){
 			this.$emit('leaf-clicked', this.layoutNode);
-			//increase z-index and hide overflow during transition
+			// Increase z-index and hide overflow during transition
 			this.zIdx = 1;
 			this.overflow = 'hidden';
 			setTimeout(() => {this.zIdx = 0; this.overflow = 'visible'}, this.transitionDuration);
@@ -110,7 +110,7 @@ export default defineComponent({
 		},
 		onHeaderClick(){
 			this.$emit('header-clicked', this.layoutNode);
-			//increase z-index and hide overflow during transition
+			// Increase z-index and hide overflow during transition
 			this.zIdx = 1;
 			this.overflow = 'hidden';
 			setTimeout(() => {this.zIdx = 0; this.overflow = 'visible'}, this.transitionDuration);

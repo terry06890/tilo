@@ -3,11 +3,12 @@ import {defineComponent} from 'vue';
 import Tile from './Tile.vue';
 import {TolNode, LayoutTree, LayoutNode} from '../lib';
 import type {LayoutOptions} from '../lib';
-//import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
+// Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
-//obtain tree-of-life data
+// Obtain tree-of-life data
 import tolRaw from '../tol.json';
-function preprocessTol(node: any): any { //adds 'children' fields if missing
+function preprocessTol(node: any): any {
+	// Add 'children' fields if missing
 	if (node.children == null){
 		node.children = [];
 	} else {
@@ -17,9 +18,9 @@ function preprocessTol(node: any): any { //adds 'children' fields if missing
 }
 const tol: TolNode = preprocessTol(tolRaw);
 
-//configurable settings
+// Configurable settings
 let layoutOptions: LayoutOptions = {
-	//integer values specify pixels
+	// Integer values specify pixels
 	tileSpacing: 5,
 	headerSz: 20,
 	minTileSz: 50,
@@ -31,13 +32,13 @@ let layoutOptions: LayoutOptions = {
 	sweepingToParent: true,
 };
 let otherOptions = {
-	//integer values specify milliseconds
+	// Integer values specify milliseconds
 	transitionDuration: 300,
-	resizeDelay: 100, //during window-resizing, relayout tiles after this delay instead of continously
+	resizeDelay: 100, // During window-resizing, relayout tiles after this delay instead of continously
 };
 
-//component holds a tree structure representing a subtree of 'tol' to be rendered
-//collects events about tile expansion/collapse and window-resize, and initiates relayout of tiles
+// Component holds a tree structure representing a subtree of 'tol' to be rendered
+// Collects events about tile expansion/collapse and window-resize, and initiates relayout of tiles
 export default defineComponent({
 	data(){
 		return {
@@ -52,13 +53,13 @@ export default defineComponent({
 	methods: {
 		onResize(){
 			if (!this.resizeThrottled){
-				//update data and relayout tiles
+				// Update data and relayout tiles
 				this.width = document.documentElement.clientWidth;
 				this.height = document.documentElement.clientHeight;
 				if (!this.layoutTree.tryLayout([0,0], [this.width,this.height])){
 					console.log('Unable to layout tree');
 				}
-				//prevent re-triggering until after a delay
+				// Prevent re-triggering until after a delay
 				this.resizeThrottled = true;
 				setTimeout(() => {this.resizeThrottled = false;}, otherOptions.resizeDelay);
 			}
