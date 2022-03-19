@@ -19,7 +19,7 @@ export default defineComponent({
 			leafHeaderHorzSpc: 4,
 			leafHeaderVertSpc: 2,
 			leafHeaderColor: '#fafaf9',
-			expandableLeafHeaderColor: 'greenyellow', //yellow, turquoise,
+			expandableLeafHeaderColor: 'greenyellow', //yellow, greenyellow, turquoise,
 			nonLeafBgColor: '#44403c',
 			nonLeafHeaderColor: '#fafaf9',
 			nonLeafHeaderBgColor: '#78716c',
@@ -57,6 +57,7 @@ export default defineComponent({
 				transitionTimingFunction: 'ease-out',
 				// CSS variables
 				'--nonLeafBgColor': this.nonLeafBgColor,
+				'--expandableLeafHeaderColor': this.expandableLeafHeaderColor,
 			};
 		},
 		leafStyles(): Record<string,string> {
@@ -172,7 +173,8 @@ export default defineComponent({
 
 <template>
 <div :style="tileStyles">
-	<div v-if="isLeaf" :style="leafStyles" :class="isExpandable ? 'hover:cursor-pointer' : ''" @click="onLeafClick">
+	<div v-if="isLeaf" :style="leafStyles"
+		:class="isExpandable ? ['hover:cursor-pointer', 'shadow-on-hover'] : ''" @click="onLeafClick">
 		<div :style="{borderRadius: this.borderRadius}" class="upper-scrim"/>
 		<div :style="leafHeaderStyles">{{layoutNode.tolNode.name}}</div>
 	</div>
@@ -219,5 +221,8 @@ export default defineComponent({
 	height: 50%;
 	width: 100%;
 	background-image: linear-gradient(to top, rgba(0,0,0,0), rgba(0,0,0,0.4));
+}
+.shadow-on-hover:hover {
+	box-shadow: 0 0 1px 2px var(--expandableLeafHeaderColor);
 }
 </style>
