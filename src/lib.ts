@@ -25,11 +25,13 @@ export class LayoutTree {
 		this.options = options;
 	}
 	// Used by constructor to initialise the LayoutNode tree
-	initHelper(tolNode: TolNode, depth: number): LayoutNode {
-		if (depth == 0){
-			return new LayoutNode(tolNode, []);
+	initHelper(tolNode: TolNode, depthLeft: number, atDepth: number = 0): LayoutNode {
+		if (depthLeft == 0){
+			let node = new LayoutNode(tolNode, []);
+			node.depth = atDepth;
+			return node;
 		} else {
-			let children = tolNode.children.map((n: TolNode) => this.initHelper(n, depth-1));
+			let children = tolNode.children.map((n: TolNode) => this.initHelper(n, depthLeft-1, atDepth+1));
 			let node = new LayoutNode(tolNode, children);
 			children.forEach(n => n.parent = node);
 			return node;
@@ -54,7 +56,10 @@ export class LayoutTree {
 	tryLayoutOnExpand(pos: [number,number], dims: [number,number], node: LayoutNode){
 		// Add children
 		node.children = node.tolNode.children.map((n: TolNode) => new LayoutNode(n, []));
-		node.children.forEach(n => n.parent = node);
+		node.children.forEach(n => {
+			n.parent = node;
+			n.depth = node.depth + 1;
+		});
 		this.updateDCounts(node, node.children.length-1);
 		// Try layout
 		let success = this.tryLayout(pos, dims);
@@ -121,10 +126,11 @@ export class LayoutNode {
 	dims: [number, number];
 	showHeader: boolean;
 	sepSweptArea: SepSweptArea | null;
-	// Used for layout heuristics
+	// Used for layout heuristics and info display
 	dCount: number; // Number of descendant leaf nodes
+	depth: number; // Number of ancestor nodes
 	empSpc: number; // Amount of unused space (in pixels)
-	// Creates object with given fields ('parent' is generally initialised later, 'dCount' is computed)
+	// Creates object with given fields ('parent' are 'depth' are generally initialised later, 'dCount' is computed)
 	constructor(
 		tolNode: TolNode, children: LayoutNode[], pos=[0,0] as [number,number], dims=[0,0] as [number,number],
 		{showHeader=false, sepSweptArea=null as SepSweptArea|null, empSpc=0} = {}){
@@ -136,6 +142,7 @@ export class LayoutNode {
 		this.showHeader = showHeader;
 		this.sepSweptArea = sepSweptArea;
 		this.dCount = children.length == 0 ? 1 : arraySum(children.map(n => n.dCount));
+		this.depth = 0;
 		this.empSpc = empSpc;
 	}
 }
@@ -240,7 +247,7 @@ let sqrLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts){
 		(usedNumCols * usedNumRows - numChildren) * (usedTileSz - opts.tileSpacing)**2 + 
 		arraySum(childLayouts.map(lyt => lyt.empSpc));
 	let newNode = new LayoutNode(node.tolNode, childLayouts, pos, usedDims, {showHeader, empSpc});
-	childLayouts.forEach(n => n.parent = newNode);
+	childLayouts.forEach(n => {n.parent = newNode; n.depth = node.depth;});
 	return newNode;
 }
 // Lays out nodes as rows of rectangles, deferring to sqrLayoutFn() or oneSqrLayoutFn() for simpler cases
@@ -409,7 +416,7 @@ let rectLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpt
 	// Create layout
 	let usedDims: [number,number] = [dims[0] - usedEmpRight, dims[1] - usedEmpBottom];
 	let newNode = new LayoutNode(node.tolNode, usedChildLyts, pos, usedDims, {showHeader, empSpc: lowestEmpSpc});
-	usedChildLyts.forEach(n => n.parent = newNode);
+	usedChildLyts.forEach(n => {n.parent = newNode; n.depth = node.depth});
 	return newNode;
 }
 // Lays out nodes by pushing leaves to one side, and using rectLayoutFn() for the non-leaves
@@ -650,7 +657,7 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 	let empSpc = (!usingParentArea ? leavesLyt.empSpc : 0) + nonLeavesLyt.empSpc;
 	let newNode = new LayoutNode(node.tolNode, layoutsInOldOrder, pos, usedDims,
 		{showHeader, empSpc, sepSweptArea: usingParentArea ? parentArea! : null});
-	layoutsInOldOrder.forEach(n => n.parent = newNode);
+	layoutsInOldOrder.forEach(n => {n.parent = newNode; n.depth = node.depth;});
 	return newNode;
 }
 

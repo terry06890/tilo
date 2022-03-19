@@ -2,6 +2,22 @@
 import {defineComponent, PropType} from 'vue';
 import {LayoutNode} from '../lib';
 
+// Configurable settings (integer values specify pixels)
+let options = {
+	borderRadius: 5,
+	shadowNormal: '0 0 2px black',
+	shadowWithHover: '0 0 1px 2px greenyellow',
+	// For leaf tiles
+	leafHeaderX: 4,
+	leafHeaderY: 2,
+	leafHeaderColor: '#fafaf9',
+	expandableLeafHeaderColor: 'greenyellow', //yellow, greenyellow, turquoise,
+	// For non-leaf tile-groups
+	nonLeafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
+	nonLeafHeaderColor: '#fafaf9',
+	nonLeafHeaderBgColor: '#1c1917',
+};
+
 // Component holds a tree-node structure representing a tile or tile-group to be rendered
 export default defineComponent({
 	name: 'tile', // Need this to use self in template
@@ -15,14 +31,7 @@ export default defineComponent({
 	},
 	data(){
 		return {
-			borderRadius: '5px',
-			leafHeaderHorzSpc: 4,
-			leafHeaderVertSpc: 2,
-			leafHeaderColor: '#fafaf9',
-			expandableLeafHeaderColor: 'greenyellow', //yellow, greenyellow, turquoise,
-			nonLeafBgColor: '#44403c',
-			nonLeafHeaderColor: '#fafaf9',
-			nonLeafHeaderBgColor: '#78716c',
+			options: options,
 			// Used during transitions and to emulate/show an apparently-joined div
 			zIdx: 0,
 			overflow: this.isRoot ? 'hidden' : 'visible',
@@ -38,6 +47,10 @@ export default defineComponent({
 		showHeader(){
 			return (this.layoutNode.showHeader && !this.layoutNode.sepSweptArea) ||
 				(this.layoutNode.sepSweptArea && this.layoutNode.sepSweptArea.sweptLeft);
+		},
+		nonLeafBgColor(){
+			let colorArray = this.options.nonLeafBgColors;
+			return colorArray[this.layoutNode.depth % colorArray.length];
 		},
 		tileStyles(): Record<string,string> {
 			return {
@@ -57,7 +70,9 @@ export default defineComponent({
 				transitionTimingFunction: 'ease-out',
 				// CSS variables
 				'--nonLeafBgColor': this.nonLeafBgColor,
-				'--expandableLeafHeaderColor': this.expandableLeafHeaderColor,
+				'--tileSpacing': this.tileSpacing + 'px',
+				'--shadowNormal': this.options.shadowNormal,
+				'--shadowWithHover': this.options.shadowWithHover,
 			};
 		},
 		leafStyles(): Record<string,string> {
@@ -66,18 +81,18 @@ export default defineComponent({
 				height: '100%',
 				backgroundImage: 'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',
 				backgroundSize: 'cover',
-				borderRadius: this.borderRadius,
+				borderRadius: this.options.borderRadius + 'px',
 			};
 		},
 		leafHeaderStyles(): Record<string,string> {
 			return {
 				position: 'absolute',
-				left: this.leafHeaderHorzSpc + 'px',
-				top: this.leafHeaderVertSpc + 'px',
-				maxWidth: (this.layoutNode.dims[0] - this.leafHeaderHorzSpc*2) + 'px',
+				left: this.options.leafHeaderX + 'px',
+				top: this.options.leafHeaderY + 'px',
+				maxWidth: (this.layoutNode.dims[0] - this.options.leafHeaderX * 2) + 'px',
 				height: this.headerSz + 'px',
 				lineHeight: this.headerSz + 'px',
-				color: this.isExpandable ? this.expandableLeafHeaderColor : this.leafHeaderColor,
+				color: this.isExpandable ? this.options.expandableLeafHeaderColor : this.options.leafHeaderColor,
 				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
@@ -89,24 +104,25 @@ export default defineComponent({
 				width: '100%',
 				height: '100%',
 				backgroundColor: this.nonLeafBgColor,
-				outline: this.isRoot ? '' : 'black solid 1px',
-				borderRadius: this.borderRadius,
+				borderRadius: this.options.borderRadius + 'px',
 			};
 			if (this.layoutNode.sepSweptArea != null){
+				let r = this.options.borderRadius + 'px';
 				temp = this.layoutNode.sepSweptArea.sweptLeft ?
-					{...temp, borderRadius: `${this.borderRadius} ${this.borderRadius} ${this.borderRadius} 0`} :
-					{...temp, borderRadius: `${this.borderRadius} 0 ${this.borderRadius} ${this.borderRadius}`};
+					{...temp, borderRadius: `${r} ${r} ${r} 0`} :
+					{...temp, borderRadius: `${r} 0 ${r} ${r}`};
 			}
 			return temp;
 		},
 		nonLeafHeaderStyles(): Record<string,string> {
+			let r = this.options.borderRadius + 'px';
 			return {
 				height: this.headerSz + 'px',
 				lineHeight: this.headerSz + 'px',
 				textAlign: 'center',
-				color: this.nonLeafHeaderColor,
-				backgroundColor: this.nonLeafHeaderBgColor,
-				borderRadius: `${this.borderRadius} ${this.borderRadius} 0 0`,
+				color: this.options.nonLeafHeaderColor,
+				backgroundColor: this.options.nonLeafHeaderBgColor,
+				borderRadius: `${r} ${r} 0 0`,
 				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
@@ -117,7 +133,6 @@ export default defineComponent({
 			let commonStyles = {
 				position: 'absolute',
 				backgroundColor: this.nonLeafBgColor,
-				outline: 'black solid 1px',
 				transitionDuration: this.transitionDuration + 'ms',
 				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
@@ -133,15 +148,14 @@ export default defineComponent({
 					height: '0',
 				};
 			} else {
+				let r = this.options.borderRadius + 'px';
 				return {
 					...commonStyles,
 					left: area.pos[0] + 'px',
 					top: area.pos[1] + 'px',
 					width: area.dims[0] + 'px',
 					height: area.dims[1] + 'px',
-					borderRadius: area.sweptLeft ?
-						`${this.borderRadius} 0 0 ${this.borderRadius}` :
-						`${this.borderRadius} ${this.borderRadius} 0 0`,
+					borderRadius: area.sweptLeft ? `${r} 0 0 ${r}` : `${r} ${r} 0 0`,
 				};
 			}
 		},
@@ -174,16 +188,16 @@ export default defineComponent({
 <template>
 <div :style="tileStyles">
 	<div v-if="isLeaf" :style="leafStyles"
-		:class="isExpandable ? ['hover:cursor-pointer', 'shadow-on-hover'] : ''" @click="onLeafClick">
-		<div :style="{borderRadius: this.borderRadius}" class="upper-scrim"/>
+		:class="isExpandable ? ['hover:cursor-pointer', 'shadow-with-hover'] : 'shadow-normal'" @click="onLeafClick">
+		<div :style="{borderRadius: options.borderRadius + 'px'}" class="scrim-upper-half"/>
 		<div :style="leafHeaderStyles">{{layoutNode.tolNode.name}}</div>
 	</div>
-	<div v-else :style="nonLeafStyles">
+	<div v-else :style="nonLeafStyles" class="shadow-normal">
 		<div v-if="showHeader" :style="nonLeafHeaderStyles" class="hover:cursor-pointer" @click="onHeaderClick">
 			{{layoutNode.tolNode.name}}
 		</div>
 		<div :style="sepSweptAreaStyles"
-			:class="layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge'">
+			:class="[layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge', 'shadow-normal']">
 			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
 				:style="nonLeafHeaderStyles" class="hover:cursor-pointer" @click="onHeaderClick">
 				{{layoutNode.tolNode.name}}
@@ -201,28 +215,34 @@ export default defineComponent({
 	content: '';
 	position: absolute;
 	background-color: var(--nonLeafBgColor);
-	right: -1px;
+	right: calc(0px - var(--tileSpacing));
 	bottom: 0;
-	width: 1px;
-	height: 101%;
+	width: var(--tileSpacing);
+	height: calc(100% + var(--tileSpacing));
 }
 .hide-top-edge::before {
 	content: '';
 	position: absolute;
 	background-color: var(--nonLeafBgColor);
-	bottom: -1px;
+	bottom: calc(0px - var(--tileSpacing));
 	right: 0;
-	width: 101%;
-	height: 1px;
+	width: calc(100% + var(--tileSpacing));
+	height: var(--tileSpacing);
 }
-.upper-scrim {
+.scrim-upper-half {
 	position: absolute;
 	top: 0;
 	height: 50%;
 	width: 100%;
 	background-image: linear-gradient(to top, rgba(0,0,0,0), rgba(0,0,0,0.4));
 }
-.shadow-on-hover:hover {
-	box-shadow: 0 0 1px 2px var(--expandableLeafHeaderColor);
+.shadow-with-hover:hover {
+	box-shadow: var(--shadowWithHover);
+}
+.shadow-with-hover {
+	box-shadow: var(--shadowNormal);
+}
+.shadow-normal {
+	box-shadow: var(--shadowNormal);
 }
 </style>
