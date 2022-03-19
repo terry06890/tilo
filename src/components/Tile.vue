@@ -9,11 +9,13 @@ let options = {
 	shadowWithHover: '0 0 1px 2px greenyellow',
 	// For leaf tiles
 	leafHeaderX: 4,
-	leafHeaderY: 2,
+	leafHeaderY: 4,
+	leafHeaderFontSz: 15,
 	leafHeaderColor: '#fafaf9',
 	expandableLeafHeaderColor: 'greenyellow', //yellow, greenyellow, turquoise,
 	// For non-leaf tile-groups
 	nonLeafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
+	nonLeafHeaderFontSz: 15,
 	nonLeafHeaderColor: '#fafaf9',
 	nonLeafHeaderBgColor: '#1c1917',
 };
@@ -24,17 +26,17 @@ export default defineComponent({
 	props: {
 		layoutNode: {type: Object as PropType<LayoutNode>, required: true},
 		isRoot: {type: Boolean, default: false},
-		// Settings passed in from parent component
-		transitionDuration: {type: Number, required: true},
+		// Settings from parent component
 		headerSz: {type: Number, required: true},
 		tileSpacing: {type: Number, required: true},
+		transitionDuration: {type: Number, required: true},
 	},
 	data(){
 		return {
 			options: options,
 			// Used during transitions and to emulate/show an apparently-joined div
 			zIdx: 0,
-			overflow: this.isRoot ? 'hidden' : 'visible',
+			overflow: 'visible',
 		}
 	},
 	computed: {
@@ -90,8 +92,9 @@ export default defineComponent({
 				left: this.options.leafHeaderX + 'px',
 				top: this.options.leafHeaderY + 'px',
 				maxWidth: (this.layoutNode.dims[0] - this.options.leafHeaderX * 2) + 'px',
-				height: this.headerSz + 'px',
-				lineHeight: this.headerSz + 'px',
+				height: this.options.leafHeaderFontSz + 'px',
+				lineHeight: this.options.leafHeaderFontSz + 'px',
+				fontSize: this.options.leafHeaderFontSz + 'px',
 				color: this.isExpandable ? this.options.expandableLeafHeaderColor : this.options.leafHeaderColor,
 				// For ellipsis
 				overflow: 'hidden',
@@ -119,6 +122,7 @@ export default defineComponent({
 			return {
 				height: this.headerSz + 'px',
 				lineHeight: this.headerSz + 'px',
+				fontSize: this.options.nonLeafHeaderFontSz + 'px',
 				textAlign: 'center',
 				color: this.options.nonLeafHeaderColor,
 				backgroundColor: this.options.nonLeafHeaderBgColor,
