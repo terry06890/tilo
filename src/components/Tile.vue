@@ -161,6 +161,7 @@ export default defineComponent({
 		},
 	},
 	methods: {
+		// For tile expansion and collapse
 		onLeafClick(){
 			this.$emit('leaf-clicked', this.layoutNode);
 			// Increase z-index and hide overflow during transition
@@ -181,6 +182,27 @@ export default defineComponent({
 		onInnerHeaderClicked(node: LayoutNode){
 			this.$emit('header-clicked', node);
 		},
+		// For coloured-outlines on hovered-over leaf-tiles or non-leaf-headers
+		onMouseEnter(evt){
+			if (!this.isLeaf){
+				this.$refs.nonLeaf.classList.replace('shadow-normal', 'shadow-highlight');
+				if (this.$refs.sepSweptArea != null){
+					this.$refs.sepSweptArea.classList.replace('shadow-normal', 'shadow-highlight');
+				}
+			} else if (this.isExpandable){
+				evt.target.classList.replace('shadow-normal', 'shadow-highlight');
+			}
+		},
+		onMouseLeave(evt){
+			if (!this.isLeaf){
+				this.$refs.nonLeaf.classList.replace('shadow-highlight', 'shadow-normal');
+				if (this.$refs.sepSweptArea != null){
+					this.$refs.sepSweptArea.classList.replace('shadow-highlight', 'shadow-normal');
+				}
+			} else if (this.isExpandable){
+				evt.target.classList.replace('shadow-highlight', 'shadow-normal');
+			}
+		},
 	},
 });
 </script>
@@ -188,20 +210,23 @@ export default defineComponent({
 <template>
 <div :style="tileStyles">
 	<div v-if="isLeaf" :style="leafStyles"
-		:class="isExpandable ? ['hover:cursor-pointer', 'shadow-with-hover'] : 'shadow-normal'" @click="onLeafClick">
+		:class="['shadow-normal'].concat(isExpandable ? ['hover:cursor-pointer'] : [])"
+		@click="onLeafClick"  @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
 		<div :style="{borderRadius: options.borderRadius + 'px'}" class="scrim-upper-half"/>
 		<div :style="leafHeaderStyles">{{layoutNode.tolNode.name}}</div>
 	</div>
-	<div v-else :style="nonLeafStyles" class="shadow-normal">
-		<div v-if="showHeader" :style="nonLeafHeaderStyles" class="hover:cursor-pointer" @click="onHeaderClick">
+	<div v-else :style="nonLeafStyles" class="shadow-normal" ref="nonLeaf">
+		<h1 v-if="showHeader" :style="nonLeafHeaderStyles" class="hover:cursor-pointer"
+			@click="onHeaderClick" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
 			{{layoutNode.tolNode.name}}
-		</div>
-		<div :style="sepSweptAreaStyles"
+		</h1>
+		<div :style="sepSweptAreaStyles" ref="sepSweptArea"
 			:class="[layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge', 'shadow-normal']">
-			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
-				:style="nonLeafHeaderStyles" class="hover:cursor-pointer" @click="onHeaderClick">
+			<h1 v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
+				:style="nonLeafHeaderStyles" class="hover:cursor-pointer"
+				@click="onHeaderClick"  @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
 				{{layoutNode.tolNode.name}}
-			</div>
+			</h1>
 		</div>
 		<tile v-for="child in layoutNode.children" :key="child.tolNode.name" :layoutNode="child"
 			:headerSz="headerSz" :tileSpacing="tileSpacing" :transitionDuration="transitionDuration"
@@ -236,11 +261,8 @@ export default defineComponent({
 	width: 100%;
 	background-image: linear-gradient(to top, rgba(0,0,0,0), rgba(0,0,0,0.4));
 }
-.shadow-with-hover:hover {
+.shadow-highlight {
 	box-shadow: var(--shadowWithHover);
-}
-.shadow-with-hover {
-	box-shadow: var(--shadowNormal);
 }
 .shadow-normal {
 	box-shadow: var(--shadowNormal);
