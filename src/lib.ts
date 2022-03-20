@@ -501,12 +501,12 @@ let sweepLayoutFn: LayoutFn = function (node, pos, dims, showHeader, opts, ownOp
 				if (sweptLeft){
 					parentArea.dims[1] = leavesLyt.dims[1];
 					if (sepArea != null && sepAreaLen > sepArea.dims[1]){ // If space used by child
-						parentArea.dims[1] += sepArea.dims[1] + opts.tileSpacing*2;
+						parentArea.dims[1] += sepArea.dims[1] + opts.tileSpacing;
 					}
 				} else {
 					parentArea.dims[0] = leavesLyt.dims[0];
 					if (sepArea != null && sepAreaLen > sepArea.dims[0]){
-						parentArea.dims[0] += sepArea.dims[0] + opts.tileSpacing*2;
+						parentArea.dims[0] += sepArea.dims[0] + opts.tileSpacing;
 					}
 				}
 				// Align parentArea size with non-leaves area
