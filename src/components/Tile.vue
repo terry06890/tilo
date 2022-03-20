@@ -2,27 +2,26 @@
 import {defineComponent, PropType} from 'vue';
 import {LayoutNode} from '../lib';
 
-// Configurable settings (integer values specify pixels)
+// Configurable settings
 let options = {
-	borderRadius: 5,
+	borderRadius: 5, //px
 	shadowNormal: '0 0 2px black',
 	shadowWithHover: '0 0 1px 2px greenyellow',
 	// For leaf tiles
-	leafHeaderX: 4,
-	leafHeaderY: 4,
-	leafHeaderFontSz: 15,
+	leafHeaderX: 4, //px
+	leafHeaderY: 4, //px
+	leafHeaderFontSz: 15, //px
 	leafHeaderColor: '#fafaf9',
 	expandableLeafHeaderColor: 'greenyellow', //yellow, greenyellow, turquoise,
 	// For non-leaf tile-groups
 	nonLeafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
-	nonLeafHeaderFontSz: 15,
+	nonLeafHeaderFontSz: 15, //px
 	nonLeafHeaderColor: '#fafaf9',
 	nonLeafHeaderBgColor: '#1c1917',
 };
 
 // Component holds a tree-node structure representing a tile or tile-group to be rendered
 export default defineComponent({
-	name: 'tile', // Need this to use self in template
 	props: {
 		layoutNode: {type: Object as PropType<LayoutNode>, required: true},
 		isRoot: {type: Boolean, default: false},
@@ -44,7 +43,7 @@ export default defineComponent({
 			return this.layoutNode.children.length == 0;
 		},
 		isExpandable(){
-			return this.layoutNode.tolNode.children.length > this.layoutNode.children;
+			return this.layoutNode.tolNode.children.length > this.layoutNode.children.length;
 		},
 		showHeader(){
 			return (this.layoutNode.showHeader && !this.layoutNode.sepSweptArea) ||
@@ -167,53 +166,65 @@ export default defineComponent({
 	methods: {
 		// For tile expansion and collapse
 		onLeafClick(){
-			this.$emit('leaf-clicked', this.layoutNode);
-			// Increase z-index and hide overflow during transition
+			this.$emit('leaf-clicked', {layoutNode: this.layoutNode, domNode: this.$el});
+			(this.$refs.leaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
+			// Temporary changes during transition
 			this.zIdx = 1;
 			this.overflow = 'hidden';
-			setTimeout(() => {this.zIdx = 0; this.overflow = 'visible'}, this.transitionDuration);
+			setTimeout(() => {
+				this.zIdx = 0;
+				this.overflow = 'visible';
+			}, this.transitionDuration);
 		},
-		onInnerLeafClicked(node: LayoutNode){
-			this.$emit('leaf-clicked', node);
+		onInnerLeafClicked(data: {layoutNode: LayoutNode, domNode: HTMLElement}){
+			this.$emit('leaf-clicked', data);
 		},
 		onHeaderClick(){
-			this.$emit('header-clicked', this.layoutNode);
-			// Increase z-index and hide overflow during transition
+			this.$emit('header-clicked', {layoutNode: this.layoutNode, domNode: this.$el});
+			(this.$refs.nonLeaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
+			// Temporary changes during transition
 			this.zIdx = 1;
 			this.overflow = 'hidden';
-			setTimeout(() => {this.zIdx = 0; this.overflow = 'visible'}, this.transitionDuration);
+			setTimeout(() => {
+				this.zIdx = 0;
+				this.overflow = 'visible';
+			}, this.transitionDuration);
 		},
-		onInnerHeaderClicked(node: LayoutNode){
-			this.$emit('header-clicked', node);
+		onInnerHeaderClicked(data: {layoutNode: LayoutNode, domNode: HTMLElement}){
+			this.$emit('header-clicked', data);
 		},
 		// For coloured-outlines on hovered-over leaf-tiles or non-leaf-headers
-		onMouseEnter(evt){
+		onMouseEnter(evt: Event){
 			if (!this.isLeaf){
-				this.$refs.nonLeaf.classList.replace('shadow-normal', 'shadow-highlight');
-				if (this.$refs.sepSweptArea != null){
-					this.$refs.sepSweptArea.classList.replace('shadow-normal', 'shadow-highlight');
+				(this.$refs.nonLeaf as Element).classList.replace('shadow-normal', 'shadow-highlight');
+				let sepSweptArea = (this.$refs.sepSweptArea as Element | null);
+				if (sepSweptArea != null){
+					sepSweptArea.classList.replace('shadow-normal', 'shadow-highlight');
 				}
 			} else if (this.isExpandable){
-				evt.target.classList.replace('shadow-normal', 'shadow-highlight');
+				(evt.target as Element).classList.replace('shadow-normal', 'shadow-highlight');
 			}
 		},
-		onMouseLeave(evt){
+		onMouseLeave(evt: Event){
 			if (!this.isLeaf){
-				this.$refs.nonLeaf.classList.replace('shadow-highlight', 'shadow-normal');
-				if (this.$refs.sepSweptArea != null){
-					this.$refs.sepSweptArea.classList.replace('shadow-highlight', 'shadow-normal');
+				(this.$refs.nonLeaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
+				let sepSweptArea = this.$refs.sepSweptArea as Element | null;
+				if (sepSweptArea != null){
+					sepSweptArea.classList.replace('shadow-highlight', 'shadow-normal');
 				}
 			} else if (this.isExpandable){
-				evt.target.classList.replace('shadow-highlight', 'shadow-normal');
+				(evt.target as Element).classList.replace('shadow-highlight', 'shadow-normal');
 			}
 		},
 	},
+	name: 'tile', // Need this to use self in template
+	emits: ['leaf-clicked', 'header-clicked'],
 });
 </script>
 
 <template>
 <div :style="tileStyles">
-	<div v-if="isLeaf" :style="leafStyles"
+	<div v-if="isLeaf" :style="leafStyles" ref="leaf"
 		:class="['shadow-normal'].concat(isExpandable ? ['hover:cursor-pointer'] : [])"
 		@click="onLeafClick"  @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
 		<div :style="{borderRadius: options.borderRadius + 'px'}" class="scrim-upper-half"/>

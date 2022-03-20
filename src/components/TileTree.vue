@@ -18,12 +18,12 @@ function preprocessTol(node: any): any {
 }
 const tol: TolNode = preprocessTol(tolRaw);
 
-// Configurable settings (integer values specify pixels)
+// Configurable settings
 let layoutOptions: LayoutOptions = {
-	tileSpacing: 8,
-	headerSz: 20,
-	minTileSz: 50,
-	maxTileSz: 200,
+	tileSpacing: 8, //px
+	headerSz: 20, //px
+	minTileSz: 50, //px
+	maxTileSz: 200, //px
 	layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
 	rectMode: 'auto', //'horz' | 'vert' | 'linear' | 'auto'
 	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
@@ -63,18 +63,28 @@ export default defineComponent({
 				setTimeout(() => {this.resizeThrottled = false;}, otherOptions.resizeDelay);
 			}
 		},
-		onInnerLeafClicked(clickedNode: LayoutNode){
-			if (clickedNode.tolNode.children.length == 0){
-				console.log('Tile-to-expand has no children');
+		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
+			if (layoutNode.tolNode.children.length == 0){
+				//console.log('Tile to expand has no children');
 				return;
 			}
-			if (!this.layoutTree.tryLayoutOnExpand([0,0], [this.width,this.height], clickedNode)){
-				console.log('Unable to layout tree');
+			let success = this.layoutTree.tryLayoutOnExpand([0,0], [this.width,this.height], layoutNode);
+			if (!success){
+				// Trigger failure animation
+				domNode.classList.remove('animate-expand-shrink');
+				domNode.offsetWidth; // Triggers reflow
+				domNode.classList.add('animate-expand-shrink');
+				//console.log('Unable to layout tree');
 			}
 		},
-		onInnerHeaderClicked(clickedNode: LayoutNode){
-			if (!this.layoutTree.tryLayoutOnCollapse([0,0], [this.width,this.height], clickedNode)){
-				console.log('Unable to layout tree');
+		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
+			let success = this.layoutTree.tryLayoutOnCollapse([0,0], [this.width,this.height], layoutNode);
+			if (!success){
+				// Trigger failure animation
+				domNode.classList.remove('animate-expand-shrink');
+				domNode.offsetWidth; // Triggers reflow
+				domNode.classList.add('animate-expand-shrink');
+				//console.log('Unable to layout tree');
 			}
 		},
 	},
@@ -101,3 +111,23 @@ export default defineComponent({
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"/>
 </div>
 </template>
+
+<style>
+.animate-expand-shrink {
+	animation-name: expand-shrink;
+	animation-duration: 300ms;
+	animation-iteration-count: 1;
+	animation-timing-function: ease-in-out;
+}
+@keyframes expand-shrink {
+	from {
+		transform: scale(1, 1);
+	}
+	50% {
+		transform: scale(1.1, 1.1);
+	}
+	to {
+		transform: scale(1, 1);
+	}
+}
+</style>
