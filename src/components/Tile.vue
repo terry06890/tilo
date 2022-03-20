@@ -3,7 +3,7 @@ import {defineComponent, PropType} from 'vue';
 import {LayoutNode} from '../lib';
 
 // Configurable settings
-let options = {
+const defaultOptions = {
 	borderRadius: 5, //px
 	shadowNormal: '0 0 2px black',
 	shadowWithHover: '0 0 1px 2px greenyellow',
@@ -32,7 +32,7 @@ export default defineComponent({
 	},
 	data(){
 		return {
-			options: options,
+			options: defaultOptions,
 			// Used during transitions and to emulate/show an apparently-joined div
 			zIdx: 0,
 			overflow: 'visible',

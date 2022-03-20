@@ -19,7 +19,7 @@ function preprocessTol(node: any): any {
 const tol: TolNode = preprocessTol(tolRaw);
 
 // Configurable settings
-let layoutOptions: LayoutOptions = {
+const defaultLayoutOptions: LayoutOptions = {
 	tileSpacing: 8, //px
 	headerSz: 20, //px
 	minTileSz: 50, //px
@@ -30,10 +30,10 @@ let layoutOptions: LayoutOptions = {
 	sweptNodesPrio: 'linear', //'linear' | 'sqrt' | 'pow-2/3'
 	sweepingToParent: true,
 };
-let otherOptions = {
-	// Integer values specify milliseconds
-	transitionDuration: 300,
-	resizeDelay: 100, // During window-resizing, relayout tiles after this delay instead of continously
+const defaultOtherOptions = {
+	rootOffset: 5, //px (min offset of root tile from display area boundary)
+	transitionDuration: 300, //ms
+	resizeDelay: 100, //ms (delay for non-continous relayout during window-resizing)
 };
 
 // Component holds a tree structure representing a subtree of 'tol' to be rendered
@@ -41,11 +41,11 @@ let otherOptions = {
 export default defineComponent({
 	data(){
 		return {
-			layoutTree: new LayoutTree(tol, layoutOptions, 0),
-			width: document.documentElement.clientWidth,
-			height: document.documentElement.clientHeight,
-			layoutOptions: layoutOptions,
-			otherOptions: otherOptions,
+			layoutTree: new LayoutTree(tol, defaultLayoutOptions, 0),
+			layoutOptions: {...defaultLayoutOptions},
+			otherOptions: {...defaultOtherOptions},
+			width: document.documentElement.clientWidth - (defaultOtherOptions.rootOffset * 2),
+			height: document.documentElement.clientHeight - (defaultOtherOptions.rootOffset * 2),
 			resizeThrottled: false,
 		}
 	},
@@ -53,14 +53,14 @@ export default defineComponent({
 		onResize(){
 			if (!this.resizeThrottled){
 				// Update data and relayout tiles
-				this.width = document.documentElement.clientWidth;
-				this.height = document.documentElement.clientHeight;
+				this.width = document.documentElement.clientWidth - (this.otherOptions.rootOffset * 2);
+				this.height = document.documentElement.clientHeight - (this.otherOptions.rootOffset * 2);
 				if (!this.layoutTree.tryLayout([0,0], [this.width,this.height])){
 					console.log('Unable to layout tree');
 				}
 				// Prevent re-triggering until after a delay
 				this.resizeThrottled = true;
-				setTimeout(() => {this.resizeThrottled = false;}, otherOptions.resizeDelay);
+				setTimeout(() => {this.resizeThrottled = false;}, this.otherOptions.resizeDelay);
 			}
 		},
 		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
