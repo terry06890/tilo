@@ -182,12 +182,11 @@ export default defineComponent({
 		onHeaderClick(){
 			this.$emit('header-clicked', {layoutNode: this.layoutNode, domNode: this.$el});
 			(this.$refs.nonLeaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
+			(this.$refs.sepSweptArea as Element).classList.replace('shadow-highlight', 'shadow-normal');
 			// Temporary changes during transition
 			this.zIdx = 1;
-			this.overflow = 'hidden';
 			setTimeout(() => {
 				this.zIdx = 0;
-				this.overflow = 'visible';
 			}, this.transitionDuration);
 		},
 		onInnerHeaderClicked(data: {layoutNode: LayoutNode, domNode: HTMLElement}){

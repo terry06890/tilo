@@ -81,9 +81,9 @@ export default defineComponent({
 			let success = this.layoutTree.tryLayoutOnCollapse([0,0], [this.width,this.height], layoutNode);
 			if (!success){
 				// Trigger failure animation
-				domNode.classList.remove('animate-expand-shrink');
+				domNode.classList.remove('animate-shrink-expand');
 				domNode.offsetWidth; // Triggers reflow
-				domNode.classList.add('animate-expand-shrink');
+				domNode.classList.add('animate-shrink-expand');
 				//console.log('Unable to layout tree');
 			}
 		},
@@ -128,6 +128,23 @@ export default defineComponent({
 	}
 	to {
 		transform: scale(1, 1);
+	}
+}
+.animate-shrink-expand {
+	animation-name: shrink-expand;
+	animation-duration: 300ms;
+	animation-iteration-count: 1;
+	animation-timing-function: ease-in-out;
+}
+@keyframes shrink-expand {
+	from {
+		transform: translate3d(0,0,0) scale(1, 1);
+	}
+	50% {
+		transform: translate3d(0,0,0) scale(0.9, 0.9);
+	}
+	to {
+		transform: translate3d(0,0,0) scale(1, 1);
 	}
 }
 </style>
