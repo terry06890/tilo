@@ -276,6 +276,12 @@ let rectLayout: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpts?
 	let rowBrks: number[] = []; // Will hold indices for nodes at which each row starts
 	let lowestEmpSpc = Number.POSITIVE_INFINITY, usedEmpRight = 0, usedEmpBottom = 0;
 	let tempTree: LayoutNode = node.cloneNodeTree(); // Holds tentative layouts for 'node'
+	const minCellDims = [ // Can situationally assume non-leaf children
+		opts.minTileSz + opts.tileSpacing +
+			(opts.layoutType == 'sweep' ? opts.tileSpacing*2 : 0),
+		opts.minTileSz + opts.tileSpacing +
+			(opts.layoutType == 'sweep' ? opts.tileSpacing*2 + opts.headerSz : 0)
+	];
 	rowBrksLoop:
 	while (true){
 		// Update rowBrks or exit loop
@@ -334,13 +340,13 @@ let rectLayout: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpts?
 		let cellHs = rowsOfCnts.map(rowOfCnts => arraySum(rowOfCnts) / totalDCount * newDims[1]);
 		// Check min-tile-size, attempting to reallocate space if needed
 		for (let rowIdx = 0; rowIdx < rowsOfCnts.length; rowIdx++){
-			let newWs = limitVals(cellWs[rowIdx], opts.minTileSz + opts.tileSpacing, Number.POSITIVE_INFINITY);
+			let newWs = limitVals(cellWs[rowIdx], minCellDims[0], Number.POSITIVE_INFINITY);
 			if (newWs == null){
 				continue rowBrksLoop;
 			}
 			cellWs[rowIdx] = newWs;
 		}
-		cellHs = limitVals(cellHs, opts.minTileSz + opts.tileSpacing, Number.POSITIVE_INFINITY)!;
+		cellHs = limitVals(cellHs, minCellDims[1], Number.POSITIVE_INFINITY)!;
 		if (cellHs == null){
 			continue rowBrksLoop;
 		}

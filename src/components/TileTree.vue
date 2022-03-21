@@ -27,7 +27,7 @@ const defaultLayoutOptions: LayoutOptions = {
 	layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
 	rectMode: 'auto', //'horz' | 'vert' | 'linear' | 'auto'
 	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
-	sweptNodesPrio: 'linear', //'linear' | 'sqrt' | 'pow-2/3'
+	sweptNodesPrio: 'pow-2/3', //'linear' | 'sqrt' | 'pow-2/3'
 	sweepingToParent: true,
 };
 const defaultOtherOptions = {
