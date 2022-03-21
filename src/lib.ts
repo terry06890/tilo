@@ -168,7 +168,7 @@ export class SepSweptArea {
 }
 
 // Type for functions called by LayoutTree to perform layout
-// These return a new LayoutNode tree for a given LayoutNode's TolNode tree, or null if layout was unsuccessful
+// These set fields of nodes in a given LayoutNode tree, and return a boolean indicating success
 type LayoutFn = (
 	node: LayoutNode,
 	pos: [number, number],
@@ -177,7 +177,7 @@ type LayoutFn = (
 	opts: LayoutOptions,
 	ownOpts?: any,
 ) => boolean;
-//lays  Out node as one square, ignoring child nodes (used for base cases)
+// Lays out node as one square, ignoring child nodes (used for base cases)
 let oneSqrLayout: LayoutFn = function (node, pos, dims, showHeader, opts){
 	let tileSz = Math.min(dims[0], dims[1], opts.maxTileSz);
 	if (tileSz < opts.minTileSz){
@@ -403,7 +403,7 @@ let rectLayout: LayoutFn = function (node, pos, dims, showHeader, opts, ownOpts?
 		}
 		// Get empty space
 		let usedSpc = arraySum(tempTree.children.map(
-			child => (child.dims[0] + opts.tileSpacing) * (child.dims[1] + opts.tileSpacing)));
+			child => (child.dims[0] + opts.tileSpacing) * (child.dims[1] + opts.tileSpacing) - child.empSpc));
 		let empSpc = newDims[0] * newDims[1] - usedSpc;
 		// Check with best-so-far
 		if (empSpc < lowestEmpSpc){
