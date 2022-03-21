@@ -68,7 +68,8 @@ export default defineComponent({
 				//console.log('Tile to expand has no children');
 				return;
 			}
-			let success = this.layoutTree.tryLayoutOnExpand([0,0], [this.width,this.height], layoutNode);
+			let success = this.layoutTree.tryLayout([0,0], [this.width,this.height],
+				{type: 'expand', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
 				domNode.classList.remove('animate-expand-shrink');
@@ -78,7 +79,8 @@ export default defineComponent({
 			}
 		},
 		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
-			let success = this.layoutTree.tryLayoutOnCollapse([0,0], [this.width,this.height], layoutNode);
+			let success = this.layoutTree.tryLayout([0,0], [this.width,this.height],
+				{type: 'collapse', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
 				domNode.classList.remove('animate-shrink-expand');
