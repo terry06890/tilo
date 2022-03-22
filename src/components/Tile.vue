@@ -25,7 +25,6 @@ const defaultOptions = {
 export default defineComponent({
 	props: {
 		layoutNode: {type: Object as PropType<LayoutNode>, required: true},
-		isRoot: {type: Boolean, default: false},
 		// Settings from parent component
 		headerSz: {type: Number, required: true},
 		tileSpacing: {type: Number, required: true},
@@ -58,17 +57,17 @@ export default defineComponent({
 			return {
 				// Places div using layoutNode, with centering if root
 				position: 'absolute',
-				left: this.isRoot ? '50%' : this.layoutNode.pos[0] + 'px',
-				top: this.isRoot ? '50%' : this.layoutNode.pos[1] + 'px',
-				transform: this.isRoot ? 'translate(-50%, -50%)' : 'none',
-				width: this.layoutNode.dims[0] + 'px',
-				height: this.layoutNode.dims[1] + 'px',
+				left: (this.layoutNode.hidden ? 0 : this.layoutNode.pos[0]) + 'px',
+				top: (this.layoutNode.hidden ? 0 : this.layoutNode.pos[1]) + 'px',
+				width: (this.layoutNode.hidden ? 0 : this.layoutNode.dims[0]) + 'px',
+				height: (this.layoutNode.hidden ? 0 : this.layoutNode.dims[1]) + 'px',
+				visibility: this.layoutNode.hidden ? 'hidden' : 'visible',
 				// Other bindings
 				transitionDuration: this.transitionDuration + 'ms',
 				zIndex: String(this.zIdx),
 				overflow: String(this.overflow),
 				// Static styles
-				transitionProperty: 'left, top, width, height',
+				transitionProperty: 'left, top, width, height, visibility',
 				transitionTimingFunction: 'ease-out',
 				// CSS variables
 				'--nonLeafBgColor': this.nonLeafBgColor,
@@ -91,7 +90,7 @@ export default defineComponent({
 				position: 'absolute',
 				left: this.options.leafHeaderX + 'px',
 				top: this.options.leafHeaderY + 'px',
-				maxWidth: (this.layoutNode.dims[0] - this.options.leafHeaderX * 2) + 'px',
+				maxWidth: this.layoutNode.hidden ? 0 : this.layoutNode.dims[0] - this.options.leafHeaderX * 2 + 'px',
 				height: this.options.leafHeaderFontSz + 'px',
 				lineHeight: this.options.leafHeaderFontSz + 'px',
 				fontSize: this.options.leafHeaderFontSz + 'px',
@@ -167,6 +166,10 @@ export default defineComponent({
 	methods: {
 		// For click handling
 		onLeafClick(evt: UIEvent){
+			if (!this.isExpandable){
+				console.log('Ignored click on non-expandable leaf node');
+				return;
+			}
 			let prepForTransition = () => {
 				(this.$refs.leaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
 				// Temporary changes to prevent content overlap and overflow

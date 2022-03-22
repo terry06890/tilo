@@ -40,8 +40,10 @@ const defaultOtherOptions = {
 // Collects events about tile expansion/collapse and window-resize, and initiates relayout of tiles
 export default defineComponent({
 	data(){
+		let layoutTree = new LayoutTree(tol, defaultLayoutOptions, 0);
 		return {
-			layoutTree: new LayoutTree(tol, defaultLayoutOptions, 0),
+			layoutTree: layoutTree,
+			activeRoot: layoutTree.root,
 			layoutOptions: {...defaultLayoutOptions},
 			otherOptions: {...defaultOtherOptions},
 			width: document.documentElement.clientWidth - (defaultOtherOptions.rootOffset * 2),
@@ -55,7 +57,7 @@ export default defineComponent({
 				// Update data and relayout tiles
 				this.width = document.documentElement.clientWidth - (this.otherOptions.rootOffset * 2);
 				this.height = document.documentElement.clientHeight - (this.otherOptions.rootOffset * 2);
-				if (!this.layoutTree.tryLayout([0,0], [this.width,this.height], true)){
+				if (!this.layoutTree.tryLayout(this.activeRoot, [0,0], [this.width,this.height], true)){
 					console.log('Unable to layout tree');
 				}
 				// Prevent re-triggering until after a delay
@@ -64,11 +66,7 @@ export default defineComponent({
 			}
 		},
 		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
-			if (layoutNode.tolNode.children.length == 0){
-				//console.log('Tile to expand has no children');
-				return;
-			}
-			let success = this.layoutTree.tryLayout([0,0], [this.width,this.height], false,
+			let success = this.layoutTree.tryLayout(this.activeRoot, [0,0], [this.width,this.height], false,
 				{type: 'expand', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
@@ -79,7 +77,7 @@ export default defineComponent({
 			}
 		},
 		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
-			let success = this.layoutTree.tryLayout([0,0], [this.width,this.height], false,
+			let success = this.layoutTree.tryLayout(this.activeRoot, [0,0], [this.width,this.height], false,
 				{type: 'collapse', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
@@ -90,15 +88,28 @@ export default defineComponent({
 			}
 		},
 		onInnerLeafDblClicked(layoutNode: LayoutNode){
-			console.log('double clicked leaf: ' + layoutNode.tolNode.name);
+			if (layoutNode == this.activeRoot){
+				console.log('Ignored expand-to-view on root node');
+				return;
+			}
+			LayoutNode.hideUpward(layoutNode);
+			this.activeRoot = layoutNode;
+			this.layoutTree.tryLayout(layoutNode, [0,0], [this.width,this.height], true,
+				{type: 'expand', node: layoutNode});
 		},
 		onInnerHeaderDblClicked(layoutNode: LayoutNode){
-			console.log('double clicked header: ' + layoutNode.tolNode.name);
+			if (layoutNode.parent == null){
+				console.log('Ignored expand-to-view on root node');
+				return;
+			}
+			LayoutNode.hideUpward(layoutNode);
+			this.activeRoot = layoutNode;
+			this.layoutTree.tryLayout(layoutNode, [0,0], [this.width,this.height], true);
 		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
-		if (!this.layoutTree.tryLayout([0,0], [this.width,this.height], true)){
+		if (!this.layoutTree.tryLayout(this.activeRoot, [0,0], [this.width,this.height], true)){
 			console.log('Unable to layout tree');
 		}
 	},
@@ -115,7 +126,7 @@ export default defineComponent({
 <div class="h-screen bg-stone-800">
 	<tile :layoutNode="layoutTree.root"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing"
-		:transitionDuration="otherOptions.transitionDuration" :isRoot="true"
+		:transitionDuration="otherOptions.transitionDuration"
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
 		@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"/>
 </div>

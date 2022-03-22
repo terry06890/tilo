@@ -40,9 +40,10 @@ export class LayoutTree {
 	// Attempts layout of TolNode tree, for an area with given xy-coordinate and width+height (in pixels)
 	// 'allowCollapse' allows the layout algorithm to collapse nodes to avoid layout failure
 	// 'chg' allows for performing layout after expanding/collapsing a node
-	tryLayout(pos: [number,number], dims: [number,number], allowCollapse: boolean = false, chg?: LayoutTreeChg){
+	tryLayout(root: LayoutNode, pos: [number,number], dims: [number,number], allowCollapse: boolean = false,
+		chg?: LayoutTreeChg){
 		// Create a new LayoutNode tree, keeping the old one in case of layout failure
-		let tempTree = this.root.cloneNodeTree(chg);
+		let tempTree = root.cloneNodeTree(chg);
 		let success: boolean;
 		switch (this.options.layoutType){
 			case 'sqr':   success =   sqrLayout(tempTree, pos, dims, true, allowCollapse, this.options); break;
@@ -50,7 +51,11 @@ export class LayoutTree {
 			case 'sweep': success = sweepLayout(tempTree, pos, dims, true, allowCollapse, this.options); break;
 		}
 		if (success){
-			tempTree.copyTreeForRender(this.root);
+			// Center root in layout area
+			tempTree.pos[0] = (dims[0] - tempTree.dims[0]) / 2;
+			tempTree.pos[1] = (dims[1] - tempTree.dims[1]) / 2;
+			// Apply to active LayoutNode tree
+			tempTree.copyTreeForRender(root);
 		}
 		return success;
 	}
@@ -77,6 +82,7 @@ export class LayoutNode {
 	dims: [number, number];
 	showHeader: boolean;
 	sepSweptArea: SepSweptArea | null;
+	hidden: boolean;
 	// Used for layout heuristics and info display
 	dCount: number; // Number of descendant leaf nodes
 	depth: number; // Number of ancestor nodes
@@ -90,6 +96,7 @@ export class LayoutNode {
 		this.dims = [0,0];
 		this.showHeader = false;
 		this.sepSweptArea = null;
+		this.hidden = false;
 		this.dCount = children.length == 0 ? 1 : arraySum(children.map(n => n.dCount));
 		this.depth = 0;
 		this.empSpc = 0;
@@ -154,6 +161,20 @@ export class LayoutNode {
 			node.dCount += diff;
 			node = node.parent;
 		}
+	}
+	//
+	static hideUpward(node: LayoutNode){
+		if (node.parent != null){
+			node.parent.hidden = true;
+			node.parent.children.filter(n => n != node).forEach(n => LayoutNode.hideDownward(n));
+			LayoutNode.hideUpward(node.parent);
+		}
+	}
+	static hideDownward(node: LayoutNode){
+		node.hidden = true;
+		node.children.forEach(n => {
+			LayoutNode.hideDownward(n)
+		});
 	}
 }
 export type LayoutTreeChg = {
