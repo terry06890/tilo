@@ -89,6 +89,12 @@ export default defineComponent({
 				//console.log('Unable to layout tree');
 			}
 		},
+		onInnerLeafDblClicked(layoutNode: LayoutNode){
+			console.log('double clicked leaf: ' + layoutNode.tolNode.name);
+		},
+		onInnerHeaderDblClicked(layoutNode: LayoutNode){
+			console.log('double clicked header: ' + layoutNode.tolNode.name);
+		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
@@ -110,7 +116,8 @@ export default defineComponent({
 	<tile :layoutNode="layoutTree.root"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing"
 		:transitionDuration="otherOptions.transitionDuration" :isRoot="true"
-		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"/>
+		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
+		@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"/>
 </div>
 </template>
 

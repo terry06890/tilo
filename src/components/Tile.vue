@@ -7,6 +7,7 @@ const defaultOptions = {
 	borderRadius: 5, //px
 	shadowNormal: '0 0 2px black',
 	shadowWithHover: '0 0 1px 2px greenyellow',
+	dblClickWait: 200, //ms
 	// For leaf tiles
 	leafHeaderX: 4, //px
 	leafHeaderY: 4, //px
@@ -33,9 +34,9 @@ export default defineComponent({
 	data(){
 		return {
 			options: defaultOptions,
-			// Used during transitions and to emulate/show an apparently-joined div
-			zIdx: 0,
-			overflow: 'visible',
+			dblClickTimer: 0, // Used to delay a click action until a double-click timeout ends
+			zIdx: 0, // Used during transitions
+			overflow: 'visible', // Used during transitions
 		}
 	},
 	computed: {
@@ -164,33 +165,56 @@ export default defineComponent({
 		},
 	},
 	methods: {
-		// For tile expansion and collapse
-		onLeafClick(){
-			this.$emit('leaf-clicked', {layoutNode: this.layoutNode, domNode: this.$el});
-			(this.$refs.leaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
-			// Temporary changes during transition
-			this.zIdx = 1;
-			this.overflow = 'hidden';
-			setTimeout(() => {
-				this.zIdx = 0;
-				this.overflow = 'visible';
-			}, this.transitionDuration);
+		// For click handling
+		onLeafClick(evt: UIEvent){
+			let prepForTransition = () => {
+				(this.$refs.leaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
+				// Temporary changes to prevent content overlap and overflow
+				this.zIdx = 1;
+				this.overflow = 'hidden';
+				setTimeout(() => {this.zIdx = 0; this.overflow = 'visible';}, this.transitionDuration);
+			};
+			if (evt.detail == 1){
+				this.dblClickTimer = setTimeout(() => {
+					this.$emit('leaf-clicked', {layoutNode: this.layoutNode, domNode: this.$el});
+					prepForTransition();
+				}, this.options.dblClickWait);
+			} else if (evt.detail == 2){
+				clearTimeout(this.dblClickTimer);
+				this.$emit('leaf-dbl-clicked', this.layoutNode);
+				prepForTransition();
+			}
 		},
 		onInnerLeafClicked(data: {layoutNode: LayoutNode, domNode: HTMLElement}){
 			this.$emit('leaf-clicked', data);
 		},
-		onHeaderClick(){
-			this.$emit('header-clicked', {layoutNode: this.layoutNode, domNode: this.$el});
-			(this.$refs.nonLeaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
-			(this.$refs.sepSweptArea as Element).classList.replace('shadow-highlight', 'shadow-normal');
-			// Temporary changes during transition
-			this.zIdx = 1;
-			setTimeout(() => {
-				this.zIdx = 0;
-			}, this.transitionDuration);
+		onHeaderClick(evt: UIEvent){
+			let prepForTransition = () => {
+				(this.$refs.nonLeaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
+				(this.$refs.sepSweptArea as Element).classList.replace('shadow-highlight', 'shadow-normal');
+				// Temporary changes to prevent content overlap and overflow
+				this.zIdx = 1;
+				setTimeout(() => {this.zIdx = 0}, this.transitionDuration);
+			};
+			if (evt.detail == 1){
+				this.dblClickTimer = setTimeout(() => {
+					this.$emit('header-clicked', {layoutNode: this.layoutNode, domNode: this.$el});
+					prepForTransition();
+				}, this.options.dblClickWait);
+			} else if (evt.detail == 2){
+				clearTimeout(this.dblClickTimer);
+				this.$emit('header-dbl-clicked', this.layoutNode);
+				prepForTransition();
+			}
 		},
 		onInnerHeaderClicked(data: {layoutNode: LayoutNode, domNode: HTMLElement}){
 			this.$emit('header-clicked', data);
+		},
+		onInnerLeafDblClicked(data: LayoutNode){
+			this.$emit('leaf-dbl-clicked', data);
+		},
+		onInnerHeaderDblClicked(data: LayoutNode){
+			this.$emit('header-dbl-clicked', data);
 		},
 		// For coloured-outlines on hovered-over leaf-tiles or non-leaf-headers
 		onMouseEnter(evt: Event){
@@ -217,7 +241,7 @@ export default defineComponent({
 		},
 	},
 	name: 'tile', // Need this to use self in template
-	emits: ['leaf-clicked', 'header-clicked'],
+	emits: ['leaf-clicked', 'header-clicked', 'leaf-dbl-clicked', 'header-dbl-clicked'],
 });
 </script>
 
@@ -225,26 +249,27 @@ export default defineComponent({
 <div :style="tileStyles">
 	<div v-if="isLeaf" :style="leafStyles" ref="leaf"
 		:class="['shadow-normal'].concat(isExpandable ? ['hover:cursor-pointer'] : [])"
-		@click="onLeafClick"  @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
+		@click="onLeafClick($event)" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
 		<div :style="{borderRadius: options.borderRadius + 'px'}" class="scrim-upper-half"/>
 		<div :style="leafHeaderStyles">{{layoutNode.tolNode.name}}</div>
 	</div>
 	<div v-else :style="nonLeafStyles" class="shadow-normal" ref="nonLeaf">
 		<h1 v-if="showHeader" :style="nonLeafHeaderStyles" class="hover:cursor-pointer"
-			@click="onHeaderClick" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
+			@click="onHeaderClick($event)" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
 			{{layoutNode.tolNode.name}}
 		</h1>
 		<div :style="sepSweptAreaStyles" ref="sepSweptArea"
 			:class="[layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge', 'shadow-normal']">
 			<h1 v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
 				:style="nonLeafHeaderStyles" class="hover:cursor-pointer"
-				@click="onHeaderClick"  @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
+				@click="onHeaderClick($event)" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
 				{{layoutNode.tolNode.name}}
 			</h1>
 		</div>
 		<tile v-for="child in layoutNode.children" :key="child.tolNode.name" :layoutNode="child"
 			:headerSz="headerSz" :tileSpacing="tileSpacing" :transitionDuration="transitionDuration"
-			@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"/>
+			@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
+			@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"/>
 	</div>
 </div>
 </template>
