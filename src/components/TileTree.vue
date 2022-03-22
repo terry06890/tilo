@@ -1,5 +1,5 @@
 <script lang="ts">
-import {defineComponent} from 'vue';
+import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue';
 import {TolNode, LayoutNode, initLayoutTree, tryLayout} from '../lib';
 import type {LayoutOptions} from '../lib';
@@ -31,14 +31,16 @@ const defaultLayoutOptions: LayoutOptions = {
 	sweepingToParent: true,
 };
 const defaultOtherOptions = {
-	rootOffset: 5, //px (min offset of root tile from display area boundary)
 	transitionDuration: 300, //ms
-	resizeDelay: 100, //ms (delay for non-continous relayout during window-resizing)
 };
 
 // Component holds a tree structure representing a subtree of 'tol' to be rendered
 // Collects events about tile expansion/collapse and window-resize, and initiates relayout of tiles
 export default defineComponent({
+	props: {
+		pos: {type: Array as unknown as PropType<[number,number]>, required: true},
+		dims: {type: Array as unknown as PropType<[number,number]>, required: true},
+	},
 	data(){
 		let layoutTree = initLayoutTree(tol, 0);
 		return {
@@ -46,25 +48,28 @@ export default defineComponent({
 			activeRoot: layoutTree,
 			layoutOptions: {...defaultLayoutOptions},
 			otherOptions: {...defaultOtherOptions},
-			width: document.documentElement.clientWidth - (defaultOtherOptions.rootOffset * 2),
-			height: document.documentElement.clientHeight - (defaultOtherOptions.rootOffset * 2),
-			resizeThrottled: false,
 		}
 	},
-	methods: {
-		onResize(){
-			if (!this.resizeThrottled){
-				// Update data and relayout tiles
-				this.width = document.documentElement.clientWidth - (this.otherOptions.rootOffset * 2);
-				this.height = document.documentElement.clientHeight - (this.otherOptions.rootOffset * 2);
-				tryLayout(this.activeRoot, [0,0], [this.width,this.height], this.layoutOptions, true);
-				// Prevent re-triggering until after a delay
-				this.resizeThrottled = true;
-				setTimeout(() => {this.resizeThrottled = false;}, this.otherOptions.resizeDelay);
-			}
+	watch: {
+		dims(newDims){
+			tryLayout(this.activeRoot, [0,0], newDims, this.layoutOptions, true);
 		},
+	},
+	computed: {
+		styles(){
+			return {
+				position: 'absolute',
+				left: this.pos[0] + 'px',
+				top: this.pos[1] + 'px',
+				width: this.dims[0] + 'px',
+				height: this.dims[1] + 'px',
+				backgroundColor: '#292524',
+			};
+		},
+	},
+	methods: {
 		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
-			let success = tryLayout(this.activeRoot, [0,0], [this.width,this.height], this.layoutOptions, false,
+			let success = tryLayout(this.activeRoot, [0,0], this.dims, this.layoutOptions, false,
 				{type: 'expand', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
@@ -74,7 +79,7 @@ export default defineComponent({
 			}
 		},
 		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
-			let success = tryLayout(this.activeRoot, [0,0], [this.width,this.height], this.layoutOptions, false,
+			let success = tryLayout(this.activeRoot, [0,0], this.dims, this.layoutOptions, false,
 				{type: 'collapse', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
@@ -90,7 +95,7 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(layoutNode, [0,0], [this.width,this.height], this.layoutOptions, true,
+			tryLayout(layoutNode, [0,0], this.dims, this.layoutOptions, true,
 				{type: 'expand', node: layoutNode});
 		},
 		onInnerHeaderDblClicked(layoutNode: LayoutNode){
@@ -100,15 +105,11 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(layoutNode, [0,0], [this.width,this.height], this.layoutOptions, true);
+			tryLayout(layoutNode, [0,0], this.dims, this.layoutOptions, true);
 		},
 	},
 	created(){
-		window.addEventListener('resize', this.onResize);
-		tryLayout(this.activeRoot, [0,0], [this.width,this.height], this.layoutOptions, true);
-	},
-	unmounted(){
-		window.removeEventListener('resize', this.onResize);
+		tryLayout(this.activeRoot, [0,0], this.dims, this.layoutOptions, true);
 	},
 	components: {
 		Tile,
@@ -117,7 +118,7 @@ export default defineComponent({
 </script>
 
 <template>
-<div class="h-screen bg-stone-800">
+<div :style="styles">
 	<tile :layoutNode="layoutTree"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing"
 		:transitionDuration="otherOptions.transitionDuration"
