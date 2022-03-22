@@ -55,7 +55,7 @@ export default defineComponent({
 				// Update data and relayout tiles
 				this.width = document.documentElement.clientWidth - (this.otherOptions.rootOffset * 2);
 				this.height = document.documentElement.clientHeight - (this.otherOptions.rootOffset * 2);
-				if (!this.layoutTree.tryLayout([0,0], [this.width,this.height])){
+				if (!this.layoutTree.tryLayout([0,0], [this.width,this.height], true)){
 					console.log('Unable to layout tree');
 				}
 				// Prevent re-triggering until after a delay
@@ -68,7 +68,7 @@ export default defineComponent({
 				//console.log('Tile to expand has no children');
 				return;
 			}
-			let success = this.layoutTree.tryLayout([0,0], [this.width,this.height],
+			let success = this.layoutTree.tryLayout([0,0], [this.width,this.height], false,
 				{type: 'expand', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
@@ -79,7 +79,7 @@ export default defineComponent({
 			}
 		},
 		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
-			let success = this.layoutTree.tryLayout([0,0], [this.width,this.height],
+			let success = this.layoutTree.tryLayout([0,0], [this.width,this.height], false,
 				{type: 'collapse', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
@@ -92,7 +92,7 @@ export default defineComponent({
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
-		if (!this.layoutTree.tryLayout([0,0], [this.width,this.height])){
+		if (!this.layoutTree.tryLayout([0,0], [this.width,this.height], true)){
 			console.log('Unable to layout tree');
 		}
 	},
