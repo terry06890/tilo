@@ -2,8 +2,9 @@
  * Contains classes used for representing tree-of-life data, and tile-based layouts of such data.
  *
  * Generally, given a TolNode with child TolNodes representing tree-of-life T,
- * a LayoutTree is created for a subtree of T, and represents a tile-based layout of that subtree.
- * The LayoutTree holds LayoutNodes, each of which holds placement info for a linked TolNode.
+ * initLayoutTree() produces a tree structure representing a subtree of T,
+ * which is passed to tryLayout(), which alters data fields to represent a tile-based layout.
+ * The tree structure consists of LayoutNode objects, each of which holds placement info for a linked TolNode.
  */
 
 // Represents a tree-of-life node/tree
@@ -15,63 +16,6 @@ export class TolNode {
 		this.children = children;
 	}
 }
-// Represents a tree of LayoutNode objects, and has methods for (re)computing layout
-export class LayoutTree {
-	root: LayoutNode;
-	options: LayoutOptions;
-	// Creates an object representing a TolNode tree, up to a given depth (0 means just the root)
-	constructor(tol: TolNode, options: LayoutOptions, depth: number){
-		this.root = this.initHelper(tol, depth);
-		this.options = options;
-	}
-	// Used by constructor to initialise the LayoutNode tree
-	initHelper(tolNode: TolNode, depthLeft: number, atDepth: number = 0): LayoutNode {
-		if (depthLeft == 0){
-			let node = new LayoutNode(tolNode, []);
-			node.depth = atDepth;
-			return node;
-		} else {
-			let children = tolNode.children.map((n: TolNode) => this.initHelper(n, depthLeft-1, atDepth+1));
-			let node = new LayoutNode(tolNode, children);
-			children.forEach(n => n.parent = node);
-			return node;
-		}
-	}
-	// Attempts layout of TolNode tree, for an area with given xy-coordinate and width+height (in pixels)
-	// 'allowCollapse' allows the layout algorithm to collapse nodes to avoid layout failure
-	// 'chg' allows for performing layout after expanding/collapsing a node
-	tryLayout(root: LayoutNode, pos: [number,number], dims: [number,number], allowCollapse: boolean = false,
-		chg?: LayoutTreeChg){
-		// Create a new LayoutNode tree, keeping the old one in case of layout failure
-		let tempTree = root.cloneNodeTree(chg);
-		let success: boolean;
-		switch (this.options.layoutType){
-			case 'sqr':   success =   sqrLayout(tempTree, pos, dims, true, allowCollapse, this.options); break;
-			case 'rect':  success =  rectLayout(tempTree, pos, dims, true, allowCollapse, this.options); break;
-			case 'sweep': success = sweepLayout(tempTree, pos, dims, true, allowCollapse, this.options); break;
-		}
-		if (success){
-			// Center root in layout area
-			tempTree.pos[0] = (dims[0] - tempTree.dims[0]) / 2;
-			tempTree.pos[1] = (dims[1] - tempTree.dims[1]) / 2;
-			// Apply to active LayoutNode tree
-			tempTree.copyTreeForRender(root);
-		}
-		return success;
-	}
-}
-// Contains settings that affect how layout is done
-export type LayoutOptions = {
-	tileSpacing: number; // Spacing between tiles, in pixels (ignoring borders)
-	headerSz: number;
-	minTileSz: number; // Minimum size of a tile edge, in pixels (ignoring borders)
-	maxTileSz: number;
-	layoutType: 'sqr' | 'rect' | 'sweep'; // The LayoutFn function to use
-	rectMode: 'horz' | 'vert' | 'linear' | 'auto'; // Layout in 1 row, 1 column, 1 row or column, or multiple rows
-	sweepMode: 'left' | 'top' | 'shorter' | 'auto'; // Sweep to left, top, shorter-side, or to minimise empty space
-	sweptNodesPrio: 'linear' | 'sqrt' | 'pow-2/3'; // Specifies allocation of space to swept-vs-remaining nodes
-	sweepingToParent: boolean; // Allow swept nodes to occupy empty space in a parent's swept-leaves area
-};
 // Represents a node/tree, and holds layout data for a TolNode node/tree
 export class LayoutNode {
 	tolNode: TolNode;
@@ -177,6 +121,18 @@ export class LayoutNode {
 		});
 	}
 }
+// Contains settings that affect how layout is done
+export type LayoutOptions = {
+	tileSpacing: number; // Spacing between tiles, in pixels (ignoring borders)
+	headerSz: number;
+	minTileSz: number; // Minimum size of a tile edge, in pixels (ignoring borders)
+	maxTileSz: number;
+	layoutType: 'sqr' | 'rect' | 'sweep'; // The LayoutFn function to use
+	rectMode: 'horz' | 'vert' | 'linear' | 'auto'; // Layout in 1 row, 1 column, 1 row or column, or multiple rows
+	sweepMode: 'left' | 'top' | 'shorter' | 'auto'; // Sweep to left, top, shorter-side, or to minimise empty space
+	sweptNodesPrio: 'linear' | 'sqrt' | 'pow-2/3'; // Specifies allocation of space to swept-vs-remaining nodes
+	sweepingToParent: boolean; // Allow swept nodes to occupy empty space in a parent's swept-leaves area
+};
 export type LayoutTreeChg = {
 	type: 'expand' | 'collapse';
 	node: LayoutNode;
@@ -196,7 +152,46 @@ export class SepSweptArea {
 	}
 }
 
-// Type for functions called by LayoutTree to perform layout
+// Creates a LayoutNode representing a TolNode tree, up to a given depth (0 means just the root)
+export function initLayoutTree(tol: TolNode, depth: number): LayoutNode {
+	function initHelper(tolNode: TolNode, depthLeft: number, atDepth: number = 0): LayoutNode {
+		if (depthLeft == 0){
+			let node = new LayoutNode(tolNode, []);
+			node.depth = atDepth;
+			return node;
+		} else {
+			let children = tolNode.children.map((n: TolNode) => initHelper(n, depthLeft-1, atDepth+1));
+			let node = new LayoutNode(tolNode, children);
+			children.forEach(n => n.parent = node);
+			return node;
+		}
+	}
+	return initHelper(tol, depth);
+}
+// Attempts layout on a LayoutNode's corresponding TolNode tree, for an area with given xy-position and width+height
+// 'allowCollapse' allows the layout algorithm to collapse nodes to avoid layout failure
+// 'chg' allows for performing layout after expanding/collapsing a node
+export function tryLayout(layoutTree: LayoutNode, pos: [number,number], dims: [number,number],
+	options: LayoutOptions, allowCollapse: boolean = false, chg?: LayoutTreeChg){
+	// Create a new LayoutNode tree, in case of layout failure
+	let tempTree = layoutTree.cloneNodeTree(chg);
+	let success: boolean;
+	switch (options.layoutType){
+		case 'sqr':   success =   sqrLayout(tempTree, pos, dims, true, allowCollapse, options); break;
+		case 'rect':  success =  rectLayout(tempTree, pos, dims, true, allowCollapse, options); break;
+		case 'sweep': success = sweepLayout(tempTree, pos, dims, true, allowCollapse, options); break;
+	}
+	if (success){
+		// Center in layout area
+		tempTree.pos[0] = (dims[0] - tempTree.dims[0]) / 2;
+		tempTree.pos[1] = (dims[1] - tempTree.dims[1]) / 2;
+		// Apply to active LayoutNode tree
+		tempTree.copyTreeForRender(layoutTree);
+	}
+	return success;
+}
+
+// Type for functions called by tryLayout() to perform layout
 // Given a LayoutNode tree, determines and records a new layout by setting fields of nodes in the tree
 // Returns a boolean indicating success
 type LayoutFn = (

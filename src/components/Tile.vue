@@ -90,7 +90,7 @@ export default defineComponent({
 				position: 'absolute',
 				left: this.options.leafHeaderX + 'px',
 				top: this.options.leafHeaderY + 'px',
-				maxWidth: this.layoutNode.hidden ? 0 : this.layoutNode.dims[0] - this.options.leafHeaderX * 2 + 'px',
+				maxWidth: (this.layoutNode.hidden ? 0 : this.layoutNode.dims[0] - this.options.leafHeaderX * 2) + 'px',
 				height: this.options.leafHeaderFontSz + 'px',
 				lineHeight: this.options.leafHeaderFontSz + 'px',
 				fontSize: this.options.leafHeaderFontSz + 'px',

@@ -1,7 +1,7 @@
 <script lang="ts">
 import {defineComponent} from 'vue';
 import Tile from './Tile.vue';
-import {TolNode, LayoutTree, LayoutNode} from '../lib';
+import {TolNode, LayoutNode, initLayoutTree, tryLayout} from '../lib';
 import type {LayoutOptions} from '../lib';
 // Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
@@ -40,10 +40,10 @@ const defaultOtherOptions = {
 // Collects events about tile expansion/collapse and window-resize, and initiates relayout of tiles
 export default defineComponent({
 	data(){
-		let layoutTree = new LayoutTree(tol, defaultLayoutOptions, 0);
+		let layoutTree = initLayoutTree(tol, 0);
 		return {
 			layoutTree: layoutTree,
-			activeRoot: layoutTree.root,
+			activeRoot: layoutTree,
 			layoutOptions: {...defaultLayoutOptions},
 			otherOptions: {...defaultOtherOptions},
 			width: document.documentElement.clientWidth - (defaultOtherOptions.rootOffset * 2),
@@ -57,34 +57,30 @@ export default defineComponent({
 				// Update data and relayout tiles
 				this.width = document.documentElement.clientWidth - (this.otherOptions.rootOffset * 2);
 				this.height = document.documentElement.clientHeight - (this.otherOptions.rootOffset * 2);
-				if (!this.layoutTree.tryLayout(this.activeRoot, [0,0], [this.width,this.height], true)){
-					console.log('Unable to layout tree');
-				}
+				tryLayout(this.activeRoot, [0,0], [this.width,this.height], this.layoutOptions, true);
 				// Prevent re-triggering until after a delay
 				this.resizeThrottled = true;
 				setTimeout(() => {this.resizeThrottled = false;}, this.otherOptions.resizeDelay);
 			}
 		},
 		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
-			let success = this.layoutTree.tryLayout(this.activeRoot, [0,0], [this.width,this.height], false,
+			let success = tryLayout(this.activeRoot, [0,0], [this.width,this.height], this.layoutOptions, false,
 				{type: 'expand', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
 				domNode.classList.remove('animate-expand-shrink');
 				domNode.offsetWidth; // Triggers reflow
 				domNode.classList.add('animate-expand-shrink');
-				//console.log('Unable to layout tree');
 			}
 		},
 		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
-			let success = this.layoutTree.tryLayout(this.activeRoot, [0,0], [this.width,this.height], false,
+			let success = tryLayout(this.activeRoot, [0,0], [this.width,this.height], this.layoutOptions, false,
 				{type: 'collapse', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
 				domNode.classList.remove('animate-shrink-expand');
 				domNode.offsetWidth; // Triggers reflow
 				domNode.classList.add('animate-shrink-expand');
-				//console.log('Unable to layout tree');
 			}
 		},
 		onInnerLeafDblClicked(layoutNode: LayoutNode){
@@ -94,7 +90,7 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
-			this.layoutTree.tryLayout(layoutNode, [0,0], [this.width,this.height], true,
+			tryLayout(layoutNode, [0,0], [this.width,this.height], this.layoutOptions, true,
 				{type: 'expand', node: layoutNode});
 		},
 		onInnerHeaderDblClicked(layoutNode: LayoutNode){
@@ -104,14 +100,12 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
-			this.layoutTree.tryLayout(layoutNode, [0,0], [this.width,this.height], true);
+			tryLayout(layoutNode, [0,0], [this.width,this.height], this.layoutOptions, true);
 		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
-		if (!this.layoutTree.tryLayout(this.activeRoot, [0,0], [this.width,this.height], true)){
-			console.log('Unable to layout tree');
-		}
+		tryLayout(this.activeRoot, [0,0], [this.width,this.height], this.layoutOptions, true);
 	},
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);
@@ -124,7 +118,7 @@ export default defineComponent({
 
 <template>
 <div class="h-screen bg-stone-800">
-	<tile :layoutNode="layoutTree.root"
+	<tile :layoutNode="layoutTree"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing"
 		:transitionDuration="otherOptions.transitionDuration"
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
