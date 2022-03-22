@@ -93,8 +93,8 @@ export class LayoutNode {
 	// Assigns render-relevant data to this single node
 	assignLayoutData(pos=[0,0] as [number,number], dims=[0,0] as [number,number],
 		{showHeader=false, sepSweptArea=null as SepSweptArea|null, empSpc=0} = {}){
-		this.pos = pos;
-		this.dims = dims;
+		this.pos = [...pos];
+		this.dims = [...dims];
 		this.showHeader = showHeader;
 		this.sepSweptArea = sepSweptArea;
 		this.empSpc = empSpc;
@@ -183,8 +183,8 @@ export function tryLayout(layoutTree: LayoutNode, pos: [number,number], dims: [n
 	}
 	if (success){
 		// Center in layout area
-		tempTree.pos[0] = (dims[0] - tempTree.dims[0]) / 2;
-		tempTree.pos[1] = (dims[1] - tempTree.dims[1]) / 2;
+		tempTree.pos[0] += (dims[0] - tempTree.dims[0]) / 2;
+		tempTree.pos[1] += (dims[1] - tempTree.dims[1]) / 2;
 		// Apply to active LayoutNode tree
 		tempTree.copyTreeForRender(layoutTree);
 	}

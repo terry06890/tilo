@@ -8,14 +8,13 @@ export default defineComponent({
 		return {
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
-			tileTreeOffset: 5, // For space between tile-tree and display boundary
 			// For window-resize-handler throttling
 			resizeThrottled: false,
 			resizeDelay: 50, //ms
 		}
 	},
 	computed: {
-		styles(){
+		styles(): Record<string,string> {
 			return {
 				position: 'absolute',
 				left: '0',
@@ -51,8 +50,7 @@ export default defineComponent({
 
 <template>
 <div :style="styles">
-	<tile-tree :pos="[tileTreeOffset, tileTreeOffset]"
-		:dims="[width - tileTreeOffset*2, height - tileTreeOffset*2]"/>
+	<tile-tree :pos="[0, 0]" :dims="[width, height]"/>
 </div>
 </template>
 

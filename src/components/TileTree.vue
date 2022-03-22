@@ -32,6 +32,7 @@ const defaultLayoutOptions: LayoutOptions = {
 };
 const defaultOtherOptions = {
 	transitionDuration: 300, //ms
+	tileAreaOffset: 5, //px (space between root tile and display boundary)
 };
 
 // Component holds a tree structure representing a subtree of 'tol' to be rendered
@@ -50,13 +51,17 @@ export default defineComponent({
 			otherOptions: {...defaultOtherOptions},
 		}
 	},
-	watch: {
-		dims(newDims){
-			tryLayout(this.activeRoot, [0,0], newDims, this.layoutOptions, true);
-		},
-	},
 	computed: {
-		styles(){
+		tileAreaPos(){
+			return [this.otherOptions.tileAreaOffset, this.otherOptions.tileAreaOffset] as [number, number];
+		},
+		tileAreaDims(){
+			return [
+				this.dims[0] - this.otherOptions.tileAreaOffset * 2,
+				this.dims[1] - this.otherOptions.tileAreaOffset * 2
+			] as [number, number];
+		},
+		styles(): Record<string,string> {
 			return {
 				position: 'absolute',
 				left: this.pos[0] + 'px',
@@ -67,9 +72,14 @@ export default defineComponent({
 			};
 		},
 	},
+	watch: {
+		dims(newDims){
+			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+		},
+	},
 	methods: {
 		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
-			let success = tryLayout(this.activeRoot, [0,0], this.dims, this.layoutOptions, false,
+			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false,
 				{type: 'expand', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
@@ -79,7 +89,7 @@ export default defineComponent({
 			}
 		},
 		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
-			let success = tryLayout(this.activeRoot, [0,0], this.dims, this.layoutOptions, false,
+			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false,
 				{type: 'collapse', node: layoutNode});
 			if (!success){
 				// Trigger failure animation
@@ -95,7 +105,7 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(layoutNode, [0,0], this.dims, this.layoutOptions, true,
+			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true,
 				{type: 'expand', node: layoutNode});
 		},
 		onInnerHeaderDblClicked(layoutNode: LayoutNode){
@@ -105,11 +115,11 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(layoutNode, [0,0], this.dims, this.layoutOptions, true);
+			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
 	},
 	created(){
-		tryLayout(this.activeRoot, [0,0], this.dims, this.layoutOptions, true);
+		tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 	},
 	components: {
 		Tile,
