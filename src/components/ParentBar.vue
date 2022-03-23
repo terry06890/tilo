@@ -12,6 +12,7 @@ export default defineComponent({
 	data(){
 		return {
 			tileMargin: 5, //px (gap between separated-parent tiles)
+			scrollBarOffset: 10, //px (gap for scrollbar, used to prevent overlap with tiles)
 		};
 	},
 	computed: {
@@ -19,15 +20,21 @@ export default defineComponent({
 			return this.dims[0] >= this.dims[1];
 		},
 		tileSz(){
-			return (this.wideArea ? this.dims[1] : this.dims[0]) - (this.tileMargin * 2);
+			return (this.wideArea ? this.dims[1] : this.dims[0]) - (this.tileMargin * 2) - this.scrollBarOffset;
+		},
+		hasOverflow(){
+			let len = this.tileMargin + (this.tileSz + this.tileMargin) * this.nodes.length;
+			return len > (this.wideArea ? this.dims[0] : this.dims[1]);
 		},
 		styles(): Record<string,string> {
 			return {
 				position: 'absolute',
 				left: this.pos[0] + 'px',
 				top: this.pos[1] + 'px',
-				width: this.dims[0] + 'px',
-				height: this.dims[1] + 'px',
+				width: (this.dims[0] + (this.wideArea || this.hasOverflow ? 0 : -this.scrollBarOffset)) + 'px',
+				height: (this.dims[1] + (!this.wideArea || this.hasOverflow ? 0 : -this.scrollBarOffset)) + 'px',
+				paddingRight: (this.hasOverflow && !this.wideArea ? this.scrollBarOffset : 0) + 'px',
+				paddingBottom: (this.hasOverflow && this.wideArea ? this.scrollBarOffset : 0) + 'px',
 				overflowX: this.wideArea ? 'auto' : 'hidden',
 				overflowY: this.wideArea ? 'hidden' : 'auto',
 				display: 'flex',
