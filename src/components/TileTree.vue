@@ -1,6 +1,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue';
+import ParentBar from './ParentBar.vue';
 import {TolNode, LayoutNode, initLayoutTree, tryLayout} from '../lib';
 import type {LayoutOptions} from '../lib';
 // Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
@@ -33,6 +34,7 @@ const defaultLayoutOptions: LayoutOptions = {
 const defaultOtherOptions = {
 	transitionDuration: 300, //ms
 	tileAreaOffset: 5, //px (space between root tile and display boundary)
+	parentBarSz: defaultLayoutOptions.minTileSz * 2, //px (breadth of separated-parents area)
 };
 
 // Component holds a tree structure representing a subtree of 'tol' to be rendered
@@ -48,18 +50,56 @@ export default defineComponent({
 			layoutTree: layoutTree,
 			activeRoot: layoutTree,
 			layoutOptions: {...defaultLayoutOptions},
-			otherOptions: {...defaultOtherOptions},
+			...defaultOtherOptions,
 		}
 	},
 	computed: {
+		wideArea(){
+			return this.dims[0] >= this.dims[1];
+		},
+		separatedParents(): LayoutNode[] | null {
+			if (this.activeRoot == this.layoutTree){
+				return null;
+			}
+			let parents = [];
+			let node = this.activeRoot.parent;
+			while (node != null){
+				parents.push(node);
+				node = node.parent;
+			}
+			return parents.reverse();
+		},
 		tileAreaPos(){
-			return [this.otherOptions.tileAreaOffset, this.otherOptions.tileAreaOffset] as [number, number];
+			let pos = [this.tileAreaOffset, this.tileAreaOffset] as [number, number];
+			if (this.separatedParents != null){
+				if (this.wideArea){
+					pos[0] += this.parentBarSz;
+				} else {
+					pos[1] += this.parentBarSz;
+				}
+			}
+			return pos;
 		},
 		tileAreaDims(){
-			return [
-				this.dims[0] - this.otherOptions.tileAreaOffset * 2,
-				this.dims[1] - this.otherOptions.tileAreaOffset * 2
+			let dims = [
+				this.dims[0] - this.tileAreaOffset*2,
+				this.dims[1] - this.tileAreaOffset*2
 			] as [number, number];
+			if (this.separatedParents != null){
+				if (this.wideArea){
+					dims[0] -= this.parentBarSz;
+				} else {
+					dims[1] -= this.parentBarSz;
+				}
+			}
+			return dims;
+		},
+		parentBarDims(){
+			if (this.wideArea){
+				return [this.parentBarSz, this.dims[1]]
+			} else {
+				return [this.dims[0], this.parentBarSz];
+			}
 		},
 		styles(): Record<string,string> {
 			return {
@@ -123,6 +163,7 @@ export default defineComponent({
 	},
 	components: {
 		Tile,
+		ParentBar,
 	},
 });
 </script>
@@ -131,9 +172,10 @@ export default defineComponent({
 <div :style="styles">
 	<tile :layoutNode="layoutTree"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing"
-		:transitionDuration="otherOptions.transitionDuration"
+		:transitionDuration="transitionDuration"
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
 		@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"/>
+	<parent-bar v-if="separatedParents != null" :pos="[0,0]" :dims="parentBarDims" :nodes="separatedParents"/>
 </div>
 </template>
 
