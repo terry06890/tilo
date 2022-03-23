@@ -1,19 +1,19 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import {LayoutNode} from '../lib';
+import TileImg from './TileImg.vue';
 
 // Configurable settings
 const defaultOptions = {
 	borderRadius: 5, //px
 	shadowNormal: '0 0 2px black',
-	shadowWithHover: '0 0 1px 2px greenyellow',
+	shadowHighlight: '0 0 1px 2px greenyellow',
 	dblClickWait: 200, //ms
 	// For leaf tiles
-	leafHeaderX: 4, //px
-	leafHeaderY: 4, //px
-	leafHeaderFontSz: 15, //px
-	leafHeaderColor: '#fafaf9',
-	expandableLeafHeaderColor: 'greenyellow', //yellow, greenyellow, turquoise,
+	imgTilePadding: 4, //px
+	imgTileFontSz: 15, //px
+	imgTileColor: '#fafaf9',
+	expandableImgTileColor: 'greenyellow', //yellow, greenyellow, turquoise,
 	// For non-leaf tile-groups
 	nonLeafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
 	nonLeafHeaderFontSz: 15, //px
@@ -73,32 +73,7 @@ export default defineComponent({
 				'--nonLeafBgColor': this.nonLeafBgColor,
 				'--tileSpacing': this.tileSpacing + 'px',
 				'--shadowNormal': this.options.shadowNormal,
-				'--shadowWithHover': this.options.shadowWithHover,
-			};
-		},
-		leafStyles(): Record<string,string> {
-			return {
-				width: '100%',
-				height: '100%',
-				backgroundImage: 'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',
-				backgroundSize: 'cover',
-				borderRadius: this.options.borderRadius + 'px',
-			};
-		},
-		leafHeaderStyles(): Record<string,string> {
-			return {
-				position: 'absolute',
-				left: this.options.leafHeaderX + 'px',
-				top: this.options.leafHeaderY + 'px',
-				maxWidth: (this.layoutNode.hidden ? 0 : this.layoutNode.dims[0] - this.options.leafHeaderX * 2) + 'px',
-				height: this.options.leafHeaderFontSz + 'px',
-				lineHeight: this.options.leafHeaderFontSz + 'px',
-				fontSize: this.options.leafHeaderFontSz + 'px',
-				color: this.isExpandable ? this.options.expandableLeafHeaderColor : this.options.leafHeaderColor,
-				// For ellipsis
-				overflow: 'hidden',
-				textOverflow: 'ellipsis',
-				whiteSpace: 'nowrap',
+				'--shadowHighlight': this.options.shadowHighlight,
 			};
 		},
 		nonLeafStyles(): Record<string,string> {
@@ -171,7 +146,6 @@ export default defineComponent({
 				return;
 			}
 			let prepForTransition = () => {
-				(this.$refs.leaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
 				// Temporary changes to prevent content overlap and overflow
 				this.zIdx = 1;
 				this.overflow = 'hidden';
@@ -220,52 +194,43 @@ export default defineComponent({
 			this.$emit('header-dbl-clicked', data);
 		},
 		// For coloured-outlines on hovered-over leaf-tiles or non-leaf-headers
-		onMouseEnter(evt: Event){
-			if (!this.isLeaf){
-				(this.$refs.nonLeaf as Element).classList.replace('shadow-normal', 'shadow-highlight');
-				let sepSweptArea = (this.$refs.sepSweptArea as Element | null);
-				if (sepSweptArea != null){
-					sepSweptArea.classList.replace('shadow-normal', 'shadow-highlight');
-				}
-			} else if (this.isExpandable){
-				(evt.target as Element).classList.replace('shadow-normal', 'shadow-highlight');
+		onNonLeafMouseEnter(evt: Event){
+			(this.$refs.nonLeaf as Element).classList.replace('shadow-normal', 'shadow-highlight');
+			let sepSweptArea = (this.$refs.sepSweptArea as Element | null);
+			if (sepSweptArea != null){
+				sepSweptArea.classList.replace('shadow-normal', 'shadow-highlight');
 			}
 		},
-		onMouseLeave(evt: Event){
-			if (!this.isLeaf){
-				(this.$refs.nonLeaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
-				let sepSweptArea = this.$refs.sepSweptArea as Element | null;
-				if (sepSweptArea != null){
-					sepSweptArea.classList.replace('shadow-highlight', 'shadow-normal');
-				}
-			} else if (this.isExpandable){
-				(evt.target as Element).classList.replace('shadow-highlight', 'shadow-normal');
+		onNonLeafMouseLeave(evt: Event){
+			(this.$refs.nonLeaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
+			let sepSweptArea = this.$refs.sepSweptArea as Element | null;
+			if (sepSweptArea != null){
+				sepSweptArea.classList.replace('shadow-highlight', 'shadow-normal');
 			}
 		},
 	},
 	name: 'tile', // Need this to use self in template
+	components: {
+		TileImg,
+	},
 	emits: ['leaf-clicked', 'header-clicked', 'leaf-dbl-clicked', 'header-dbl-clicked'],
 });
 </script>
 
 <template>
 <div :style="tileStyles">
-	<div v-if="isLeaf" :style="leafStyles" ref="leaf"
-		:class="['shadow-normal'].concat(isExpandable ? ['hover:cursor-pointer'] : [])"
-		@click="onLeafClick($event)" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
-		<div :style="{borderRadius: options.borderRadius + 'px'}" class="scrim-upper-half"/>
-		<div :style="leafHeaderStyles">{{layoutNode.tolNode.name}}</div>
-	</div>
+	<tile-img v-if="isLeaf" :layoutNode="layoutNode" :tileSz="layoutNode.dims[0]" :options="options"
+		@click="onLeafClick"/>
 	<div v-else :style="nonLeafStyles" class="shadow-normal" ref="nonLeaf">
 		<h1 v-if="showHeader" :style="nonLeafHeaderStyles" class="hover:cursor-pointer"
-			@click="onHeaderClick($event)" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
+			@click="onHeaderClick($event)" @mouseenter="onNonLeafMouseEnter" @mouseleave="onNonLeafMouseLeave">
 			{{layoutNode.tolNode.name}}
 		</h1>
 		<div :style="sepSweptAreaStyles" ref="sepSweptArea"
 			:class="[layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge', 'shadow-normal']">
 			<h1 v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
 				:style="nonLeafHeaderStyles" class="hover:cursor-pointer"
-				@click="onHeaderClick($event)" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
+				@click="onHeaderClick($event)" @mouseenter="onNonLeafMouseEnter" @mouseleave="onNonLeafMouseLeave">
 				{{layoutNode.tolNode.name}}
 			</h1>
 		</div>
@@ -296,15 +261,8 @@ export default defineComponent({
 	width: calc(100% + var(--tileSpacing));
 	height: var(--tileSpacing);
 }
-.scrim-upper-half {
-	position: absolute;
-	top: 0;
-	height: 50%;
-	width: 100%;
-	background-image: linear-gradient(to top, rgba(0,0,0,0), rgba(0,0,0,0.4));
-}
 .shadow-highlight {
-	box-shadow: var(--shadowWithHover);
+	box-shadow: var(--shadowHighlight);
 }
 .shadow-normal {
 	box-shadow: var(--shadowNormal);

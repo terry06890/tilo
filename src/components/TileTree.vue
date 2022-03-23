@@ -96,9 +96,9 @@ export default defineComponent({
 		},
 		parentBarDims(){
 			if (this.wideArea){
-				return [this.parentBarSz, this.dims[1]]
+				return [this.parentBarSz, this.dims[1]] as [number, number];
 			} else {
-				return [this.dims[0], this.parentBarSz];
+				return [this.dims[0], this.parentBarSz] as [number, number];
 			}
 		},
 		styles(): Record<string,string> {

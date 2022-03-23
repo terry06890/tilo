@@ -1,8 +1,17 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import {LayoutNode} from '../lib';
-import ParentBarTile from './ParentBarTile.vue'
+import TileImg from './TileImg.vue'
 
+const defaultTileImgOptions = {
+	borderRadius: 5,
+	shadowNormal: '0 0 2px black',
+	shadowHighlight: '0 0 1px 2px greenyellow',
+	imgTilePadding: 4,
+	imgTileFontSz: 15,
+	imgTileColor: '#fafaf9',
+	expandableImgTileColor: 'greenyellow',
+}
 export default defineComponent({
 	props: {
 		pos: {type: Array as unknown as PropType<[number,number]>, required: true},
@@ -13,6 +22,7 @@ export default defineComponent({
 		return {
 			tileMargin: 5, //px (gap between separated-parent tiles)
 			scrollBarOffset: 10, //px (gap for scrollbar, used to prevent overlap with tiles)
+			tileImgOptions: {...defaultTileImgOptions},
 		};
 	},
 	computed: {
@@ -46,14 +56,14 @@ export default defineComponent({
 		},
 	},
 	components: {
-		ParentBarTile,
+		TileImg,
 	},
 });
 </script>
 
 <template>
 <div :style="styles">
-	<parent-bar-tile v-for="node in nodes" :key="node.tolNode.name"
-		:layoutNode="node" :tileSz="tileSz"/>
+	<tile-img v-for="node in nodes" :key="node.tolNode.name"
+		:layoutNode="node" :tileSz="tileSz" :options="tileImgOptions"/>
 </div>
 </template>
