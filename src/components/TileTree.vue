@@ -78,7 +78,7 @@ export default defineComponent({
 		wideArea(): boolean{
 			return this.width >= this.height;
 		},
-		separatedParents(): LayoutNode[] | null {
+		sepdParents(): LayoutNode[] | null {
 			if (this.activeRoot == this.layoutTree){
 				return null;
 			}
@@ -92,7 +92,7 @@ export default defineComponent({
 		},
 		tileAreaPos(){
 			let pos = [this.tileAreaOffset, this.tileAreaOffset] as [number, number];
-			if (this.separatedParents != null){
+			if (this.sepdParents != null){
 				if (this.wideArea){
 					pos[0] += this.parentBarSz;
 				} else {
@@ -106,7 +106,7 @@ export default defineComponent({
 				this.width - this.tileAreaOffset*2,
 				this.height - this.tileAreaOffset*2
 			] as [number, number];
-			if (this.separatedParents != null){
+			if (this.sepdParents != null){
 				if (this.wideArea){
 					dims[0] -= this.parentBarSz;
 				} else {
@@ -184,6 +184,11 @@ export default defineComponent({
 			this.activeRoot = layoutNode;
 			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
+		onSepdParentClicked(layoutNode: LayoutNode){
+			LayoutNode.showDownward(layoutNode);
+			this.activeRoot = layoutNode;
+			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+		},
 		// For preventing double-clicks from highlighting text
 		onMouseDown(evt: UIEvent){
 			if (evt.detail == 2){
@@ -211,8 +216,9 @@ export default defineComponent({
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing" :options="componentOptions"
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
 		@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"/>
-	<parent-bar v-if="separatedParents != null"
-		:pos="[0,0]" :dims="parentBarDims" :nodes="separatedParents" :options="componentOptions"/>
+	<parent-bar v-if="sepdParents != null"
+		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
+		@sepd-parent-clicked="onSepdParentClicked"/>
 </div>
 </template>
 

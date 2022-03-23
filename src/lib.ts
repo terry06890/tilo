@@ -106,7 +106,7 @@ export class LayoutNode {
 			node = node.parent;
 		}
 	}
-	//
+	// Used to hide/show parent nodes upon expand-to-view
 	static hideUpward(node: LayoutNode){
 		if (node.parent != null){
 			node.parent.hidden = true;
@@ -116,9 +116,13 @@ export class LayoutNode {
 	}
 	static hideDownward(node: LayoutNode){
 		node.hidden = true;
-		node.children.forEach(n => {
-			LayoutNode.hideDownward(n)
-		});
+		node.children.forEach(n => LayoutNode.hideDownward(n));
+	}
+	static showDownward(node: LayoutNode){
+		if (node.hidden){
+			node.hidden = false;
+			node.children.forEach(n => LayoutNode.showDownward(n));
+		}
 	}
 }
 // Contains settings that affect how layout is done

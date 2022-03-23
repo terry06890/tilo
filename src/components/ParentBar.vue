@@ -50,6 +50,11 @@ export default defineComponent({
 			};
 		},
 	},
+	methods: {
+		onClick(node: LayoutNode){
+			this.$emit('sepd-parent-clicked', node);
+		},
+	},
 	components: {
 		TileImg,
 	},
@@ -59,6 +64,6 @@ export default defineComponent({
 <template>
 <div :style="styles">
 	<tile-img v-for="node in nodes" :key="node.tolNode.name"
-		:layoutNode="node" :tileSz="tileSz" :options="options"/>
+		:layoutNode="node" :tileSz="tileSz" :options="options" @click="onClick(node)"/>
 </div>
 </template>
