@@ -22,6 +22,8 @@ export default defineComponent({
 				border: '1px black solid',
 				width: this.tileSz + 'px',
 				height: this.tileSz + 'px',
+				minWidth: this.tileSz + 'px',
+				minHeight: this.tileSz + 'px',
 				backgroundImage:
 					'linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0) 40%),' +
 					'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',

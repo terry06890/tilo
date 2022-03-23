@@ -34,15 +34,19 @@ export default defineComponent({
 				top: this.pos[1] + 'px',
 				width: (this.dims[0] + (this.wideArea || this.hasOverflow ? 0 : -this.scrollBarOffset)) + 'px',
 				height: (this.dims[1] + (!this.wideArea || this.hasOverflow ? 0 : -this.scrollBarOffset)) + 'px',
-				paddingRight: (this.hasOverflow && !this.wideArea ? this.scrollBarOffset : 0) + 'px',
-				paddingBottom: (this.hasOverflow && this.wideArea ? this.scrollBarOffset : 0) + 'px',
 				overflowX: this.wideArea ? 'auto' : 'hidden',
 				overflowY: this.wideArea ? 'hidden' : 'auto',
+				// Extra padding for scrollbar inclusion
+				paddingRight: (this.hasOverflow && !this.wideArea ? this.scrollBarOffset : 0) + 'px',
+				paddingBottom: (this.hasOverflow && this.wideArea ? this.scrollBarOffset : 0) + 'px',
+				// For child layout
 				display: 'flex',
 				flexDirection: this.wideArea ? 'row' : 'column',
 				gap: this.tileMargin + 'px',
 				padding: this.tileMargin + 'px',
-				backgroundColor: 'gray',
+				//
+				backgroundColor: '#44403c',
+				boxShadow: this.options.shadowNormal,
 			};
 		},
 	},
