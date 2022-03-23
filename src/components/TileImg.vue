@@ -22,12 +22,12 @@ export default defineComponent({
 				border: '1px black solid',
 				width: this.tileSz + 'px',
 				height: this.tileSz + 'px',
-				backgroundImage: 
+				backgroundImage:
 					'linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0) 40%),' +
 					'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',
 				backgroundSize: 'cover',
 				borderRadius: this.options.borderRadius + 'px',
-				boxShadow: (this.highlight ? this.options.shadowHighlight : this.options.shadowNormal),
+				boxShadow: this.highlight ? this.options.shadowHighlight : this.options.shadowNormal,
 			};
 		},
 		headerStyles(): Record<string,string> {

@@ -33,6 +33,7 @@ export default defineComponent({
 	data(){
 		return {
 			options: defaultOptions,
+			nonLeafHighlight: false,
 			dblClickTimer: 0, // Used to delay a click action until a double-click timeout ends
 			zIdx: 0, // Used during transitions
 			overflow: 'visible', // Used during transitions
@@ -72,8 +73,6 @@ export default defineComponent({
 				// CSS variables
 				'--nonLeafBgColor': this.nonLeafBgColor,
 				'--tileSpacing': this.tileSpacing + 'px',
-				'--shadowNormal': this.options.shadowNormal,
-				'--shadowHighlight': this.options.shadowHighlight,
 			};
 		},
 		nonLeafStyles(): Record<string,string> {
@@ -82,6 +81,7 @@ export default defineComponent({
 				height: '100%',
 				backgroundColor: this.nonLeafBgColor,
 				borderRadius: this.options.borderRadius + 'px',
+				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight : this.options.shadowNormal,
 			};
 			if (this.layoutNode.sepSweptArea != null){
 				let r = this.options.borderRadius + 'px';
@@ -111,6 +111,7 @@ export default defineComponent({
 			let commonStyles = {
 				position: 'absolute',
 				backgroundColor: this.nonLeafBgColor,
+				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight : this.options.shadowNormal,
 				transitionDuration: this.transitionDuration + 'ms',
 				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
@@ -166,9 +167,8 @@ export default defineComponent({
 			this.$emit('leaf-clicked', data);
 		},
 		onHeaderClick(evt: UIEvent){
+			this.nonLeafHighlight = false;
 			let prepForTransition = () => {
-				(this.$refs.nonLeaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
-				(this.$refs.sepSweptArea as Element).classList.replace('shadow-highlight', 'shadow-normal');
 				// Temporary changes to prevent content overlap and overflow
 				this.zIdx = 1;
 				setTimeout(() => {this.zIdx = 0}, this.transitionDuration);
@@ -195,18 +195,10 @@ export default defineComponent({
 		},
 		// For coloured-outlines on hovered-over leaf-tiles or non-leaf-headers
 		onNonLeafMouseEnter(evt: Event){
-			(this.$refs.nonLeaf as Element).classList.replace('shadow-normal', 'shadow-highlight');
-			let sepSweptArea = (this.$refs.sepSweptArea as Element | null);
-			if (sepSweptArea != null){
-				sepSweptArea.classList.replace('shadow-normal', 'shadow-highlight');
-			}
+			this.nonLeafHighlight = true;
 		},
 		onNonLeafMouseLeave(evt: Event){
-			(this.$refs.nonLeaf as Element).classList.replace('shadow-highlight', 'shadow-normal');
-			let sepSweptArea = this.$refs.sepSweptArea as Element | null;
-			if (sepSweptArea != null){
-				sepSweptArea.classList.replace('shadow-highlight', 'shadow-normal');
-			}
+			this.nonLeafHighlight = false;
 		},
 	},
 	name: 'tile', // Need this to use self in template
@@ -221,13 +213,13 @@ export default defineComponent({
 <div :style="tileStyles">
 	<tile-img v-if="isLeaf" :layoutNode="layoutNode" :tileSz="layoutNode.dims[0]" :options="options"
 		@click="onLeafClick"/>
-	<div v-else :style="nonLeafStyles" class="shadow-normal" ref="nonLeaf">
+	<div v-else :style="nonLeafStyles" ref="nonLeaf">
 		<h1 v-if="showHeader" :style="nonLeafHeaderStyles" class="hover:cursor-pointer"
 			@click="onHeaderClick($event)" @mouseenter="onNonLeafMouseEnter" @mouseleave="onNonLeafMouseLeave">
 			{{layoutNode.tolNode.name}}
 		</h1>
 		<div :style="sepSweptAreaStyles" ref="sepSweptArea"
-			:class="[layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge', 'shadow-normal']">
+			:class="layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge'">
 			<h1 v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
 				:style="nonLeafHeaderStyles" class="hover:cursor-pointer"
 				@click="onHeaderClick($event)" @mouseenter="onNonLeafMouseEnter" @mouseleave="onNonLeafMouseLeave">
@@ -260,11 +252,5 @@ export default defineComponent({
 	right: 0;
 	width: calc(100% + var(--tileSpacing));
 	height: var(--tileSpacing);
-}
-.shadow-highlight {
-	box-shadow: var(--shadowHighlight);
-}
-.shadow-normal {
-	box-shadow: var(--shadowNormal);
 }
 </style>
