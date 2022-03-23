@@ -141,7 +141,7 @@ export default defineComponent({
 				transitionTimingFunction: 'ease-out',
 			};
 			let area = this.layoutNode.sepSweptArea;
-			if (area == null){
+			if (this.layoutNode.hidden || area == null){
 				return {
 					...commonStyles,
 					visibility: 'hidden',
