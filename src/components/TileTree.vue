@@ -176,6 +176,12 @@ export default defineComponent({
 			this.activeRoot = layoutNode;
 			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
+		// For preventing double-clicks from highlighting text
+		onMouseDown(evt: Event){
+			if (evt.detail == 2){
+				evt.preventDefault();
+			}
+		},
 	},
 	created(){
 		tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
@@ -188,7 +194,7 @@ export default defineComponent({
 </script>
 
 <template>
-<div :style="styles">
+<div :style="styles" @mousedown="onMouseDown">
 	<tile :layoutNode="layoutTree"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing" :options="componentOptions"
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"

@@ -2,7 +2,6 @@
 import {defineComponent} from 'vue';
 import TileTree from './components/TileTree.vue';
 
-
 export default defineComponent({
 	data(){
 		return {
