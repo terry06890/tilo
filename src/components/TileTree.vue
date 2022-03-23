@@ -58,23 +58,25 @@ const defaultOwnOptions = {
 // Component holds a tree structure representing a subtree of 'tol' to be rendered
 // Collects events about tile expansion/collapse and window-resize, and initiates relayout of tiles
 export default defineComponent({
-	props: {
-		pos: {type: Array as unknown as PropType<[number,number]>, required: true},
-		dims: {type: Array as unknown as PropType<[number,number]>, required: true},
-	},
 	data(){
 		let layoutTree = initLayoutTree(tol, 0);
 		return {
 			layoutTree: layoutTree,
 			activeRoot: layoutTree,
+			// Options
 			layoutOptions: {...defaultLayoutOptions},
 			componentOptions: {...defaultComponentOptions},
 			...defaultOwnOptions,
-		}
+			// For window-resize handling
+			width: document.documentElement.clientWidth,
+			height: document.documentElement.clientHeight,
+			resizeThrottled: false,
+			resizeDelay: 50, //ms (increasing to 100 seems to cause resize-skipping when opening browser mobile-view)
+		};
 	},
 	computed: {
-		wideArea(){
-			return this.dims[0] >= this.dims[1];
+		wideArea(): boolean{
+			return this.width >= this.height;
 		},
 		separatedParents(): LayoutNode[] | null {
 			if (this.activeRoot == this.layoutTree){
@@ -101,8 +103,8 @@ export default defineComponent({
 		},
 		tileAreaDims(){
 			let dims = [
-				this.dims[0] - this.tileAreaOffset*2,
-				this.dims[1] - this.tileAreaOffset*2
+				this.width - this.tileAreaOffset*2,
+				this.height - this.tileAreaOffset*2
 			] as [number, number];
 			if (this.separatedParents != null){
 				if (this.wideArea){
@@ -113,30 +115,36 @@ export default defineComponent({
 			}
 			return dims;
 		},
-		parentBarDims(){
+		parentBarDims(): [number, number] {
 			if (this.wideArea){
-				return [this.parentBarSz, this.dims[1]] as [number, number];
+				return [this.parentBarSz, this.height];
 			} else {
-				return [this.dims[0], this.parentBarSz] as [number, number];
+				return [this.width, this.parentBarSz];
 			}
 		},
 		styles(): Record<string,string> {
 			return {
 				position: 'absolute',
-				left: this.pos[0] + 'px',
-				top: this.pos[1] + 'px',
-				width: this.dims[0] + 'px',
-				height: this.dims[1] + 'px',
+				left: '0',
+				top: '0',
+				width: '100vw', // Making this dynamic causes white flashes when resizing
+				height: '100vh',
 				backgroundColor: '#292524',
 			};
 		},
 	},
-	watch: {
-		dims(newDims){
-			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
-		},
-	},
 	methods: {
+		onResize(){
+			if (!this.resizeThrottled){
+				this.width = document.documentElement.clientWidth;
+				this.height = document.documentElement.clientHeight;
+				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+				// Prevent re-triggering until after a delay
+				this.resizeThrottled = true;
+				setTimeout(() => {this.resizeThrottled = false;}, this.resizeDelay);
+			}
+		},
+		// For click events
 		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
 			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false,
 				{type: 'expand', node: layoutNode});
@@ -177,14 +185,18 @@ export default defineComponent({
 			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
 		// For preventing double-clicks from highlighting text
-		onMouseDown(evt: Event){
+		onMouseDown(evt: UIEvent){
 			if (evt.detail == 2){
 				evt.preventDefault();
 			}
 		},
 	},
 	created(){
+		window.addEventListener('resize', this.onResize);
 		tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+	},
+	unmounted(){
+		window.removeEventListener('resize', this.onResize);
 	},
 	components: {
 		Tile,
