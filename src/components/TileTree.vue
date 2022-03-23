@@ -41,6 +41,10 @@ const defaultComponentOptions = {
 	imgTileFontSz: 15, //px
 	imgTileColor: '#fafaf9',
 	expandableImgTileColor: 'greenyellow', //yellow, greenyellow, turquoise,
+	infoIconSz: 18, //px
+	infoIconPadding: 2, //px
+	infoIconColor: 'rgba(250,250,250,0.3)',
+	infoIconHoverColor: 'white',
 	// For non-leaf tile-group components
 	nonLeafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
 	nonLeafHeaderFontSz: 15, //px
