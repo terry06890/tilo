@@ -3,36 +3,17 @@ import {defineComponent, PropType} from 'vue';
 import {LayoutNode} from '../lib';
 import TileImg from './TileImg.vue';
 
-// Configurable settings
-const defaultOptions = {
-	borderRadius: 5, //px
-	shadowNormal: '0 0 2px black',
-	shadowHighlight: '0 0 1px 2px greenyellow',
-	dblClickWait: 200, //ms
-	// For leaf tiles
-	imgTilePadding: 4, //px
-	imgTileFontSz: 15, //px
-	imgTileColor: '#fafaf9',
-	expandableImgTileColor: 'greenyellow', //yellow, greenyellow, turquoise,
-	// For non-leaf tile-groups
-	nonLeafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
-	nonLeafHeaderFontSz: 15, //px
-	nonLeafHeaderColor: '#fafaf9',
-	nonLeafHeaderBgColor: '#1c1917',
-};
-
 // Component holds a tree-node structure representing a tile or tile-group to be rendered
 export default defineComponent({
 	props: {
 		layoutNode: {type: Object as PropType<LayoutNode>, required: true},
-		// Settings from parent component
+		options: {type: Object, required: true},
+		// Layout settings from parent
 		headerSz: {type: Number, required: true},
 		tileSpacing: {type: Number, required: true},
-		transitionDuration: {type: Number, required: true},
 	},
 	data(){
 		return {
-			options: defaultOptions,
 			nonLeafHighlight: false,
 			dblClickTimer: 0, // Used to delay a click action until a double-click timeout ends
 			zIdx: 0, // Used during transitions
@@ -64,7 +45,7 @@ export default defineComponent({
 				height: (this.layoutNode.hidden ? 0 : this.layoutNode.dims[1]) + 'px',
 				visibility: this.layoutNode.hidden ? 'hidden' : 'visible',
 				// Other bindings
-				transitionDuration: this.transitionDuration + 'ms',
+				transitionDuration: this.options.transitionDuration + 'ms',
 				zIndex: String(this.zIdx),
 				overflow: String(this.overflow),
 				// Static styles
@@ -112,7 +93,7 @@ export default defineComponent({
 				position: 'absolute',
 				backgroundColor: this.nonLeafBgColor,
 				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight : this.options.shadowNormal,
-				transitionDuration: this.transitionDuration + 'ms',
+				transitionDuration: this.options.transitionDuration + 'ms',
 				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
 			};
@@ -150,7 +131,7 @@ export default defineComponent({
 				// Temporary changes to prevent content overlap and overflow
 				this.zIdx = 1;
 				this.overflow = 'hidden';
-				setTimeout(() => {this.zIdx = 0; this.overflow = 'visible';}, this.transitionDuration);
+				setTimeout(() => {this.zIdx = 0; this.overflow = 'visible';}, this.options.transitionDuration);
 			};
 			if (evt.detail == 1){
 				this.dblClickTimer = setTimeout(() => {
@@ -171,7 +152,7 @@ export default defineComponent({
 			let prepForTransition = () => {
 				// Temporary changes to prevent content overlap and overflow
 				this.zIdx = 1;
-				setTimeout(() => {this.zIdx = 0}, this.transitionDuration);
+				setTimeout(() => {this.zIdx = 0}, this.options.transitionDuration);
 			};
 			if (evt.detail == 1){
 				this.dblClickTimer = setTimeout(() => {
@@ -227,7 +208,7 @@ export default defineComponent({
 			</h1>
 		</div>
 		<tile v-for="child in layoutNode.children" :key="child.tolNode.name" :layoutNode="child"
-			:headerSz="headerSz" :tileSpacing="tileSpacing" :transitionDuration="transitionDuration"
+			:headerSz="headerSz" :tileSpacing="tileSpacing" :options="options"
 			@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
 			@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"/>
 	</div>

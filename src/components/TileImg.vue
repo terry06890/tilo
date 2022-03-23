@@ -66,6 +66,6 @@ export default defineComponent({
 <template>
 <div :style="styles" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @click="onClick"
 	:class="isExpandable ? ['hover:cursor-pointer'] : []">
-	<div :style="headerStyles">{{layoutNode.tolNode.name}}</div>
+	<h1 :style="headerStyles">{{layoutNode.tolNode.name}}</h1>
 </div>
 </template>

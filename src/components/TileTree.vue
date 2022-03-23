@@ -31,8 +31,26 @@ const defaultLayoutOptions: LayoutOptions = {
 	sweptNodesPrio: 'pow-2/3', //'linear' | 'sqrt' | 'pow-2/3'
 	sweepingToParent: true,
 };
-const defaultOtherOptions = {
+const defaultComponentOptions = {
+	// For leaf/non_leaf tile and separated-parent components
+	borderRadius: 5, //px
+	shadowNormal: '0 0 2px black',
+	shadowHighlight: '0 0 1px 2px greenyellow',
+	// For leaf and separated-parent components
+	imgTilePadding: 4, //px
+	imgTileFontSz: 15, //px
+	imgTileColor: '#fafaf9',
+	expandableImgTileColor: 'greenyellow', //yellow, greenyellow, turquoise,
+	// For non-leaf tile-group components
+	nonLeafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
+	nonLeafHeaderFontSz: 15, //px
+	nonLeafHeaderColor: '#fafaf9',
+	nonLeafHeaderBgColor: '#1c1917',
+	// Timing related
 	transitionDuration: 300, //ms
+	dblClickWait: 200, //ms
+};
+const defaultOwnOptions = {
 	tileAreaOffset: 5, //px (space between root tile and display boundary)
 	parentBarSz: defaultLayoutOptions.minTileSz * 2, //px (breadth of separated-parents area)
 };
@@ -50,7 +68,8 @@ export default defineComponent({
 			layoutTree: layoutTree,
 			activeRoot: layoutTree,
 			layoutOptions: {...defaultLayoutOptions},
-			...defaultOtherOptions,
+			componentOptions: {...defaultComponentOptions},
+			...defaultOwnOptions,
 		}
 	},
 	computed: {
@@ -171,11 +190,11 @@ export default defineComponent({
 <template>
 <div :style="styles">
 	<tile :layoutNode="layoutTree"
-		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing"
-		:transitionDuration="transitionDuration"
+		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing" :options="componentOptions"
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
 		@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"/>
-	<parent-bar v-if="separatedParents != null" :pos="[0,0]" :dims="parentBarDims" :nodes="separatedParents"/>
+	<parent-bar v-if="separatedParents != null"
+		:pos="[0,0]" :dims="parentBarDims" :nodes="separatedParents" :options="componentOptions"/>
 </div>
 </template>
 
