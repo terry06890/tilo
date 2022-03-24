@@ -4,23 +4,35 @@ import {TolNode} from '../lib';
 
 export default defineComponent({
 	props: {
-		tolNode: {type: Object as PropType<TolNode | null>},
+		tolNode: {type: Object as PropType<TolNode | null>}, // The node to display, or null to hide
+	},
+	data(){
+		return {
+			lastNode: null as TolNode | null, // Used to prevent content-change during fade-out
+		};
+	},
+	watch: {
+		tolNode(newNode){
+			if (newNode != null){
+				this.lastNode = newNode;
+			}
+		},
 	},
 	computed: {
-		hidden(){
-			return this.tolNode == null;
-		},
-		styles(): Record<string,string> {
+		transitionStyles(): Record<string,string> {
 			return {
-				display: this.hidden ? 'none' : 'block',
-				opacity: this.hidden ? '0' : '1',
-				transition: 'opacity 0.3s',
+				visibility: this.tolNode != null ? 'visible' : 'hidden',
+				opacity: this.tolNode != null ? '1' : '0',
+				transition: 'visibility, opacity',
+				transitionDuration: '300ms',
 			};
 		},
 	},
 	methods: {
-		closeIconClicked(){
-			this.$emit('info-modal-close');
+		closeIconClicked(evt: Event){
+			if (evt.target == this.$el || evt.target == this.$refs.closeIcon){
+				this.$emit('info-modal-close');
+			}
 		},
 	},
 	emits: ['info-modal-close']
@@ -28,12 +40,12 @@ export default defineComponent({
 </script>
 
 <template>
-<div :style="styles" class="fixed left-0 top-0 w-full h-full bg-black/40" @click="closeIconClicked">
+<div :style="transitionStyles" class="fixed left-0 top-0 w-full h-full bg-black/40" @click="closeIconClicked">
 	<div class="absolute left-1/2 -translate-x-1/2 min-w-3/5 top-1/3 p-2 bg-white rounded-md">
 		<div class="absolute top-1 right-1 text-lg font-bold hover:cursor-pointer"
-			@click="closeIconClicked">&times;</div>
+			@click="closeIconClicked" ref="closeIcon">&times;</div>
 		<img class="float-left mr-2 mb-2" width="200" height="200" alt="an image"/>
-		<h1>{{hidden ? 'If you can see this, something\'s wrong' : tolNode!.name}}</h1>
+		<h1>{{lastNode != null ? lastNode.name : 'If you can read this, something\'s wrong'}}</h1>
 		<div>
 			Lorem ipsum dolor sit amet, consectetur adipiscing
 			elit, sed do eiusmod tempor incididunt ut labore
