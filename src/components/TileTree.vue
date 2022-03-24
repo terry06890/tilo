@@ -237,7 +237,7 @@ export default defineComponent({
 		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
 		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
 	<tile-info-modal :tolNode="infoModalNode" :options="componentOptions" @info-modal-close="onInfoModalClose"/>
-	<settings :open="settingsOpen" @settings-open="onSettingsOpen" @settings-close="onSettingsClose"/>
+	<settings :isOpen="settingsOpen" @settings-open="onSettingsOpen" @settings-close="onSettingsClose"/>
 </div>
 </template>
 

@@ -20,22 +20,20 @@ export default defineComponent({
 <template>
 <!-- outer div prevents overflow from transitioning to/from off-screen -->
 <div class="absolute left-0 top-0 w-full h-full invisible overflow-hidden">
-	<Transition name="slide-bottom">
-		<div v-if="isOpen" class="absolute bottom-0 bg-white visible">
+	<Transition name="slide-bottom-right">
+		<div v-if="isOpen"
+			class="absolute bottom-4 right-4 min-w-[5cm] p-3 bg-stone-50 visible rounded-md shadow-md bg-stone-50">
 			<div class="absolute top-2 right-2 w-[24px] h-[24px] [font-size:24px] [line-height:24px] text-center
 					font-bold hover:cursor-pointer"
 				@click="closeClicked">&times;</div>
-			<h1>Settings</h1>
-			<div>
-				Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-				sed do eiusmod tempor incididunt ut labore et dolore magna
-				aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-				ullamco laboris nisi ut aliquip ex ea commodo consequat.
-				Duis aute irure dolor in reprehenderit in voluptate velit
-				esse cillum dolore eu fugiat nulla pariatur. Excepteur
-				sint occaecat cupidatat non proident, sunt in culpa qui
-				officia deserunt mollit anim id est laborum.
-			</div>
+			<h1 class="text-xl font-bold mb-2">Settings</h1>
+			<hr class="border-stone-400"/>
+			<div class="border border-black my-2">Setting 1</div>
+			<div class="border border-black my-2">Setting 2</div>
+			<div class="border border-black my-2">Setting 3</div>
+			<div class="border border-black my-2">Setting 4</div>
+			<div class="border border-black my-2">Setting 5</div>
+			<div class="border border-black mt-2">Setting 6</div>
 		</div>
 	</Transition>
 	<Transition name="slide-bottom-right">
@@ -66,15 +64,6 @@ export default defineComponent({
 </template>
 
 <style>
-.slide-bottom-enter-from, .slide-bottom-leave-to {
-	transform: translate(0, 100%);
-	opacity: 0;
-}
-.slide-bottom-enter-active, .slide-bottom-leave-active {
-	transition-property: transform, opacity;
-	transition-duration: 300ms;
-	transition-timing-function: ease-in-out;
-}
 .slide-bottom-right-enter-from, .slide-bottom-right-leave-to {
 	transform: translate(100%, 100%);
 	opacity: 0;
