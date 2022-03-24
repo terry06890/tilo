@@ -8,7 +8,7 @@ export default defineComponent({
 	},
 	data(){
 		return {
-			lastNode: null as TolNode | null, // Used to prevent content-change during fade-out
+			lastNode: null as TolNode | null, // Caches tolNode to prevent content-change during fade-out
 		};
 	},
 	watch: {
@@ -27,6 +27,16 @@ export default defineComponent({
 				transitionDuration: '300ms',
 			};
 		},
+		imgStyles(): Record<string,string> {
+			return {
+				backgroundImage: this.lastNode == null ? 'none' :
+					'url(\'/img/' + this.lastNode.name.replaceAll('\'', '\\\'') + '.png\')',
+				width: '200px',
+				height: '200px',
+				backgroundSize: 'cover',
+				borderRadius: '5px',
+			}
+		},
 	},
 	methods: {
 		closeIconClicked(evt: Event){
@@ -41,11 +51,13 @@ export default defineComponent({
 
 <template>
 <div :style="transitionStyles" class="fixed left-0 top-0 w-full h-full bg-black/40" @click="closeIconClicked">
-	<div class="absolute left-1/2 -translate-x-1/2 min-w-3/5 top-1/3 p-2 bg-white rounded-md">
-		<div class="absolute top-1 right-1 text-lg font-bold hover:cursor-pointer"
+	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 top-1/3 p-4 bg-stone-50 rounded-md">
+		<div class="absolute top-2 right-2 w-[24px] h-[24px] [font-size:24px] [line-height:24px] text-center
+				font-bold hover:cursor-pointer"
 			@click="closeIconClicked" ref="closeIcon">&times;</div>
-		<img class="float-left mr-2 mb-2" width="200" height="200" alt="an image"/>
-		<h1>{{lastNode != null ? lastNode.name : 'If you can read this, something\'s wrong'}}</h1>
+		<h1 class="text-center text-xl font-bold mb-2">{{lastNode != null ? lastNode.name : 'NULL'}}</h1>
+		<hr class="mb-4 border-stone-400"/>
+		<div :style="imgStyles" class="float-left mr-4" alt="an image"></div>
 		<div>
 			Lorem ipsum dolor sit amet, consectetur adipiscing
 			elit, sed do eiusmod tempor incididunt ut labore
