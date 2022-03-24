@@ -2,6 +2,7 @@
 import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue';
 import ParentBar from './ParentBar.vue';
+import TileInfoModal from './TileInfoModal.vue';
 import {TolNode, LayoutNode, initLayoutTree, tryLayout} from '../lib';
 import type {LayoutOptions} from '../lib';
 // Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
@@ -67,6 +68,7 @@ export default defineComponent({
 		return {
 			layoutTree: layoutTree,
 			activeRoot: layoutTree,
+			infoModalNode: null as TolNode | null, // Hides/unhides info modal, and provides the node to display
 			// Options
 			layoutOptions: {...defaultLayoutOptions},
 			componentOptions: {...defaultComponentOptions},
@@ -148,7 +150,7 @@ export default defineComponent({
 				setTimeout(() => {this.resizeThrottled = false;}, this.resizeDelay);
 			}
 		},
-		// For click events
+		// For tile expand/collapse events
 		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
 			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false,
 				{type: 'expand', node: layoutNode});
@@ -169,6 +171,7 @@ export default defineComponent({
 				domNode.classList.add('animate-shrink-expand');
 			}
 		},
+		// For expand-to-view events
 		onInnerLeafDblClicked(layoutNode: LayoutNode){
 			if (layoutNode == this.activeRoot){
 				console.log('Ignored expand-to-view on root node');
@@ -193,6 +196,13 @@ export default defineComponent({
 			this.activeRoot = layoutNode;
 			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
+		// For info modal events
+		onInnerInfoIconClicked(node: LayoutNode){
+			this.infoModalNode = node.tolNode;
+		},
+		onInfoModalClose(){
+			this.infoModalNode = null;
+		},
 		// For preventing double-clicks from highlighting text
 		onMouseDown(evt: UIEvent){
 			if (evt.detail == 2){
@@ -210,6 +220,7 @@ export default defineComponent({
 	components: {
 		Tile,
 		ParentBar,
+		TileInfoModal,
 	},
 });
 </script>
@@ -219,10 +230,12 @@ export default defineComponent({
 	<tile :layoutNode="layoutTree"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing" :options="componentOptions"
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
-		@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"/>
+		@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"
+		@info-icon-clicked="onInnerInfoIconClicked"/>
 	<parent-bar v-if="sepdParents != null"
 		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
-		@sepd-parent-clicked="onSepdParentClicked"/>
+		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
+	<tile-info-modal :tolNode="infoModalNode" @info-modal-close="onInfoModalClose"/>
 </div>
 </template>
 

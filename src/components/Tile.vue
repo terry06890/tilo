@@ -181,19 +181,23 @@ export default defineComponent({
 		onNonLeafMouseLeave(evt: Event){
 			this.nonLeafHighlight = false;
 		},
+		// For child event propagation
+		onInnerInfoIconClicked(data: LayoutNode){
+			this.$emit('info-icon-clicked', data);
+		}
 	},
 	name: 'tile', // Need this to use self in template
 	components: {
 		TileImg,
 	},
-	emits: ['leaf-clicked', 'header-clicked', 'leaf-dbl-clicked', 'header-dbl-clicked'],
+	emits: ['leaf-clicked', 'header-clicked', 'leaf-dbl-clicked', 'header-dbl-clicked', 'info-icon-clicked'],
 });
 </script>
 
 <template>
 <div :style="tileStyles">
 	<tile-img v-if="isLeaf" :layoutNode="layoutNode" :tileSz="layoutNode.dims[0]" :options="options"
-		@click="onLeafClick"/>
+		@click="onLeafClick" @info-icon-clicked="onInnerInfoIconClicked"/>
 	<div v-else :style="nonLeafStyles" ref="nonLeaf">
 		<h1 v-if="showHeader" :style="nonLeafHeaderStyles" class="hover:cursor-pointer"
 			@click="onHeaderClick($event)" @mouseenter="onNonLeafMouseEnter" @mouseleave="onNonLeafMouseLeave">
@@ -210,7 +214,8 @@ export default defineComponent({
 		<tile v-for="child in layoutNode.children" :key="child.tolNode.name" :layoutNode="child"
 			:headerSz="headerSz" :tileSpacing="tileSpacing" :options="options"
 			@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
-			@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"/>
+			@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"
+			@info-icon-clicked="onInnerInfoIconClicked"/>
 	</div>
 </div>
 </template>

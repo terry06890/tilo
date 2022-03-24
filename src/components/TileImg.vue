@@ -86,9 +86,10 @@ export default defineComponent({
 			this.infoMouseOver = false;
 		},
 		onInfoClick(evt: Event){
-			console.log('Clicked on info icon: ' + this.layoutNode.tolNode.name);
+			this.$emit('info-icon-clicked', this.layoutNode);
 		},
 	},
+	emits: ['info-icon-clicked'],
 });
 </script>
 

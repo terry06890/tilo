@@ -54,16 +54,21 @@ export default defineComponent({
 		onClick(node: LayoutNode){
 			this.$emit('sepd-parent-clicked', node);
 		},
+		onInnerInfoIconClicked(data: LayoutNode){
+			this.$emit('info-icon-clicked', data);
+		}
 	},
 	components: {
 		TileImg,
 	},
+	emits: ['sepd-parent-clicked', 'info-icon-clicked'],
 });
 </script>
 
 <template>
 <div :style="styles">
 	<tile-img v-for="node in nodes" :key="node.tolNode.name"
-		:layoutNode="node" :tileSz="tileSz" :options="options" @click="onClick(node)"/>
+		:layoutNode="node" :tileSz="tileSz" :options="options"
+		@click="onClick(node)" @info-icon-clicked="onInnerInfoIconClicked"/>
 </div>
 </template>
