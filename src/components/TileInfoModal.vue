@@ -40,7 +40,7 @@ export default defineComponent({
 		},
 	},
 	methods: {
-		closeIconClicked(evt: Event){
+		closeClicked(evt: Event){
 			if (evt.target == this.$el || evt.target == this.$refs.closeIcon){
 				this.$emit('info-modal-close');
 			}
@@ -51,11 +51,11 @@ export default defineComponent({
 </script>
 
 <template>
-<div :style="transitionStyles" class="fixed left-0 top-0 w-full h-full bg-black/40" @click="closeIconClicked">
+<div :style="transitionStyles" class="fixed left-0 top-0 w-full h-full bg-black/40" @click="closeClicked">
 	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 top-1/2 -translate-y-1/2 p-4 bg-stone-50 rounded-md">
 		<div class="absolute top-2 right-2 w-[24px] h-[24px] [font-size:24px] [line-height:24px] text-center
 				font-bold hover:cursor-pointer"
-			@click="closeIconClicked" ref="closeIcon">&times;</div>
+			@click="closeClicked" ref="closeIcon">&times;</div>
 		<h1 class="text-center text-xl font-bold mb-2">{{lastNode != null ? lastNode.name : 'NULL'}}</h1>
 		<hr class="mb-4 border-stone-400"/>
 		<div :style="imgStyles" class="float-left mr-4" alt="an image"></div>

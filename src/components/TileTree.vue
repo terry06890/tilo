@@ -3,6 +3,7 @@ import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue';
 import ParentBar from './ParentBar.vue';
 import TileInfoModal from './TileInfoModal.vue';
+import Settings from './Settings.vue';
 import {TolNode, LayoutNode, initLayoutTree, tryLayout} from '../lib';
 import type {LayoutOptions} from '../lib';
 // Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
@@ -71,6 +72,7 @@ export default defineComponent({
 			layoutTree: layoutTree,
 			activeRoot: layoutTree,
 			infoModalNode: null as TolNode | null, // Hides/unhides info modal, and provides the node to display
+			settingsOpen: false,
 			// Options
 			layoutOptions: {...defaultLayoutOptions},
 			componentOptions: {...defaultComponentOptions},
@@ -205,6 +207,13 @@ export default defineComponent({
 		onInfoModalClose(){
 			this.infoModalNode = null;
 		},
+		//
+		onSettingsOpen(){
+			this.settingsOpen = true;
+		},
+		onSettingsClose(){
+			this.settingsOpen = false;
+		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
@@ -213,11 +222,7 @@ export default defineComponent({
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);
 	},
-	components: {
-		Tile,
-		ParentBar,
-		TileInfoModal,
-	},
+	components: {Tile, ParentBar, TileInfoModal, Settings, },
 });
 </script>
 
@@ -232,6 +237,7 @@ export default defineComponent({
 		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
 		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
 	<tile-info-modal :tolNode="infoModalNode" :options="componentOptions" @info-modal-close="onInfoModalClose"/>
+	<settings :open="settingsOpen" @settings-open="onSettingsOpen" @settings-close="onSettingsClose"/>
 </div>
 </template>
 
