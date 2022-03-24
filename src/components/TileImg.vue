@@ -74,10 +74,8 @@ export default defineComponent({
 				this.highlight = false;
 			}
 		},
-		onClick(evt: Event){
-			if (this.isExpandable){
-				this.highlight = false;
-			}
+		onMouseDown(evt: Event){
+			this.highlight = false;
 		},
 		onInfoMouseEnter(evt: Event){
 			this.infoMouseOver = true;
@@ -94,7 +92,7 @@ export default defineComponent({
 </script>
 
 <template>
-<div :style="styles" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @click="onClick"
+<div :style="styles" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown"
 	:class="isExpandable ? ['hover:cursor-pointer'] : []">
 	<h1 :style="headerStyles">{{layoutNode.tolNode.name}}</h1>
 	<svg :style="infoIconStyles" class="hover:cursor-pointer"

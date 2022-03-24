@@ -55,7 +55,7 @@ const defaultComponentOptions = {
 	infoModalImgSz: 200,
 	// Timing related
 	transitionDuration: 300, //ms
-	dblClickWait: 200, //ms
+	clickHoldDuration: 400, //ms (duration after mousedown when a click-and-hold is recognised)
 };
 const defaultOwnOptions = {
 	tileAreaOffset: 5, //px (space between root tile and display boundary)
@@ -174,7 +174,7 @@ export default defineComponent({
 			}
 		},
 		// For expand-to-view events
-		onInnerLeafDblClicked(layoutNode: LayoutNode){
+		onInnerLeafClickHeld(layoutNode: LayoutNode){
 			if (layoutNode == this.activeRoot){
 				console.log('Ignored expand-to-view on root node');
 				return;
@@ -184,7 +184,7 @@ export default defineComponent({
 			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true,
 				{type: 'expand', node: layoutNode});
 		},
-		onInnerHeaderDblClicked(layoutNode: LayoutNode){
+		onInnerHeaderClickHeld(layoutNode: LayoutNode){
 			if (layoutNode.parent == null){
 				console.log('Ignored expand-to-view on root node');
 				return;
@@ -205,12 +205,6 @@ export default defineComponent({
 		onInfoModalClose(){
 			this.infoModalNode = null;
 		},
-		// For preventing double-clicks from highlighting text
-		onMouseDown(evt: UIEvent){
-			if (evt.detail == 2){
-				evt.preventDefault();
-			}
-		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
@@ -228,11 +222,11 @@ export default defineComponent({
 </script>
 
 <template>
-<div :style="styles" @mousedown="onMouseDown">
+<div :style="styles">
 	<tile :layoutNode="layoutTree"
 		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing" :options="componentOptions"
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
-		@leaf-dbl-clicked="onInnerLeafDblClicked" @header-dbl-clicked="onInnerHeaderDblClicked"
+		@leaf-click-held="onInnerLeafClickHeld" @header-click-held="onInnerHeaderClickHeld"
 		@info-icon-clicked="onInnerInfoIconClicked"/>
 	<parent-bar v-if="sepdParents != null"
 		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
