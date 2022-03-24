@@ -10,7 +10,9 @@ export default defineComponent({
 			this.$emit('settings-open');
 		},
 		closeClicked(evt: Event){
-			this.$emit('settings-close');
+			if (evt.target == this.$el || evt.target == this.$refs.closeIcon){
+				this.$emit('settings-close');
+			}
 		},
 	},
 	emits: ['settings-open', 'settings-close'],
@@ -18,14 +20,16 @@ export default defineComponent({
 </script>
 
 <template>
-<!-- outer div prevents overflow from transitioning to/from off-screen -->
-<div class="absolute left-0 top-0 w-full h-full invisible overflow-hidden">
+<div :style="{visibility: isOpen ? 'visible' : 'hidden'}"
+	class="fixed left-0 top-0 w-full h-full bg-black/10 overflow-hidden"
+	@click="closeClicked">
+	<!-- outer div prevents overflow from transitioning to/from off-screen -->
 	<Transition name="slide-bottom-right">
 		<div v-if="isOpen"
 			class="absolute bottom-4 right-4 min-w-[5cm] p-3 bg-stone-50 visible rounded-md shadow-md bg-stone-50">
 			<div class="absolute top-2 right-2 w-[24px] h-[24px] [font-size:24px] [line-height:24px] text-center
 					font-bold hover:cursor-pointer"
-				@click="closeClicked">&times;</div>
+				@click="closeClicked" ref="closeIcon">&times;</div>
 			<h1 class="text-xl font-bold mb-2">Settings</h1>
 			<hr class="border-stone-400"/>
 			<div class="border border-black my-2">Setting 1</div>

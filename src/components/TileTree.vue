@@ -210,6 +210,7 @@ export default defineComponent({
 		//
 		onSettingsOpen(){
 			this.settingsOpen = true;
+			this.infoModalNode = null;
 		},
 		onSettingsClose(){
 			this.settingsOpen = false;
