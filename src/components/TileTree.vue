@@ -51,6 +51,8 @@ const defaultComponentOptions = {
 	nonLeafHeaderFontSz: 15, //px
 	nonLeafHeaderColor: '#fafaf9',
 	nonLeafHeaderBgColor: '#1c1917',
+	// For tile-info modal
+	infoModalImgSz: 200,
 	// Timing related
 	transitionDuration: 300, //ms
 	dblClickWait: 200, //ms
@@ -235,7 +237,7 @@ export default defineComponent({
 	<parent-bar v-if="sepdParents != null"
 		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
 		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
-	<tile-info-modal :tolNode="infoModalNode" @info-modal-close="onInfoModalClose"/>
+	<tile-info-modal :tolNode="infoModalNode" :options="componentOptions" @info-modal-close="onInfoModalClose"/>
 </div>
 </template>
 

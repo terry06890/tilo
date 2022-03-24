@@ -5,6 +5,7 @@ import {TolNode} from '../lib';
 export default defineComponent({
 	props: {
 		tolNode: {type: Object as PropType<TolNode | null>}, // The node to display, or null to hide
+		options: {type: Object, required: true},
 	},
 	data(){
 		return {
@@ -24,17 +25,17 @@ export default defineComponent({
 				visibility: this.tolNode != null ? 'visible' : 'hidden',
 				opacity: this.tolNode != null ? '1' : '0',
 				transition: 'visibility, opacity',
-				transitionDuration: '300ms',
+				transitionDuration: this.options.transitionDuration + 'ms',
 			};
 		},
 		imgStyles(): Record<string,string> {
 			return {
 				backgroundImage: this.lastNode == null ? 'none' :
 					'url(\'/img/' + this.lastNode.name.replaceAll('\'', '\\\'') + '.png\')',
-				width: '200px',
-				height: '200px',
+				width: this.options.infoModalImgSz + 'px',
+				height: this.options.infoModalImgSz + 'px',
 				backgroundSize: 'cover',
-				borderRadius: '5px',
+				borderRadius: this.options.borderRadius + 'px',
 			}
 		},
 	},
@@ -51,7 +52,7 @@ export default defineComponent({
 
 <template>
 <div :style="transitionStyles" class="fixed left-0 top-0 w-full h-full bg-black/40" @click="closeIconClicked">
-	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 top-1/3 p-4 bg-stone-50 rounded-md">
+	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 top-1/2 -translate-y-1/2 p-4 bg-stone-50 rounded-md">
 		<div class="absolute top-2 right-2 w-[24px] h-[24px] [font-size:24px] [line-height:24px] text-center
 				font-bold hover:cursor-pointer"
 			@click="closeIconClicked" ref="closeIcon">&times;</div>
