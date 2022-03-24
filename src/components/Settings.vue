@@ -3,10 +3,10 @@ import {defineComponent, PropType} from 'vue';
 
 export default defineComponent({
 	props: {
-		open: {type: Boolean, required: true}, // Indicates whether to show/collapse settings
+		isOpen: {type: Boolean, required: true},
 	},
 	methods: {
-		onClick(){
+		openClicked(){
 			this.$emit('settings-open');
 		},
 		closeClicked(evt: Event){
@@ -18,43 +18,70 @@ export default defineComponent({
 </script>
 
 <template>
-<div>
-	<div v-if="open" class="absolute bottom-0 right-0 bg-white">
-		<div class="absolute top-2 right-2 w-[24px] h-[24px] [font-size:24px] [line-height:24px] text-center
-				font-bold hover:cursor-pointer"
-			@click="closeClicked">&times;</div>
-		<h1>Settings</h1>
-		<div>
-			Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-			sed do eiusmod tempor incididunt ut labore et dolore magna
-			aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-			ullamco laboris nisi ut aliquip ex ea commodo consequat.
-			Duis aute irure dolor in reprehenderit in voluptate velit
-			esse cillum dolore eu fugiat nulla pariatur. Excepteur
-			sint occaecat cupidatat non proident, sunt in culpa qui
-			officia deserunt mollit anim id est laborum.
+<!-- outer div prevents overflow from transitioning to/from off-screen -->
+<div class="absolute left-0 top-0 w-full h-full invisible overflow-hidden">
+	<Transition name="slide-bottom">
+		<div v-if="isOpen" class="absolute bottom-0 bg-white visible">
+			<div class="absolute top-2 right-2 w-[24px] h-[24px] [font-size:24px] [line-height:24px] text-center
+					font-bold hover:cursor-pointer"
+				@click="closeClicked">&times;</div>
+			<h1>Settings</h1>
+			<div>
+				Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+				sed do eiusmod tempor incididunt ut labore et dolore magna
+				aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+				ullamco laboris nisi ut aliquip ex ea commodo consequat.
+				Duis aute irure dolor in reprehenderit in voluptate velit
+				esse cillum dolore eu fugiat nulla pariatur. Excepteur
+				sint occaecat cupidatat non proident, sunt in culpa qui
+				officia deserunt mollit anim id est laborum.
+			</div>
 		</div>
-	</div>
-	<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px] overflow-hidden invisible">
-		<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
-			bg-black text-white hover:cursor-pointer" @click="onClick">
-			<svg class="w-[24px] h-[24px] mx-auto mt-[9px]"
-				xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<circle cx="12" cy="12" r="3"/>
-				<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0
-					0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2
-					2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0
-					0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65
-					1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1
-					2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2
-					0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65
-					1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0
-					1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0
-					2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2
-					2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-			</svg>
+	</Transition>
+	<Transition name="slide-bottom-right">
+		<!-- outer div prevents transition interference with inner rotate -->
+		<div v-if="!isOpen" class="absolute bottom-0 right-0 w-[100px] h-[100px]">
+			<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
+				bg-black text-white hover:cursor-pointer" @click="openClicked">
+				<svg class="w-[24px] h-[24px] mx-auto mt-[9px]"
+					xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="3"/>
+					<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0
+						0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2
+						2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0
+						0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65
+						1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1
+						2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2
+						0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65
+						1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0
+						1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0
+						2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2
+						2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+				</svg>
+			</div>
 		</div>
-	</div>
+	</Transition>
 </div>
 </template>
+
+<style>
+.slide-bottom-enter-from, .slide-bottom-leave-to {
+	transform: translate(0, 100%);
+	opacity: 0;
+}
+.slide-bottom-enter-active, .slide-bottom-leave-active {
+	transition-property: transform, opacity;
+	transition-duration: 300ms;
+	transition-timing-function: ease-in-out;
+}
+.slide-bottom-right-enter-from, .slide-bottom-right-leave-to {
+	transform: translate(100%, 100%);
+	opacity: 0;
+}
+.slide-bottom-right-enter-active, .slide-bottom-right-leave-active {
+	transition-property: transform, opacity;
+	transition-duration: 300ms;
+	transition-timing-function: ease-in-out;
+}
+</style>
