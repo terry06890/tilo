@@ -15,10 +15,14 @@ export default defineComponent({
 			}
 		},
 		onSearchEnter(){
-			let searchString = (this.$refs.searchInput as HTMLInputElement).value;
-			let tolNode = this.tolMap.get(searchString);
+			let input = this.$refs.searchInput as HTMLInputElement;
+			let tolNode = this.tolMap.get(input.value);
 			if (tolNode == null){
-				console.log('No result found');
+				input.value = '';
+				// Trigger failure animation
+				input.classList.remove('animate-red-then-fade');
+				input.offsetWidth; // Triggers reflow
+				input.classList.add('animate-red-then-fade');
 			} else {
 				this.$emit('search-node', tolNode);
 			}
@@ -35,7 +39,8 @@ export default defineComponent({
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="closeClicked">
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 p-4
 		bg-stone-50 rounded-md shadow shadow-black flex gap-1">
-		<input type="text" @keyup.enter="onSearchEnter" @keyup.esc="closeClicked" class="block border" ref="searchInput"/>
+		<input type="text" class="block border"
+			@keyup.enter="onSearchEnter" @keyup.esc="closeClicked" ref="searchInput"/>
 		<svg class="block w-7 h-7 border rounded hover:cursor-pointer hover:bg-stone-200" @click="onSearchEnter"
 			xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 			stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -52,3 +57,19 @@ export default defineComponent({
 	</div>
 </div>
 </template>
+
+<style>
+.animate-red-then-fade {
+	animation-name: red-then-fade;
+	animation-duration: 500ms;
+	animation-timing-function: ease-in;
+}
+@keyframes red-then-fade {
+	from {
+		background-color: rgba(255,0,0,0.2);
+	}
+	to {
+		background-color: transparent;
+	}
+}
+</style>
