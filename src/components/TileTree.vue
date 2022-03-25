@@ -229,7 +229,7 @@ export default defineComponent({
 		onSearchClose(){
 			this.searchOpen = false;
 		},
-		onSearchNode(node){
+		onSearchNode(node: string){
 			console.log('Searched for: ' + node);
 			this.searchOpen = false;
 		},

@@ -21,13 +21,17 @@ export default defineComponent({
 			this.$emit('layout-option-change');
 		},
 		onMinTileSzChg(){
-			if (Number(this.$refs.minTileSzInput.value) > Number(this.$refs.maxTileSzInput.value)){
+			let minInput = this.$refs.minTileSzInput as HTMLInputElement;
+			let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
+			if (Number(minInput.value) > Number(maxInput.value)){
 				this.layoutOptions.maxTileSz = this.layoutOptions.minTileSz;
 			}
 			this.onLayoutOptChg();
 		},
-		onMaxTileSzChg(evt){
-			if (Number(this.$refs.maxTileSzInput.value) < Number(this.$refs.minTileSzInput.value)){
+		onMaxTileSzChg(){
+			let minInput = this.$refs.minTileSzInput as HTMLInputElement;
+			let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
+			if (Number(maxInput.value) < Number(minInput.value)){
 				this.layoutOptions.minTileSz = this.layoutOptions.maxTileSz;
 			}
 			this.onLayoutOptChg();

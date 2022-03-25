@@ -14,11 +14,11 @@ export default defineComponent({
 			}
 		},
 		onSearchEnter(){
-			this.$emit('search-node', this.$refs.searchInput.value);
+			this.$emit('search-node', (this.$refs.searchInput as HTMLInputElement).value);
 		},
 	},
 	mounted(){
-		this.$refs.searchInput.focus();
+		(this.$refs.searchInput as HTMLInputElement).focus();
 	},
 	emits: ['search-node', 'search-close']
 });

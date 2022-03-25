@@ -4,7 +4,7 @@ import {TolNode} from '../lib';
 
 export default defineComponent({
 	props: {
-		tolNode: {type: Object as PropType<TolNode>},
+		tolNode: {type: Object as PropType<TolNode>, required: true},
 		options: {type: Object, required: true},
 	},
 	computed: {
