@@ -272,6 +272,10 @@ export default defineComponent({
 		onKeyUp(evt: KeyboardEvent){
 			if (evt.key == 'Escape'){
 				this.closeModalsAndSettings();
+			} else if (evt.key == 'F' && evt.ctrlKey){
+				if (!this.searchOpen){
+					this.onSearchIconClick();
+				}
 			}
 		},
 		initLayoutMap(node: LayoutNode): Map<string,LayoutNode> {
