@@ -229,6 +229,10 @@ export default defineComponent({
 		onSearchClose(){
 			this.searchOpen = false;
 		},
+		onSearchNode(node){
+			console.log('Searched for: ' + node);
+			this.searchOpen = false;
+		},
 		//
 		closeModalsAndSettings(){
 			this.infoModalNode = null;
@@ -276,7 +280,8 @@ export default defineComponent({
 		  <circle cx="11" cy="11" r="8"/>
 		  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
 		</svg>
-		<search-modal v-else :layoutTree="layoutTree" :options="componentOptions" @search-close="onSearchClose"/>
+		<search-modal v-else :layoutTree="layoutTree" :options="componentOptions"
+			@search-close="onSearchClose" @search-node="onSearchNode"/>
 	</transition>
 	<settings :isOpen="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
 		@settings-open="onSettingsOpen" @settings-close="onSettingsClose"
