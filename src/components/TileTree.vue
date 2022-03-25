@@ -174,30 +174,36 @@ export default defineComponent({
 			}
 		},
 		// For tile expand/collapse events
-		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
+		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode?: HTMLElement}){
 			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false,
 				{type: 'expand', node: layoutNode});
 			if (success){
 				layoutNode.children.forEach(n => this.layoutMap.set(n.tolNode.name, n));
 			} else {
-				// Trigger failure animation
-				domNode.classList.remove('animate-expand-shrink');
-				domNode.offsetWidth; // Triggers reflow
-				domNode.classList.add('animate-expand-shrink');
+				if (domNode != null){
+					// Trigger failure animation
+					domNode.classList.remove('animate-expand-shrink');
+					domNode.offsetWidth; // Triggers reflow
+					domNode.classList.add('animate-expand-shrink');
+				}
 			}
+			return success;
 		},
-		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
+		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode?: HTMLElement}){
 			let oldChildren = layoutNode.children;
 			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false,
 				{type: 'collapse', node: layoutNode});
 			if (success){
 				oldChildren.forEach(n => this.removeFromLayoutMap(n, this.layoutMap));
 			} else {
-				// Trigger failure animation
-				domNode.classList.remove('animate-shrink-expand');
-				domNode.offsetWidth; // Triggers reflow
-				domNode.classList.add('animate-shrink-expand');
+				if (domNode != null){
+					// Trigger failure animation
+					domNode.classList.remove('animate-shrink-expand');
+					domNode.offsetWidth; // Triggers reflow
+					domNode.classList.add('animate-shrink-expand');
+				}
 			}
+			return success;
 		},
 		// For expand-to-view events
 		onInnerLeafClickHeld(layoutNode: LayoutNode){
@@ -211,8 +217,8 @@ export default defineComponent({
 				{type: 'expand', node: layoutNode});
 		},
 		onInnerHeaderClickHeld(layoutNode: LayoutNode){
-			if (layoutNode.parent == null){
-				console.log('Ignored expand-to-view on root node');
+			if (layoutNode == this.activeRoot){
+				console.log('Ignored expand-to-view on active-root node');
 				return;
 			}
 			LayoutNode.hideUpward(layoutNode);
@@ -253,15 +259,7 @@ export default defineComponent({
 		},
 		onSearchNode(tolNode: TolNode){
 			this.searchOpen = false;
-			//
-			let tolChain = [];
-			let node: TolNode | null = tolNode;
-			while (node != null){
-				tolChain.push(node.name);
-				node = node.parent;
-			}
-			console.log('ancestry for ' + tolNode.name);
-			console.log(tolChain);
+			this.expandToTolNode(tolNode);
 		},
 		//
 		closeModalsAndSettings(){
@@ -290,6 +288,41 @@ export default defineComponent({
 		removeFromLayoutMap(node: LayoutNode, map: Map<string,LayoutNode>){
 			map.delete(node.tolNode.name);
 			node.children.forEach(n => this.removeFromLayoutMap(n, map));
+		},
+		expandToTolNode(tolNode: TolNode){
+			// Check if searched node is shown
+			if (this.layoutMap.get(tolNode.name) != null){
+				return;
+			}
+			// Get ancestor to expand
+			let ancestor = tolNode.parent;
+			while (this.layoutMap.get(ancestor.name) == null){
+				ancestor = ancestor.parent;
+			}
+			// Attempt expansion
+			let layoutNode = this.layoutMap.get(ancestor.name);
+			let success = this.onInnerLeafClicked({layoutNode});
+			if (success){
+				console.log('Expanded ' + ancestor.name);
+				setTimeout(() => this.expandToTolNode(tolNode), 300);
+				return;
+			}
+			// Expand-to-view an ancestor just below the activeRoot
+			if (ancestor.name == this.activeRoot.tolNode.name){
+				console.log('Unable to complete search (not enough room to expand active root)');
+					// Happens if screen is very small or node has very many children
+				return;
+			}
+			while (true){
+				if (ancestor.parent.name == this.activeRoot.tolNode.name){
+					break;
+				}
+				ancestor = ancestor.parent;
+			}
+			layoutNode = this.layoutMap.get(ancestor.name);
+			this.onInnerHeaderClickHeld(layoutNode);
+			console.log('Expanded-to-view ' + ancestor.name);
+			setTimeout(() => this.expandToTolNode(tolNode), 300);
 		},
 	},
 	created(){
