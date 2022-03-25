@@ -109,6 +109,11 @@ export default defineComponent({
 					</li>
 				</ul>
 			</div>
+			<hr class="border-stone-400"/>
+			<div>
+				<label>Animation Speed <input type="range" min="0" max="1000" class="mx-2 w-[3cm]"
+					v-model.number="componentOptions.transitionDuration"/></label>
+			</div>
 		</div>
 	</Transition>
 	<Transition name="slide-bottom-right">
