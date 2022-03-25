@@ -41,7 +41,7 @@ export default defineComponent({
 <div class="fixed left-0 top-0 w-full h-full overflow-hidden invisible"
 	@click="closeClicked">
 	<!-- outer div prevents overflow from transitioning to/from off-screen -->
-	<Transition name="slide-bottom-right">
+	<transition name="slide-bottom-right">
 		<div v-if="isOpen"
 			class="absolute bottom-4 right-4 min-w-[5cm] p-3 bg-stone-50 visible rounded-md shadow shadow-black">
 			<div class="absolute top-2 right-2 w-[24px] h-[24px] [font-size:24px] [line-height:24px] text-center
@@ -114,10 +114,8 @@ export default defineComponent({
 					v-model.number="componentOptions.transitionDuration"/></label>
 			</div>
 		</div>
-	</Transition>
-	<Transition name="slide-bottom-right">
-		<!-- outer div prevents transition interference with inner rotate -->
-		<div v-if="!isOpen" class="absolute bottom-0 right-0 w-[100px] h-[100px]">
+		<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px]">
+			<!-- outer div prevents transition interference with inner rotate -->
 			<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
 				bg-black text-white hover:cursor-pointer" @click="openClicked">
 				<svg class="w-[24px] h-[24px] mx-auto mt-[9px]"
@@ -138,7 +136,7 @@ export default defineComponent({
 				</svg>
 			</div>
 		</div>
-	</Transition>
+	</transition>
 </div>
 </template>
 

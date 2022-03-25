@@ -251,7 +251,10 @@ export default defineComponent({
 	<parent-bar v-if="sepdParents != null"
 		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
 		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
-	<tile-info-modal :tolNode="infoModalNode" :options="componentOptions" @info-modal-close="onInfoModalClose"/>
+	<transition name="fade">
+		<tile-info-modal v-if="infoModalNode != null" :tolNode="infoModalNode" :options="componentOptions"
+			@info-modal-close="onInfoModalClose"/>
+	</transition>
 	<settings :isOpen="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
 		@settings-open="onSettingsOpen" @settings-close="onSettingsClose"
 		@layout-option-change="onLayoutOptionChange"/>
@@ -292,5 +295,13 @@ export default defineComponent({
 	to {
 		transform: translate3d(0,0,0) scale(1, 1);
 	}
+}
+.fade-enter-from, .fade-leave-to {
+	opacity: 0;
+}
+.fade-enter-active, .fade-leave-active {
+	transition-property: opacity;
+	transition-duration: 300ms;
+	transition-timing-function: ease-out;
 }
 </style>
