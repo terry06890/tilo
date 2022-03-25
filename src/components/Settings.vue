@@ -1,9 +1,12 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
+import type {LayoutOptions} from '../lib';
 
 export default defineComponent({
 	props: {
 		isOpen: {type: Boolean, required: true},
+		layoutOptions: {type: Object as PropType<LayoutOptions>, required: true},
+		componentOptions: {type: Object, required: true},
 	},
 	methods: {
 		openClicked(){
@@ -14,14 +17,17 @@ export default defineComponent({
 				this.$emit('settings-close');
 			}
 		},
+		onLayoutOptChg(){
+			this.$emit('layout-option-change');
+		},
 	},
-	emits: ['settings-open', 'settings-close'],
+	emits: ['settings-open', 'settings-close', 'layout-option-change', ],
 });
 </script>
 
 <template>
 <div :style="{visibility: isOpen ? 'visible' : 'hidden'}"
-	class="fixed left-0 top-0 w-full h-full bg-black/10 overflow-hidden"
+	class="fixed left-0 top-0 w-full h-full bg-black/20 overflow-hidden"
 	@click="closeClicked">
 	<!-- outer div prevents overflow from transitioning to/from off-screen -->
 	<Transition name="slide-bottom-right">
@@ -32,12 +38,54 @@ export default defineComponent({
 				@click="closeClicked" ref="closeIcon">&times;</div>
 			<h1 class="text-xl font-bold mb-2">Settings</h1>
 			<hr class="border-stone-400"/>
+			<div>
+				<label>Tile Spacing <input type="range" min="0" max="20" class="mx-2 w-[3cm]"
+					v-model.number="layoutOptions.tileSpacing" @input="onLayoutOptChg"/></label>
+			</div>
+			<hr class="border-stone-400"/>
+			<div>
+				Layout Method
+				<ul>
+					<li>
+						<label> <input type="radio" v-model="layoutOptions.layoutType" value="sqr"
+							@change="onLayoutOptChg"/> Squares </label>
+					</li>
+					<li>
+						<label> <input type="radio" v-model="layoutOptions.layoutType" value="rect"
+							@change="onLayoutOptChg"/> Rectangles </label>
+					</li>
+					<li>
+						<label> <input type="radio" v-model="layoutOptions.layoutType" value="sweep"
+							@change="onLayoutOptChg"/> Sweep to side </label>
+					</li>
+				</ul>
+			</div>
+			<hr class="border-stone-400"/>
+			<div>
+				Sweep Mode
+				<ul>
+					<li>
+						<label> <input type="radio" v-model="layoutOptions.sweepMode" value="left"
+							@change="onLayoutOptChg"/> To left </label>
+					</li>
+					<li>
+						<label> <input type="radio" v-model="layoutOptions.sweepMode" value="top"
+							@change="onLayoutOptChg"/> To top </label>
+					</li>
+					<li>
+						<label> <input type="radio" v-model="layoutOptions.sweepMode" value="shorter"
+							@change="onLayoutOptChg"/> To shorter </label>
+					</li>
+					<li>
+						<label> <input type="radio" v-model="layoutOptions.sweepMode" value="auto"
+							@change="onLayoutOptChg"/> Auto </label>
+					</li>
+				</ul>
+			</div>
+			<hr class="border-stone-400"/>
 			<div class="border border-black my-2">Setting 1</div>
 			<div class="border border-black my-2">Setting 2</div>
 			<div class="border border-black my-2">Setting 3</div>
-			<div class="border border-black my-2">Setting 4</div>
-			<div class="border border-black my-2">Setting 5</div>
-			<div class="border border-black mt-2">Setting 6</div>
 		</div>
 	</Transition>
 	<Transition name="slide-bottom-right">

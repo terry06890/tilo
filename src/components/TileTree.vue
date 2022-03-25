@@ -215,6 +215,9 @@ export default defineComponent({
 		onSettingsClose(){
 			this.settingsOpen = false;
 		},
+		onLayoutOptionChange(){
+			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
@@ -238,7 +241,9 @@ export default defineComponent({
 		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
 		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
 	<tile-info-modal :tolNode="infoModalNode" :options="componentOptions" @info-modal-close="onInfoModalClose"/>
-	<settings :isOpen="settingsOpen" @settings-open="onSettingsOpen" @settings-close="onSettingsClose"/>
+	<settings :isOpen="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
+		@settings-open="onSettingsOpen" @settings-close="onSettingsClose"
+		@layout-option-change="onLayoutOptionChange"/>
 </div>
 </template>
 
