@@ -3,6 +3,7 @@ import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue';
 import ParentBar from './ParentBar.vue';
 import TileInfoModal from './TileInfoModal.vue';
+import SearchModal from './SearchModal.vue';
 import Settings from './Settings.vue';
 import {TolNode, LayoutNode, initLayoutTree, tryLayout} from '../lib';
 import type {LayoutOptions} from '../lib';
@@ -72,6 +73,7 @@ export default defineComponent({
 			layoutTree: layoutTree,
 			activeRoot: layoutTree,
 			infoModalNode: null as TolNode | null, // Hides/unhides info modal, and provides the node to display
+			searchOpen: false,
 			settingsOpen: false,
 			// Options
 			layoutOptions: {...defaultLayoutOptions},
@@ -202,6 +204,7 @@ export default defineComponent({
 		},
 		// For info modal events
 		onInnerInfoIconClicked(node: LayoutNode){
+			this.closeModalsAndSettings();
 			this.infoModalNode = node.tolNode;
 		},
 		onInfoModalClose(){
@@ -209,6 +212,7 @@ export default defineComponent({
 		},
 		//
 		onSettingsOpen(){
+			this.closeModalsAndSettings();
 			this.settingsOpen = true;
 		},
 		onSettingsClose(){
@@ -217,14 +221,23 @@ export default defineComponent({
 		onLayoutOptionChange(){
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
+		//
+		onSearchIconClick(){
+			this.closeModalsAndSettings();
+			this.searchOpen = true;
+		},
+		onSearchClose(){
+			this.searchOpen = false;
+		},
+		//
+		closeModalsAndSettings(){
+			this.infoModalNode = null;
+			this.searchOpen = false;
+			this.settingsOpen = false;
+		},
 		onKeyUp(evt: KeyboardEvent){
 			if (evt.key == 'Escape'){
-				if (this.settingsOpen){
-					this.settingsOpen = false;
-				}
-				if (this.infoModalNode != null){
-					this.infoModalNode = null;
-				}
+				this.closeModalsAndSettings();
 			}
 		},
 	},
@@ -237,7 +250,7 @@ export default defineComponent({
 		window.removeEventListener('resize', this.onResize);
 		window.removeEventListener('keyup', this.onKeyUp);
 	},
-	components: {Tile, ParentBar, TileInfoModal, Settings, },
+	components: {Tile, ParentBar, TileInfoModal, Settings, SearchModal, },
 });
 </script>
 
@@ -254,6 +267,16 @@ export default defineComponent({
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNode != null" :tolNode="infoModalNode" :options="componentOptions"
 			@info-modal-close="onInfoModalClose"/>
+	</transition>
+	<transition name="fade">
+		<svg v-if="!searchOpen" @click="onSearchIconClick"
+			class="absolute top-[6px] right-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
+			xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+			stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		  <circle cx="11" cy="11" r="8"/>
+		  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+		</svg>
+		<search-modal v-else :layoutTree="layoutTree" :options="componentOptions" @search-close="onSearchClose"/>
 	</transition>
 	<settings :isOpen="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
 		@settings-open="onSettingsOpen" @settings-close="onSettingsClose"

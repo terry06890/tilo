@@ -118,7 +118,7 @@ export default defineComponent({
 			<!-- outer div prevents transition interference with inner rotate -->
 			<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
 				bg-black text-white hover:cursor-pointer" @click="openClicked">
-				<svg class="w-[24px] h-[24px] mx-auto mt-[9px]"
+				<svg class="w-6 h-6 mx-auto mt-2"
 					xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<circle cx="12" cy="12" r="3"/>
