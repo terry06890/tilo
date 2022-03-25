@@ -11,9 +11,11 @@
 export class TolNode {
 	name: string;
 	children: TolNode[];
-	constructor(name: string, children: TolNode[] = []){
+	parent: TolNode | null;
+	constructor(name: string, children: TolNode[] = [], parent = null){
 		this.name = name;
 		this.children = children;
+		this.parent = parent;
 	}
 }
 // Represents a node/tree, and holds layout data for a TolNode node/tree

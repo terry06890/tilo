@@ -5,6 +5,7 @@ import {TolNode, LayoutNode} from '../lib';
 export default defineComponent({
 	props: {
 		layoutTree: {type: Object as PropType<LayoutNode>, required: true},
+		tolMap: {type: Object as PropType<Map<string,TolNode>>, required: true},
 		options: {type: Object, required: true},
 	},
 	methods: {
@@ -14,7 +15,13 @@ export default defineComponent({
 			}
 		},
 		onSearchEnter(){
-			this.$emit('search-node', (this.$refs.searchInput as HTMLInputElement).value);
+			let searchString = (this.$refs.searchInput as HTMLInputElement).value;
+			let tolNode = this.tolMap.get(searchString);
+			if (tolNode == null){
+				console.log('No result found');
+			} else {
+				this.$emit('search-node', tolNode);
+			}
 		},
 	},
 	mounted(){

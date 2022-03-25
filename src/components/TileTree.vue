@@ -12,15 +12,29 @@ import type {LayoutOptions} from '../lib';
 // Obtain tree-of-life data
 import tolRaw from '../tol.json';
 function preprocessTol(node: any): any {
-	// Add 'children' fields if missing
-	if (node.children == null){
-		node.children = [];
-	} else {
-		node.children.forEach(preprocessTol);
+	function helper(node: any, parent: any){
+		//Add 'children' field if missing
+		if (node.children == null){
+			node.children = [];
+		}
+		//Add 'parent' field
+		node.parent = parent;
+		node.children.forEach((child: any) => helper(child, node));
 	}
+	helper(node, null);
 	return node;
 }
 const tol: TolNode = preprocessTol(tolRaw);
+function getTolMap(tol: TolNode): Map<string,TolNode> {
+	function helper(node: TolNode, map: Map<string,TolNode>){
+		map.set(node.name, node);
+		node.children.forEach(child => helper(child, map));
+	}
+	let map = new Map();
+	helper(tol, map);
+	return map;
+}
+const tolMap = getTolMap(tol);
 
 // Configurable settings
 const defaultLayoutOptions: LayoutOptions = {
@@ -72,6 +86,9 @@ export default defineComponent({
 		return {
 			layoutTree: layoutTree,
 			activeRoot: layoutTree,
+			layoutMap: this.initLayoutMap(layoutTree), // Maps names to LayoutNode objects
+			tolMap: tolMap, // Maps names to TolNode objects
+			//
 			infoModalNode: null as TolNode | null, // Hides/unhides info modal, and provides the node to display
 			searchOpen: false,
 			settingsOpen: false,
@@ -160,7 +177,9 @@ export default defineComponent({
 		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
 			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false,
 				{type: 'expand', node: layoutNode});
-			if (!success){
+			if (success){
+				layoutNode.children.forEach(n => this.layoutMap.set(n.tolNode.name, n));
+			} else {
 				// Trigger failure animation
 				domNode.classList.remove('animate-expand-shrink');
 				domNode.offsetWidth; // Triggers reflow
@@ -168,9 +187,12 @@ export default defineComponent({
 			}
 		},
 		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode: HTMLElement}){
+			let oldChildren = layoutNode.children;
 			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false,
 				{type: 'collapse', node: layoutNode});
-			if (!success){
+			if (success){
+				oldChildren.forEach(n => this.removeFromLayoutMap(n, this.layoutMap));
+			} else {
 				// Trigger failure animation
 				domNode.classList.remove('animate-shrink-expand');
 				domNode.offsetWidth; // Triggers reflow
@@ -229,9 +251,17 @@ export default defineComponent({
 		onSearchClose(){
 			this.searchOpen = false;
 		},
-		onSearchNode(node: string){
-			console.log('Searched for: ' + node);
+		onSearchNode(tolNode: TolNode){
 			this.searchOpen = false;
+			//
+			let tolChain = [];
+			let node: TolNode | null = tolNode;
+			while (node != null){
+				tolChain.push(node.name);
+				node = node.parent;
+			}
+			console.log('ancestry for ' + tolNode.name);
+			console.log(tolChain);
 		},
 		//
 		closeModalsAndSettings(){
@@ -243,6 +273,19 @@ export default defineComponent({
 			if (evt.key == 'Escape'){
 				this.closeModalsAndSettings();
 			}
+		},
+		initLayoutMap(node: LayoutNode): Map<string,LayoutNode> {
+			function helper(node: LayoutNode, map: Map<string,LayoutNode>){
+				map.set(node.tolNode.name, node);
+				node.children.forEach(n => helper(n, map));
+			}
+			let map = new Map();
+			helper(node, map);
+			return map;
+		},
+		removeFromLayoutMap(node: LayoutNode, map: Map<string,LayoutNode>){
+			map.delete(node.tolNode.name);
+			node.children.forEach(n => this.removeFromLayoutMap(n, map));
 		},
 	},
 	created(){
@@ -280,7 +323,7 @@ export default defineComponent({
 		  <circle cx="11" cy="11" r="8"/>
 		  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
 		</svg>
-		<search-modal v-else :layoutTree="layoutTree" :options="componentOptions"
+		<search-modal v-else :layoutTree="layoutTree" :tolMap="tolMap" :options="componentOptions"
 			@search-close="onSearchClose" @search-node="onSearchNode"/>
 	</transition>
 	<settings :isOpen="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
