@@ -210,7 +210,6 @@ export default defineComponent({
 		//
 		onSettingsOpen(){
 			this.settingsOpen = true;
-			this.infoModalNode = null;
 		},
 		onSettingsClose(){
 			this.settingsOpen = false;
@@ -218,13 +217,25 @@ export default defineComponent({
 		onLayoutOptionChange(){
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
+		onKeyUp(evt: KeyboardEvent){
+			if (evt.key == 'Escape'){
+				if (this.settingsOpen){
+					this.settingsOpen = false;
+				}
+				if (this.infoModalNode != null){
+					this.infoModalNode = null;
+				}
+			}
+		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
+		window.addEventListener('keyup', this.onKeyUp);
 		tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 	},
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);
+		window.removeEventListener('keyup', this.onKeyUp);
 	},
 	components: {Tile, ParentBar, TileInfoModal, Settings, },
 });

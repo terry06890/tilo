@@ -38,13 +38,12 @@ export default defineComponent({
 </script>
 
 <template>
-<div :style="{visibility: isOpen ? 'visible' : 'hidden'}"
-	class="fixed left-0 top-0 w-full h-full bg-black/20 overflow-hidden"
+<div class="fixed left-0 top-0 w-full h-full overflow-hidden invisible"
 	@click="closeClicked">
 	<!-- outer div prevents overflow from transitioning to/from off-screen -->
 	<Transition name="slide-bottom-right">
 		<div v-if="isOpen"
-			class="absolute bottom-4 right-4 min-w-[5cm] p-3 bg-stone-50 visible rounded-md shadow-md bg-stone-50">
+			class="absolute bottom-4 right-4 min-w-[5cm] p-3 bg-stone-50 visible rounded-md shadow shadow-black">
 			<div class="absolute top-2 right-2 w-[24px] h-[24px] [font-size:24px] [line-height:24px] text-center
 					font-bold hover:cursor-pointer"
 				@click="closeClicked" ref="closeIcon">&times;</div>

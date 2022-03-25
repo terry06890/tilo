@@ -52,7 +52,8 @@ export default defineComponent({
 
 <template>
 <div :style="transitionStyles" class="fixed left-0 top-0 w-full h-full bg-black/40" @click="closeClicked">
-	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 top-1/2 -translate-y-1/2 p-4 bg-stone-50 rounded-md">
+	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 top-1/2 -translate-y-1/2 p-4
+		bg-stone-50 rounded-md shadow shadow-black">
 		<div class="absolute top-2 right-2 w-[24px] h-[24px] [font-size:24px] [line-height:24px] text-center
 				font-bold hover:cursor-pointer"
 			@click="closeClicked" ref="closeIcon">&times;</div>
