@@ -20,6 +20,18 @@ export default defineComponent({
 		onLayoutOptChg(){
 			this.$emit('layout-option-change');
 		},
+		onMinTileSzChg(){
+			if (Number(this.$refs.minTileSzInput.value) > Number(this.$refs.maxTileSzInput.value)){
+				this.layoutOptions.maxTileSz = this.layoutOptions.minTileSz;
+			}
+			this.onLayoutOptChg();
+		},
+		onMaxTileSzChg(evt){
+			if (Number(this.$refs.maxTileSzInput.value) < Number(this.$refs.minTileSzInput.value)){
+				this.layoutOptions.minTileSz = this.layoutOptions.maxTileSz;
+			}
+			this.onLayoutOptChg();
+		},
 	},
 	emits: ['settings-open', 'settings-close', 'layout-option-change', ],
 });
@@ -41,6 +53,21 @@ export default defineComponent({
 			<div>
 				<label>Tile Spacing <input type="range" min="0" max="20" class="mx-2 w-[3cm]"
 					v-model.number="layoutOptions.tileSpacing" @input="onLayoutOptChg"/></label>
+			</div>
+			<hr class="border-stone-400"/>
+			<div>
+				<label>
+					<span class="inline-block w-[3cm]">Min Tile Size</span>
+					<input type="range" min="0" max="400" v-model.number="layoutOptions.minTileSz" class="w-[3cm]"
+						@input="onMinTileSzChg" ref="minTileSzInput"/>
+				</label>
+			</div>
+			<div>
+				<label>
+					<span class="inline-block w-[3cm]">Max Tile Size</span>
+					<input type="range" min="0" max="400" v-model.number="layoutOptions.maxTileSz" class="w-[3cm]"
+						@input="onMaxTileSzChg" ref="maxTileSzInput"/>
+				</label>
 			</div>
 			<hr class="border-stone-400"/>
 			<div>
@@ -82,10 +109,6 @@ export default defineComponent({
 					</li>
 				</ul>
 			</div>
-			<hr class="border-stone-400"/>
-			<div class="border border-black my-2">Setting 1</div>
-			<div class="border border-black my-2">Setting 2</div>
-			<div class="border border-black my-2">Setting 3</div>
 		</div>
 	</Transition>
 	<Transition name="slide-bottom-right">
