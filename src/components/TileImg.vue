@@ -96,7 +96,8 @@ export default defineComponent({
 	:class="isExpandable ? ['hover:cursor-pointer'] : []">
 	<h1 :style="headerStyles">{{layoutNode.tolNode.name}}</h1>
 	<svg :style="infoIconStyles" class="hover:cursor-pointer"
-		@mouseenter="onInfoMouseEnter" @mouseleave="onInfoMouseLeave" @click.stop="onInfoClick"
+		@mouseenter="onInfoMouseEnter" @mouseleave="onInfoMouseLeave"
+		@click.stop="onInfoClick" @mousedown.stop @mouseup.stop
 		xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 		stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 		<circle cx="12" cy="12" r="10"/>
