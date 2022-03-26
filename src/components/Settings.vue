@@ -39,12 +39,8 @@ export default defineComponent({
 
 <template>
 <div class="absolute bottom-4 right-4 min-w-[5cm] p-3 bg-stone-50 visible rounded-md shadow shadow-black">
-	<svg class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"
-		@click="closeClicked" ref="closeIcon"
-		xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-		stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-		<line x1="18" y1="6" x2="6" y2="18"/>
-		<line x1="6" y1="6" x2="18" y2="18"/>
+	<svg class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer" @click="closeClicked" ref="closeIcon">
+		<use href="#svg-close"/>
 	</svg>
 	<h1 class="text-xl font-bold mb-2">Settings</h1>
 	<hr class="border-stone-400"/>

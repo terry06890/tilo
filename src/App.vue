@@ -12,4 +12,3 @@ export default defineComponent({
 <template>
 <tile-tree/>
 </template>
-
