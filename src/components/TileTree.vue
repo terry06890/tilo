@@ -233,7 +233,7 @@ export default defineComponent({
 		},
 		// For info modal events
 		onInnerInfoIconClicked(node: LayoutNode){
-			this.closeModalsAndSettings();
+			this.closeModesAndSettings();
 			this.infoModalNode = node.tolNode;
 		},
 		onInfoModalClose(){
@@ -241,7 +241,7 @@ export default defineComponent({
 		},
 		//
 		onSettingsIconClick(){
-			this.closeModalsAndSettings();
+			this.closeModesAndSettings();
 			this.settingsOpen = true;
 		},
 		onSettingsClose(){
@@ -252,7 +252,7 @@ export default defineComponent({
 		},
 		//
 		onSearchIconClick(){
-			this.closeModalsAndSettings();
+			this.closeModesAndSettings();
 			this.searchOpen = true;
 		},
 		onSearchClose(){
@@ -260,20 +260,21 @@ export default defineComponent({
 		},
 		onSearchNode(tolNode: TolNode){
 			this.searchOpen = false;
-			this.setLastFocused(null);
 			this.animationActive = true;
 			this.expandToTolNode(tolNode);
 		},
 		//
-		closeModalsAndSettings(){
+		closeModesAndSettings(){
 			this.infoModalNode = null;
 			this.searchOpen = false;
-			this.settingsOpen = false;
 			this.helpOpen = false;
+			this.settingsOpen = false;
+			this.animationActive = false;
+			this.setLastFocused(null);
 		},
 		onKeyUp(evt: KeyboardEvent){
 			if (evt.key == 'Escape'){
-				this.closeModalsAndSettings();
+				this.closeModesAndSettings();
 			} else if (evt.key == 'F' && evt.ctrlKey){
 				if (!this.searchOpen){
 					this.onSearchIconClick();
@@ -337,9 +338,8 @@ export default defineComponent({
 			this.animationActive = false;
 		},
 		onPlayIconClick(){
-			this.closeModalsAndSettings();
+			this.closeModesAndSettings();
 			this.animationActive = true;
-			this.setLastFocused(null);
 			this.autoAction();
 		},
 		autoAction(){
@@ -441,7 +441,7 @@ export default defineComponent({
 			}
 		},
 		onHelpIconClick(){
-			this.closeModalsAndSettings();
+			this.closeModesAndSettings();
 			this.helpOpen = true;
 		},
 		onHelpModalClose(){
