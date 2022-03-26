@@ -366,13 +366,15 @@ export default defineComponent({
 	  <circle cx="11" cy="11" r="8"/>
 	  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
 	</svg>
-	<svg class="absolute top-[6px] right-[30px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
+	<svg
+		class="absolute top-[6px] right-[30px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
 		xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 		stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 		<circle cx="12" cy="12" r="10"/>
 		<polygon points="10 8 16 12 10 16 10 8"/>
 	</svg>
-	<svg class="absolute top-[6px] right-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
+	<svg
+		class="absolute top-[6px] right-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
 		xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 		stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 		<circle cx="12" cy="12" r="10"/>
