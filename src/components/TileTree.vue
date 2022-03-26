@@ -4,6 +4,7 @@ import Tile from './Tile.vue';
 import ParentBar from './ParentBar.vue';
 import TileInfoModal from './TileInfoModal.vue';
 import SearchModal from './SearchModal.vue';
+import HelpModal from './HelpModal.vue';
 import Settings from './Settings.vue';
 import {TolNode, LayoutNode, initLayoutTree, initLayoutMap, tryLayout, randWeightedChoice} from '../lib';
 import type {LayoutOptions} from '../lib';
@@ -96,6 +97,7 @@ export default defineComponent({
 			lastFocused: null as LayoutNode | null,
 			animationActive: false,
 			autoWaitTime: 500, //ms (in auto mode, time to wait after an action ends)
+			helpOpen: false,
 			// Options
 			layoutOptions: {...defaultLayoutOptions},
 			componentOptions: {...defaultComponentOptions},
@@ -433,6 +435,13 @@ export default defineComponent({
 				node.hasFocus = true;
 			}
 		},
+		onHelpIconClick(){
+			this.closeModalsAndSettings();
+			this.helpOpen = true;
+		},
+		onHelpModalClose(){
+			this.helpOpen = false;
+		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
@@ -443,7 +452,7 @@ export default defineComponent({
 		window.removeEventListener('resize', this.onResize);
 		window.removeEventListener('keyup', this.onKeyUp);
 	},
-	components: {Tile, ParentBar, TileInfoModal, Settings, SearchModal, },
+	components: {Tile, ParentBar, TileInfoModal, Settings, SearchModal, HelpModal, },
 });
 </script>
 
@@ -475,7 +484,7 @@ export default defineComponent({
 		<circle cx="12" cy="12" r="10"/>
 		<polygon points="10 8 16 12 10 16 10 8"/>
 	</svg>
-	<svg
+	<svg @click="onHelpIconClick"
 		class="absolute top-[6px] right-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
 		xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 		stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -491,6 +500,9 @@ export default defineComponent({
 	<transition name="fade">
 		<search-modal v-if="searchOpen" :layoutTree="layoutTree" :tolMap="tolMap" :options="componentOptions"
 			@search-close="onSearchClose" @search-node="onSearchNode"/>
+	</transition>
+	<transition name="fade">
+		<help-modal v-if="helpOpen" :options="componentOptions" @help-modal-close="onHelpModalClose"/>
 	</transition>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: animationActive ? 'visible' : 'hidden'}"
