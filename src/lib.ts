@@ -75,7 +75,7 @@ export class LayoutNode {
 	}
 	// Copies render-relevant data to a given LayoutNode tree
 	// If a target node has more/less children, removes/gives own children
-	copyTreeForRender(target: LayoutNode): void {
+	copyTreeForRender(target: LayoutNode, map?: LayoutMap): void {
 		target.pos = this.pos;
 		target.dims = this.dims;
 		target.showHeader = this.showHeader;
@@ -84,12 +84,18 @@ export class LayoutNode {
 		target.empSpc = this.empSpc; // Currently redundant, but maintains data-consistency
 		// Handle children
 		if (this.children.length == target.children.length){
-			this.children.forEach((n,i) => n.copyTreeForRender(target.children[i]));
+			this.children.forEach((n,i) => n.copyTreeForRender(target.children[i], map));
 		} else if (this.children.length < target.children.length){
+			if (map != null){
+				target.children.forEach(child => removeFromLayoutMap(child, map));
+			}
 			target.children = [];
 		} else {
 			target.children = this.children;
 			target.children.forEach(n => {n.parent = target});
+			if (map != null){
+				target.children.forEach(child => {addToLayoutMap(child, map)});
+			}
 		}
 	}
 	// Assigns render-relevant data to this single node
@@ -157,6 +163,8 @@ export class SepSweptArea {
 		return new SepSweptArea([...this.pos], [...this.dims], this.sweptLeft);
 	}
 }
+//
+export type LayoutMap = Map<string, LayoutNode>;
 
 // Creates a LayoutNode representing a TolNode tree, up to a given depth (0 means just the root)
 export function initLayoutTree(tol: TolNode, depth: number): LayoutNode {
@@ -174,10 +182,27 @@ export function initLayoutTree(tol: TolNode, depth: number): LayoutNode {
 	}
 	return initHelper(tol, depth);
 }
+export function initLayoutMap(node: LayoutNode): LayoutMap {
+	function helper(node: LayoutNode, map: LayoutMap){
+		map.set(node.tolNode.name, node);
+		node.children.forEach(n => helper(n, map));
+	}
+	let map = new Map();
+	helper(node, map);
+	return map;
+}
+function removeFromLayoutMap(node: LayoutNode, map: LayoutMap){
+	map.delete(node.tolNode.name);
+	node.children.forEach(n => removeFromLayoutMap(n, map));
+}
+function addToLayoutMap(node: LayoutNode, map: LayoutMap){
+	map.set(node.tolNode.name, node);
+	node.children.forEach(n => addToLayoutMap(n, map));
+}
 // Attempts layout on a LayoutNode's corresponding TolNode tree, for an area with given xy-position and width+height
 // 'allowCollapse' allows the layout algorithm to collapse nodes to avoid layout failure
 // 'chg' allows for performing layout after expanding/collapsing a node
-export function tryLayout(layoutTree: LayoutNode, pos: [number,number], dims: [number,number],
+export function tryLayout(layoutTree: LayoutNode, layoutMap: LayoutMap, pos: [number,number], dims: [number,number],
 	options: LayoutOptions, allowCollapse: boolean = false, chg?: LayoutTreeChg){
 	// Create a new LayoutNode tree, in case of layout failure
 	let tempTree = layoutTree.cloneNodeTree(chg);
@@ -192,7 +217,7 @@ export function tryLayout(layoutTree: LayoutNode, pos: [number,number], dims: [n
 		tempTree.pos[0] += (dims[0] - tempTree.dims[0]) / 2;
 		tempTree.pos[1] += (dims[1] - tempTree.dims[1]) / 2;
 		// Apply to active LayoutNode tree
-		tempTree.copyTreeForRender(layoutTree);
+		tempTree.copyTreeForRender(layoutTree, layoutMap);
 	}
 	return success;
 }

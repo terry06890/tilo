@@ -5,7 +5,7 @@ import ParentBar from './ParentBar.vue';
 import TileInfoModal from './TileInfoModal.vue';
 import SearchModal from './SearchModal.vue';
 import Settings from './Settings.vue';
-import {TolNode, LayoutNode, initLayoutTree, tryLayout} from '../lib';
+import {TolNode, LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from '../lib';
 import type {LayoutOptions} from '../lib';
 // Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
@@ -86,7 +86,7 @@ export default defineComponent({
 		return {
 			layoutTree: layoutTree,
 			activeRoot: layoutTree,
-			layoutMap: this.initLayoutMap(layoutTree), // Maps names to LayoutNode objects
+			layoutMap: initLayoutMap(layoutTree), // Maps names to LayoutNode objects
 			tolMap: tolMap, // Maps names to TolNode objects
 			//
 			infoModalNode: null as TolNode | null, // Hides/unhides info modal, and provides the node to display
@@ -167,7 +167,8 @@ export default defineComponent({
 			if (!this.resizeThrottled){
 				this.width = document.documentElement.clientWidth;
 				this.height = document.documentElement.clientHeight;
-				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+				tryLayout(this.activeRoot, this.layoutMap,
+					this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 				// Prevent re-triggering until after a delay
 				this.resizeThrottled = true;
 				setTimeout(() => {this.resizeThrottled = false;}, this.resizeDelay);
@@ -175,33 +176,25 @@ export default defineComponent({
 		},
 		// For tile expand/collapse events
 		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode?: HTMLElement}){
-			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false,
-				{type: 'expand', node: layoutNode});
-			if (success){
-				layoutNode.children.forEach(n => this.layoutMap.set(n.tolNode.name, n));
-			} else {
-				if (domNode != null){
-					// Trigger failure animation
-					domNode.classList.remove('animate-expand-shrink');
-					domNode.offsetWidth; // Triggers reflow
-					domNode.classList.add('animate-expand-shrink');
-				}
+			let success = tryLayout(this.activeRoot, this.layoutMap,
+				this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false, {type: 'expand', node: layoutNode});
+			if (!success && domNode != null){
+				// Trigger failure animation
+				domNode.classList.remove('animate-expand-shrink');
+				domNode.offsetWidth; // Triggers reflow
+				domNode.classList.add('animate-expand-shrink');
 			}
 			return success;
 		},
 		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode?: HTMLElement}){
 			let oldChildren = layoutNode.children;
-			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false,
-				{type: 'collapse', node: layoutNode});
-			if (success){
-				oldChildren.forEach(n => this.removeFromLayoutMap(n, this.layoutMap));
-			} else {
-				if (domNode != null){
-					// Trigger failure animation
-					domNode.classList.remove('animate-shrink-expand');
-					domNode.offsetWidth; // Triggers reflow
-					domNode.classList.add('animate-shrink-expand');
-				}
+			let success = tryLayout(this.activeRoot, this.layoutMap,
+				this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false, {type: 'collapse', node: layoutNode});
+			if (!success && domNode != null){
+				// Trigger failure animation
+				domNode.classList.remove('animate-shrink-expand');
+				domNode.offsetWidth; // Triggers reflow
+				domNode.classList.add('animate-shrink-expand');
 			}
 			return success;
 		},
@@ -213,8 +206,8 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true,
-				{type: 'expand', node: layoutNode});
+			tryLayout(this.activeRoot, this.layoutMap,
+				this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true, {type: 'expand', node: layoutNode});
 		},
 		onInnerHeaderClickHeld(layoutNode: LayoutNode){
 			if (layoutNode == this.activeRoot){
@@ -223,12 +216,12 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
 		onSepdParentClicked(layoutNode: LayoutNode){
 			LayoutNode.showDownward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(layoutNode, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
 		// For info modal events
 		onInnerInfoIconClicked(node: LayoutNode){
@@ -247,7 +240,7 @@ export default defineComponent({
 			this.settingsOpen = false;
 		},
 		onLayoutOptionChange(){
-			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
 		//
 		onSearchIconClick(){
@@ -276,31 +269,18 @@ export default defineComponent({
 				}
 			}
 		},
-		initLayoutMap(node: LayoutNode): Map<string,LayoutNode> {
-			function helper(node: LayoutNode, map: Map<string,LayoutNode>){
-				map.set(node.tolNode.name, node);
-				node.children.forEach(n => helper(n, map));
-			}
-			let map = new Map();
-			helper(node, map);
-			return map;
-		},
-		removeFromLayoutMap(node: LayoutNode, map: Map<string,LayoutNode>){
-			map.delete(node.tolNode.name);
-			node.children.forEach(n => this.removeFromLayoutMap(n, map));
-		},
 		expandToTolNode(tolNode: TolNode){
 			// Check if searched node is shown
 			if (this.layoutMap.get(tolNode.name) != null){
 				return;
 			}
 			// Get ancestor to expand
-			let ancestor = tolNode.parent;
+			let ancestor = tolNode.parent!;
 			while (this.layoutMap.get(ancestor.name) == null){
-				ancestor = ancestor.parent;
+				ancestor = ancestor.parent!;
 			}
 			// Attempt expansion
-			let layoutNode = this.layoutMap.get(ancestor.name);
+			let layoutNode = this.layoutMap.get(ancestor.name)!;
 			let success = this.onInnerLeafClicked({layoutNode});
 			if (success){
 				console.log('Expanded ' + ancestor.name);
@@ -314,12 +294,12 @@ export default defineComponent({
 				return;
 			}
 			while (true){
-				if (ancestor.parent.name == this.activeRoot.tolNode.name){
+				if (ancestor.parent!.name == this.activeRoot.tolNode.name){
 					break;
 				}
-				ancestor = ancestor.parent;
+				ancestor = ancestor.parent!;
 			}
-			layoutNode = this.layoutMap.get(ancestor.name);
+			layoutNode = this.layoutMap.get(ancestor.name)!;
 			this.onInnerHeaderClickHeld(layoutNode);
 			console.log('Expanded-to-view ' + ancestor.name);
 			setTimeout(() => this.expandToTolNode(tolNode), 300);
@@ -328,7 +308,7 @@ export default defineComponent({
 	created(){
 		window.addEventListener('resize', this.onResize);
 		window.addEventListener('keyup', this.onKeyUp);
-		tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+		tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 	},
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);
