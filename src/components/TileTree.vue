@@ -94,6 +94,7 @@ export default defineComponent({
 			searchOpen: false,
 			settingsOpen: false,
 			lastSearchResult: null as LayoutNode | null,
+			searchActive: false,
 			// Options
 			layoutOptions: {...defaultLayoutOptions},
 			componentOptions: {...defaultComponentOptions},
@@ -257,6 +258,7 @@ export default defineComponent({
 			if (this.lastSearchResult != null){
 				this.lastSearchResult.searchResult = false;
 			}
+			this.searchActive = true;
 			this.expandToTolNode(tolNode);
 		},
 		//
@@ -275,11 +277,15 @@ export default defineComponent({
 			}
 		},
 		expandToTolNode(tolNode: TolNode){
+			if (!this.searchActive){
+				return;
+			}
 			// Check if searched node is shown
 			let layoutNode = this.layoutMap.get(tolNode.name);
 			if (layoutNode != null && !layoutNode.hidden){
 				layoutNode.searchResult = true;
 				this.lastSearchResult = layoutNode;
+				this.searchActive = false;
 				return;
 			}
 			// Get nearest in-layout-tree ancestor
@@ -296,19 +302,20 @@ export default defineComponent({
 					layoutNode = this.layoutMap.get(ancestor.name)!;
 				}
 				this.onSepdParentClicked(layoutNode!);
-				setTimeout(() => this.expandToTolNode(tolNode), 300);
+				setTimeout(() => this.expandToTolNode(tolNode), this.componentOptions.transitionDuration);
 				return;
 			}
 			// Attempt tile-expand
 			let success = this.onInnerLeafClicked({layoutNode});
 			if (success){
-				setTimeout(() => this.expandToTolNode(tolNode), 300);
+				setTimeout(() => this.expandToTolNode(tolNode), this.componentOptions.transitionDuration);
 				return;
 			}
 			// Attempt expand-to-view on ancestor just below activeRoot
 			if (ancestor.name == this.activeRoot.tolNode.name){
 				console.log('Unable to complete search (not enough room to expand active root)');
 					// Happens if screen is very small or node has very many children
+				this.searchActive = false;
 				return;
 			}
 			while (true){
@@ -319,7 +326,10 @@ export default defineComponent({
 			}
 			layoutNode = this.layoutMap.get(ancestor.name)!;
 			this.onInnerHeaderClickHeld(layoutNode);
-			setTimeout(() => this.expandToTolNode(tolNode), 300);
+			setTimeout(() => this.expandToTolNode(tolNode), this.componentOptions.transitionDuration);
+		},
+		onOverlayClick(){
+			this.searchActive = false;
 		},
 	},
 	created(){
@@ -363,6 +373,9 @@ export default defineComponent({
 	<settings :isOpen="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
 		@settings-open="onSettingsOpen" @settings-close="onSettingsClose"
 		@layout-option-change="onLayoutOptionChange"/>
+	<div :style="{visibility: searchActive ? 'visible' : 'hidden'}"
+		class="absolute left-0 top-0 w-full h-full" @click="onOverlayClick"></div>
+		<!-- Used to capture a user clicking during an active search -->
 </div>
 </template>
 
