@@ -53,6 +53,7 @@ const defaultComponentOptions = {
 	borderRadius: 5, //px
 	shadowNormal: '0 0 2px black',
 	shadowHighlight: '0 0 1px 2px greenyellow',
+	shadowSearchResult: '0 0 1px 2px orange',
 	// For leaf and separated-parent components
 	imgTilePadding: 4, //px
 	imgTileFontSz: 15, //px
@@ -92,6 +93,7 @@ export default defineComponent({
 			infoModalNode: null as TolNode | null, // Hides/unhides info modal, and provides the node to display
 			searchOpen: false,
 			settingsOpen: false,
+			lastSearchResult: null as LayoutNode | null,
 			// Options
 			layoutOptions: {...defaultLayoutOptions},
 			componentOptions: {...defaultComponentOptions},
@@ -252,6 +254,9 @@ export default defineComponent({
 		},
 		onSearchNode(tolNode: TolNode){
 			this.searchOpen = false;
+			if (this.lastSearchResult != null){
+				this.lastSearchResult.searchResult = false;
+			}
 			this.expandToTolNode(tolNode);
 		},
 		//
@@ -273,6 +278,8 @@ export default defineComponent({
 			// Check if searched node is shown
 			let layoutNode = this.layoutMap.get(tolNode.name);
 			if (layoutNode != null && !layoutNode.hidden){
+				layoutNode.searchResult = true;
+				this.lastSearchResult = layoutNode;
 				return;
 			}
 			// Get nearest in-layout-tree ancestor
@@ -284,11 +291,11 @@ export default defineComponent({
 			// If hidden, expand ancestor in parent-bar
 			if (layoutNode.hidden){
 				// Get ancestor in parent-bar
-				while (!this.sepdParents.includes(layoutNode)){
-					ancestor = ancestor.parent;
-					layoutNode = this.layoutMap.get(ancestor.name);
+				while (!this.sepdParents!.includes(layoutNode)){
+					ancestor = ancestor.parent!;
+					layoutNode = this.layoutMap.get(ancestor.name)!;
 				}
-				this.onSepdParentClicked(layoutNode);
+				this.onSepdParentClicked(layoutNode!);
 				setTimeout(() => this.expandToTolNode(tolNode), 300);
 				return;
 			}

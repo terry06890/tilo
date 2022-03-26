@@ -35,7 +35,8 @@ export default defineComponent({
 				flexDirection: 'column',
 				// Other
 				borderRadius: this.options.borderRadius + 'px',
-				boxShadow: this.highlight ? this.options.shadowHighlight : this.options.shadowNormal,
+				boxShadow: this.highlight ? this.options.shadowHighlight :
+					(this.layoutNode.searchResult ? this.options.shadowSearchResult : this.options.shadowNormal),
 			};
 		},
 		headerStyles(): Record<string,string> {

@@ -29,6 +29,7 @@ export class LayoutNode {
 	showHeader: boolean;
 	sepSweptArea: SepSweptArea | null;
 	hidden: boolean;
+	searchResult: boolean;
 	// Used for layout heuristics and info display
 	dCount: number; // Number of descendant leaf nodes
 	depth: number; // Number of ancestor nodes
@@ -43,6 +44,7 @@ export class LayoutNode {
 		this.showHeader = false;
 		this.sepSweptArea = null;
 		this.hidden = false;
+		this.searchResult = false;
 		this.dCount = children.length == 0 ? 1 : arraySum(children.map(n => n.dCount));
 		this.depth = 0;
 		this.empSpc = 0;

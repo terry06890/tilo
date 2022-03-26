@@ -62,7 +62,8 @@ export default defineComponent({
 				height: '100%',
 				backgroundColor: this.nonLeafBgColor,
 				borderRadius: this.options.borderRadius + 'px',
-				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight : this.options.shadowNormal,
+				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight :
+					(this.layoutNode.searchResult ? this.options.shadowSearchResult : this.options.shadowNormal),
 			};
 			if (this.layoutNode.sepSweptArea != null){
 				let r = this.options.borderRadius + 'px';
@@ -92,7 +93,8 @@ export default defineComponent({
 			let commonStyles = {
 				position: 'absolute',
 				backgroundColor: this.nonLeafBgColor,
-				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight : this.options.shadowNormal,
+				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight :
+					(this.layoutNode.searchResult ? this.options.shadowSearchResult : this.options.shadowNormal),
 				transitionDuration: this.options.transitionDuration + 'ms',
 				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
