@@ -165,6 +165,8 @@ export default defineComponent({
 				width: '100vw', // Making this dynamic causes white flashes when resizing
 				height: '100vh',
 				backgroundColor: '#292524',
+				// CSS variables
+				'--transitionDuration': this.componentOptions.transitionDuration + 'ms',
 			};
 		},
 	},
@@ -541,7 +543,7 @@ export default defineComponent({
 <style>
 .animate-expand-shrink {
 	animation-name: expand-shrink;
-	animation-duration: 300ms;
+	animation-duration: var(--transitionDuration);
 	animation-iteration-count: 1;
 	animation-timing-function: ease-in-out;
 }
@@ -558,7 +560,7 @@ export default defineComponent({
 }
 .animate-shrink-expand {
 	animation-name: shrink-expand;
-	animation-duration: 300ms;
+	animation-duration: var(--transitionDuration);
 	animation-iteration-count: 1;
 	animation-timing-function: ease-in-out;
 }
@@ -578,7 +580,7 @@ export default defineComponent({
 }
 .fade-enter-active, .fade-leave-active {
 	transition-property: opacity;
-	transition-duration: 300ms;
+	transition-duration: var(--transitionDuration);
 	transition-timing-function: ease-out;
 }
 .slide-bottom-right-enter-from, .slide-bottom-right-leave-to {
@@ -587,7 +589,7 @@ export default defineComponent({
 }
 .slide-bottom-right-enter-active, .slide-bottom-right-leave-active {
 	transition-property: transform, opacity;
-	transition-duration: 300ms;
+	transition-duration: var(--transitionDuration);
 	transition-timing-function: ease-in-out;
 }
 </style>
