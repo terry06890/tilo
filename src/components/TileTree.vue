@@ -355,27 +355,42 @@ export default defineComponent({
 	<parent-bar v-if="sepdParents != null"
 		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
 		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
+	<!-- Settings and Icons -->
+	<settings :isOpen="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
+		@settings-open="onSettingsOpen" @settings-close="onSettingsClose"
+		@layout-option-change="onLayoutOptionChange"/>
+	<svg @click="onSearchIconClick"
+		class="absolute top-[6px] right-[54px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
+		xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+		stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+	  <circle cx="11" cy="11" r="8"/>
+	  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+	</svg>
+	<svg class="absolute top-[6px] right-[30px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
+		xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+		stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<circle cx="12" cy="12" r="10"/>
+		<polygon points="10 8 16 12 10 16 10 8"/>
+	</svg>
+	<svg class="absolute top-[6px] right-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
+		xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+		stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<circle cx="12" cy="12" r="10"/>
+		<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+		<line x1="12" y1="17" x2="12.01" y2="17"/>
+	</svg>
+	<!-- Modals -->
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNode != null" :tolNode="infoModalNode" :options="componentOptions"
 			@info-modal-close="onInfoModalClose"/>
 	</transition>
 	<transition name="fade">
-		<svg v-if="!searchOpen" @click="onSearchIconClick"
-			class="absolute top-[6px] right-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
-			xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-			stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-		  <circle cx="11" cy="11" r="8"/>
-		  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-		</svg>
-		<search-modal v-else :layoutTree="layoutTree" :tolMap="tolMap" :options="componentOptions"
+		<search-modal v-if="searchOpen" :layoutTree="layoutTree" :tolMap="tolMap" :options="componentOptions"
 			@search-close="onSearchClose" @search-node="onSearchNode"/>
 	</transition>
-	<settings :isOpen="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
-		@settings-open="onSettingsOpen" @settings-close="onSettingsClose"
-		@layout-option-change="onLayoutOptionChange"/>
+	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: searchActive ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="onOverlayClick"></div>
-		<!-- Used to capture a user clicking during an active search -->
 </div>
 </template>
 
