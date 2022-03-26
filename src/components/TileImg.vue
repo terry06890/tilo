@@ -36,7 +36,7 @@ export default defineComponent({
 				// Other
 				borderRadius: this.options.borderRadius + 'px',
 				boxShadow: this.highlight ? this.options.shadowHighlight :
-					(this.layoutNode.searchResult ? this.options.shadowSearchResult : this.options.shadowNormal),
+					(this.layoutNode.hasFocus ? this.options.shadowFocused : this.options.shadowNormal),
 			};
 		},
 		headerStyles(): Record<string,string> {

@@ -5,7 +5,7 @@ import ParentBar from './ParentBar.vue';
 import TileInfoModal from './TileInfoModal.vue';
 import SearchModal from './SearchModal.vue';
 import Settings from './Settings.vue';
-import {TolNode, LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from '../lib';
+import {TolNode, LayoutNode, initLayoutTree, initLayoutMap, tryLayout, randWeightedChoice} from '../lib';
 import type {LayoutOptions} from '../lib';
 // Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
@@ -53,7 +53,7 @@ const defaultComponentOptions = {
 	borderRadius: 5, //px
 	shadowNormal: '0 0 2px black',
 	shadowHighlight: '0 0 1px 2px greenyellow',
-	shadowSearchResult: '0 0 1px 2px orange',
+	shadowFocused: '0 0 1px 2px orange',
 	// For leaf and separated-parent components
 	imgTilePadding: 4, //px
 	imgTileFontSz: 15, //px
@@ -93,7 +93,7 @@ export default defineComponent({
 			infoModalNode: null as TolNode | null, // Hides/unhides info modal, and provides the node to display
 			searchOpen: false,
 			settingsOpen: false,
-			lastSearchResult: null as LayoutNode | null,
+			lastFocused: null as LayoutNode | null,
 			animationActive: false,
 			autoWaitTime: 500, //ms (in auto mode, time to wait after an action ends)
 			// Options
@@ -256,9 +256,7 @@ export default defineComponent({
 		},
 		onSearchNode(tolNode: TolNode){
 			this.searchOpen = false;
-			if (this.lastSearchResult != null){
-				this.lastSearchResult.searchResult = false;
-			}
+			this.setLastFocused(null);
 			this.animationActive = true;
 			this.expandToTolNode(tolNode);
 		},
@@ -284,8 +282,7 @@ export default defineComponent({
 			// Check if searched node is shown
 			let layoutNode = this.layoutMap.get(tolNode.name);
 			if (layoutNode != null && !layoutNode.hidden){
-				layoutNode.searchResult = true;
-				this.lastSearchResult = layoutNode;
+				this.setLastFocused(layoutNode);
 				this.animationActive = false;
 				return;
 			}
@@ -335,44 +332,106 @@ export default defineComponent({
 		onPlayIconClick(){
 			this.closeModalsAndSettings();
 			this.animationActive = true;
+			this.setLastFocused(null);
 			this.autoAction();
 		},
 		autoAction(){
 			if (!this.animationActive){
+				this.setLastFocused(null);
 				return;
 			}
-			// Get random LayoutNode
-			let layoutNode: LayoutNode;
-			let keyIdx = Math.floor(Math.random() * this.layoutMap.size);
-			let c = 0;
-			for (let key of this.layoutMap.keys()){
-				if (c == keyIdx){
-					layoutNode = this.layoutMap.get(key)!;
+			if (this.lastFocused == null){
+				// Get random leaf LayoutNode
+				let layoutNode = this.activeRoot;
+				while (layoutNode.children.length > 0){
+					let idx = Math.floor(Math.random() * layoutNode.children.length);
+					layoutNode = layoutNode.children[idx];
 				}
-				c++;
-			}
-			// Perform action
-			layoutNode = layoutNode!; // Hint for typescript
-			if (layoutNode.hidden){
-				// Expand self/ancestor in parent-bar
-				while (!this.sepdParents!.includes(layoutNode)){
-					layoutNode = layoutNode.parent!;
-				}
-				this.onSepdParentClicked(layoutNode);
-			} else if (layoutNode.children.length > 0){
-				if (Math.random() > 0.5){
-					this.onInnerHeaderClicked({layoutNode});
-				} else {
-					this.onInnerHeaderClickHeld(layoutNode);
-				}
+				this.setLastFocused(layoutNode);
+				setTimeout(this.autoAction, this.autoWaitTime);
 			} else {
-				if (Math.random() > 0.5){
-					this.onInnerLeafClicked({layoutNode});
+				// Perform action
+				let node = this.lastFocused;
+				if (node.children.length == 0){
+					const Action = {MoveAcross:0, MoveUpward:1, Expand:2};
+					let actionWeights = [1, 2, 4];
+					// Zero weights for disallowed actions
+					if (node == this.activeRoot || node.parent!.children.length == 1){
+						actionWeights[Action.MoveAcross] = 0;
+					}
+					if (node == this.activeRoot){
+						actionWeights[Action.MoveUpward] = 0;
+					}
+					if (node.tolNode.children.length == 0){
+						actionWeights[Action.Expand] = 0;
+					}
+					let action = randWeightedChoice(actionWeights);
+					switch (action){
+						case Action.MoveAcross:
+							let siblings = node.parent!.children.filter(n => n != node);
+							this.setLastFocused(siblings[Math.floor(Math.random() * siblings.length)]);
+							break;
+						case Action.MoveUpward:
+							this.setLastFocused(node.parent!);
+							break;
+						case Action.Expand:
+							this.onInnerLeafClicked({layoutNode: node});
+							break;
+					}
 				} else {
-					this.onInnerLeafClickHeld(layoutNode);
+					const Action = {MoveAcross:0, MoveDown:1, MoveUp:2, Collapse:3, ExpandToView:4, ExpandParentBar:5};
+					let actionWeights = [1, 2, 1, 1, 1, 1];
+					// Zero weights for disallowed actions
+					if (node == this.activeRoot || node.parent!.children.length == 1){
+						actionWeights[Action.MoveAcross] = 0;
+					}
+					if (node == this.activeRoot){
+						actionWeights[Action.MoveUp] = 0;
+					}
+					if (!node.children.every(n => n.children.length == 0)){
+						actionWeights[Action.Collapse] = 0; // Only collapse if all children are leaves
+					}
+					if (node.parent != this.activeRoot){
+						actionWeights[Action.ExpandToView] = 0; // Only expand-to-view if direct child of activeRoot
+					}
+					if (this.activeRoot.parent == null || node != this.activeRoot){
+						actionWeights[Action.ExpandParentBar] = 0; // Only expand parent-bar if able and activeRoot
+					}
+					let action = randWeightedChoice(actionWeights);
+					switch (action){
+						case Action.MoveAcross:
+							let siblings = node.parent!.children.filter(n => n != node);
+							this.setLastFocused(siblings[Math.floor(Math.random() * siblings.length)]);
+							break;
+						case Action.MoveDown:
+							let idx = Math.floor(Math.random() * node.children.length);
+							this.setLastFocused(node.children[idx]);
+							break;
+						case Action.MoveUp:
+							this.setLastFocused(node.parent!);
+							break;
+						case Action.Collapse:
+							this.onInnerHeaderClicked({layoutNode: node});
+							break;
+						case Action.ExpandToView:
+							this.onInnerHeaderClickHeld(node);
+							break;
+						case Action.ExpandParentBar:
+							this.onSepdParentClicked(node.parent!);
+							break;
+					}
 				}
+				setTimeout(this.autoAction, this.componentOptions.transitionDuration + this.autoWaitTime);
 			}
-			setTimeout(this.autoAction, (this.componentOptions.transitionDuration + this.autoWaitTime));
+		},
+		setLastFocused(node: LayoutNode | null){
+			if (this.lastFocused != null){
+				this.lastFocused.hasFocus = false;
+			}
+			this.lastFocused = node;
+			if (node != null){
+				node.hasFocus = true;
+			}
 		},
 	},
 	created(){

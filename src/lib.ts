@@ -29,7 +29,7 @@ export class LayoutNode {
 	showHeader: boolean;
 	sepSweptArea: SepSweptArea | null;
 	hidden: boolean;
-	searchResult: boolean;
+	hasFocus: boolean;
 	// Used for layout heuristics and info display
 	dCount: number; // Number of descendant leaf nodes
 	depth: number; // Number of ancestor nodes
@@ -44,7 +44,7 @@ export class LayoutNode {
 		this.showHeader = false;
 		this.sepSweptArea = null;
 		this.hidden = false;
-		this.searchResult = false;
+		this.hasFocus = false;
 		this.dCount = children.length == 0 ? 1 : arraySum(children.map(n => n.dCount));
 		this.depth = 0;
 		this.empSpc = 0;
@@ -755,15 +755,15 @@ let sweepLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse
 }
 
 // Returns [0 ... len]
-function range(len: number){
+export function range(len: number){
 	return [...Array(len).keys()];
 }
 // Returns sum of array values
-function arraySum(array: number[]){
+export function arraySum(array: number[]){
 	return array.reduce((x,y) => x+y);
 }
 // Returns array copy with vals clipped to within [min,max], redistributing to compensate (returns null on failure)
-function limitVals(arr: number[], min: number, max: number){
+export function limitVals(arr: number[], min: number, max: number){
 	let vals = [...arr];
 	let clipped = new Array(vals.length).fill(false);
 	let owedChg = 0; // Stores total change made after clipping values
@@ -801,7 +801,7 @@ function limitVals(arr: number[], min: number, max: number){
 }
 // Usable to iterate through possible int arrays with ascending values in the range 0 to maxLen-1, starting with [0]
 	// eg: With maxLen 3, updates [0] to [0,1], then to [0,2], then [0,1,2], then null
-function updateAscSeq(seq: number[], maxLen: number){
+export function updateAscSeq(seq: number[], maxLen: number){
 	// Try increasing last element, then preceding elements, then extending the array
 	let i = seq.length - 1;
 	while (true){
@@ -818,6 +818,21 @@ function updateAscSeq(seq: number[], maxLen: number){
 			} else {
 				return false;
 			}
+		}
+	}
+}
+// Given an array of positive weights, returns a array index chosen with weighted pseudorandomness
+export function randWeightedChoice(weights: number[]){
+	let thresholds = Array(weights.length);
+	let sum = 0;
+	for (let i = 0; i < weights.length; i++){
+		sum += weights[i];
+		thresholds[i] = sum;
+	}
+	let rand = Math.random();
+	for (let i = 0; i < weights.length; i++){
+		if (rand <= thresholds[i] / sum){
+			return i;
 		}
 	}
 }

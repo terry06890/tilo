@@ -63,7 +63,7 @@ export default defineComponent({
 				backgroundColor: this.nonLeafBgColor,
 				borderRadius: this.options.borderRadius + 'px',
 				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight :
-					(this.layoutNode.searchResult ? this.options.shadowSearchResult : this.options.shadowNormal),
+					(this.layoutNode.hasFocus ? this.options.shadowFocused : this.options.shadowNormal),
 			};
 			if (this.layoutNode.sepSweptArea != null){
 				let r = this.options.borderRadius + 'px';
@@ -94,7 +94,7 @@ export default defineComponent({
 				position: 'absolute',
 				backgroundColor: this.nonLeafBgColor,
 				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight :
-					(this.layoutNode.searchResult ? this.options.shadowSearchResult : this.options.shadowNormal),
+					(this.layoutNode.hasFocus ? this.options.shadowFocused : this.options.shadowNormal),
 				transitionDuration: this.options.transitionDuration + 'ms',
 				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
