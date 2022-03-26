@@ -27,6 +27,9 @@ export default defineComponent({
 				this.$emit('search-node', tolNode);
 			}
 		},
+		focusInput(){
+			(this.$refs.searchInput as HTMLInputElement).focus();
+		},
 	},
 	mounted(){
 		(this.$refs.searchInput as HTMLInputElement).focus();

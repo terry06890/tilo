@@ -277,6 +277,8 @@ export default defineComponent({
 			} else if (evt.key == 'F' && evt.ctrlKey){
 				if (!this.searchOpen){
 					this.onSearchIconClick();
+				} else {
+					this.$refs.searchModal.focusInput();
 				}
 			}
 		},
@@ -529,7 +531,7 @@ export default defineComponent({
 	</transition>
 	<transition name="fade">
 		<search-modal v-if="searchOpen" :layoutTree="layoutTree" :tolMap="tolMap" :options="componentOptions"
-			@search-close="onSearchClose" @search-node="onSearchNode"/>
+			@search-close="onSearchClose" @search-node="onSearchNode" ref="searchModal"/>
 	</transition>
 	<transition name="fade">
 		<help-modal v-if="helpOpen" :options="componentOptions" @help-modal-close="onHelpModalClose"/>
