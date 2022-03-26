@@ -271,23 +271,34 @@ export default defineComponent({
 		},
 		expandToTolNode(tolNode: TolNode){
 			// Check if searched node is shown
-			if (this.layoutMap.get(tolNode.name) != null){
+			let layoutNode = this.layoutMap.get(tolNode.name);
+			if (layoutNode != null && !layoutNode.hidden){
 				return;
 			}
-			// Get ancestor to expand
-			let ancestor = tolNode.parent!;
+			// Get nearest in-layout-tree ancestor
+			let ancestor = tolNode;
 			while (this.layoutMap.get(ancestor.name) == null){
 				ancestor = ancestor.parent!;
 			}
-			// Attempt expansion
-			let layoutNode = this.layoutMap.get(ancestor.name)!;
-			let success = this.onInnerLeafClicked({layoutNode});
-			if (success){
-				console.log('Expanded ' + ancestor.name);
+			layoutNode = this.layoutMap.get(ancestor.name)!;
+			// If hidden, expand ancestor in parent-bar
+			if (layoutNode.hidden){
+				// Get ancestor in parent-bar
+				while (!this.sepdParents.includes(layoutNode)){
+					ancestor = ancestor.parent;
+					layoutNode = this.layoutMap.get(ancestor.name);
+				}
+				this.onSepdParentClicked(layoutNode);
 				setTimeout(() => this.expandToTolNode(tolNode), 300);
 				return;
 			}
-			// Expand-to-view an ancestor just below the activeRoot
+			// Attempt tile-expand
+			let success = this.onInnerLeafClicked({layoutNode});
+			if (success){
+				setTimeout(() => this.expandToTolNode(tolNode), 300);
+				return;
+			}
+			// Attempt expand-to-view on ancestor just below activeRoot
 			if (ancestor.name == this.activeRoot.tolNode.name){
 				console.log('Unable to complete search (not enough room to expand active root)');
 					// Happens if screen is very small or node has very many children
@@ -301,7 +312,6 @@ export default defineComponent({
 			}
 			layoutNode = this.layoutMap.get(ancestor.name)!;
 			this.onInnerHeaderClickHeld(layoutNode);
-			console.log('Expanded-to-view ' + ancestor.name);
 			setTimeout(() => this.expandToTolNode(tolNode), 300);
 		},
 	},
