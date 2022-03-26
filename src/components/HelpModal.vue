@@ -7,7 +7,7 @@ export default defineComponent({
 	},
 	methods: {
 		closeClicked(evt: Event){
-			if (evt.target == this.$el || evt.target == this.$refs.closeIcon){
+			if (evt.target == this.$el || this.$refs.closeIcon.contains(evt.target)){
 				this.$emit('help-modal-close');
 			}
 		},
@@ -20,7 +20,7 @@ export default defineComponent({
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="closeClicked">
 	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 top-1/2 -translate-y-1/2 p-4
 		bg-stone-50 rounded-md shadow shadow-black">
-		<svg class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer" @click="closeClicked" ref="closeIcon">
+		<svg class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer" @click.stop="closeClicked" ref="closeIcon">
 			<use href="#svg-close"/>
 		</svg>
 		<h1 class="text-center text-xl font-bold mb-2">Help Info</h1>

@@ -44,7 +44,7 @@ export default defineComponent({
 		bg-stone-50 rounded-md shadow shadow-black flex gap-1">
 		<input type="text" class="block border"
 			@keyup.enter="onSearchEnter" @keyup.esc="closeClicked" ref="searchInput"/>
-		<svg class="block w-6 h-6 ml-1 hover:cursor-pointer hover:bg-stone-200" @click="onSearchEnter">
+		<svg class="block w-6 h-6 ml-1 hover:cursor-pointer hover:bg-stone-200" @click.stop="onSearchEnter">
 			<use href="#svg-search"/>
 		</svg>
 	</div>

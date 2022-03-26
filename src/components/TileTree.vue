@@ -471,7 +471,7 @@ export default defineComponent({
 		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
 	<!-- Settings -->
 		<!-- outer div prevents overflow from transitioning to/from off-screen -->
-	<div class="fixed left-0 top-0 w-full h-full overflow-hidden invisible" @click="closeClicked">
+	<div class="fixed left-0 top-0 w-full h-full overflow-hidden invisible">
 		<transition name="slide-bottom-right">
 			<settings v-if="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
 				@settings-close="onSettingsClose" @layout-option-change="onLayoutOptionChange"/>
