@@ -94,7 +94,8 @@ export default defineComponent({
 			searchOpen: false,
 			settingsOpen: false,
 			lastSearchResult: null as LayoutNode | null,
-			searchActive: false,
+			animationActive: false,
+			autoWaitTime: 500, //ms (in auto mode, time to wait after an action ends)
 			// Options
 			layoutOptions: {...defaultLayoutOptions},
 			componentOptions: {...defaultComponentOptions},
@@ -258,7 +259,7 @@ export default defineComponent({
 			if (this.lastSearchResult != null){
 				this.lastSearchResult.searchResult = false;
 			}
-			this.searchActive = true;
+			this.animationActive = true;
 			this.expandToTolNode(tolNode);
 		},
 		//
@@ -277,7 +278,7 @@ export default defineComponent({
 			}
 		},
 		expandToTolNode(tolNode: TolNode){
-			if (!this.searchActive){
+			if (!this.animationActive){
 				return;
 			}
 			// Check if searched node is shown
@@ -285,7 +286,7 @@ export default defineComponent({
 			if (layoutNode != null && !layoutNode.hidden){
 				layoutNode.searchResult = true;
 				this.lastSearchResult = layoutNode;
-				this.searchActive = false;
+				this.animationActive = false;
 				return;
 			}
 			// Get nearest in-layout-tree ancestor
@@ -296,7 +297,7 @@ export default defineComponent({
 			layoutNode = this.layoutMap.get(ancestor.name)!;
 			// If hidden, expand ancestor in parent-bar
 			if (layoutNode.hidden){
-				// Get ancestor in parent-bar
+				// Get self/ancestor in parent-bar
 				while (!this.sepdParents!.includes(layoutNode)){
 					ancestor = ancestor.parent!;
 					layoutNode = this.layoutMap.get(ancestor.name)!;
@@ -315,7 +316,7 @@ export default defineComponent({
 			if (ancestor.name == this.activeRoot.tolNode.name){
 				console.log('Unable to complete search (not enough room to expand active root)');
 					// Happens if screen is very small or node has very many children
-				this.searchActive = false;
+				this.animationActive = false;
 				return;
 			}
 			while (true){
@@ -329,7 +330,49 @@ export default defineComponent({
 			setTimeout(() => this.expandToTolNode(tolNode), this.componentOptions.transitionDuration);
 		},
 		onOverlayClick(){
-			this.searchActive = false;
+			this.animationActive = false;
+		},
+		onPlayIconClick(){
+			this.closeModalsAndSettings();
+			this.animationActive = true;
+			this.autoAction();
+		},
+		autoAction(){
+			if (!this.animationActive){
+				return;
+			}
+			// Get random LayoutNode
+			let layoutNode: LayoutNode;
+			let keyIdx = Math.floor(Math.random() * this.layoutMap.size);
+			let c = 0;
+			for (let key of this.layoutMap.keys()){
+				if (c == keyIdx){
+					layoutNode = this.layoutMap.get(key)!;
+				}
+				c++;
+			}
+			// Perform action
+			layoutNode = layoutNode!; // Hint for typescript
+			if (layoutNode.hidden){
+				// Expand self/ancestor in parent-bar
+				while (!this.sepdParents!.includes(layoutNode)){
+					layoutNode = layoutNode.parent!;
+				}
+				this.onSepdParentClicked(layoutNode);
+			} else if (layoutNode.children.length > 0){
+				if (Math.random() > 0.5){
+					this.onInnerHeaderClicked({layoutNode});
+				} else {
+					this.onInnerHeaderClickHeld(layoutNode);
+				}
+			} else {
+				if (Math.random() > 0.5){
+					this.onInnerLeafClicked({layoutNode});
+				} else {
+					this.onInnerLeafClickHeld(layoutNode);
+				}
+			}
+			setTimeout(this.autoAction, (this.componentOptions.transitionDuration + this.autoWaitTime));
 		},
 	},
 	created(){
@@ -366,7 +409,7 @@ export default defineComponent({
 	  <circle cx="11" cy="11" r="8"/>
 	  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
 	</svg>
-	<svg
+	<svg @click="onPlayIconClick"
 		class="absolute top-[6px] right-[30px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
 		xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 		stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -391,7 +434,7 @@ export default defineComponent({
 			@search-close="onSearchClose" @search-node="onSearchNode"/>
 	</transition>
 	<!-- Overlay used to prevent interaction and capture clicks -->
-	<div :style="{visibility: searchActive ? 'visible' : 'hidden'}"
+	<div :style="{visibility: animationActive ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="onOverlayClick"></div>
 </div>
 </template>
