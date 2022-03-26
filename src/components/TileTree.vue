@@ -238,7 +238,7 @@ export default defineComponent({
 			this.infoModalNode = null;
 		},
 		//
-		onSettingsOpen(){
+		onSettingsIconClick(){
 			this.closeModalsAndSettings();
 			this.settingsOpen = true;
 		},
@@ -267,6 +267,7 @@ export default defineComponent({
 			this.infoModalNode = null;
 			this.searchOpen = false;
 			this.settingsOpen = false;
+			this.helpOpen = false;
 		},
 		onKeyUp(evt: KeyboardEvent){
 			if (evt.key == 'Escape'){
@@ -466,10 +467,37 @@ export default defineComponent({
 	<parent-bar v-if="sepdParents != null"
 		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
 		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
-	<!-- Settings and Icons -->
-	<settings :isOpen="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
-		@settings-open="onSettingsOpen" @settings-close="onSettingsClose"
-		@layout-option-change="onLayoutOptionChange"/>
+	<!-- Settings -->
+		<!-- outer div prevents overflow from transitioning to/from off-screen -->
+	<div class="fixed left-0 top-0 w-full h-full overflow-hidden invisible" @click="closeClicked">
+		<transition name="slide-bottom-right">
+			<settings v-if="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
+				@settings-close="onSettingsClose" @layout-option-change="onLayoutOptionChange"/>
+			<!-- outer div prevents transition interference with inner rotate -->
+			<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px]">
+				<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
+					bg-black text-white hover:cursor-pointer" @click="onSettingsIconClick">
+					<svg class="w-6 h-6 mx-auto mt-2"
+						xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="3"/>
+						<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0
+							0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2
+							2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0
+							0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65
+							1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1
+							2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2
+							0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65
+							1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0
+							1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0
+							2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2
+							2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+					</svg>
+				</div>
+			</div>
+		</transition>
+	</div>
+	<!-- Icons -->
 	<svg @click="onSearchIconClick"
 		class="absolute top-[6px] right-[54px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
 		xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -552,5 +580,14 @@ export default defineComponent({
 	transition-property: opacity;
 	transition-duration: 300ms;
 	transition-timing-function: ease-out;
+}
+.slide-bottom-right-enter-from, .slide-bottom-right-leave-to {
+	transform: translate(100%, 100%);
+	opacity: 0;
+}
+.slide-bottom-right-enter-active, .slide-bottom-right-leave-active {
+	transition-property: transform, opacity;
+	transition-duration: 300ms;
+	transition-timing-function: ease-in-out;
 }
 </style>
