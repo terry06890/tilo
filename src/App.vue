@@ -182,26 +182,20 @@ export default defineComponent({
 			}
 		},
 		// For tile expand/collapse events
-		onInnerLeafClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode?: HTMLElement}){
+		onInnerLeafClicked({layoutNode, failCallback}: {layoutNode: LayoutNode, failCallback?: () => void}){
 			let success = tryLayout(this.activeRoot, this.layoutMap,
 				this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false, {type: 'expand', node: layoutNode});
-			if (!success && domNode != null){
-				// Trigger failure animation
-				domNode.classList.remove('animate-expand-shrink');
-				domNode.offsetWidth; // Triggers reflow
-				domNode.classList.add('animate-expand-shrink');
+			if (!success && failCallback != null){
+				failCallback();
 			}
 			return success;
 		},
-		onInnerHeaderClicked({layoutNode, domNode}: {layoutNode: LayoutNode, domNode?: HTMLElement}){
+		onInnerHeaderClicked({layoutNode, failCallback}: {layoutNode: LayoutNode, failCallback?: () => void}){
 			let oldChildren = layoutNode.children;
 			let success = tryLayout(this.activeRoot, this.layoutMap,
 				this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false, {type: 'collapse', node: layoutNode});
-			if (!success && domNode != null){
-				// Trigger failure animation
-				domNode.classList.remove('animate-shrink-expand');
-				domNode.offsetWidth; // Triggers reflow
-				domNode.classList.add('animate-shrink-expand');
+			if (!success && failCallback != null){
+				failCallback();
 			}
 			return success;
 		},

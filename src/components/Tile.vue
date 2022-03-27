@@ -16,8 +16,7 @@ export default defineComponent({
 		return {
 			nonLeafHighlight: false,
 			clickHoldTimer: 0, // Used to recognise a click-and-hold event
-			zIdx: 0, // Used during transitions
-			overflow: 'visible', // Used during transitions
+			animating: false, // Used to prevent content overlap and overflow during transitions
 		}
 	},
 	computed: {
@@ -46,8 +45,8 @@ export default defineComponent({
 				visibility: this.layoutNode.hidden ? 'hidden' : 'visible',
 				// Other bindings
 				transitionDuration: this.options.transitionDuration + 'ms',
-				zIndex: String(this.zIdx),
-				overflow: String(this.overflow),
+				zIndex: this.animating ? '1' : '0',
+				overflow: this.animating && !this.isLeaf ? 'hidden' : 'visible',
 				// Static styles
 				transitionProperty: 'left, top, width, height, visibility',
 				transitionTimingFunction: 'ease-out',
@@ -62,8 +61,8 @@ export default defineComponent({
 				height: '100%',
 				backgroundColor: this.nonLeafBgColor,
 				borderRadius: this.options.borderRadius + 'px',
-				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight :
-					(this.layoutNode.hasFocus ? this.options.shadowFocused : this.options.shadowNormal),
+				boxShadow: this.animating ? 'none' : (this.nonLeafHighlight ? this.options.shadowHighlight :
+					(this.layoutNode.hasFocus ? this.options.shadowFocused : this.options.shadowNormal)),
 			};
 			if (this.layoutNode.sepSweptArea != null){
 				let r = this.options.borderRadius + 'px';
@@ -93,8 +92,8 @@ export default defineComponent({
 			let commonStyles = {
 				position: 'absolute',
 				backgroundColor: this.nonLeafBgColor,
-				boxShadow: this.nonLeafHighlight ? this.options.shadowHighlight :
-					(this.layoutNode.hasFocus ? this.options.shadowFocused : this.options.shadowNormal),
+				boxShadow: this.animating ? 'none' : (this.nonLeafHighlight ? this.options.shadowHighlight :
+					(this.layoutNode.hasFocus ? this.options.shadowFocused : this.options.shadowNormal)),
 				transitionDuration: this.options.transitionDuration + 'ms',
 				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
@@ -143,21 +142,19 @@ export default defineComponent({
 				console.log('Ignored click on non-expandable node');
 				return;
 			}
-			this.$emit('leaf-clicked', {layoutNode: this.layoutNode, domNode: this.$el});
-			this.leafPrepTransition();
+			this.prepForTransition();
+			this.$emit('leaf-clicked', {
+				layoutNode: this.layoutNode,
+				failCallback: () => {this.triggerAnimation('animate-expand-shrink')}
+			});
 		},
 		onLeafClickHold(){
 			if (!this.isExpandable){
 				console.log('Ignored click-hold on non-expandable node');
 				return;
 			}
+			this.prepForTransition();
 			this.$emit('leaf-click-held', this.layoutNode);
-			this.leafPrepTransition();
-		},
-		leafPrepTransition(){ // Temporary style changes to prevent content overlap and overflow
-			this.zIdx = 1;
-			this.overflow = 'hidden';
-			setTimeout(() => {this.zIdx = 0; this.overflow = 'visible';}, this.options.transitionDuration);
 		},
 		// Non-leaf click handling
 		onHeaderMouseDown(){
@@ -176,16 +173,19 @@ export default defineComponent({
 			}
 		},
 		onHeaderClick(){
-			this.$emit('header-clicked', {layoutNode: this.layoutNode, domNode: this.$el});
-			this.nonLeafPrepForTransition();
+			this.prepForTransition();
+			this.$emit('header-clicked', {
+				layoutNode: this.layoutNode,
+				failCallback: () => {this.triggerAnimation('animate-shrink-expand')}
+			});
 		},
 		onHeaderClickHold(){
+			this.prepForTransition();
 			this.$emit('header-click-held', this.layoutNode);
-			this.nonLeafPrepForTransition();
 		},
-		nonLeafPrepForTransition(){ // Temporary style changes to prevent content overlap and overflow
-			this.zIdx = 1;
-			setTimeout(() => {this.zIdx = 0}, this.options.transitionDuration);
+		prepForTransition(){
+			this.animating = true;
+			setTimeout(() => {this.animating = false}, this.options.transitionDuration);
 		},
 		// For coloured-outlines on hovered-over leaf-tiles or non-leaf-headers
 		onNonLeafMouseEnter(evt: Event){
@@ -195,10 +195,10 @@ export default defineComponent({
 			this.nonLeafHighlight = false;
 		},
 		// Child event propagation
-		onInnerLeafClicked(data: {layoutNode: LayoutNode, domNode: HTMLElement}){
+		onInnerLeafClicked(data: {layoutNode: LayoutNode, failCallback: () => void}){
 			this.$emit('leaf-clicked', data);
 		},
-		onInnerHeaderClicked(data: {layoutNode: LayoutNode, domNode: HTMLElement}){
+		onInnerHeaderClicked(data: {layoutNode: LayoutNode, failCallback: () => void}){
 			this.$emit('header-clicked', data);
 		},
 		onInnerLeafClickHeld(data: LayoutNode){
@@ -209,7 +209,13 @@ export default defineComponent({
 		},
 		onInnerInfoIconClicked(data: LayoutNode){
 			this.$emit('info-icon-clicked', data);
-		}
+		},
+		//
+		triggerAnimation(animationClass: string){
+			this.$el.classList.remove(animationClass);
+			this.$el.offsetWidth; // Triggers reflow
+			this.$el.classList.add(animationClass);
+		},
 	},
 	name: 'tile', // Need this to use self in template
 	components: {
