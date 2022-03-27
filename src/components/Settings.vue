@@ -83,6 +83,11 @@ export default defineComponent({
 	</div>
 	<hr class="border-stone-400"/>
 	<div>
+		<label> <input type="checkbox" v-model="layoutOptions.sweepingToParent"
+			@change="onLayoutOptChg"/> Sweep to parent</label>
+	</div>
+	<hr class="border-stone-400"/>
+	<div>
 		Sweep Mode
 		<ul>
 			<li>
