@@ -98,7 +98,7 @@ function getReverseAction(action: Action): Action | null {
 		case 'expand to view':
 			return 'expand parent bar';
 		case 'expand parent bar':
-			return 'expand';
+			return 'expand to view';
 	}
 }
 
@@ -430,11 +430,12 @@ export default defineComponent({
 				switch (action){
 					case 'move across':
 						let siblings = node.parent!.children.filter(n => n != node);
-						this.setLastFocused(siblings[Math.floor(Math.random() * siblings.length)]);
+						let siblingWeights = siblings.map(n => n.dCount + 1);
+						this.setLastFocused(siblings[randWeightedChoice(siblingWeights)]);
 						break;
 					case 'move down':
-						let idx = Math.floor(Math.random() * node.children.length);
-						this.setLastFocused(node.children[idx]);
+						let childWeights = node.children.map(n => n.dCount + 1);
+						this.setLastFocused(node.children[randWeightedChoice(childWeights)]);
 						break;
 					case 'move up':
 						this.setLastFocused(node.parent!);
