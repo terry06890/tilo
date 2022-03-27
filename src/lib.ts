@@ -30,6 +30,8 @@ export class LayoutNode {
 	sepSweptArea: SepSweptArea | null;
 	hidden: boolean;
 	hasFocus: boolean;
+	collapseFailFlag: boolean; // Used to trigger failure animations
+	expandFailFlag: boolean; // Used to trigger failure animations
 	// Used for layout heuristics and info display
 	dCount: number; // Number of descendant leaf nodes
 	depth: number; // Number of ancestor nodes
@@ -45,6 +47,8 @@ export class LayoutNode {
 		this.sepSweptArea = null;
 		this.hidden = false;
 		this.hasFocus = false;
+		this.collapseFailFlag = false;
+		this.expandFailFlag = false;
 		this.dCount = children.length == 0 ? 1 : arraySum(children.map(n => n.dCount));
 		this.depth = 0;
 		this.empSpc = 0;

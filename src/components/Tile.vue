@@ -120,6 +120,20 @@ export default defineComponent({
 				};
 			}
 		},
+		collapseFailFlag(){
+			return this.layoutNode.collapseFailFlag;
+		},
+		expandFailFlag(){
+			return this.layoutNode.expandFailFlag;
+		},
+	},
+	watch: {
+		expandFailFlag(newVal){
+			this.triggerAnimation('animate-expand-shrink');
+		},
+		collapseFailFlag(newVal){
+			this.triggerAnimation('animate-shrink-expand');
+		},
 	},
 	methods: {
 		// Leaf click handling
@@ -143,10 +157,7 @@ export default defineComponent({
 				return;
 			}
 			this.prepForTransition();
-			this.$emit('leaf-clicked', {
-				layoutNode: this.layoutNode,
-				failCallback: () => {this.triggerAnimation('animate-expand-shrink')}
-			});
+			this.$emit('leaf-clicked', this.layoutNode);
 		},
 		onLeafClickHold(){
 			if (!this.isExpandable){
@@ -174,10 +185,7 @@ export default defineComponent({
 		},
 		onHeaderClick(){
 			this.prepForTransition();
-			this.$emit('header-clicked', {
-				layoutNode: this.layoutNode,
-				failCallback: () => {this.triggerAnimation('animate-shrink-expand')}
-			});
+			this.$emit('header-clicked', this.layoutNode);
 		},
 		onHeaderClickHold(){
 			this.prepForTransition();
@@ -195,10 +203,10 @@ export default defineComponent({
 			this.nonLeafHighlight = false;
 		},
 		// Child event propagation
-		onInnerLeafClicked(data: {layoutNode: LayoutNode, failCallback: () => void}){
+		onInnerLeafClicked(data: LayoutNode){
 			this.$emit('leaf-clicked', data);
 		},
-		onInnerHeaderClicked(data: {layoutNode: LayoutNode, failCallback: () => void}){
+		onInnerHeaderClicked(data: LayoutNode){
 			this.$emit('header-clicked', data);
 		},
 		onInnerLeafClickHeld(data: LayoutNode){

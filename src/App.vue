@@ -120,6 +120,7 @@ export default defineComponent({
 			animationActive: false,
 			autoWaitTime: 500, //ms (in auto mode, time to wait after an action ends)
 			autoPrevAction: null as Action | null, // Used in auto-mode for reducing action cycles
+			autoPrevActionFail: false, // Used in auto-mode to avoid re-trying a failed expand/collapse
 			helpOpen: false,
 			// Options
 			layoutOptions: {...defaultLayoutOptions},
@@ -205,20 +206,20 @@ export default defineComponent({
 			}
 		},
 		// For tile expand/collapse events
-		onInnerLeafClicked({layoutNode, failCallback}: {layoutNode: LayoutNode, failCallback?: () => void}){
+		onInnerLeafClicked(layoutNode: LayoutNode){
 			let success = tryLayout(this.activeRoot, this.layoutMap,
 				this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false, {type: 'expand', node: layoutNode});
-			if (!success && failCallback != null){
-				failCallback();
+			if (!success){
+				layoutNode.expandFailFlag = !layoutNode.expandFailFlag; // Triggers failure animation
 			}
 			return success;
 		},
-		onInnerHeaderClicked({layoutNode, failCallback}: {layoutNode: LayoutNode, failCallback?: () => void}){
+		onInnerHeaderClicked(layoutNode: LayoutNode){
 			let oldChildren = layoutNode.children;
 			let success = tryLayout(this.activeRoot, this.layoutMap,
 				this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false, {type: 'collapse', node: layoutNode});
-			if (!success && failCallback != null){
-				failCallback();
+			if (!success){
+				layoutNode.collapseFailFlag = !layoutNode.collapseFailFlag; // Triggers failure animation
 			}
 			return success;
 		},
@@ -328,7 +329,7 @@ export default defineComponent({
 				return;
 			}
 			// Attempt tile-expand
-			let success = this.onInnerLeafClicked({layoutNode});
+			let success = this.onInnerLeafClicked(layoutNode);
 			if (success){
 				setTimeout(() => this.expandToTolNode(tolNode), this.componentOptions.transitionDuration);
 				return;
@@ -393,7 +394,7 @@ export default defineComponent({
 				} else {
 					actionWeights = {
 						'move across': 1, 'move down': 2, 'move up': 1,
-						'collapse': 1, 'expand to view': 1, 'expand parent bar': 1
+						'collapse': 1, 'expand to view': 0.5, 'expand parent bar': 0.5
 					};
 					// Zero weights for disallowed actions
 					if (node == this.activeRoot || node.parent!.children.length == 1){
@@ -417,6 +418,9 @@ export default defineComponent({
 					if (revAction != null && revAction in actionWeights){
 						actionWeights[revAction as keyof typeof actionWeights] = 0;
 					}
+					if (this.autoPrevActionFail){
+						actionWeights[this.autoPrevAction as keyof typeof actionWeights] = 0;
+					}
 				}
 				// Choose action
 				let actionList = Object.getOwnPropertyNames(actionWeights);
@@ -427,24 +431,25 @@ export default defineComponent({
 					action = actionList[randWeightedChoice(weightList)!] as Action;
 				}
 				// Perform action
+				this.autoPrevActionFail = false;
 				switch (action){
 					case 'move across':
 						let siblings = node.parent!.children.filter(n => n != node);
 						let siblingWeights = siblings.map(n => n.dCount + 1);
-						this.setLastFocused(siblings[randWeightedChoice(siblingWeights)]);
+						this.setLastFocused(siblings[randWeightedChoice(siblingWeights)!]);
 						break;
 					case 'move down':
 						let childWeights = node.children.map(n => n.dCount + 1);
-						this.setLastFocused(node.children[randWeightedChoice(childWeights)]);
+						this.setLastFocused(node.children[randWeightedChoice(childWeights)!]);
 						break;
 					case 'move up':
 						this.setLastFocused(node.parent!);
 						break;
 					case 'expand':
-						this.onInnerLeafClicked({layoutNode: node});
+						this.autoPrevActionFail = !this.onInnerLeafClicked(node);
 						break;
 					case 'collapse':
-						this.onInnerHeaderClicked({layoutNode: node});
+						this.autoPrevActionFail = !this.onInnerHeaderClicked(node);
 						break;
 					case 'expand to view':
 						this.onInnerHeaderClickHeld(node);
