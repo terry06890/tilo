@@ -849,8 +849,9 @@ export function updateAscSeq(seq: number[], maxLen: number){
 		}
 	}
 }
-// Given an array of positive weights, returns a array index chosen with weighted pseudorandomness
-export function randWeightedChoice(weights: number[]){
+// Given a non-empty array of non-negative weights, returns an array index chosen with weighted pseudorandomness
+// Returns null if array contains all zeros
+export function randWeightedChoice(weights: number[]): number | null {
 	let thresholds = Array(weights.length);
 	let sum = 0;
 	for (let i = 0; i < weights.length; i++){
@@ -863,4 +864,5 @@ export function randWeightedChoice(weights: number[]){
 			return i;
 		}
 	}
+	return null;
 }

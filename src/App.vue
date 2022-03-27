@@ -6,7 +6,7 @@ import TileInfoModal from './components/TileInfoModal.vue';
 import SearchModal from './components/SearchModal.vue';
 import HelpModal from './components/HelpModal.vue';
 import Settings from './components/Settings.vue';
-import {TolNode, LayoutNode, initLayoutTree, initLayoutMap, tryLayout, randWeightedChoice} from './lib';
+import {TolNode, LayoutNode, initLayoutTree, initLayoutMap, tryLayout, arraySum, randWeightedChoice} from './lib';
 import type {LayoutOptions} from './lib';
 // Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
@@ -80,6 +80,28 @@ const defaultOwnOptions = {
 	parentBarSz: defaultLayoutOptions.minTileSz * 2, //px (breadth of separated-parents area)
 };
 
+// Type representing auto-mode actions
+type Action = 'move across' | 'move down' | 'move up' | 'expand' | 'collapse' | 'expand to view' | 'expand parent bar';
+// Used in auto-mode to help avoid action cycles
+function getReverseAction(action: Action): Action | null {
+	switch (action){
+		case 'move across':
+			return null;
+		case 'move down':
+			return 'move up';
+		case 'move up':
+			return 'move down';
+		case 'expand':
+			return 'collapse';
+		case 'collapse':
+			return 'expand';
+		case 'expand to view':
+			return 'expand parent bar';
+		case 'expand parent bar':
+			return 'expand';
+	}
+}
+
 // Holds a tree structure representing a subtree of 'tol' to be rendered
 // Collects events about tile expansion/collapse and window-resize, and initiates relayout of tiles
 export default defineComponent({
@@ -97,6 +119,7 @@ export default defineComponent({
 			lastFocused: null as LayoutNode | null,
 			animationActive: false,
 			autoWaitTime: 500, //ms (in auto mode, time to wait after an action ends)
+			autoPrevAction: null as Action | null, // Used in auto-mode for reducing action cycles
 			helpOpen: false,
 			// Options
 			layoutOptions: {...defaultLayoutOptions},
@@ -341,87 +364,96 @@ export default defineComponent({
 				return;
 			}
 			if (this.lastFocused == null){
-				// Get random leaf LayoutNode
+				// Pick random leaf LayoutNode
 				let layoutNode = this.activeRoot;
 				while (layoutNode.children.length > 0){
-					let idx = Math.floor(Math.random() * layoutNode.children.length);
-					layoutNode = layoutNode.children[idx];
+					let childWeights = layoutNode.children.map(n => n.dCount);
+					let idx = randWeightedChoice(childWeights);
+					layoutNode = layoutNode.children[idx!];
 				}
 				this.setLastFocused(layoutNode);
 				setTimeout(this.autoAction, this.autoWaitTime);
 			} else {
-				// Perform action
+				// Determine available actions
+				let action: Action | null;
+				let actionWeights: {[key: string]: number}; // Maps actions to choice weights
 				let node = this.lastFocused;
 				if (node.children.length == 0){
-					const Action = {MoveAcross:0, MoveUpward:1, Expand:2};
-					let actionWeights = [1, 2, 4];
+					actionWeights = {'move across': 1, 'move up': 2, 'expand': 4};
 					// Zero weights for disallowed actions
 					if (node == this.activeRoot || node.parent!.children.length == 1){
-						actionWeights[Action.MoveAcross] = 0;
+						actionWeights['move across'] = 0;
 					}
 					if (node == this.activeRoot){
-						actionWeights[Action.MoveUpward] = 0;
+						actionWeights['move up'] = 0;
 					}
 					if (node.tolNode.children.length == 0){
-						actionWeights[Action.Expand] = 0;
-					}
-					let action = randWeightedChoice(actionWeights);
-					switch (action){
-						case Action.MoveAcross:
-							let siblings = node.parent!.children.filter(n => n != node);
-							this.setLastFocused(siblings[Math.floor(Math.random() * siblings.length)]);
-							break;
-						case Action.MoveUpward:
-							this.setLastFocused(node.parent!);
-							break;
-						case Action.Expand:
-							this.onInnerLeafClicked({layoutNode: node});
-							break;
+						actionWeights['expand'] = 0;
 					}
 				} else {
-					const Action = {MoveAcross:0, MoveDown:1, MoveUp:2, Collapse:3, ExpandToView:4, ExpandParentBar:5};
-					let actionWeights = [1, 2, 1, 1, 1, 1];
+					actionWeights = {
+						'move across': 1, 'move down': 2, 'move up': 1,
+						'collapse': 1, 'expand to view': 1, 'expand parent bar': 1
+					};
 					// Zero weights for disallowed actions
 					if (node == this.activeRoot || node.parent!.children.length == 1){
-						actionWeights[Action.MoveAcross] = 0;
+						actionWeights['move across'] = 0;
 					}
 					if (node == this.activeRoot){
-						actionWeights[Action.MoveUp] = 0;
+						actionWeights['move up'] = 0;
 					}
 					if (!node.children.every(n => n.children.length == 0)){
-						actionWeights[Action.Collapse] = 0; // Only collapse if all children are leaves
+						actionWeights['collapse'] = 0; // Only collapse if all children are leaves
 					}
 					if (node.parent != this.activeRoot){
-						actionWeights[Action.ExpandToView] = 0; // Only expand-to-view if direct child of activeRoot
+						actionWeights['expand to view'] = 0; // Only expand-to-view if direct child of activeRoot
 					}
 					if (this.activeRoot.parent == null || node != this.activeRoot){
-						actionWeights[Action.ExpandParentBar] = 0; // Only expand parent-bar if able and activeRoot
-					}
-					let action = randWeightedChoice(actionWeights);
-					switch (action){
-						case Action.MoveAcross:
-							let siblings = node.parent!.children.filter(n => n != node);
-							this.setLastFocused(siblings[Math.floor(Math.random() * siblings.length)]);
-							break;
-						case Action.MoveDown:
-							let idx = Math.floor(Math.random() * node.children.length);
-							this.setLastFocused(node.children[idx]);
-							break;
-						case Action.MoveUp:
-							this.setLastFocused(node.parent!);
-							break;
-						case Action.Collapse:
-							this.onInnerHeaderClicked({layoutNode: node});
-							break;
-						case Action.ExpandToView:
-							this.onInnerHeaderClickHeld(node);
-							break;
-						case Action.ExpandParentBar:
-							this.onSepdParentClicked(node.parent!);
-							break;
+						actionWeights['expand parent bar'] = 0; // Only expand parent-bar if able and activeRoot
 					}
 				}
+				if (this.autoPrevAction != null){ // Avoid undoing previous action
+					let revAction = getReverseAction(this.autoPrevAction);
+					if (revAction != null && revAction in actionWeights){
+						actionWeights[revAction as keyof typeof actionWeights] = 0;
+					}
+				}
+				// Choose action
+				let actionList = Object.getOwnPropertyNames(actionWeights);
+				let weightList = actionList.map(action => actionWeights[action]);
+				if (arraySum(weightList) == 0){
+					action = null;
+				} else {
+					action = actionList[randWeightedChoice(weightList)!] as Action;
+				}
+				// Perform action
+				switch (action){
+					case 'move across':
+						let siblings = node.parent!.children.filter(n => n != node);
+						this.setLastFocused(siblings[Math.floor(Math.random() * siblings.length)]);
+						break;
+					case 'move down':
+						let idx = Math.floor(Math.random() * node.children.length);
+						this.setLastFocused(node.children[idx]);
+						break;
+					case 'move up':
+						this.setLastFocused(node.parent!);
+						break;
+					case 'expand':
+						this.onInnerLeafClicked({layoutNode: node});
+						break;
+					case 'collapse':
+						this.onInnerHeaderClicked({layoutNode: node});
+						break;
+					case 'expand to view':
+						this.onInnerHeaderClickHeld(node);
+						break;
+					case 'expand parent bar':
+						this.onSepdParentClicked(node.parent!);
+						break;
+				}
 				setTimeout(this.autoAction, this.componentOptions.transitionDuration + this.autoWaitTime);
+				this.autoPrevAction = action;
 			}
 		},
 		setLastFocused(node: LayoutNode | null){
