@@ -44,7 +44,7 @@ const defaultLayoutOptions: LayoutOptions = {
 	minTileSz: 50, //px
 	maxTileSz: 200, //px
 	layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
-	rectMode: 'auto', //'horz' | 'vert' | 'linear' | 'auto'
+	rectMode: 'auto first-row', //'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
 	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
 	sweptNodesPrio: 'pow-2/3', //'linear' | 'sqrt' | 'pow-2/3'
 	sweepingToParent: true,
@@ -469,7 +469,7 @@ export default defineComponent({
 		<settings v-if="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
 			@settings-close="onSettingsClose" @layout-option-change="onLayoutOptionChange"/>
 		<!-- outer div prevents transition interference with inner rotate -->
-		<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px]">
+		<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px] invisible">
 			<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
 				bg-black text-white hover:cursor-pointer" @click="onSettingsIconClick">
 				<svg class="w-6 h-6 mx-auto mt-2"><use href="#svg-settings"/></svg>

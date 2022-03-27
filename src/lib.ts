@@ -142,7 +142,8 @@ export type LayoutOptions = {
 	minTileSz: number; // Minimum size of a tile edge, in pixels (ignoring borders)
 	maxTileSz: number;
 	layoutType: 'sqr' | 'rect' | 'sweep'; // The LayoutFn function to use
-	rectMode: 'horz' | 'vert' | 'linear' | 'auto'; // Layout in 1 row, 1 column, 1 row or column, or multiple rows
+	rectMode: 'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row';
+		// Layout in 1 row, 1 column, 1 row or column, or multiple rows (with/without first-row-heuristic)
 	sweepMode: 'left' | 'top' | 'shorter' | 'auto'; // Sweep to left, top, shorter-side, or to minimise empty space
 	sweptNodesPrio: 'linear' | 'sqrt' | 'pow-2/3'; // Specifies allocation of space to swept-vs-remaining nodes
 	sweepingToParent: boolean; // Allow swept nodes to occupy empty space in a parent's swept-leaves area
@@ -341,7 +342,7 @@ let rectLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse,
 		return false;
 	}
 	// Try finding arrangement with low empty space
-	// Done by searching possible row groupings, allocating within rows using dCounts, and trimming empty space
+	// Done by searching possible rows groupings, allocating within rows using dCounts, and trimming empty space
 	let numChildren = node.children.length;
 	let rowBrks: number[] = []; // Will hold indices for nodes at which each row starts
 	let lowestEmpSpc = Number.POSITIVE_INFINITY;
@@ -386,6 +387,33 @@ let rectLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse,
 					let updated = updateAscSeq(rowBrks, numChildren);
 					if (!updated){
 						break rowBrksLoop;
+					}
+				}
+				break;
+			case 'auto first-row': // Like auto, but only iterates over first-rows, determining the rest with dCounts
+				if (rowBrks.length == 0){
+					rowBrks = [0];
+				} else {
+					// Get next possible first row
+					let idxFirstRowLastEl = (rowBrks.length == 1 ? numChildren : rowBrks[1]) - 1;
+					if (idxFirstRowLastEl == 0){
+						break rowBrksLoop;
+					}
+					rowBrks = [0];
+					rowBrks.push(idxFirstRowLastEl);
+					// Allocate remaining rows
+					let firstRowDCount = arraySum(range(rowBrks[1]).map(idx => node.children[idx].dCount));
+					let dCountTotal = node.children[idxFirstRowLastEl].dCount;
+					let nextRowIdx = idxFirstRowLastEl + 1;
+					while (nextRowIdx < numChildren){ // Over potential next row breaks
+						let nextDCountTotal = dCountTotal + node.children[nextRowIdx].dCount;
+						if (nextDCountTotal <= firstRowDCount){ // If acceptable within current row
+							dCountTotal = nextDCountTotal;
+						} else {
+							rowBrks.push(nextRowIdx);
+							dCountTotal = node.children[nextRowIdx].dCount;
+						}
+						nextRowIdx++;
 					}
 				}
 				break;
