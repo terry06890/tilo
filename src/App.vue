@@ -471,20 +471,17 @@ export default defineComponent({
 		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
 		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
 	<!-- Settings -->
-		<!-- outer div prevents overflow from transitioning to/from off-screen -->
-	<div class="fixed left-0 top-0 w-full h-full overflow-hidden invisible">
-		<transition name="slide-bottom-right">
-			<settings v-if="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
-				@settings-close="onSettingsClose" @layout-option-change="onLayoutOptionChange"/>
-			<!-- outer div prevents transition interference with inner rotate -->
-			<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px]">
-				<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
-					bg-black text-white hover:cursor-pointer" @click="onSettingsIconClick">
-					<svg class="w-6 h-6 mx-auto mt-2"><use href="#svg-settings"/></svg>
-				</div>
+	<transition name="slide-bottom-right">
+		<settings v-if="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
+			@settings-close="onSettingsClose" @layout-option-change="onLayoutOptionChange"/>
+		<!-- outer div prevents transition interference with inner rotate -->
+		<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px]">
+			<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
+				bg-black text-white hover:cursor-pointer" @click="onSettingsIconClick">
+				<svg class="w-6 h-6 mx-auto mt-2"><use href="#svg-settings"/></svg>
 			</div>
-		</transition>
-	</div>
+		</div>
+	</transition>
 	<!-- Icons -->
 	<svg class="absolute top-[6px] right-[54px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
 		@click="onSearchIconClick">
