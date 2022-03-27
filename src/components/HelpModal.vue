@@ -7,7 +7,7 @@ export default defineComponent({
 	},
 	methods: {
 		closeClicked(evt: Event){
-			if (evt.target == this.$el || this.$refs.closeIcon.contains(evt.target)){
+			if (evt.target == this.$el || (this.$refs.closeIcon as HTMLElement).contains(evt.target as HTMLElement)){
 				this.$emit('help-modal-close');
 			}
 		},

@@ -165,6 +165,7 @@ export default defineComponent({
 				width: '100vw', // Making this dynamic causes white flashes when resizing
 				height: '100vh',
 				backgroundColor: '#292524',
+				overflow: 'hidden',
 			};
 		},
 	},
