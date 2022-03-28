@@ -263,23 +263,30 @@ export default defineComponent({
 		<info-icon
 			class="w-[18px] h-[18px] mt-auto mb-[2px] mr-[2px] self-end
 				text-white/30 hover:text-white hover:cursor-pointer"
-			@mouseenter="onInfoMouseEnter" @mouseleave="onInfoMouseLeave"
 			@click.stop="onInfoClick" @mousedown.stop @mouseup.stop/>
 	</div>
 	<div v-else :style="nonLeafStyles" ref="nonLeaf">
-		<h1 v-if="showHeader" :style="nonLeafHeaderStyles" class="hover:cursor-pointer"
+		<div v-if="showHeader" :style="nonLeafHeaderStyles" class="flex hover:cursor-pointer"
 			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
 			@mousedown="onMouseDown" @mouseup="onMouseUp">
-			{{layoutNode.tolNode.name}}
-		</h1>
+			<h1 class="grow">{{layoutNode.tolNode.name}}</h1>
+			<info-icon
+				class="w-[18px] h-[18px] mr-[2px]
+					text-white/20 hover:text-white hover:cursor-pointer"
+				@click.stop="onInfoClick" @mousedown.stop @mouseup.stop/>
+		</div>
 		<div :style="sepSweptAreaStyles" ref="sepSweptArea"
 			:class="layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge'">
-			<h1 v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
-				:style="nonLeafHeaderStyles" class="hover:cursor-pointer"
+			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
+				:style="nonLeafHeaderStyles" class="flex hover:cursor-pointer"
 				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
 				@mousedown="onMouseDown" @mouseup="onMouseUp">
-				{{layoutNode.tolNode.name}}
-			</h1>
+				<h1 class="grow">{{layoutNode.tolNode.name}}</h1>
+				<info-icon
+					class="w-[18px] h-[18px] mr-[2px]
+						text-white/20 hover:text-white hover:cursor-pointer"
+					@click.stop="onInfoClick" @mousedown.stop @mouseup.stop/>
+			</div>
 		</div>
 		<tile v-for="child in layoutNode.children" :key="child.tolNode.name" :layoutNode="child"
 			:lytOpts="lytOpts" :uiOpts="uiOpts"

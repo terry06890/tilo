@@ -489,12 +489,12 @@ export default defineComponent({
 		:lytOpts="lytOpts" :uiOpts="uiOpts"
 		@detached-ancestor-clicked="onDetachedAncestorClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
 	<!-- Icons -->
-	<search-icon @click="onSearchIconClick"
-		class="absolute top-[6px] right-[54px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
-	<play-icon @click="onPlayIconClick"
-		class="absolute top-[6px] right-[30px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
 	<help-icon @click="onHelpIconClick"
-		class="absolute top-[6px] right-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
+		class="absolute bottom-[6px] left-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
+	<search-icon @click="onSearchIconClick"
+		class="absolute bottom-[6px] left-[30px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
+	<play-icon @click="onPlayIconClick"
+		class="absolute bottom-[6px] left-[54px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
 	<!-- Modals -->
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNode != null" :tolNode="infoModalNode" :uiOpts="uiOpts"
