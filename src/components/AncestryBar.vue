@@ -1,7 +1,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import {LayoutNode} from '../layout';
-import TileImg from './TileImg.vue'
+import Tile from './Tile.vue'
 
 export default defineComponent({
 	props: {
@@ -22,6 +22,13 @@ export default defineComponent({
 		},
 		tileSz(){
 			return (this.wideArea ? this.dims[1] : this.dims[0]) - (this.tileMargin * 2) - this.scrollBarOffset;
+		},
+		usedNodes(){
+			return this.nodes.map(n => {
+				let newNode = new LayoutNode(n.tolNode, []);
+				newNode.dims = [this.tileSz, this.tileSz];
+				return newNode;
+			});
 		},
 		hasOverflow(){
 			let len = this.tileMargin + (this.tileSz + this.tileMargin) * this.nodes.length;
@@ -59,7 +66,7 @@ export default defineComponent({
 		}
 	},
 	components: {
-		TileImg,
+		Tile,
 	},
 	emits: ['detached-ancestor-clicked', 'info-icon-clicked'],
 });
@@ -67,8 +74,8 @@ export default defineComponent({
 
 <template>
 <div :style="styles">
-	<tile-img v-for="node in nodes" :key="node.tolNode.name"
-		:layoutNode="node" :tileSz="tileSz" :options="options"
-		@click="onClick(node)" @info-icon-clicked="onInnerInfoIconClicked"/>
+	<tile v-for="(node, idx) in usedNodes" :key="node.tolNode.name" :layoutNode="node"
+		:nonAbsPos="true" :headerSz="0" :tileSpacing="0" :options="options"
+		@leaf-clicked="onClick(nodes[idx])" @info-icon-clicked="onInnerInfoIconClicked"/>
 </div>
 </template>
