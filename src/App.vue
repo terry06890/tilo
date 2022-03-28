@@ -1,13 +1,14 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import Tile from './components/Tile.vue';
-import ParentBar from './components/ParentBar.vue';
+import AncestryBar from './components/AncestryBar.vue';
 import TileInfoModal from './components/TileInfoModal.vue';
 import SearchModal from './components/SearchModal.vue';
 import HelpModal from './components/HelpModal.vue';
-import Settings from './components/Settings.vue';
-import {TolNode, LayoutNode, initLayoutTree, initLayoutMap, tryLayout, arraySum, randWeightedChoice} from './lib';
+import SettingsPane from './components/SettingsPane.vue';
+import {TolNode, LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './lib';
 import type {LayoutOptions} from './lib';
+import {arraySum, randWeightedChoice} from './lib';
 // Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
 // Obtain tree-of-life data
@@ -50,12 +51,12 @@ const defaultLayoutOptions: LayoutOptions = {
 	sweepingToParent: true,
 };
 const defaultComponentOptions = {
-	// For leaf/non_leaf tile and separated-parent components
+	// For leaf/non_leaf tile and detached-ancestor components
 	borderRadius: 5, //px
 	shadowNormal: '0 0 2px black',
 	shadowHighlight: '0 0 1px 2px greenyellow',
 	shadowFocused: '0 0 1px 2px orange',
-	// For leaf and separated-parent components
+	// For leaf and detached-ancestor components
 	imgTilePadding: 4, //px
 	imgTileFontSz: 15, //px
 	imgTileColor: '#fafaf9',
@@ -77,11 +78,11 @@ const defaultComponentOptions = {
 };
 const defaultOwnOptions = {
 	tileAreaOffset: 5, //px (space between root tile and display boundary)
-	parentBarSz: defaultLayoutOptions.minTileSz * 2, //px (breadth of separated-parents area)
+	ancestryBarSz: defaultLayoutOptions.minTileSz * 2, //px (breadth of ancestry-bar area)
 };
 
 // Type representing auto-mode actions
-type Action = 'move across' | 'move down' | 'move up' | 'expand' | 'collapse' | 'expand to view' | 'expand parent bar';
+type Action = 'move across' | 'move down' | 'move up' | 'expand' | 'collapse' | 'expand to view' | 'expand ancestry bar';
 // Used in auto-mode to help avoid action cycles
 function getReverseAction(action: Action): Action | null {
 	switch (action){
@@ -96,8 +97,8 @@ function getReverseAction(action: Action): Action | null {
 		case 'collapse':
 			return 'expand';
 		case 'expand to view':
-			return 'expand parent bar';
-		case 'expand parent bar':
+			return 'expand ancestry bar';
+		case 'expand ancestry bar':
 			return 'expand to view';
 	}
 }
@@ -137,25 +138,25 @@ export default defineComponent({
 		wideArea(): boolean{
 			return this.width >= this.height;
 		},
-		sepdParents(): LayoutNode[] | null {
+		detachedAncestors(): LayoutNode[] | null {
 			if (this.activeRoot == this.layoutTree){
 				return null;
 			}
-			let parents = [];
+			let ancestors = [];
 			let node = this.activeRoot.parent;
 			while (node != null){
-				parents.push(node);
+				ancestors.push(node);
 				node = node.parent;
 			}
-			return parents.reverse();
+			return ancestors.reverse();
 		},
 		tileAreaPos(){
 			let pos = [this.tileAreaOffset, this.tileAreaOffset] as [number, number];
-			if (this.sepdParents != null){
+			if (this.detachedAncestors != null){
 				if (this.wideArea){
-					pos[0] += this.parentBarSz;
+					pos[0] += this.ancestryBarSz;
 				} else {
-					pos[1] += this.parentBarSz;
+					pos[1] += this.ancestryBarSz;
 				}
 			}
 			return pos;
@@ -165,20 +166,20 @@ export default defineComponent({
 				this.width - this.tileAreaOffset*2,
 				this.height - this.tileAreaOffset*2
 			] as [number, number];
-			if (this.sepdParents != null){
+			if (this.detachedAncestors != null){
 				if (this.wideArea){
-					dims[0] -= this.parentBarSz;
+					dims[0] -= this.ancestryBarSz;
 				} else {
-					dims[1] -= this.parentBarSz;
+					dims[1] -= this.ancestryBarSz;
 				}
 			}
 			return dims;
 		},
-		parentBarDims(): [number, number] {
+		ancestryBarDims(): [number, number] {
 			if (this.wideArea){
-				return [this.parentBarSz, this.height];
+				return [this.ancestryBarSz, this.height];
 			} else {
-				return [this.width, this.parentBarSz];
+				return [this.width, this.ancestryBarSz];
 			}
 		},
 		styles(): Record<string,string> {
@@ -243,7 +244,7 @@ export default defineComponent({
 			this.activeRoot = layoutNode;
 			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
 		},
-		onSepdParentClicked(layoutNode: LayoutNode){
+		onDetachedAncestorClicked(layoutNode: LayoutNode){
 			LayoutNode.showDownward(layoutNode);
 			this.activeRoot = layoutNode;
 			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
@@ -317,14 +318,14 @@ export default defineComponent({
 				ancestor = ancestor.parent!;
 			}
 			layoutNode = this.layoutMap.get(ancestor.name)!;
-			// If hidden, expand ancestor in parent-bar
+			// If hidden, expand ancestor in ancestry-bar
 			if (layoutNode.hidden){
-				// Get self/ancestor in parent-bar
-				while (!this.sepdParents!.includes(layoutNode)){
+				// Get self/ancestor in ancestry-bar
+				while (!this.detachedAncestors!.includes(layoutNode)){
 					ancestor = ancestor.parent!;
 					layoutNode = this.layoutMap.get(ancestor.name)!;
 				}
-				this.onSepdParentClicked(layoutNode!);
+				this.onDetachedAncestorClicked(layoutNode!);
 				setTimeout(() => this.expandToTolNode(tolNode), this.componentOptions.transitionDuration);
 				return;
 			}
@@ -394,7 +395,7 @@ export default defineComponent({
 				} else {
 					actionWeights = {
 						'move across': 1, 'move down': 2, 'move up': 1,
-						'collapse': 1, 'expand to view': 0.5, 'expand parent bar': 0.5
+						'collapse': 1, 'expand to view': 0.5, 'expand ancestry bar': 0.5
 					};
 					// Zero weights for disallowed actions
 					if (node == this.activeRoot || node.parent!.children.length == 1){
@@ -410,7 +411,7 @@ export default defineComponent({
 						actionWeights['expand to view'] = 0; // Only expand-to-view if direct child of activeRoot
 					}
 					if (this.activeRoot.parent == null || node != this.activeRoot){
-						actionWeights['expand parent bar'] = 0; // Only expand parent-bar if able and activeRoot
+						actionWeights['expand ancestry bar'] = 0; // Only expand ancestry-bar if able and activeRoot
 					}
 				}
 				if (this.autoPrevAction != null){ // Avoid undoing previous action
@@ -454,8 +455,8 @@ export default defineComponent({
 					case 'expand to view':
 						this.onInnerHeaderClickHeld(node);
 						break;
-					case 'expand parent bar':
-						this.onSepdParentClicked(node.parent!);
+					case 'expand ancestry bar':
+						this.onDetachedAncestorClicked(node.parent!);
 						break;
 				}
 				setTimeout(this.autoAction, this.componentOptions.transitionDuration + this.autoWaitTime);
@@ -488,7 +489,7 @@ export default defineComponent({
 		window.removeEventListener('resize', this.onResize);
 		window.removeEventListener('keyup', this.onKeyUp);
 	},
-	components: {Tile, ParentBar, TileInfoModal, Settings, SearchModal, HelpModal, },
+	components: {Tile, AncestryBar, TileInfoModal, SettingsPane, SearchModal, HelpModal, },
 });
 </script>
 
@@ -499,21 +500,9 @@ export default defineComponent({
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
 		@leaf-click-held="onInnerLeafClickHeld" @header-click-held="onInnerHeaderClickHeld"
 		@info-icon-clicked="onInnerInfoIconClicked"/>
-	<parent-bar v-if="sepdParents != null"
-		:pos="[0,0]" :dims="parentBarDims" :nodes="sepdParents" :options="componentOptions"
-		@sepd-parent-clicked="onSepdParentClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
-	<!-- Settings -->
-	<transition name="slide-bottom-right">
-		<settings v-if="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
-			@settings-close="onSettingsClose" @layout-option-change="onLayoutOptionChange"/>
-		<!-- outer div prevents transition interference with inner rotate -->
-		<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px] invisible">
-			<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
-				bg-black text-white hover:cursor-pointer" @click="onSettingsIconClick">
-				<svg class="w-6 h-6 mx-auto mt-2"><use href="#svg-settings"/></svg>
-			</div>
-		</div>
-	</transition>
+	<ancestry-bar v-if="detachedAncestors != null"
+		:pos="[0,0]" :dims="ancestryBarDims" :nodes="detachedAncestors" :options="componentOptions"
+		@detached-ancestor-clicked="onDetachedAncestorClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
 	<!-- Icons -->
 	<svg class="absolute top-[6px] right-[54px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
 		@click="onSearchIconClick">
@@ -539,10 +528,22 @@ export default defineComponent({
 	<transition name="fade">
 		<help-modal v-if="helpOpen" :options="componentOptions" @help-modal-close="onHelpModalClose"/>
 	</transition>
+	<!-- Settings -->
+	<transition name="slide-bottom-right">
+		<settings-pane v-if="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
+			@settings-close="onSettingsClose" @layout-option-change="onLayoutOptionChange"/>
+		<!-- outer div prevents transition interference with inner rotate -->
+		<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px] invisible">
+			<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
+				bg-black text-white hover:cursor-pointer" @click="onSettingsIconClick">
+				<svg class="w-6 h-6 mx-auto mt-2"><use href="#svg-settings"/></svg>
+			</div>
+		</div>
+	</transition>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: animationActive ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="onOverlayClick"></div>
-	<!-- SVGs -->
+	<!-- SVGs reference-able from elsewhere -->
 	<svg style="display:none">
 		<defs>
 			<svg id="svg-info"

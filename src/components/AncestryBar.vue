@@ -12,7 +12,7 @@ export default defineComponent({
 	},
 	data(){
 		return {
-			tileMargin: 5, //px (gap between separated-parent tiles)
+			tileMargin: 5, //px (gap between detached-ancestor tiles)
 			scrollBarOffset: 10, //px (gap for scrollbar, used to prevent overlap with tiles)
 		};
 	},
@@ -52,7 +52,7 @@ export default defineComponent({
 	},
 	methods: {
 		onClick(node: LayoutNode){
-			this.$emit('sepd-parent-clicked', node);
+			this.$emit('detached-ancestor-clicked', node);
 		},
 		onInnerInfoIconClicked(data: LayoutNode){
 			this.$emit('info-icon-clicked', data);
@@ -61,7 +61,7 @@ export default defineComponent({
 	components: {
 		TileImg,
 	},
-	emits: ['sepd-parent-clicked', 'info-icon-clicked'],
+	emits: ['detached-ancestor-clicked', 'info-icon-clicked'],
 });
 </script>
 
