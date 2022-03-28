@@ -1,5 +1,6 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
+import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode} from '../layout';
 
 export default defineComponent({
@@ -88,6 +89,7 @@ export default defineComponent({
 			this.$emit('info-icon-clicked', this.layoutNode);
 		},
 	},
+	components: {InfoIcon, },
 	emits: ['info-icon-clicked'],
 });
 </script>
@@ -96,10 +98,8 @@ export default defineComponent({
 <div :style="styles" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown"
 	:class="isExpandable ? ['hover:cursor-pointer'] : []">
 	<h1 :style="headerStyles">{{layoutNode.tolNode.name}}</h1>
-	<svg :style="infoIconStyles" class="hover:cursor-pointer"
+	<info-icon :style="infoIconStyles" class="hover:cursor-pointer"
 		@mouseenter="onInfoMouseEnter" @mouseleave="onInfoMouseLeave"
-		@click.stop="onInfoClick" @mousedown.stop @mouseup.stop>
-		<use href="#svg-info"/>
-	</svg>
+		@click.stop="onInfoClick" @mousedown.stop @mouseup.stop/>
 </div>
 </template>

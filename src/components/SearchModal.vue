@@ -1,5 +1,6 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
+import SearchIcon from './icon/SearchIcon.vue';
 import {TolNode} from '../tol';
 import {LayoutNode} from '../layout';
 
@@ -11,7 +12,7 @@ export default defineComponent({
 	},
 	methods: {
 		closeClicked(evt: Event){
-			if (evt.target == this.$el || evt.target == this.$refs.closeIcon){
+			if (evt.target == this.$el || (this.$refs.closeIcon.$el as HTMLElement).contains(evt.target as HTMLElement)){
 				this.$emit('search-close');
 			}
 		},
@@ -35,6 +36,7 @@ export default defineComponent({
 	mounted(){
 		(this.$refs.searchInput as HTMLInputElement).focus();
 	},
+	components: {SearchIcon, },
 	emits: ['search-node', 'search-close']
 });
 </script>
@@ -45,9 +47,8 @@ export default defineComponent({
 		bg-stone-50 rounded-md shadow shadow-black flex gap-1">
 		<input type="text" class="block border"
 			@keyup.enter="onSearchEnter" @keyup.esc="closeClicked" ref="searchInput"/>
-		<svg class="block w-6 h-6 ml-1 hover:cursor-pointer hover:bg-stone-200" @click.stop="onSearchEnter">
-			<use href="#svg-search"/>
-		</svg>
+		<search-icon @click.stop="onSearchEnter"
+			class="block w-6 h-6 ml-1 hover:cursor-pointer hover:bg-stone-200" />
 	</div>
 </div>
 </template>

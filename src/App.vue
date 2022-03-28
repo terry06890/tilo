@@ -1,11 +1,18 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
+//
 import Tile from './components/Tile.vue';
 import AncestryBar from './components/AncestryBar.vue';
 import TileInfoModal from './components/TileInfoModal.vue';
 import SearchModal from './components/SearchModal.vue';
 import HelpModal from './components/HelpModal.vue';
 import SettingsPane from './components/SettingsPane.vue';
+//
+import SearchIcon from './components/icon/SearchIcon.vue';
+import PlayIcon from './components/icon/PlayIcon.vue';
+import HelpIcon from './components/icon/HelpIcon.vue';
+import SettingsIcon from './components/icon/SettingsIcon.vue';
+//
 import {TolNode, TolNodeRaw, tolFromRaw, getTolMap} from './tol';
 import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import type {LayoutOptions} from './layout';
@@ -468,7 +475,10 @@ export default defineComponent({
 		window.removeEventListener('resize', this.onResize);
 		window.removeEventListener('keyup', this.onKeyUp);
 	},
-	components: {Tile, AncestryBar, TileInfoModal, SettingsPane, SearchModal, HelpModal, },
+	components: {
+		Tile, AncestryBar, TileInfoModal, SettingsPane, SearchModal, HelpModal,
+		SearchIcon, PlayIcon, HelpIcon, SettingsIcon,
+	},
 });
 </script>
 
@@ -483,18 +493,12 @@ export default defineComponent({
 		:pos="[0,0]" :dims="ancestryBarDims" :nodes="detachedAncestors" :options="componentOptions"
 		@detached-ancestor-clicked="onDetachedAncestorClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
 	<!-- Icons -->
-	<svg class="absolute top-[6px] right-[54px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
-		@click="onSearchIconClick">
-		<use href="#svg-search"/>
-	</svg>
-	<svg class="absolute top-[6px] right-[30px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
-		@click="onPlayIconClick">
-		<use href="#svg-play"/>
-	</svg>
-	<svg class="absolute top-[6px] right-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"
-		@click="onHelpIconClick">
-		<use href="#svg-help"/>
-	</svg>
+	<search-icon @click="onSearchIconClick"
+		class="absolute top-[6px] right-[54px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
+	<play-icon @click="onPlayIconClick"
+		class="absolute top-[6px] right-[30px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
+	<help-icon @click="onHelpIconClick"
+		class="absolute top-[6px] right-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
 	<!-- Modals -->
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNode != null" :tolNode="infoModalNode" :options="componentOptions"
@@ -515,66 +519,13 @@ export default defineComponent({
 		<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px] invisible">
 			<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
 				bg-black text-white hover:cursor-pointer" @click="onSettingsIconClick">
-				<svg class="w-6 h-6 mx-auto mt-2"><use href="#svg-settings"/></svg>
+				<settings-icon class="w-6 h-6 mx-auto mt-2"/>
 			</div>
 		</div>
 	</transition>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: animationActive ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="onOverlayClick"></div>
-	<!-- SVGs reference-able from elsewhere -->
-	<svg style="display:none">
-		<defs>
-			<svg id="svg-info"
-				xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<circle cx="12" cy="12" r="10"/>
-				<line x1="12" y1="16" x2="12" y2="12"/>
-				<line x1="12" y1="8" x2="12.01" y2="8"/>
-			</svg>
-			<svg id="svg-settings"
-				xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<circle cx="12" cy="12" r="3"/>
-				<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0
-					0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2
-					2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0
-					0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65
-					1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1
-					2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2
-					0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65
-					1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0
-					1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0
-					2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2
-					2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-			</svg>
-			<svg id="svg-search"
-				xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<circle cx="11" cy="11" r="8"/>
-				<line x1="21" y1="21" x2="16.65" y2="16.65"/>
-			</svg>
-			<svg id="svg-play"
-				xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<circle cx="12" cy="12" r="10"/>
-				<polygon points="10 8 16 12 10 16 10 8"/>
-			</svg>
-			<svg id="svg-help"
-				xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<circle cx="12" cy="12" r="10"/>
-				<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-				<line x1="12" y1="17" x2="12.01" y2="17"/>
-			</svg>
-			<svg id="svg-close"
-				xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<line x1="18" y1="6" x2="6" y2="18"/>
-				<line x1="6" y1="6" x2="18" y2="18"/>
-			</svg>
-		</defs>
-	</svg>
 </div>
 </template>
 

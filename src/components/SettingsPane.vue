@@ -1,5 +1,6 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
+import CloseIcon from './icon/CloseIcon.vue';
 import type {LayoutOptions} from '../layout';
 
 export default defineComponent({
@@ -9,7 +10,7 @@ export default defineComponent({
 	},
 	methods: {
 		closeClicked(evt: Event){
-			if (evt.target == this.$el || (this.$refs.closeIcon as HTMLElement).contains(evt.target as HTMLElement)){
+			if (evt.target == this.$el || (this.$refs.closeIcon.$el as HTMLElement).contains(evt.target as HTMLElement)){
 				this.$emit('settings-close');
 			}
 		},
@@ -33,15 +34,15 @@ export default defineComponent({
 			this.onLayoutOptChg();
 		},
 	},
+	components: {CloseIcon, },
 	emits: ['settings-close', 'layout-option-change', ],
 });
 </script>
 
 <template>
 <div class="absolute bottom-4 right-4 min-w-[5cm] p-3 bg-stone-50 visible rounded-md shadow shadow-black">
-	<svg class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer" @click="closeClicked" ref="closeIcon">
-		<use href="#svg-close"/>
-	</svg>
+	<close-icon @click="closeClicked" ref="closeIcon"
+		class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer" />
 	<h1 class="text-xl font-bold mb-2">Settings</h1>
 	<hr class="border-stone-400"/>
 	<div>
