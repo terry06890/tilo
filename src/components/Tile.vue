@@ -15,7 +15,6 @@ export default defineComponent({
 	data(){
 		return {
 			highlight: false,
-			infoMouseOver: false,
 			clickHoldTimer: 0, // Used to recognise a click-and-hold event
 			animating: false, // Used to prevent content overlap and overflow during transitions
 		}
@@ -85,17 +84,6 @@ export default defineComponent({
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
 				whiteSpace: 'nowrap',
-			};
-		},
-		infoIconStyles(): Record<string,string> {
-			return {
-				width: this.uiOpts.infoIconSz + 'px',
-				height: this.uiOpts.infoIconSz + 'px',
-				marginTop: 'auto',
-				marginBottom: this.uiOpts.infoIconPadding + 'px',
-				marginRight: this.uiOpts.infoIconPadding + 'px',
-				alignSelf: 'flex-end',
-				color: this.infoMouseOver ? this.uiOpts.infoIconHoverColor : this.uiOpts.infoIconColor,
 			};
 		},
 		nonLeafStyles(): Record<string,string> {
@@ -188,18 +176,6 @@ export default defineComponent({
 				this.onClickHold();
 			}, this.uiOpts.clickHoldDuration);
 		},
-		onClickHold(){
-			if (this.isLeaf && !this.isExpandable){
-				console.log('Ignored click-hold on non-expandable node');
-				return;
-			}
-			this.prepForTransition();
-			if (this.isLeaf){
-				this.$emit('leaf-click-held', this.layoutNode);
-			} else {
-				this.$emit('header-click-held', this.layoutNode);
-			}
-		},
 		onMouseUp(){
 			if (this.clickHoldTimer > 0){
 				clearTimeout(this.clickHoldTimer);
@@ -219,6 +195,18 @@ export default defineComponent({
 				this.$emit('header-clicked', this.layoutNode);
 			}
 		},
+		onClickHold(){
+			if (this.isLeaf && !this.isExpandable){
+				console.log('Ignored click-hold on non-expandable node');
+				return;
+			}
+			this.prepForTransition();
+			if (this.isLeaf){
+				this.$emit('leaf-click-held', this.layoutNode);
+			} else {
+				this.$emit('header-click-held', this.layoutNode);
+			}
+		},
 		prepForTransition(){
 			this.animating = true;
 			setTimeout(() => {this.animating = false}, this.uiOpts.transitionDuration);
@@ -226,7 +214,7 @@ export default defineComponent({
 		onInfoClick(evt: Event){
 			this.$emit('info-icon-clicked', this.layoutNode);
 		},
-		// For coloured-outlines on hovered-over leaf-tiles or non-leaf-headers
+		// For coloured outlines on hover
 		onMouseEnter(evt: Event){
 			if (!this.isLeaf || this.isExpandable){
 				this.highlight = true;
@@ -236,12 +224,6 @@ export default defineComponent({
 			if (!this.isLeaf || this.isExpandable){
 				this.highlight = false;
 			}
-		},
-		onInfoMouseEnter(evt: Event){
-			this.infoMouseOver = true;
-		},
-		onInfoMouseLeave(evt: Event){
-			this.infoMouseOver = false;
 		},
 		// Child event propagation
 		onInnerLeafClicked(data: LayoutNode){
@@ -278,7 +260,9 @@ export default defineComponent({
 		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
 		@mousedown="onMouseDown" @mouseup="onMouseUp">
 		<h1 :style="leafHeaderStyles">{{layoutNode.tolNode.name}}</h1>
-		<info-icon :style="infoIconStyles" class="hover:cursor-pointer"
+		<info-icon
+			class="w-[18px] h-[18px] mt-auto mb-[2px] mr-[2px] self-end
+				text-white/30 hover:text-white hover:cursor-pointer"
 			@mouseenter="onInfoMouseEnter" @mouseleave="onInfoMouseLeave"
 			@click.stop="onInfoClick" @mousedown.stop @mouseup.stop/>
 	</div>
