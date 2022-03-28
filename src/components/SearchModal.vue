@@ -1,6 +1,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
-import {TolNode, LayoutNode} from '../lib';
+import {TolNode} from '../tol';
+import {LayoutNode} from '../lib';
 
 export default defineComponent({
 	props: {

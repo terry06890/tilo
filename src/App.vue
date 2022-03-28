@@ -6,36 +6,15 @@ import TileInfoModal from './components/TileInfoModal.vue';
 import SearchModal from './components/SearchModal.vue';
 import HelpModal from './components/HelpModal.vue';
 import SettingsPane from './components/SettingsPane.vue';
-import {TolNode, LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './lib';
+import {TolNode, TolNodeRaw, tolFromRaw, getTolMap} from './tol';
+import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './lib';
 import type {LayoutOptions} from './lib';
 import {arraySum, randWeightedChoice} from './lib';
 // Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
 // Obtain tree-of-life data
 import tolRaw from './tol.json';
-function preprocessTol(node: any): any {
-	function helper(node: any, parent: any){
-		//Add 'children' field if missing
-		if (node.children == null){
-			node.children = [];
-		}
-		//Add 'parent' field
-		node.parent = parent;
-		node.children.forEach((child: any) => helper(child, node));
-	}
-	helper(node, null);
-	return node;
-}
-const tol: TolNode = preprocessTol(tolRaw);
-function getTolMap(tol: TolNode): Map<string,TolNode> {
-	function helper(node: TolNode, map: Map<string,TolNode>){
-		map.set(node.name, node);
-		node.children.forEach(child => helper(child, map));
-	}
-	let map = new Map();
-	helper(tol, map);
-	return map;
-}
+const tol: TolNode = tolFromRaw(tolRaw);
 const tolMap = getTolMap(tol);
 
 // Configurable settings

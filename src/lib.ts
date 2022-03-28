@@ -1,5 +1,5 @@
 /*
- * Contains classes used for representing tree-of-life data, and tile-based layouts of such data.
+ * Contains classes used for representing tile-based layouts of tree-of-life data.
  *
  * Generally, given a TolNode with child TolNodes representing tree-of-life T,
  * initLayoutTree() produces a tree structure representing a subtree of T,
@@ -7,17 +7,8 @@
  * The tree structure consists of LayoutNode objects, each of which holds placement info for a linked TolNode.
  */
 
-// Represents a tree-of-life node/tree
-export class TolNode {
-	name: string;
-	children: TolNode[];
-	parent: TolNode | null;
-	constructor(name: string, children: TolNode[] = [], parent = null){
-		this.name = name;
-		this.children = children;
-		this.parent = parent;
-	}
-}
+import {TolNode} from './tol';
+
 // Represents a node/tree, and holds layout data for a TolNode node/tree
 export class LayoutNode {
 	tolNode: TolNode;
