@@ -5,8 +5,8 @@ import type {LayoutOptions} from '../layout';
 
 export default defineComponent({
 	props: {
-		layoutOptions: {type: Object as PropType<LayoutOptions>, required: true},
-		componentOptions: {type: Object, required: true},
+		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
+		uiOpts: {type: Object, required: true},
 	},
 	methods: {
 		closeClicked(evt: Event){
@@ -21,7 +21,7 @@ export default defineComponent({
 			let minInput = this.$refs.minTileSzInput as HTMLInputElement;
 			let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
 			if (Number(minInput.value) > Number(maxInput.value)){
-				this.layoutOptions.maxTileSz = this.layoutOptions.minTileSz;
+				this.lytOpts.maxTileSz = this.lytOpts.minTileSz;
 			}
 			this.onLayoutOptChg();
 		},
@@ -29,7 +29,7 @@ export default defineComponent({
 			let minInput = this.$refs.minTileSzInput as HTMLInputElement;
 			let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
 			if (Number(maxInput.value) < Number(minInput.value)){
-				this.layoutOptions.minTileSz = this.layoutOptions.maxTileSz;
+				this.lytOpts.minTileSz = this.lytOpts.maxTileSz;
 			}
 			this.onLayoutOptChg();
 		},
@@ -47,20 +47,20 @@ export default defineComponent({
 	<hr class="border-stone-400"/>
 	<div>
 		<label>Tile Spacing <input type="range" min="0" max="20" class="mx-2 w-[3cm]"
-			v-model.number="layoutOptions.tileSpacing" @input="onLayoutOptChg"/></label>
+			v-model.number="lytOpts.tileSpacing" @input="onLayoutOptChg"/></label>
 	</div>
 	<hr class="border-stone-400"/>
 	<div>
 		<label>
 			<span class="inline-block w-[3cm]">Min Tile Size</span>
-			<input type="range" min="0" max="400" v-model.number="layoutOptions.minTileSz" class="w-[3cm]"
+			<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz" class="w-[3cm]"
 				@input="onMinTileSzChg" ref="minTileSzInput"/>
 		</label>
 	</div>
 	<div>
 		<label>
 			<span class="inline-block w-[3cm]">Max Tile Size</span>
-			<input type="range" min="0" max="400" v-model.number="layoutOptions.maxTileSz" class="w-[3cm]"
+			<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz" class="w-[3cm]"
 				@input="onMaxTileSzChg" ref="maxTileSzInput"/>
 		</label>
 	</div>
@@ -69,22 +69,22 @@ export default defineComponent({
 		Layout Method
 		<ul>
 			<li>
-				<label> <input type="radio" v-model="layoutOptions.layoutType" value="sqr"
+				<label> <input type="radio" v-model="lytOpts.layoutType" value="sqr"
 					@change="onLayoutOptChg"/> Squares </label>
 			</li>
 			<li>
-				<label> <input type="radio" v-model="layoutOptions.layoutType" value="rect"
+				<label> <input type="radio" v-model="lytOpts.layoutType" value="rect"
 					@change="onLayoutOptChg"/> Rectangles </label>
 			</li>
 			<li>
-				<label> <input type="radio" v-model="layoutOptions.layoutType" value="sweep"
+				<label> <input type="radio" v-model="lytOpts.layoutType" value="sweep"
 					@change="onLayoutOptChg"/> Sweep to side </label>
 			</li>
 		</ul>
 	</div>
 	<hr class="border-stone-400"/>
 	<div>
-		<label> <input type="checkbox" v-model="layoutOptions.sweepingToParent"
+		<label> <input type="checkbox" v-model="lytOpts.sweepingToParent"
 			@change="onLayoutOptChg"/> Sweep to parent</label>
 	</div>
 	<hr class="border-stone-400"/>
@@ -92,19 +92,19 @@ export default defineComponent({
 		Sweep Mode
 		<ul>
 			<li>
-				<label> <input type="radio" v-model="layoutOptions.sweepMode" value="left"
+				<label> <input type="radio" v-model="lytOpts.sweepMode" value="left"
 					@change="onLayoutOptChg"/> To left </label>
 			</li>
 			<li>
-				<label> <input type="radio" v-model="layoutOptions.sweepMode" value="top"
+				<label> <input type="radio" v-model="lytOpts.sweepMode" value="top"
 					@change="onLayoutOptChg"/> To top </label>
 			</li>
 			<li>
-				<label> <input type="radio" v-model="layoutOptions.sweepMode" value="shorter"
+				<label> <input type="radio" v-model="lytOpts.sweepMode" value="shorter"
 					@change="onLayoutOptChg"/> To shorter </label>
 			</li>
 			<li>
-				<label> <input type="radio" v-model="layoutOptions.sweepMode" value="auto"
+				<label> <input type="radio" v-model="lytOpts.sweepMode" value="auto"
 					@change="onLayoutOptChg"/> Auto </label>
 			</li>
 		</ul>
@@ -112,7 +112,7 @@ export default defineComponent({
 	<hr class="border-stone-400"/>
 	<div>
 		<label>Animation Speed <input type="range" min="0" max="1000" class="mx-2 w-[3cm]"
-			v-model.number="componentOptions.transitionDuration"/></label>
+			v-model.number="uiOpts.transitionDuration"/></label>
 	</div>
 </div>
 </template>

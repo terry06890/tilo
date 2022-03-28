@@ -2,16 +2,15 @@
 import {defineComponent, PropType} from 'vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode} from '../layout';
+import type {LayoutOptions} from '../layout';
 
 // Component holds a tree-node structure representing a tile or tile-group to be rendered
 export default defineComponent({
 	props: {
 		layoutNode: {type: Object as PropType<LayoutNode>, required: true},
-		options: {type: Object, required: true},
+		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
+		uiOpts: {type: Object, required: true},
 		nonAbsPos: {type: Boolean, default: false}, // Don't use absolute positioning (only applies for leaf nodes)
-		// Layout settings from parent
-		headerSz: {type: Number, required: true},
-		tileSpacing: {type: Number, required: true},
 	},
 	data(){
 		return {
@@ -33,7 +32,7 @@ export default defineComponent({
 				(this.layoutNode.sepSweptArea && this.layoutNode.sepSweptArea.sweptLeft);
 		},
 		nonLeafBgColor(){
-			let colorArray = this.options.nonLeafBgColors;
+			let colorArray = this.uiOpts.nonLeafBgColors;
 			return colorArray[this.layoutNode.depth % colorArray.length];
 		},
 		tileStyles(): Record<string,string> {
@@ -46,7 +45,7 @@ export default defineComponent({
 				height: (this.layoutNode.hidden ? 0 : this.layoutNode.dims[1]) + 'px',
 				visibility: this.layoutNode.hidden ? 'hidden' : 'visible',
 				// Other bindings
-				transitionDuration: this.options.transitionDuration + 'ms',
+				transitionDuration: this.uiOpts.transitionDuration + 'ms',
 				zIndex: this.animating ? '1' : '0',
 				overflow: this.animating && !this.isLeaf ? 'hidden' : 'visible',
 				// Static styles
@@ -54,7 +53,7 @@ export default defineComponent({
 				transitionTimingFunction: 'ease-out',
 				// CSS variables
 				'--nonLeafBgColor': this.nonLeafBgColor,
-				'--tileSpacing': this.tileSpacing + 'px',
+				'--tileSpacing': this.lytOpts.tileSpacing + 'px',
 			};
 		},
 		leafStyles(): Record<string,string> {
@@ -70,18 +69,18 @@ export default defineComponent({
 				display: 'flex',
 				flexDirection: 'column',
 				// Other
-				borderRadius: this.options.borderRadius + 'px',
-				boxShadow: this.highlight ? this.options.shadowHighlight :
-					(this.layoutNode.hasFocus ? this.options.shadowFocused : this.options.shadowNormal),
+				borderRadius: this.uiOpts.borderRadius + 'px',
+				boxShadow: this.highlight ? this.uiOpts.shadowHighlight :
+					(this.layoutNode.hasFocus ? this.uiOpts.shadowFocused : this.uiOpts.shadowNormal),
 			};
 		},
 		leafHeaderStyles(): Record<string,string> {
 			return {
-				height: (this.options.imgTileFontSz + this.options.imgTilePadding * 2) + 'px',
-				lineHeight: this.options.imgTileFontSz + 'px',
-				fontSize: this.options.imgTileFontSz + 'px',
-				padding: this.options.imgTilePadding + 'px',
-				color: this.isExpandable ? this.options.expandableImgTileColor : this.options.imgTileColor,
+				height: (this.uiOpts.imgTileFontSz + this.uiOpts.imgTilePadding * 2) + 'px',
+				lineHeight: this.uiOpts.imgTileFontSz + 'px',
+				fontSize: this.uiOpts.imgTileFontSz + 'px',
+				padding: this.uiOpts.imgTilePadding + 'px',
+				color: this.isExpandable ? this.uiOpts.expandableImgTileColor : this.uiOpts.imgTileColor,
 				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
@@ -90,13 +89,13 @@ export default defineComponent({
 		},
 		infoIconStyles(): Record<string,string> {
 			return {
-				width: this.options.infoIconSz + 'px',
-				height: this.options.infoIconSz + 'px',
+				width: this.uiOpts.infoIconSz + 'px',
+				height: this.uiOpts.infoIconSz + 'px',
 				marginTop: 'auto',
-				marginBottom: this.options.infoIconPadding + 'px',
-				marginRight: this.options.infoIconPadding + 'px',
+				marginBottom: this.uiOpts.infoIconPadding + 'px',
+				marginRight: this.uiOpts.infoIconPadding + 'px',
 				alignSelf: 'flex-end',
-				color: this.infoMouseOver ? this.options.infoIconHoverColor : this.options.infoIconColor,
+				color: this.infoMouseOver ? this.uiOpts.infoIconHoverColor : this.uiOpts.infoIconColor,
 			};
 		},
 		nonLeafStyles(): Record<string,string> {
@@ -104,12 +103,12 @@ export default defineComponent({
 				width: '100%',
 				height: '100%',
 				backgroundColor: this.nonLeafBgColor,
-				borderRadius: this.options.borderRadius + 'px',
-				boxShadow: this.animating ? 'none' : (this.highlight ? this.options.shadowHighlight :
-					(this.layoutNode.hasFocus ? this.options.shadowFocused : this.options.shadowNormal)),
+				borderRadius: this.uiOpts.borderRadius + 'px',
+				boxShadow: this.animating ? 'none' : (this.highlight ? this.uiOpts.shadowHighlight :
+					(this.layoutNode.hasFocus ? this.uiOpts.shadowFocused : this.uiOpts.shadowNormal)),
 			};
 			if (this.layoutNode.sepSweptArea != null){
-				let r = this.options.borderRadius + 'px';
+				let r = this.uiOpts.borderRadius + 'px';
 				temp = this.layoutNode.sepSweptArea.sweptLeft ?
 					{...temp, borderRadius: `${r} ${r} ${r} 0`} :
 					{...temp, borderRadius: `${r} 0 ${r} ${r}`};
@@ -117,14 +116,14 @@ export default defineComponent({
 			return temp;
 		},
 		nonLeafHeaderStyles(): Record<string,string> {
-			let r = this.options.borderRadius + 'px';
+			let r = this.uiOpts.borderRadius + 'px';
 			return {
-				height: this.headerSz + 'px',
-				lineHeight: this.headerSz + 'px',
-				fontSize: this.options.nonLeafHeaderFontSz + 'px',
+				height: this.lytOpts.headerSz + 'px',
+				lineHeight: this.lytOpts.headerSz + 'px',
+				fontSize: this.uiOpts.nonLeafHeaderFontSz + 'px',
 				textAlign: 'center',
-				color: this.options.nonLeafHeaderColor,
-				backgroundColor: this.options.nonLeafHeaderBgColor,
+				color: this.uiOpts.nonLeafHeaderColor,
+				backgroundColor: this.uiOpts.nonLeafHeaderBgColor,
 				borderRadius: `${r} ${r} 0 0`,
 				// For ellipsis
 				overflow: 'hidden',
@@ -136,9 +135,9 @@ export default defineComponent({
 			let commonStyles = {
 				position: 'absolute',
 				backgroundColor: this.nonLeafBgColor,
-				boxShadow: this.animating ? 'none' : (this.highlight ? this.options.shadowHighlight :
-					(this.layoutNode.hasFocus ? this.options.shadowFocused : this.options.shadowNormal)),
-				transitionDuration: this.options.transitionDuration + 'ms',
+				boxShadow: this.animating ? 'none' : (this.highlight ? this.uiOpts.shadowHighlight :
+					(this.layoutNode.hasFocus ? this.uiOpts.shadowFocused : this.uiOpts.shadowNormal)),
+				transitionDuration: this.uiOpts.transitionDuration + 'ms',
 				transitionProperty: 'left, top, width, height',
 				transitionTimingFunction: 'ease-out',
 			};
@@ -148,12 +147,12 @@ export default defineComponent({
 					...commonStyles,
 					visibility: 'hidden',
 					left: '0',
-					top: this.headerSz + 'px',
+					top: this.lytOpts.headerSz + 'px',
 					width: '0',
 					height: '0',
 				};
 			} else {
-				let r = this.options.borderRadius + 'px';
+				let r = this.uiOpts.borderRadius + 'px';
 				return {
 					...commonStyles,
 					left: area.pos[0] + 'px',
@@ -187,7 +186,7 @@ export default defineComponent({
 			this.clickHoldTimer = setTimeout(() => {
 				this.clickHoldTimer = 0;
 				this.onClickHold();
-			}, this.options.clickHoldDuration);
+			}, this.uiOpts.clickHoldDuration);
 		},
 		onClickHold(){
 			if (this.isLeaf && !this.isExpandable){
@@ -222,7 +221,7 @@ export default defineComponent({
 		},
 		prepForTransition(){
 			this.animating = true;
-			setTimeout(() => {this.animating = false}, this.options.transitionDuration);
+			setTimeout(() => {this.animating = false}, this.uiOpts.transitionDuration);
 		},
 		onInfoClick(evt: Event){
 			this.$emit('info-icon-clicked', this.layoutNode);
@@ -299,7 +298,7 @@ export default defineComponent({
 			</h1>
 		</div>
 		<tile v-for="child in layoutNode.children" :key="child.tolNode.name" :layoutNode="child"
-			:headerSz="headerSz" :tileSpacing="tileSpacing" :options="options"
+			:lytOpts="lytOpts" :uiOpts="uiOpts"
 			@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
 			@leaf-click-held="onInnerLeafClickHeld" @header-click-held="onInnerHeaderClickHeld"
 			@info-icon-clicked="onInnerInfoIconClicked"/>

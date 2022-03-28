@@ -4,7 +4,7 @@ import CloseIcon from './icon/CloseIcon.vue';
 
 export default defineComponent({
 	props: {
-		options: {type: Object, required: true},
+		uiOpts: {type: Object, required: true},
 	},
 	methods: {
 		closeClicked(evt: Event){

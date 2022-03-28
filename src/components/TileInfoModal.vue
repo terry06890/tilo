@@ -6,16 +6,16 @@ import {TolNode} from '../tol';
 export default defineComponent({
 	props: {
 		tolNode: {type: Object as PropType<TolNode>, required: true},
-		options: {type: Object, required: true},
+		uiOpts: {type: Object, required: true},
 	},
 	computed: {
 		imgStyles(): Record<string,string> {
 			return {
 				backgroundImage: 'url(\'/img/' + this.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',
-				width: this.options.infoModalImgSz + 'px',
-				height: this.options.infoModalImgSz + 'px',
+				width: this.uiOpts.infoModalImgSz + 'px',
+				height: this.uiOpts.infoModalImgSz + 'px',
 				backgroundSize: 'cover',
-				borderRadius: this.options.borderRadius + 'px',
+				borderRadius: this.uiOpts.borderRadius + 'px',
 			}
 		},
 	},

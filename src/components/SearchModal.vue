@@ -8,7 +8,7 @@ export default defineComponent({
 	props: {
 		layoutTree: {type: Object as PropType<LayoutNode>, required: true},
 		tolMap: {type: Object as PropType<Map<string,TolNode>>, required: true},
-		options: {type: Object, required: true},
+		uiOpts: {type: Object, required: true},
 	},
 	methods: {
 		closeClicked(evt: Event){

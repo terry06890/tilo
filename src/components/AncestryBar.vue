@@ -1,6 +1,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import {LayoutNode} from '../layout';
+import type {LayoutOptions} from '../layout';
 import Tile from './Tile.vue'
 
 export default defineComponent({
@@ -8,7 +9,8 @@ export default defineComponent({
 		pos: {type: Array as unknown as PropType<[number,number]>, required: true},
 		dims: {type: Array as unknown as PropType<[number,number]>, required: true},
 		nodes: {type: Array as PropType<LayoutNode[]>, required: true},
-		options: {type: Object, required: true},
+		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
+		uiOpts: {type: Object, required: true},
 	},
 	data(){
 		return {
@@ -53,7 +55,7 @@ export default defineComponent({
 				padding: this.tileMargin + 'px',
 				//
 				backgroundColor: '#44403c',
-				boxShadow: this.options.shadowNormal,
+				boxShadow: this.uiOpts.shadowNormal,
 			};
 		},
 	},
@@ -75,7 +77,7 @@ export default defineComponent({
 <template>
 <div :style="styles">
 	<tile v-for="(node, idx) in usedNodes" :key="node.tolNode.name" :layoutNode="node"
-		:nonAbsPos="true" :headerSz="0" :tileSpacing="0" :options="options"
+		:nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@leaf-clicked="onClick(nodes[idx])" @info-icon-clicked="onInnerInfoIconClicked"/>
 </div>
 </template>

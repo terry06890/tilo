@@ -25,7 +25,7 @@ const tol: TolNode = tolFromRaw(tolRaw);
 const tolMap = getTolMap(tol);
 
 // Configurable settings
-const defaultLayoutOptions: LayoutOptions = {
+const defaultLytOpts: LayoutOptions = {
 	tileSpacing: 8, //px
 	headerSz: 20, //px
 	minTileSz: 50, //px
@@ -36,7 +36,7 @@ const defaultLayoutOptions: LayoutOptions = {
 	sweptNodesPrio: 'pow-2/3', //'linear' | 'sqrt' | 'pow-2/3'
 	sweepingToParent: true,
 };
-const defaultComponentOptions = {
+const defaultUiOpts = {
 	// For leaf/non_leaf tile and detached-ancestor components
 	borderRadius: 5, //px
 	shadowNormal: '0 0 2px black',
@@ -64,7 +64,7 @@ const defaultComponentOptions = {
 };
 const defaultOwnOptions = {
 	tileAreaOffset: 5, //px (space between root tile and display boundary)
-	ancestryBarSz: defaultLayoutOptions.minTileSz * 2, //px (breadth of ancestry-bar area)
+	ancestryBarSz: defaultLytOpts.minTileSz * 2, //px (breadth of ancestry-bar area)
 };
 
 // Type representing auto-mode actions
@@ -110,8 +110,8 @@ export default defineComponent({
 			autoPrevActionFail: false, // Used in auto-mode to avoid re-trying a failed expand/collapse
 			helpOpen: false,
 			// Options
-			layoutOptions: {...defaultLayoutOptions},
-			componentOptions: {...defaultComponentOptions},
+			lytOpts: {...defaultLytOpts},
+			uiOpts: {...defaultUiOpts},
 			...defaultOwnOptions,
 			// For window-resize handling
 			width: document.documentElement.clientWidth,
@@ -186,7 +186,7 @@ export default defineComponent({
 				this.width = document.documentElement.clientWidth;
 				this.height = document.documentElement.clientHeight;
 				tryLayout(this.activeRoot, this.layoutMap,
-					this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+					this.tileAreaPos, this.tileAreaDims, this.lytOpts, true);
 				// Prevent re-triggering until after a delay
 				this.resizeThrottled = true;
 				setTimeout(() => {this.resizeThrottled = false;}, this.resizeDelay);
@@ -195,7 +195,7 @@ export default defineComponent({
 		// For tile expand/collapse events
 		onInnerLeafClicked(layoutNode: LayoutNode){
 			let success = tryLayout(this.activeRoot, this.layoutMap,
-				this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false, {type: 'expand', node: layoutNode});
+				this.tileAreaPos, this.tileAreaDims, this.lytOpts, false, {type: 'expand', node: layoutNode});
 			if (!success){
 				layoutNode.expandFailFlag = !layoutNode.expandFailFlag; // Triggers failure animation
 			}
@@ -204,7 +204,7 @@ export default defineComponent({
 		onInnerHeaderClicked(layoutNode: LayoutNode){
 			let oldChildren = layoutNode.children;
 			let success = tryLayout(this.activeRoot, this.layoutMap,
-				this.tileAreaPos, this.tileAreaDims, this.layoutOptions, false, {type: 'collapse', node: layoutNode});
+				this.tileAreaPos, this.tileAreaDims, this.lytOpts, false, {type: 'collapse', node: layoutNode});
 			if (!success){
 				layoutNode.collapseFailFlag = !layoutNode.collapseFailFlag; // Triggers failure animation
 			}
@@ -219,7 +219,7 @@ export default defineComponent({
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
 			tryLayout(this.activeRoot, this.layoutMap,
-				this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true, {type: 'expand', node: layoutNode});
+				this.tileAreaPos, this.tileAreaDims, this.lytOpts, true, {type: 'expand', node: layoutNode});
 		},
 		onInnerHeaderClickHeld(layoutNode: LayoutNode){
 			if (layoutNode == this.activeRoot){
@@ -228,12 +228,12 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.lytOpts, true);
 		},
 		onDetachedAncestorClicked(layoutNode: LayoutNode){
 			LayoutNode.showDownward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.lytOpts, true);
 		},
 		// For info modal events
 		onInnerInfoIconClicked(node: LayoutNode){
@@ -252,7 +252,7 @@ export default defineComponent({
 			this.settingsOpen = false;
 		},
 		onLayoutOptionChange(){
-			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+			tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.lytOpts, true);
 		},
 		//
 		onSearchIconClick(){
@@ -312,13 +312,13 @@ export default defineComponent({
 					layoutNode = this.layoutMap.get(ancestor.name)!;
 				}
 				this.onDetachedAncestorClicked(layoutNode!);
-				setTimeout(() => this.expandToTolNode(tolNode), this.componentOptions.transitionDuration);
+				setTimeout(() => this.expandToTolNode(tolNode), this.uiOpts.transitionDuration);
 				return;
 			}
 			// Attempt tile-expand
 			let success = this.onInnerLeafClicked(layoutNode);
 			if (success){
-				setTimeout(() => this.expandToTolNode(tolNode), this.componentOptions.transitionDuration);
+				setTimeout(() => this.expandToTolNode(tolNode), this.uiOpts.transitionDuration);
 				return;
 			}
 			// Attempt expand-to-view on ancestor just below activeRoot
@@ -336,7 +336,7 @@ export default defineComponent({
 			}
 			layoutNode = this.layoutMap.get(ancestor.name)!;
 			this.onInnerHeaderClickHeld(layoutNode);
-			setTimeout(() => this.expandToTolNode(tolNode), this.componentOptions.transitionDuration);
+			setTimeout(() => this.expandToTolNode(tolNode), this.uiOpts.transitionDuration);
 		},
 		onOverlayClick(){
 			this.animationActive = false;
@@ -445,7 +445,7 @@ export default defineComponent({
 						this.onDetachedAncestorClicked(node.parent!);
 						break;
 				}
-				setTimeout(this.autoAction, this.componentOptions.transitionDuration + this.autoWaitTime);
+				setTimeout(this.autoAction, this.uiOpts.transitionDuration + this.autoWaitTime);
 				this.autoPrevAction = action;
 			}
 		},
@@ -469,7 +469,7 @@ export default defineComponent({
 	created(){
 		window.addEventListener('resize', this.onResize);
 		window.addEventListener('keyup', this.onKeyUp);
-		tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.layoutOptions, true);
+		tryLayout(this.activeRoot, this.layoutMap, this.tileAreaPos, this.tileAreaDims, this.lytOpts, true);
 	},
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);
@@ -484,13 +484,13 @@ export default defineComponent({
 
 <template>
 <div :style="styles">
-	<tile :layoutNode="layoutTree"
-		:headerSz="layoutOptions.headerSz" :tileSpacing="layoutOptions.tileSpacing" :options="componentOptions"
+	<tile :layoutNode="layoutTree" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
 		@leaf-click-held="onInnerLeafClickHeld" @header-click-held="onInnerHeaderClickHeld"
 		@info-icon-clicked="onInnerInfoIconClicked"/>
 	<ancestry-bar v-if="detachedAncestors != null"
-		:pos="[0,0]" :dims="ancestryBarDims" :nodes="detachedAncestors" :options="componentOptions"
+		:pos="[0,0]" :dims="ancestryBarDims" :nodes="detachedAncestors"
+		:lytOpts="lytOpts" :uiOpts="uiOpts"
 		@detached-ancestor-clicked="onDetachedAncestorClicked" @info-icon-clicked="onInnerInfoIconClicked"/>
 	<!-- Icons -->
 	<search-icon @click="onSearchIconClick"
@@ -501,19 +501,19 @@ export default defineComponent({
 		class="absolute top-[6px] right-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
 	<!-- Modals -->
 	<transition name="fade">
-		<tile-info-modal v-if="infoModalNode != null" :tolNode="infoModalNode" :options="componentOptions"
+		<tile-info-modal v-if="infoModalNode != null" :tolNode="infoModalNode" :uiOpts="uiOpts"
 			@info-modal-close="onInfoModalClose"/>
 	</transition>
 	<transition name="fade">
-		<search-modal v-if="searchOpen" :layoutTree="layoutTree" :tolMap="tolMap" :options="componentOptions"
+		<search-modal v-if="searchOpen" :layoutTree="layoutTree" :tolMap="tolMap" :uiOpts="uiOpts"
 			@search-close="onSearchClose" @search-node="onSearchNode" ref="searchModal"/>
 	</transition>
 	<transition name="fade">
-		<help-modal v-if="helpOpen" :options="componentOptions" @help-modal-close="onHelpModalClose"/>
+		<help-modal v-if="helpOpen" :uiOpts="uiOpts" @help-modal-close="onHelpModalClose"/>
 	</transition>
 	<!-- Settings -->
 	<transition name="slide-bottom-right">
-		<settings-pane v-if="settingsOpen" :layoutOptions="layoutOptions" :componentOptions="componentOptions"
+		<settings-pane v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts"
 			@settings-close="onSettingsClose" @layout-option-change="onLayoutOptionChange"/>
 		<!-- outer div prevents transition interference with inner rotate -->
 		<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px] invisible">
