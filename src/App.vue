@@ -7,13 +7,13 @@ import SearchModal from './components/SearchModal.vue';
 import HelpModal from './components/HelpModal.vue';
 import SettingsPane from './components/SettingsPane.vue';
 import {TolNode, TolNodeRaw, tolFromRaw, getTolMap} from './tol';
-import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './lib';
-import type {LayoutOptions} from './lib';
-import {arraySum, randWeightedChoice} from './lib';
+import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
+import type {LayoutOptions} from './layout';
+import {arraySum, randWeightedChoice} from './util';
 // Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
 // Obtain tree-of-life data
-import tolRaw from './tol.json';
+import tolRaw from './tolData.json';
 const tol: TolNode = tolFromRaw(tolRaw);
 const tolMap = getTolMap(tol);
 

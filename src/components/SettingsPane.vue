@@ -1,6 +1,6 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
-import type {LayoutOptions} from '../lib';
+import type {LayoutOptions} from '../layout';
 
 export default defineComponent({
 	props: {

@@ -1,6 +1,6 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
-import {LayoutNode} from '../lib';
+import {LayoutNode} from '../layout';
 import TileImg from './TileImg.vue'
 
 export default defineComponent({
