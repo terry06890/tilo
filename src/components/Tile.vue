@@ -17,8 +17,10 @@ export default defineComponent({
 	},
 	data(){
 		return {
-			highlight: false, // Used to draw a colored outline on mouse hover, etc
+			highlight: false, // Used to draw a colored outline on mouse hover
 			inTransition: false, // Used to prevent content overlap and overflow during transitions
+			hasExpanded: false, // Set to true after an expansion transition ends, and false upon collapse
+				// Used to hide overflow on tile expansion, but not hide a sepSweptArea on subsequent transitions
 			clickHoldTimer: 0, // Used to recognise click-and-hold events
 		};
 	},
@@ -71,7 +73,7 @@ export default defineComponent({
 				transitionProperty: 'left, top, width, height, visibility',
 				transitionTimingFunction: 'ease-out',
 				zIndex: this.inTransition ? '1' : '0',
-				overflow: this.inTransition && !this.isLeaf ? 'hidden' : 'visible',
+				overflow: this.inTransition && !this.isLeaf && !this.hasExpanded ? 'hidden' : 'visible',
 				// CSS variables
 				'--nonleafBgColor': this.nonleafBgColor,
 				'--tileSpacing': this.lytOpts.tileSpacing + 'px',
@@ -181,13 +183,37 @@ export default defineComponent({
 				};
 			}
 		},
-		// Other
+		// For watching layoutNode data
+		pos(){
+			return this.layoutNode.pos;
+		},
+		dims(){
+			return this.layoutNode.dims;
+		},
 		failFlag(){
 			return this.layoutNode.failFlag;
 		},
 	},
 	watch: {
-		failFlag(newVal){
+		// For setting transition state (can be triggered externally, like via search and auto-mode)
+		pos: {
+			handler(){
+				if (!this.inTransition){
+					this.prepForTransition();
+				}
+			},
+			deep: true,
+		},
+		dims: {
+			handler(){
+				if (!this.inTransition){
+					this.prepForTransition();
+				}
+			},
+			deep: true,
+		},
+		// For externally triggering fail animations (used by search and auto-mode)
+		failFlag(){
 			this.triggerAnimation(this.isLeaf ? 'animate-expand-shrink' : 'animate-shrink-expand');
 		},
 	},
@@ -213,7 +239,6 @@ export default defineComponent({
 				console.log('Ignored click on non-expandable node');
 				return;
 			}
-			this.prepForTransition();
 			this.$emit(this.isLeaf ? 'leaf-click' : 'nonleaf-click', this.layoutNode);
 		},
 		onClickHold(){
@@ -221,12 +246,7 @@ export default defineComponent({
 				console.log('Ignored click-hold on non-expandable node');
 				return;
 			}
-			this.prepForTransition();
 			this.$emit(this.isLeaf ? 'leaf-click-held' : 'nonleaf-click-held', this.layoutNode);
-		},
-		prepForTransition(){
-			this.inTransition = true;
-			setTimeout(() => {this.inTransition = false}, this.uiOpts.tileChgDuration);
 		},
 		onInfoIconClick(evt: Event){
 			this.$emit('info-icon-click', this.layoutNode);
@@ -257,6 +277,16 @@ export default defineComponent({
 			this.$emit('info-icon-click', node);
 		},
 		// Other
+		prepForTransition(){
+			this.inTransition = true;
+			setTimeout(() => {this.inTransition = false}, this.uiOpts.tileChgDuration);
+			// Update hasExpanded
+			if (this.layoutNode.children.length > 0){
+				setTimeout(() => {this.hasExpanded = true}, this.uiOpts.tileChgDuration);
+			} else {
+				this.hasExpanded = false;
+			}
+		},
 		triggerAnimation(animation: string){
 			this.$el.classList.remove(animation);
 			this.$el.offsetWidth; // Triggers reflow
