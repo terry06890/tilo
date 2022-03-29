@@ -1,5 +1,5 @@
 /*
- * Contains classes used for representing tree-of-life data.
+ * Provides classes for representing and working with tree-of-life data.
  */
  
 // Represents a tree-of-life node/tree
@@ -13,7 +13,7 @@ export class TolNode {
 		this.parent = parent;
 	}
 }
-// Represents a tree-of-life node obtained from tol.json
+// Represents a tree-of-life node obtained from tolData.json
 export class TolNodeRaw {
 	name: string;
 	children?: TolNodeRaw[];
@@ -29,15 +29,14 @@ export function tolFromRaw(node: TolNodeRaw): TolNode {
 		if (node.children == null){
 			tolNode.children = [];
 		} else {
-			tolNode.children = Array(node.children.length);
-			node.children.forEach((child, idx) => {tolNode.children[idx] = helper(child, tolNode)});
+			tolNode.children = node.children.map(child => helper(child, tolNode));
 		}
 		tolNode.parent = parent;
 		return tolNode;
 	}
 	return helper(node, null);
 }
-// Returns a mapping from TolNode names to TolNodes in a given tree
+// Returns a map from TolNode names to TolNodes in a given tree
 export function getTolMap(tolTree: TolNode): Map<string, TolNode> {
 	function helper(node: TolNode, map: Map<string, TolNode>){
 		map.set(node.name, node);

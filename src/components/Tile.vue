@@ -4,166 +4,191 @@ import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode} from '../layout';
 import type {LayoutOptions} from '../layout';
 
-// Component holds a tree-node structure representing a tile or tile-group to be rendered
+// Displays one, or a hierarchy of, tree-of-life nodes, as a 'tile'
 export default defineComponent({
 	props: {
+		// A LayoutNode representing a laid-out tree-of-life node to display
 		layoutNode: {type: Object as PropType<LayoutNode>, required: true},
+		// Options
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object, required: true},
-		nonAbsPos: {type: Boolean, default: false}, // Don't use absolute positioning (only applies for leaf nodes)
+		// For a leaf node, prevents usage of absolute positioning (used by AncestryBar)
+		nonAbsPos: {type: Boolean, default: false},
 	},
 	data(){
 		return {
-			highlight: false,
-			clickHoldTimer: 0, // Used to recognise a click-and-hold event
-			animating: false, // Used to prevent content overlap and overflow during transitions
-		}
+			highlight: false, // Used to draw a colored outline on mouse hover, etc
+			inTransition: false, // Used to prevent content overlap and overflow during transitions
+			clickHoldTimer: 0, // Used to recognise click-and-hold events
+		};
 	},
 	computed: {
-		isLeaf(){
+		// Basic abbreviations
+		isLeaf(): boolean {
 			return this.layoutNode.children.length == 0;
 		},
-		isExpandable(){
-			return this.layoutNode.tolNode.children.length > this.layoutNode.children.length;
+		isExpandableLeaf(): boolean {
+			return this.isLeaf && this.layoutNode.tolNode.children.length > 0;
 		},
-		showHeader(){
-			return (this.layoutNode.showHeader && !this.layoutNode.sepSweptArea) ||
-				(this.layoutNode.sepSweptArea && this.layoutNode.sepSweptArea.sweptLeft);
+		showNonleafHeader(): boolean {
+			return (this.layoutNode.showHeader && this.layoutNode.sepSweptArea == null) ||
+				(this.layoutNode.sepSweptArea != null && this.layoutNode.sepSweptArea.sweptLeft);
 		},
-		nonLeafBgColor(){
-			let colorArray = this.uiOpts.nonLeafBgColors;
+		// Style related
+		nonleafBgColor(): string {
+			let colorArray = this.uiOpts.nonleafBgColors;
 			return colorArray[this.layoutNode.depth % colorArray.length];
 		},
-		tileStyles(): Record<string,string> {
+		boxShadow(): string {
+			if (this.highlight){
+				return this.uiOpts.shadowHighlight;
+			} else if (this.layoutNode.hasFocus && !this.inTransition){
+				return this.uiOpts.shadowFocused;
+			} else {
+				return this.uiOpts.shadowNormal;
+			}
+		},
+		styles(): Record<string,string> {
+			let layoutStyles = {
+				position: 'absolute',
+				left: this.layoutNode.pos[0] + 'px',
+				top: this.layoutNode.pos[1] + 'px',
+				width: this.layoutNode.dims[0] + 'px',
+				height: this.layoutNode.dims[1] + 'px',
+				visibility: 'visible',
+			};
+			if (this.layoutNode.hidden){
+				layoutStyles.left = layoutStyles.top = layoutStyles.width = layoutStyles.height = '0';
+				layoutStyles.visibility = 'hidden';
+			}
+			if (this.nonAbsPos){
+				layoutStyles.position = 'static';
+			}
 			return {
-				// Places div using layoutNode, with centering if root
-				position: this.nonAbsPos && this.isLeaf ? 'static' : 'absolute',
-				left: (this.layoutNode.hidden ? 0 : this.layoutNode.pos[0]) + 'px',
-				top: (this.layoutNode.hidden ? 0 : this.layoutNode.pos[1]) + 'px',
-				width: (this.layoutNode.hidden ? 0 : this.layoutNode.dims[0]) + 'px',
-				height: (this.layoutNode.hidden ? 0 : this.layoutNode.dims[1]) + 'px',
-				visibility: this.layoutNode.hidden ? 'hidden' : 'visible',
-				// Other bindings
-				transitionDuration: this.uiOpts.transitionDuration + 'ms',
-				zIndex: this.animating ? '1' : '0',
-				overflow: this.animating && !this.isLeaf ? 'hidden' : 'visible',
-				// Static styles
+				...layoutStyles,
+				// Transition related
+				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
 				transitionProperty: 'left, top, width, height, visibility',
 				transitionTimingFunction: 'ease-out',
+				zIndex: this.inTransition ? '1' : '0',
+				overflow: this.inTransition && !this.isLeaf ? 'hidden' : 'visible',
 				// CSS variables
-				'--nonLeafBgColor': this.nonLeafBgColor,
+				'--nonleafBgColor': this.nonleafBgColor,
 				'--tileSpacing': this.lytOpts.tileSpacing + 'px',
 			};
 		},
 		leafStyles(): Record<string,string> {
 			return {
-				width: '100%',
-				height: '100%',
-				// Image
+				// Image (and scrims)
 				backgroundImage:
-					'linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0) 40%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.4) 100%),' +
+					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
 					'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',
 				backgroundSize: 'cover',
-				// Child layout
-				display: 'flex',
-				flexDirection: 'column',
 				// Other
 				borderRadius: this.uiOpts.borderRadius + 'px',
-				boxShadow: this.highlight ? this.uiOpts.shadowHighlight :
-					(this.layoutNode.hasFocus ? this.uiOpts.shadowFocused : this.uiOpts.shadowNormal),
+				boxShadow: this.boxShadow,
 			};
 		},
 		leafHeaderStyles(): Record<string,string> {
 			return {
-				height: (this.uiOpts.imgTileFontSz + this.uiOpts.imgTilePadding * 2) + 'px',
-				lineHeight: this.uiOpts.imgTileFontSz + 'px',
-				fontSize: this.uiOpts.imgTileFontSz + 'px',
-				padding: this.uiOpts.imgTilePadding + 'px',
-				color: this.isExpandable ? this.uiOpts.expandableImgTileColor : this.uiOpts.imgTileColor,
+				height: (this.uiOpts.leafHeaderFontSz + this.uiOpts.leafTilePadding * 2) + 'px',
+				padding: this.uiOpts.leafTilePadding + 'px',
+				lineHeight: this.uiOpts.leafHeaderFontSz + 'px',
+				fontSize: this.uiOpts.leafHeaderFontSz + 'px',
+				color: !this.isExpandableLeaf ? this.uiOpts.leafHeaderColor : this.uiOpts.leafHeaderExColor,
 				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
 				whiteSpace: 'nowrap',
 			};
 		},
-		nonLeafStyles(): Record<string,string> {
-			let temp = {
-				width: '100%',
-				height: '100%',
-				backgroundColor: this.nonLeafBgColor,
-				borderRadius: this.uiOpts.borderRadius + 'px',
-				boxShadow: this.animating ? 'none' : (this.highlight ? this.uiOpts.shadowHighlight :
-					(this.layoutNode.hasFocus ? this.uiOpts.shadowFocused : this.uiOpts.shadowNormal)),
-			};
+		nonleafStyles(): Record<string,string> {
+			let borderR = this.uiOpts.borderRadius + 'px';
 			if (this.layoutNode.sepSweptArea != null){
-				let r = this.uiOpts.borderRadius + 'px';
-				temp = this.layoutNode.sepSweptArea.sweptLeft ?
-					{...temp, borderRadius: `${r} ${r} ${r} 0`} :
-					{...temp, borderRadius: `${r} 0 ${r} ${r}`};
+				borderR = this.layoutNode.sepSweptArea.sweptLeft ?
+					`${borderR} ${borderR} ${borderR} 0` :
+					`${borderR} 0 ${borderR} ${borderR}`;
 			}
-			return temp;
+			return {
+				backgroundColor: this.nonleafBgColor,
+				borderRadius: borderR,
+				boxShadow: this.boxShadow,
+			};
 		},
-		nonLeafHeaderStyles(): Record<string,string> {
-			let r = this.uiOpts.borderRadius + 'px';
+		nonleafHeaderStyles(): Record<string,string> {
+			let borderR = this.uiOpts.borderRadius + 'px';
+			borderR = `${borderR} ${borderR} 0 0`;
 			return {
 				height: this.lytOpts.headerSz + 'px',
+				borderRadius: borderR,
+				backgroundColor: this.uiOpts.nonleafHeaderBgColor,
+			};
+		},
+		nonleafHeaderTextStyles(): Record<string,string> {
+			return {
 				lineHeight: this.lytOpts.headerSz + 'px',
-				fontSize: this.uiOpts.nonLeafHeaderFontSz + 'px',
+				fontSize: this.uiOpts.nonleafHeaderFontSz + 'px',
 				textAlign: 'center',
-				color: this.uiOpts.nonLeafHeaderColor,
-				backgroundColor: this.uiOpts.nonLeafHeaderBgColor,
-				borderRadius: `${r} ${r} 0 0`,
+				color: this.uiOpts.nonleafHeaderColor,
 				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
 				whiteSpace: 'nowrap',
+			};
+		},
+		infoIconStyles(): Record<string,string> {
+			let size = this.uiOpts.infoIconSz + 'px';
+			return {
+				width: size,
+				height: size,
+				minWidth: size,
+				minHeight: size,
+				margin: this.uiOpts.infoIconMargin + 'px',
 			};
 		},
 		sepSweptAreaStyles(): Record<string,string> {
-			let commonStyles = {
+			let borderR = this.uiOpts.borderRadius + 'px';
+			let styles = {
 				position: 'absolute',
-				backgroundColor: this.nonLeafBgColor,
-				boxShadow: this.animating ? 'none' : (this.highlight ? this.uiOpts.shadowHighlight :
-					(this.layoutNode.hasFocus ? this.uiOpts.shadowFocused : this.uiOpts.shadowNormal)),
-				transitionDuration: this.uiOpts.transitionDuration + 'ms',
-				transitionProperty: 'left, top, width, height',
+				backgroundColor: this.nonleafBgColor,
+				boxShadow: this.boxShadow,
+				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
+				transitionProperty: 'left, top, width, height, visibility',
 				transitionTimingFunction: 'ease-out',
 			};
 			let area = this.layoutNode.sepSweptArea;
-			if (this.layoutNode.hidden || area == null){
+			if (!this.layoutNode.hidden && area != null){
 				return {
-					...commonStyles,
+					...styles,
+					visibility: 'visible',
+					left: area.pos[0] + 'px',
+					top: area.pos[1] + 'px',
+					width: area.dims[0] + 'px',
+					height: area.dims[1] + 'px',
+					borderRadius: area.sweptLeft ?
+						`${borderR} 0 0 ${borderR}` :
+						`${borderR} ${borderR} 0 0`,
+				};
+			} else {
+				return {
+					...styles,
 					visibility: 'hidden',
 					left: '0',
 					top: this.lytOpts.headerSz + 'px',
 					width: '0',
 					height: '0',
-				};
-			} else {
-				let r = this.uiOpts.borderRadius + 'px';
-				return {
-					...commonStyles,
-					left: area.pos[0] + 'px',
-					top: area.pos[1] + 'px',
-					width: area.dims[0] + 'px',
-					height: area.dims[1] + 'px',
-					borderRadius: area.sweptLeft ? `${r} 0 0 ${r}` : `${r} ${r} 0 0`,
+					borderRadius: borderR,
 				};
 			}
 		},
-		collapseFailFlag(){
-			return this.layoutNode.collapseFailFlag;
-		},
-		expandFailFlag(){
-			return this.layoutNode.expandFailFlag;
+		// Other
+		failFlag(){
+			return this.layoutNode.failFlag;
 		},
 	},
 	watch: {
-		expandFailFlag(newVal){
-			this.triggerAnimation('animate-expand-shrink');
-		},
-		collapseFailFlag(newVal){
-			this.triggerAnimation('animate-shrink-expand');
+		failFlag(newVal){
+			this.triggerAnimation(this.isLeaf ? 'animate-expand-shrink' : 'animate-shrink-expand');
 		},
 	},
 	methods: {
@@ -184,115 +209,98 @@ export default defineComponent({
 			}
 		},
 		onClick(){
-			if (this.isLeaf && !this.isExpandable){
+			if (this.isLeaf && !this.isExpandableLeaf){
 				console.log('Ignored click on non-expandable node');
 				return;
 			}
 			this.prepForTransition();
-			if (this.isLeaf){
-				this.$emit('leaf-clicked', this.layoutNode);
-			} else {
-				this.$emit('header-clicked', this.layoutNode);
-			}
+			this.$emit(this.isLeaf ? 'leaf-click' : 'nonleaf-click', this.layoutNode);
 		},
 		onClickHold(){
-			if (this.isLeaf && !this.isExpandable){
+			if (this.isLeaf && !this.isExpandableLeaf){
 				console.log('Ignored click-hold on non-expandable node');
 				return;
 			}
 			this.prepForTransition();
-			if (this.isLeaf){
-				this.$emit('leaf-click-held', this.layoutNode);
-			} else {
-				this.$emit('header-click-held', this.layoutNode);
-			}
+			this.$emit(this.isLeaf ? 'leaf-click-held' : 'nonleaf-click-held', this.layoutNode);
 		},
 		prepForTransition(){
-			this.animating = true;
-			setTimeout(() => {this.animating = false}, this.uiOpts.transitionDuration);
+			this.inTransition = true;
+			setTimeout(() => {this.inTransition = false}, this.uiOpts.tileChgDuration);
 		},
-		onInfoClick(evt: Event){
-			this.$emit('info-icon-clicked', this.layoutNode);
+		onInfoIconClick(evt: Event){
+			this.$emit('info-icon-click', this.layoutNode);
 		},
-		// For coloured outlines on hover
+		// Mouse hover handling
 		onMouseEnter(evt: Event){
-			if (!this.isLeaf || this.isExpandable){
+			if ((!this.isLeaf || this.isExpandableLeaf) && !this.inTransition){
 				this.highlight = true;
 			}
 		},
 		onMouseLeave(evt: Event){
-			if (!this.isLeaf || this.isExpandable){
-				this.highlight = false;
-			}
+			this.highlight = false;
 		},
 		// Child event propagation
-		onInnerLeafClicked(data: LayoutNode){
-			this.$emit('leaf-clicked', data);
+		onInnerLeafClick(node: LayoutNode){
+			this.$emit('leaf-click', node);
 		},
-		onInnerHeaderClicked(data: LayoutNode){
-			this.$emit('header-clicked', data);
+		onInnerNonleafClick(node: LayoutNode){
+			this.$emit('nonleaf-click', node);
 		},
-		onInnerLeafClickHeld(data: LayoutNode){
-			this.$emit('leaf-click-held', data);
+		onInnerLeafClickHeld(node: LayoutNode){
+			this.$emit('leaf-click-held', node);
 		},
-		onInnerHeaderClickHeld(data: LayoutNode){
-			this.$emit('header-click-held', data);
+		onInnerNonleafClickHeld(node: LayoutNode){
+			this.$emit('nonleaf-click-held', node);
 		},
-		onInnerInfoIconClicked(data: LayoutNode){
-			this.$emit('info-icon-clicked', data);
+		onInnerInfoIconClick(node: LayoutNode){
+			this.$emit('info-icon-click', node);
 		},
-		//
-		triggerAnimation(animationClass: string){
-			this.$el.classList.remove(animationClass);
+		// Other
+		triggerAnimation(animation: string){
+			this.$el.classList.remove(animation);
 			this.$el.offsetWidth; // Triggers reflow
-			this.$el.classList.add(animationClass);
+			this.$el.classList.add(animation);
 		},
 	},
-	name: 'tile', // Need this to use self in template
+	name: 'tile', // Note: Need this to use self in template
 	components: {InfoIcon, },
-	emits: ['leaf-clicked', 'header-clicked', 'leaf-click-held', 'header-click-held', 'info-icon-clicked'],
+	emits: ['leaf-click', 'nonleaf-click', 'leaf-click-held', 'nonleaf-click-held', 'info-icon-click', ],
 });
 </script>
 
 <template>
-<div :style="tileStyles">
-	<div v-if="isLeaf" :style="leafStyles" :class="isExpandable ? ['hover:cursor-pointer'] : []"
-		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
-		@mousedown="onMouseDown" @mouseup="onMouseUp">
+<div :style="styles"> <!-- Enclosing div needed for size transitions -->
+	<div v-if="isLeaf" :style="leafStyles"
+		class="w-full h-full flex flex-col overflow-hidden" :class="{'hover:cursor-pointer': isExpandableLeaf}"
+		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
 		<h1 :style="leafHeaderStyles">{{layoutNode.tolNode.name}}</h1>
-		<info-icon
-			class="w-[18px] h-[18px] mt-auto mb-[2px] mr-[2px] self-end
-				text-white/30 hover:text-white hover:cursor-pointer"
-			@click.stop="onInfoClick" @mousedown.stop @mouseup.stop/>
+		<info-icon :style="[infoIconStyles, {marginTop: 'auto'}]"
+			class="self-end text-white/10 hover:text-white hover:cursor-pointer"
+			@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 	</div>
-	<div v-else :style="nonLeafStyles" ref="nonLeaf">
-		<div v-if="showHeader" :style="nonLeafHeaderStyles" class="flex hover:cursor-pointer"
-			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
-			@mousedown="onMouseDown" @mouseup="onMouseUp">
-			<h1 class="grow">{{layoutNode.tolNode.name}}</h1>
-			<info-icon
-				class="w-[18px] h-[18px] mr-[2px]
-					text-white/20 hover:text-white hover:cursor-pointer"
-				@click.stop="onInfoClick" @mousedown.stop @mouseup.stop/>
+	<div v-else :style="nonleafStyles" class="w-full h-full" ref="nonleaf">
+		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
+			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
+			<h1 :style="nonleafHeaderTextStyles" class="grow">{{layoutNode.tolNode.name}}</h1>
+			<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
+				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</div>
 		<div :style="sepSweptAreaStyles" ref="sepSweptArea"
 			:class="layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge'">
 			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
-				:style="nonLeafHeaderStyles" class="flex hover:cursor-pointer"
-				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
-				@mousedown="onMouseDown" @mouseup="onMouseUp">
-				<h1 class="grow">{{layoutNode.tolNode.name}}</h1>
-				<info-icon
-					class="w-[18px] h-[18px] mr-[2px]
-						text-white/20 hover:text-white hover:cursor-pointer"
-					@click.stop="onInfoClick" @mousedown.stop @mouseup.stop/>
+				:style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
+				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
+				<h1 :style="nonleafHeaderTextStyles" class="grow">{{layoutNode.tolNode.name}}</h1>
+				<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
+					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 			</div>
 		</div>
-		<tile v-for="child in layoutNode.children" :key="child.tolNode.name" :layoutNode="child"
-			:lytOpts="lytOpts" :uiOpts="uiOpts"
-			@leaf-clicked="onInnerLeafClicked" @header-clicked="onInnerHeaderClicked"
-			@leaf-click-held="onInnerLeafClickHeld" @header-click-held="onInnerHeaderClickHeld"
-			@info-icon-clicked="onInnerInfoIconClicked"/>
+		<tile v-for="child in layoutNode.children" :key="child.tolNode.name"
+			:layoutNode="child" :lytOpts="lytOpts" :uiOpts="uiOpts"
+			@leaf-click="onInnerLeafClick" @nonleaf-click="onInnerNonleafClick"
+			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
+			@info-icon-click="onInnerInfoIconClick"/>
 	</div>
 </div>
 </template>
@@ -301,7 +309,7 @@ export default defineComponent({
 .hide-right-edge::before {
 	content: '';
 	position: absolute;
-	background-color: var(--nonLeafBgColor);
+	background-color: var(--nonleafBgColor);
 	right: calc(0px - var(--tileSpacing));
 	bottom: 0;
 	width: var(--tileSpacing);
@@ -310,10 +318,44 @@ export default defineComponent({
 .hide-top-edge::before {
 	content: '';
 	position: absolute;
-	background-color: var(--nonLeafBgColor);
+	background-color: var(--nonleafBgColor);
 	bottom: calc(0px - var(--tileSpacing));
 	right: 0;
 	width: calc(100% + var(--tileSpacing));
 	height: var(--tileSpacing);
+}
+.animate-expand-shrink {
+	animation-name: expand-shrink;
+	animation-duration: 300ms;
+	animation-iteration-count: 1;
+	animation-timing-function: ease-in-out;
+}
+@keyframes expand-shrink {
+	from {
+		transform: scale(1, 1);
+	}
+	50% {
+		transform: scale(1.1, 1.1);
+	}
+	to {
+		transform: scale(1, 1);
+	}
+}
+.animate-shrink-expand {
+	animation-name: shrink-expand;
+	animation-duration: 300ms;
+	animation-iteration-count: 1;
+	animation-timing-function: ease-in-out;
+}
+@keyframes shrink-expand {
+	from {
+		transform: translate3d(0,0,0) scale(1, 1);
+	}
+	50% {
+		transform: translate3d(0,0,0) scale(0.9, 0.9);
+	}
+	to {
+		transform: translate3d(0,0,0) scale(1, 1);
+	}
 }
 </style>

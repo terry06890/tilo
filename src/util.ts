@@ -1,17 +1,18 @@
 /*
- * Contains commonly-used utility functions.
+ * Contains utility functions.
  */
 
 // Returns [0 ... len]
-export function range(len: number){
+export function range(len: number): number[] {
 	return [...Array(len).keys()];
 }
 // Returns sum of array values
-export function arraySum(array: number[]){
+export function arraySum(array: number[]): number {
 	return array.reduce((x,y) => x+y);
 }
-// Returns array copy with vals clipped to within [min,max], redistributing to compensate (returns null on failure)
-export function limitVals(arr: number[], min: number, max: number){
+// Returns array copy with vals clipped to within [min,max], redistributing to compensate
+// Returns null on failure
+export function limitVals(arr: number[], min: number, max: number): number[] | null {
 	let vals = [...arr];
 	let clipped = new Array(vals.length).fill(false);
 	let owedChg = 0; // Stores total change made after clipping values
@@ -48,8 +49,9 @@ export function limitVals(arr: number[], min: number, max: number){
 	}
 }
 // Usable to iterate through possible int arrays with ascending values in the range 0 to maxLen-1, starting with [0]
-	// eg: With maxLen 3, updates [0] to [0,1], then to [0,2], then [0,1,2], then null
-export function updateAscSeq(seq: number[], maxLen: number){
+	// eg: With maxLen 3, updates [0] to [0,1], then to [0,2], then [0,1,2]
+// Returns false when there is no next array
+export function updateAscSeq(seq: number[], maxLen: number): boolean {
 	// Try increasing last element, then preceding elements, then extending the array
 	let i = seq.length - 1;
 	while (true){

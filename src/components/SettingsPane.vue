@@ -3,18 +3,19 @@ import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import type {LayoutOptions} from '../layout';
 
+// Displays configurable options, and sends option-change requests
 export default defineComponent({
 	props: {
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object, required: true},
 	},
 	methods: {
-		closeClicked(evt: Event){
-			if (evt.target == this.$el || (this.$refs.closeIcon.$el as HTMLElement).contains(evt.target as HTMLElement)){
+		onCloseClick(evt: Event){
+			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
 				this.$emit('settings-close');
 			}
 		},
-		onLayoutOptChg(){
+		onLytOptChg(){
 			this.$emit('layout-option-change');
 		},
 		onMinTileSzChg(){
@@ -23,7 +24,7 @@ export default defineComponent({
 			if (Number(minInput.value) > Number(maxInput.value)){
 				this.lytOpts.maxTileSz = this.lytOpts.minTileSz;
 			}
-			this.onLayoutOptChg();
+			this.onLytOptChg();
 		},
 		onMaxTileSzChg(){
 			let minInput = this.$refs.minTileSzInput as HTMLInputElement;
@@ -31,7 +32,7 @@ export default defineComponent({
 			if (Number(maxInput.value) < Number(minInput.value)){
 				this.lytOpts.minTileSz = this.lytOpts.maxTileSz;
 			}
-			this.onLayoutOptChg();
+			this.onLytOptChg();
 		},
 	},
 	components: {CloseIcon, },
@@ -41,13 +42,13 @@ export default defineComponent({
 
 <template>
 <div class="absolute bottom-4 right-4 min-w-[5cm] p-3 bg-stone-50 visible rounded-md shadow shadow-black">
-	<close-icon @click="closeClicked" ref="closeIcon"
+	<close-icon @click="onCloseClick" ref="closeIcon"
 		class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer" />
 	<h1 class="text-xl font-bold mb-2">Settings</h1>
 	<hr class="border-stone-400"/>
 	<div>
 		<label>Tile Spacing <input type="range" min="0" max="20" class="mx-2 w-[3cm]"
-			v-model.number="lytOpts.tileSpacing" @input="onLayoutOptChg"/></label>
+			v-model.number="lytOpts.tileSpacing" @input="onLytOptChg"/></label>
 	</div>
 	<hr class="border-stone-400"/>
 	<div>
@@ -70,22 +71,22 @@ export default defineComponent({
 		<ul>
 			<li>
 				<label> <input type="radio" v-model="lytOpts.layoutType" value="sqr"
-					@change="onLayoutOptChg"/> Squares </label>
+					@change="onLytOptChg"/> Squares </label>
 			</li>
 			<li>
 				<label> <input type="radio" v-model="lytOpts.layoutType" value="rect"
-					@change="onLayoutOptChg"/> Rectangles </label>
+					@change="onLytOptChg"/> Rectangles </label>
 			</li>
 			<li>
 				<label> <input type="radio" v-model="lytOpts.layoutType" value="sweep"
-					@change="onLayoutOptChg"/> Sweep to side </label>
+					@change="onLytOptChg"/> Sweep to side </label>
 			</li>
 		</ul>
 	</div>
 	<hr class="border-stone-400"/>
 	<div>
-		<label> <input type="checkbox" v-model="lytOpts.sweepingToParent"
-			@change="onLayoutOptChg"/> Sweep to parent</label>
+		<label> <input type="checkbox" v-model="lytOpts.sweepToParent"
+			@change="onLytOptChg"/> Sweep to parent</label>
 	</div>
 	<hr class="border-stone-400"/>
 	<div>
@@ -93,26 +94,26 @@ export default defineComponent({
 		<ul>
 			<li>
 				<label> <input type="radio" v-model="lytOpts.sweepMode" value="left"
-					@change="onLayoutOptChg"/> To left </label>
+					@change="onLytOptChg"/> To left </label>
 			</li>
 			<li>
 				<label> <input type="radio" v-model="lytOpts.sweepMode" value="top"
-					@change="onLayoutOptChg"/> To top </label>
+					@change="onLytOptChg"/> To top </label>
 			</li>
 			<li>
 				<label> <input type="radio" v-model="lytOpts.sweepMode" value="shorter"
-					@change="onLayoutOptChg"/> To shorter </label>
+					@change="onLytOptChg"/> To shorter </label>
 			</li>
 			<li>
 				<label> <input type="radio" v-model="lytOpts.sweepMode" value="auto"
-					@change="onLayoutOptChg"/> Auto </label>
+					@change="onLytOptChg"/> Auto </label>
 			</li>
 		</ul>
 	</div>
 	<hr class="border-stone-400"/>
 	<div>
-		<label>Animation Speed <input type="range" min="0" max="1000" class="mx-2 w-[3cm]"
-			v-model.number="uiOpts.transitionDuration"/></label>
+		<label>Animation Duration <input type="range" min="0" max="1000" class="mx-2 w-[3cm]"
+			v-model.number="uiOpts.tileChgDuration"/></label>
 	</div>
 </div>
 </template>

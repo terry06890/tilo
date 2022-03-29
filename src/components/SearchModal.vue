@@ -4,15 +4,17 @@ import SearchIcon from './icon/SearchIcon.vue';
 import {TolNode} from '../tol';
 import {LayoutNode} from '../layout';
 
+// Displays a search box, and sends search requests
 export default defineComponent({
 	props: {
-		layoutTree: {type: Object as PropType<LayoutNode>, required: true},
+		// Map from tree-of-life node names to TolNode objects
 		tolMap: {type: Object as PropType<Map<string,TolNode>>, required: true},
+		// Options
 		uiOpts: {type: Object, required: true},
 	},
 	methods: {
-		closeClicked(evt: Event){
-			if (evt.target == this.$el || (this.$refs.closeIcon.$el as HTMLElement).contains(evt.target as HTMLElement)){
+		onCloseClick(evt: Event){
+			if (evt.target == this.$el || (this.$refs.searchInput as typeof SearchIcon).$el.contains(evt.target)){
 				this.$emit('search-close');
 			}
 		},
@@ -37,16 +39,16 @@ export default defineComponent({
 		(this.$refs.searchInput as HTMLInputElement).focus();
 	},
 	components: {SearchIcon, },
-	emits: ['search-node', 'search-close']
+	emits: ['search-node', 'search-close', ],
 });
 </script>
 
 <template>
-<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="closeClicked">
+<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onCloseClick">
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 p-3
 		bg-stone-50 rounded-md shadow shadow-black flex gap-1">
 		<input type="text" class="block border"
-			@keyup.enter="onSearchEnter" @keyup.esc="closeClicked" ref="searchInput"/>
+			@keyup.enter="onSearchEnter" @keyup.esc="onCloseClick" ref="searchInput"/>
 		<search-icon @click.stop="onSearchEnter"
 			class="block w-6 h-6 ml-1 hover:cursor-pointer hover:bg-stone-200" />
 	</div>
