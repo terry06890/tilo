@@ -105,7 +105,12 @@ export default defineComponent({
 				padding: this.uiOpts.leafTilePadding + 'px',
 				lineHeight: this.uiOpts.leafHeaderFontSz + 'px',
 				fontSize: this.uiOpts.leafHeaderFontSz + 'px',
-				color: !this.isExpandableLeaf ? this.uiOpts.leafHeaderColor : this.uiOpts.leafHeaderExColor,
+				fontStyle: this.tolNode.pSupport ? 'normal' : 'italic',
+				color: this.tolNode.children.length == 0 ?
+					this.uiOpts.headerColor :
+					this.tolNode.children.length < this.uiOpts.highTipsVal ?
+						this.uiOpts.headerColor2 :
+						this.uiOpts.headerColor3,
 				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
@@ -132,6 +137,7 @@ export default defineComponent({
 				height: this.lytOpts.headerSz + 'px',
 				borderRadius: borderR,
 				backgroundColor: this.uiOpts.nonleafHeaderBgColor,
+				fontStyle: this.tolNode.pSupport ? 'normal' : 'italic',
 			};
 		},
 		nonleafHeaderTextStyles(): Record<string,string> {

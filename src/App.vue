@@ -64,11 +64,13 @@ const defaultUiOpts = {
 	shadowFocused: '0 0 1px 2px orange',
 	infoIconSz: 18, //px
 	infoIconMargin: 2, //px
+	highTipsVal: 50,
+	headerColor: '#fafaf9',
+	headerColor2: 'greenyellow',
+	headerColor3: 'orange',
 	// For leaf tiles
 	leafTilePadding: 4, //px
 	leafHeaderFontSz: 15, //px
-	leafHeaderColor: '#fafaf9',
-	leafHeaderExColor: 'greenyellow', //yellow, greenyellow, turquoise,
 	// For non-leaf tiles
 	nonleafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
 	nonleafHeaderFontSz: 15, //px
