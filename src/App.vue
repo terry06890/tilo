@@ -13,7 +13,8 @@ import SearchIcon from './components/icon/SearchIcon.vue';
 import PlayIcon from './components/icon/PlayIcon.vue';
 import SettingsIcon from './components/icon/SettingsIcon.vue';
 // Other
-import {TolNode, TolNodeRaw, tolFromRaw, getTolMap} from './tol';
+import type {TolMap} from './tol';
+import {TolNode} from './tol';
 import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import type {LayoutOptions} from './layout';
 import {arraySum, randWeightedChoice} from './util';
@@ -38,9 +39,9 @@ function getReverseAction(action: Action): Action | null {
 }
 
 // Get tree-of-life data
-import tolRaw from './tolData.json';
-const tol = tolFromRaw(tolRaw);
-const tolMap = getTolMap(tol);
+import data from './tolData.json';
+let tolMap: TolMap = data;
+const rootName = "[Elaeocarpus williamsianus + Brunellia mexicana]";
 
 // Configurable options
 const defaultLytOpts: LayoutOptions = {
@@ -89,14 +90,14 @@ const defaultUiOpts = {
 
 export default defineComponent({
 	data(){
-		let layoutTree = initLayoutTree(tol, 0);
+		let layoutTree = initLayoutTree(tolMap, rootName, 0);
 		return {
+			tolMap: tolMap,
 			layoutTree: layoutTree,
 			activeRoot: layoutTree, // Differs from layoutTree root when expand-to-view is used
 			layoutMap: initLayoutMap(layoutTree), // Maps names to LayoutNode objects
-			tolMap: tolMap, // Maps names to TolNode objects
 			// Modals and settings related
-			infoModalNode: null as TolNode | null, // Node to display info for, or null
+			infoModalNode: null as LayoutNode | null, // Node to display info for, or null
 			helpOpen: false,
 			searchOpen: false,
 			settingsOpen: false,
@@ -170,16 +171,22 @@ export default defineComponent({
 	methods: {
 		// For tile expand/collapse events
 		onLeafClick(layoutNode: LayoutNode){
-			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-				{allowCollapse: false, chg: {type: 'expand', node: layoutNode}, layoutMap: this.layoutMap});
+			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
+				allowCollapse: false,
+				chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap},
+				layoutMap: this.layoutMap
+			});
 			if (!success){
 				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 			}
 			return success;
 		},
 		onNonleafClick(layoutNode: LayoutNode){
-			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-				{allowCollapse: false, chg: {type: 'collapse', node: layoutNode}, layoutMap: this.layoutMap});
+			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
+				allowCollapse: false,
+				chg: {type: 'collapse', node: layoutNode, tolMap: this.tolMap},
+				layoutMap: this.layoutMap
+			});
 			if (!success){
 				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 			}
@@ -193,8 +200,11 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-				{allowCollapse: true, chg: {type: 'expand', node: layoutNode}, layoutMap: this.layoutMap});
+			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
+				allowCollapse: true,
+				chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap},
+				layoutMap: this.layoutMap
+			});
 		},
 		onNonleafClickHeld(layoutNode: LayoutNode){
 			if (layoutNode == this.activeRoot){
@@ -204,7 +214,7 @@ export default defineComponent({
 			LayoutNode.hideUpward(layoutNode);
 			this.activeRoot = layoutNode;
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-				{allowCollapse: true, layoutMap: this.layoutMap, });
+				{allowCollapse: true, layoutMap: this.layoutMap});
 		},
 		onDetachedAncestorClick(layoutNode: LayoutNode){
 			LayoutNode.showDownward(layoutNode);
@@ -215,7 +225,7 @@ export default defineComponent({
 		// For tile-info events
 		onInfoIconClick(node: LayoutNode){
 			this.resetMode();
-			this.infoModalNode = node.tolNode;
+			this.infoModalNode = node;
 		},
 		// For help events
 		onHelpIconClick(){
@@ -227,60 +237,58 @@ export default defineComponent({
 			this.resetMode();
 			this.searchOpen = true;
 		},
-		onSearchNode(tolNode: TolNode){
+		onSearchNode(name: string){
 			this.searchOpen = false;
 			this.modeRunning = true;
-			this.expandToTolNode(tolNode);
+			this.expandToNode(name);
 		},
-		expandToTolNode(tolNode: TolNode){
+		expandToNode(name: string){
 			if (!this.modeRunning){
 				return;
 			}
 			// Check if searched node is displayed
-			let layoutNode = this.layoutMap.get(tolNode.name);
-			if (layoutNode != null && !layoutNode.hidden){
-				this.setLastFocused(layoutNode);
+			let layoutNodeVal = this.layoutMap.get(name);
+			if (layoutNodeVal != null && !layoutNodeVal.hidden){
+				this.setLastFocused(layoutNodeVal);
 				this.modeRunning = false;
 				return;
 			}
 			// Get nearest in-layout-tree ancestor
-			let ancestor = tolNode;
-			while (this.layoutMap.get(ancestor.name) == null){
-				ancestor = ancestor.parent!;
+			let ancestorName = name;
+			while (this.layoutMap.get(ancestorName) == null){
+				ancestorName = this.tolMap[ancestorName].parent!;
 			}
-			layoutNode = this.layoutMap.get(ancestor.name)!;
+			let layoutNode = this.layoutMap.get(ancestorName)!;
 			// If hidden, expand self/ancestor in ancestry-bar
 			if (layoutNode.hidden){
 				while (!this.detachedAncestors!.includes(layoutNode)){
-					ancestor = ancestor.parent!;
-					layoutNode = this.layoutMap.get(ancestor.name)!;
+					layoutNode = layoutNode.parent!;
 				}
 				this.onDetachedAncestorClick(layoutNode!);
-				setTimeout(() => this.expandToTolNode(tolNode), this.uiOpts.tileChgDuration);
+				setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
 				return;
 			}
 			// Attempt tile-expand
 			let success = this.onLeafClick(layoutNode);
 			if (success){
-				setTimeout(() => this.expandToTolNode(tolNode), this.uiOpts.tileChgDuration);
+				setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
 				return;
 			}
 			// Attempt expand-to-view on ancestor just below activeRoot
-			if (ancestor.name == this.activeRoot.tolNode.name){
+			if (layoutNode == this.activeRoot){
 				console.log('Unable to complete search (not enough room to expand active root)');
 					// Note: Only happens if screen is significantly small or node has significantly many children
 				this.modeRunning = false;
 				return;
 			}
 			while (true){
-				if (ancestor.parent!.name == this.activeRoot.tolNode.name){
+				if (layoutNode.parent! == this.activeRoot){
 					break;
 				}
-				ancestor = ancestor.parent!;
+				layoutNode = layoutNode.parent!;
 			}
-			layoutNode = this.layoutMap.get(ancestor.name)!;
 			this.onNonleafClickHeld(layoutNode);
-			setTimeout(() => this.expandToTolNode(tolNode), this.uiOpts.tileChgDuration);
+			setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
 		},
 		// For auto-mode events
 		onPlayIconClick(){
@@ -317,7 +325,7 @@ export default defineComponent({
 					if (node == this.activeRoot){
 						actionWeights['move up'] = 0;
 					}
-					if (node.tolNode.children.length == 0){
+					if (this.tolMap[node.name].children.length == 0){
 						actionWeights['expand'] = 0;
 					}
 				} else {
@@ -463,13 +471,13 @@ export default defineComponent({
 <template>
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden" :style="{backgroundColor: uiOpts.appBgColor}">
 	<!-- Note: Making the above enclosing div's width/height dynamic seems to cause white flashes when resizing -->
-	<tile :layoutNode="layoutTree" :lytOpts="lytOpts" :uiOpts="uiOpts"
+	<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
 		@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
 		@info-icon-click="onInfoIconClick"/>
 	<ancestry-bar v-if="detachedAncestors != null"
 		:pos="[0,0]" :dims="ancestryBarDims" :nodes="detachedAncestors"
-		:lytOpts="lytOpts" :uiOpts="uiOpts"
+		:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
 	<!-- Icons -->
 	<help-icon @click="onHelpIconClick"
@@ -483,7 +491,7 @@ export default defineComponent({
 			text-white/40 hover:text-white hover:cursor-pointer"/>
 	<!-- Modals -->
 	<transition name="fade">
-		<tile-info-modal v-if="infoModalNode != null" :tolNode="infoModalNode" :uiOpts="uiOpts"
+		<tile-info-modal v-if="infoModalNode != null" :node="infoModalNode" :uiOpts="uiOpts"
 			@info-modal-close="infoModalNode = null"/>
 	</transition>
 	<transition name="fade">

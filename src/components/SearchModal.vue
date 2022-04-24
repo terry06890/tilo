@@ -1,15 +1,13 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import SearchIcon from './icon/SearchIcon.vue';
-import {TolNode} from '../tol';
 import {LayoutNode} from '../layout';
+import type {TolMap} from '../tol';
 
 // Displays a search box, and sends search requests
 export default defineComponent({
 	props: {
-		// Map from tree-of-life node names to TolNode objects
-		tolMap: {type: Object as PropType<Map<string,TolNode>>, required: true},
-		// Options
+		tolMap: {type: Object as PropType<TolMap>, required: true},
 		uiOpts: {type: Object, required: true},
 	},
 	methods: {
@@ -20,15 +18,14 @@ export default defineComponent({
 		},
 		onSearchEnter(){
 			let input = this.$refs.searchInput as HTMLInputElement;
-			let tolNode = this.tolMap.get(input.value);
-			if (tolNode == null){
+			if (this.tolMap.hasOwnProperty(input.value)){
+				this.$emit('search-node', input.value);
+			} else {
 				input.value = '';
 				// Trigger failure animation
 				input.classList.remove('animate-red-then-fade');
 				input.offsetWidth; // Triggers reflow
 				input.classList.add('animate-red-then-fade');
-			} else {
-				this.$emit('search-node', tolNode);
 			}
 		},
 		focusInput(){

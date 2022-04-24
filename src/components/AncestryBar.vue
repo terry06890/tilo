@@ -3,6 +3,7 @@ import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue'
 import {LayoutNode} from '../layout';
 import type {LayoutOptions} from '../layout';
+import type {TolMap} from '../tol';
 
 // Displays a sequence of nodes, representing ancestors from a tree-of-life root to a currently-active root
 export default defineComponent({
@@ -12,7 +13,8 @@ export default defineComponent({
 		dims: {type: Array as unknown as PropType<[number,number]>, required: true},
 		// The ancestors to display
 		nodes: {type: Array as PropType<LayoutNode[]>, required: true},
-		// Options
+		// Other
+		tolMap: {type: Object as PropType<TolMap>, required: true},
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object, required: true},
 	},
@@ -26,7 +28,7 @@ export default defineComponent({
 		},
 		usedNodes(){ // Childless versions of 'nodes' used to parameterise <tile>
 			return this.nodes.map(n => {
-				let newNode = new LayoutNode(n.tolNode, []);
+				let newNode = new LayoutNode(n.name, []);
 				newNode.dims = [this.tileSz, this.tileSz];
 				return newNode;
 			});
@@ -80,8 +82,8 @@ export default defineComponent({
 
 <template>
 <div :style="styles">
-	<tile v-for="(node, idx) in usedNodes" :key="node.tolNode.name" class="shrink-0"
-		:layoutNode="node" :nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
+	<tile v-for="(node, idx) in usedNodes" :key="node.name" class="shrink-0"
+		:layoutNode="node" :tolMap="tolMap" :nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@leaf-click="onTileClick(nodes[idx])" @info-icon-click="onInfoIconClick"/>
 </div>
 </template>

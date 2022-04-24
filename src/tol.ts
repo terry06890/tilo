@@ -2,47 +2,18 @@
  * Provides classes for representing and working with tree-of-life data.
  */
  
-// Represents a tree-of-life node/tree
+// Maps tree-of-life node names to node objects
+export type TolMap = {[key: string]: TolNode};
+// Represents a tree-of-life node
 export class TolNode {
-	name: string;
-	children: TolNode[];
-	parent: TolNode | null;
-	constructor(name: string, children: TolNode[] = [], parent = null){
-		this.name = name;
+	children: string[];
+	parent: string | null;
+	tips: number;
+	pSupport: boolean;
+	constructor(children: string[] = [], parent = null, tips = 0, pSupport = false){
 		this.children = children;
 		this.parent = parent;
+		this.tips = tips;
+		this.pSupport = pSupport;
 	}
-}
-// Represents a tree-of-life node obtained from tolData.json
-export class TolNodeRaw {
-	name: string;
-	children?: TolNodeRaw[];
-	constructor(name: string, children: TolNodeRaw[] = []){
-		this.name = name;
-		this.children = children;
-	}
-}
-// Converts a TolNodeRaw tree to a TolNode tree
-export function tolFromRaw(node: TolNodeRaw): TolNode {
-	function helper(node: TolNodeRaw, parent: TolNode | null){
-		let tolNode = new TolNode(node.name);
-		if (node.children == null){
-			tolNode.children = [];
-		} else {
-			tolNode.children = node.children.map(child => helper(child, tolNode));
-		}
-		tolNode.parent = parent;
-		return tolNode;
-	}
-	return helper(node, null);
-}
-// Returns a map from TolNode names to TolNodes in a given tree
-export function getTolMap(tolTree: TolNode): Map<string, TolNode> {
-	function helper(node: TolNode, map: Map<string, TolNode>){
-		map.set(node.name, node);
-		node.children.forEach(child => helper(child, map));
-	}
-	let map = new Map();
-	helper(tolTree, map);
-	return map;
 }

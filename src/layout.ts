@@ -2,16 +2,18 @@
  * Contains classes for representing tile-based layouts of tree-of-life data.
  *
  * Generally, given a TolNode tree T, initLayoutTree() produces a
- * subtree-analagous LayoutNode tree, for which tryLayout() can attempt to 
+ * subtree-analagous LayoutNode tree, for which tryLayout() can attempt to
  * find a tile-based layout, filling in node fields to represent placement.
  */
 
 import {TolNode} from './tol';
+import type {TolMap} from './tol';
 import {range, arraySum, limitVals, updateAscSeq} from './util';
 
 // Represents a node/tree that holds layout data for a TolNode node/tree
 export class LayoutNode {
-	tolNode: TolNode;
+	// TolNode name
+	name: string;
 	// Tree-structure related
 	children: LayoutNode[];
 	parent: LayoutNode | null;
@@ -28,8 +30,8 @@ export class LayoutNode {
 	hasFocus: boolean; // Used by search and auto-mode to highlight a tile
 	failFlag: boolean; // Used to trigger failure animations
 	// Constructor ('parent' are 'depth' are generally initialised later, 'dCount' is computed)
-	constructor(tolNode: TolNode, children: LayoutNode[]){
-		this.tolNode = tolNode;
+	constructor(name: string, children: LayoutNode[]){
+		this.name = name;
 		this.children = children;
 		this.parent = null;
 		this.dCount = children.length == 0 ? 1 : arraySum(children.map(n => n.dCount));
@@ -45,27 +47,27 @@ export class LayoutNode {
 		this.hasFocus = false;
 		this.failFlag = false;
 	}
-	// Returns a new tree with the same structure and TolNode linkage
+	// Returns a new tree with the same structure and names
 	// 'chg' is usable to apply a change to the resultant tree
 	cloneNodeTree(chg?: LayoutTreeChg | null): LayoutNode {
 		let newNode: LayoutNode;
 		if (chg != null && this == chg.node){
 			switch (chg.type){
 				case 'expand':
-					let children = this.tolNode.children.map((n: TolNode) => new LayoutNode(n, []));
-					newNode = new LayoutNode(this.tolNode, children);
+					let children = chg.tolMap[this.name].children.map((name: string) => new LayoutNode(name, []));
+					newNode = new LayoutNode(this.name, children);
 					newNode.children.forEach(n => {
 						n.parent = newNode;
 						n.depth = this.depth + 1;
 					});
 					break;
 				case 'collapse':
-					newNode = new LayoutNode(this.tolNode, []);
+					newNode = new LayoutNode(this.name, []);
 					break;
 			}
 		} else {
 			let children = this.children.map(n => n.cloneNodeTree(chg));
-			newNode = new LayoutNode(this.tolNode, children);
+			newNode = new LayoutNode(this.name, children);
 			children.forEach(n => {n.parent = newNode});
 		}
 		newNode.depth = this.depth;
@@ -150,6 +152,7 @@ export type LayoutOptions = {
 export type LayoutTreeChg = {
 	type: 'expand' | 'collapse';
 	node: LayoutNode;
+	tolMap: TolMap;
 }
 // Used with layout option 'sweepToParent', and represents, for a LayoutNode, a parent area to place leaf nodes in
 export class SepSweptArea {
@@ -171,7 +174,7 @@ export type LayoutMap = Map<string, LayoutNode>;
 // Creates a LayoutMap for a given tree
 export function initLayoutMap(layoutTree: LayoutNode): LayoutMap {
 	function helper(node: LayoutNode, map: LayoutMap): void {
-		map.set(node.tolNode.name, node);
+		map.set(node.name, node);
 		node.children.forEach(n => helper(n, map));
 	}
 	let map = new Map();
@@ -180,30 +183,31 @@ export function initLayoutMap(layoutTree: LayoutNode): LayoutMap {
 }
 // Adds a node and it's descendants' names to a LayoutMap
 function addToLayoutMap(node: LayoutNode, map: LayoutMap): void {
-	map.set(node.tolNode.name, node);
+	map.set(node.name, node);
 	node.children.forEach(n => addToLayoutMap(n, map));
 }
 // Removes a node and it's descendants' names from a LayoutMap
 function removeFromLayoutMap(node: LayoutNode, map: LayoutMap): void {
-	map.delete(node.tolNode.name);
+	map.delete(node.name);
 	node.children.forEach(n => removeFromLayoutMap(n, map));
 }
 
 // Creates a LayoutNode representing a TolNode tree, up to a given depth (0 means just the root)
-export function initLayoutTree(tol: TolNode, depth: number): LayoutNode {
-	function initHelper(tolNode: TolNode, depthLeft: number, atDepth: number = 0): LayoutNode {
+export function initLayoutTree(tolMap: TolMap, rootName: string, depth: number): LayoutNode {
+	function initHelper(tolMap: TolMap, nodeName: string, depthLeft: number, atDepth: number = 0): LayoutNode {
 		if (depthLeft == 0){
-			let node = new LayoutNode(tolNode, []);
+			let node = new LayoutNode(nodeName, []);
 			node.depth = atDepth;
 			return node;
 		} else {
-			let children = tolNode.children.map((n: TolNode) => initHelper(n, depthLeft-1, atDepth+1));
-			let node = new LayoutNode(tolNode, children);
+			let children = tolMap[nodeName].children.map(
+				(name: string) => initHelper(tolMap, name, depthLeft-1, atDepth+1));
+			let node = new LayoutNode(nodeName, children);
 			children.forEach(n => n.parent = node);
 			return node;
 		}
 	}
-	return initHelper(tol, depth);
+	return initHelper(tolMap, rootName, depth);
 }
 // Attempts layout on a LayoutNode's corresponding TolNode tree, for an area with given xy-position and width+height
 // 'allowCollapse' allows the layout algorithm to collapse nodes to avoid layout failure
@@ -568,7 +572,7 @@ let sweepLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse
 	if (parentArea != null){
 		// Attempt leaves layout
 		sweptLeft = parentArea.sweptLeft;
-		leavesLyt = new LayoutNode(new TolNode('SWEEP_' + node.tolNode.name), leaves);
+		leavesLyt = new LayoutNode('SWEEP_' + node.name, leaves);
 			// Note: Intentionally neglecting to update child nodes' 'parent' or 'depth' fields here
 		let leavesSuccess = sqrLayout(leavesLyt, [0,0], parentArea.dims, !sweptLeft, false, opts);
 		if (leavesSuccess){
@@ -579,7 +583,7 @@ let sweepLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse
 			});
 			// Attempt non-leaves layout
 			let newDims: [number,number] = [dims[0], dims[1] - (sweptLeft ? headerSz : 0)];
-			nonLeavesLyt = new LayoutNode(new TolNode('SWEEP_REM_' + node.tolNode.name), nonLeaves);
+			nonLeavesLyt = new LayoutNode('SWEEP_REM_' + node.name, nonLeaves);
 			let tempTree: LayoutNode = nonLeavesLyt.cloneNodeTree();
 			let sepAreaLen = 0;
 			let nonLeavesSuccess: boolean;
@@ -670,7 +674,7 @@ let sweepLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse
 		// Attempt leaves layout
 		let newPos = [0, headerSz];
 		let newDims: [number,number] = [dims[0], dims[1] - headerSz];
-		leavesLyt = new LayoutNode(new TolNode('SWEEP_' + node.tolNode.name), leaves);
+		leavesLyt = new LayoutNode('SWEEP_' + node.name, leaves);
 		let minSz = opts.minTileSz + opts.tileSpacing*2;
 		let sweptW = Math.max(minSz, newDims[0] * ratio), sweptH = Math.max(minSz, newDims[1] * ratio);
 		let leavesSuccess: boolean;
@@ -723,7 +727,7 @@ let sweepLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse
 			newPos[1] += leavesLyt.dims[1] - opts.tileSpacing;
 			newDims[1] += -leavesLyt.dims[1] + opts.tileSpacing
 		}
-		nonLeavesLyt = new LayoutNode(new TolNode('SWEEP_REM_' + node.tolNode.name), nonLeaves);
+		nonLeavesLyt = new LayoutNode('SWEEP_REM_' + node.name, nonLeaves);
 		let nonLeavesSuccess: boolean;
 		if (nonLeaves.length > 1){
 			nonLeavesSuccess = rectLayout(nonLeavesLyt, [0,0], newDims, false, false, opts, {subLayoutFn:

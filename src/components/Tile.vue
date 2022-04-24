@@ -3,12 +3,14 @@ import {defineComponent, PropType} from 'vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode} from '../layout';
 import type {LayoutOptions} from '../layout';
+import type {TolMap} from '../tol';
+import {TolNode} from '../tol';
 
 // Displays one, or a hierarchy of, tree-of-life nodes, as a 'tile'
 export default defineComponent({
 	props: {
-		// A LayoutNode representing a laid-out tree-of-life node to display
 		layoutNode: {type: Object as PropType<LayoutNode>, required: true},
+		tolMap: {type: Object as PropType<TolMap>, required: true},
 		// Options
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object, required: true},
@@ -26,12 +28,15 @@ export default defineComponent({
 		};
 	},
 	computed: {
+		tolNode(): TolNode{
+			return this.tolMap[this.layoutNode.name];
+		},
 		// Basic abbreviations
 		isLeaf(): boolean {
 			return this.layoutNode.children.length == 0;
 		},
 		isExpandableLeaf(): boolean {
-			return this.isLeaf && this.layoutNode.tolNode.children.length > 0;
+			return this.isLeaf && this.tolNode.children.length > 0;
 		},
 		showNonleafHeader(): boolean {
 			return (this.layoutNode.showHeader && this.layoutNode.sepSweptArea == null) ||
@@ -83,9 +88,11 @@ export default defineComponent({
 		leafStyles(): Record<string,string> {
 			return {
 				// Image (and scrims)
+				//backgroundImage:
+				//	'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
+				//	'url(\'/img/' + this.layoutNode.name.replaceAll('\'', '\\\'') + '.png\')',
 				backgroundImage:
-					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
-					'url(\'/img/' + this.layoutNode.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',
+					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%)',
 				backgroundSize: 'cover',
 				// Other
 				borderRadius: this.uiOpts.borderRadius + 'px',
@@ -311,7 +318,7 @@ export default defineComponent({
 	<div v-if="isLeaf" :style="leafStyles"
 		class="w-full h-full flex flex-col overflow-hidden" :class="{'hover:cursor-pointer': isExpandableLeaf}"
 		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-		<h1 :style="leafHeaderStyles">{{layoutNode.tolNode.name}}</h1>
+		<h1 :style="leafHeaderStyles">{{layoutNode.name}}</h1>
 		<info-icon :style="[infoIconStyles, {marginTop: 'auto'}]"
 			class="self-end text-white/10 hover:text-white hover:cursor-pointer"
 			@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
@@ -319,7 +326,7 @@ export default defineComponent({
 	<div v-else :style="nonleafStyles" class="w-full h-full" ref="nonleaf">
 		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-			<h1 :style="nonleafHeaderTextStyles" class="grow">{{layoutNode.tolNode.name}}</h1>
+			<h1 :style="nonleafHeaderTextStyles" class="grow">{{layoutNode.name}}</h1>
 			<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</div>
@@ -328,13 +335,13 @@ export default defineComponent({
 			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
 				:style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-				<h1 :style="nonleafHeaderTextStyles" class="grow">{{layoutNode.tolNode.name}}</h1>
+				<h1 :style="nonleafHeaderTextStyles" class="grow">{{layoutNode.name}}</h1>
 				<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
 					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 			</div>
 		</div>
-		<tile v-for="child in layoutNode.children" :key="child.tolNode.name"
-			:layoutNode="child" :lytOpts="lytOpts" :uiOpts="uiOpts"
+		<tile v-for="child in layoutNode.children" :key="child.name"
+			:layoutNode="child" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 			@leaf-click="onInnerLeafClick" @nonleaf-click="onInnerNonleafClick"
 			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
 			@info-icon-click="onInnerInfoIconClick"/>

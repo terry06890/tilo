@@ -1,18 +1,19 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
-import {TolNode} from '../tol';
+import {LayoutNode} from '../layout';
 
 // Displays information about a tree-of-life node
 export default defineComponent({
 	props: {
-		tolNode: {type: Object as PropType<TolNode>, required: true},
+		node: {type: Object as PropType<LayoutNode>, required: true},
 		uiOpts: {type: Object, required: true},
 	},
 	computed: {
 		imgStyles(): Record<string,string> {
 			return {
-				backgroundImage: 'url(\'/img/' + this.tolNode.name.replaceAll('\'', '\\\'') + '.png\')',
+				//backgroundImage: 'url(\'/img/' + this.node.name.replaceAll('\'', '\\\'') + '.png\')',
+				background: 'black',
 				width: this.uiOpts.infoModalImgSz + 'px',
 				height: this.uiOpts.infoModalImgSz + 'px',
 				backgroundSize: 'cover',
@@ -38,7 +39,7 @@ export default defineComponent({
 		bg-stone-50 rounded-md shadow shadow-black">
 		<close-icon @click.stop="onCloseClick" ref="closeIcon"
 			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
-		<h1 class="text-center text-xl font-bold mb-2">{{tolNode.name}}</h1>
+		<h1 class="text-center text-xl font-bold mb-2">{{node.name}}</h1>
 		<hr class="mb-4 border-stone-400"/>
 		<div :style="imgStyles" class="float-left mr-4" alt="an image"></div>
 		<div>

@@ -4,4 +4,6 @@ node_modules/
 dist/
 src/tolData.json
 public/img/
-public/tolgrid-img/
+data_tol_old/img/
+data_tol_old/tolData.json
+data_otol/
