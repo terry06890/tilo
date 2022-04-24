@@ -112,7 +112,7 @@ export default defineComponent({
 	</div>
 	<hr class="border-stone-400"/>
 	<div>
-		<label>Animation Duration <input type="range" min="0" max="1000" class="mx-2 w-[3cm]"
+		<label>Animation Duration <input type="range" min="0" max="3000" class="mx-2 w-[3cm]"
 			v-model.number="uiOpts.tileChgDuration"/></label>
 	</div>
 </div>

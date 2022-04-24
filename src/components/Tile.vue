@@ -19,6 +19,7 @@ export default defineComponent({
 		return {
 			highlight: false, // Used to draw a colored outline on mouse hover
 			inTransition: false, // Used to prevent content overlap and overflow during transitions
+			wasClicked: false, // Used to increase z-index during transition after this tile (or a child) is clicked
 			hasExpanded: false, // Set to true after an expansion transition ends, and false upon collapse
 				// Used to hide overflow on tile expansion, but not hide a sepSweptArea on subsequent transitions
 			clickHoldTimer: 0, // Used to recognise click-and-hold events
@@ -72,7 +73,7 @@ export default defineComponent({
 				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
 				transitionProperty: 'left, top, width, height, visibility',
 				transitionTimingFunction: 'ease-out',
-				zIndex: this.inTransition ? '1' : '0',
+				zIndex: this.inTransition && this.wasClicked ? '1' : '0',
 				overflow: this.inTransition && !this.isLeaf && !this.hasExpanded ? 'hidden' : 'visible',
 				// CSS variables
 				'--nonleafBgColor': this.nonleafBgColor,
@@ -239,6 +240,8 @@ export default defineComponent({
 				console.log('Ignored click on non-expandable node');
 				return;
 			}
+			this.wasClicked = true;
+			setTimeout(() => {this.wasClicked = false}, this.uiOpts.tileChgDuration);
 			this.$emit(this.isLeaf ? 'leaf-click' : 'nonleaf-click', this.layoutNode);
 		},
 		onClickHold(){
@@ -262,9 +265,13 @@ export default defineComponent({
 		},
 		// Child event propagation
 		onInnerLeafClick(node: LayoutNode){
+			this.wasClicked = true;
+			setTimeout(() => {this.wasClicked = false}, this.uiOpts.tileChgDuration);
 			this.$emit('leaf-click', node);
 		},
 		onInnerNonleafClick(node: LayoutNode){
+			this.wasClicked = true;
+			setTimeout(() => {this.wasClicked = false}, this.uiOpts.tileChgDuration);
 			this.$emit('nonleaf-click', node);
 		},
 		onInnerLeafClickHeld(node: LayoutNode){
