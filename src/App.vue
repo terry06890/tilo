@@ -39,9 +39,8 @@ function getReverseAction(action: Action): Action | null {
 }
 
 // Get tree-of-life data
-import data from './tolData.json';
-let tolMap: TolMap = data;
-const rootName = "[Elaeocarpus williamsianus + Brunellia mexicana]";
+const rootName = "cellular organisms";
+const tolMap: TolMap = {[rootName]: new TolNode()};
 
 // Configurable options
 const defaultLytOpts: LayoutOptions = {
@@ -117,6 +116,8 @@ export default defineComponent({
 			height: document.documentElement.clientHeight,
 			resizeThrottled: false,
 			resizeDelay: 50, //ms (increasing to 100 seems to cause resize-skipping when opening browser mobile-view)
+			// Other
+			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries are removed (done on tile collapse)
 		};
 	},
 	computed: {
@@ -173,15 +174,32 @@ export default defineComponent({
 	methods: {
 		// For tile expand/collapse events
 		onLeafClick(layoutNode: LayoutNode){
-			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
-				allowCollapse: false,
-				chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap},
-				layoutMap: this.layoutMap
-			});
-			if (!success){
-				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+			let doExpansion = () => {
+				let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
+					allowCollapse: false,
+					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap},
+					layoutMap: this.layoutMap
+				});
+				if (!success){
+					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+				}
+				return success;
+			};
+			// Check if data for node-to-expand exists, getting from server if needed
+			let tolNode = this.tolMap[layoutNode.name];
+			if (tolNode.children[0] in this.tolMap == false){
+				return fetch('/tolnode/' + layoutNode.name + '?type=children')
+					.then(response => response.json())
+					.then(obj => {
+						Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap[key] = obj[key]});
+						doExpansion();
+					})
+					.catch(error => {
+						console.log('ERROR loading tolnode data', error);
+					});
+			} else {
+				return new Promise((resolve, reject) => resolve(doExpansion()));
 			}
-			return success;
 		},
 		onNonleafClick(layoutNode: LayoutNode){
 			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
@@ -191,6 +209,19 @@ export default defineComponent({
 			});
 			if (!success){
 				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+			} else {
+				// Clear out excess nodes when a threshold is reached
+				let tolNodeNames = Object.getOwnPropertyNames(this.tolMap)
+				let extraNodes = tolNodeNames.length - this.layoutMap.size;
+				if (extraNodes > this.excessTolNodeThreshold){
+					for (let n of tolNodeNames){
+						if (!this.layoutMap.has(n)){
+							delete this.tolMap[n];
+						}
+					}
+					let numRemovedNodes = tolNodeNames.length - Object.getOwnPropertyNames(this.tolMap).length;
+					console.log(`Cleaned up tolMap (removed ${numRemovedNodes} out of ${tolNodeNames.length})`);
+				}
 			}
 			return success;
 		},
@@ -271,26 +302,27 @@ export default defineComponent({
 				return;
 			}
 			// Attempt tile-expand
-			let success = this.onLeafClick(layoutNode);
-			if (success){
-				setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
-				return;
-			}
-			// Attempt expand-to-view on ancestor just below activeRoot
-			if (layoutNode == this.activeRoot){
-				console.log('Unable to complete search (not enough room to expand active root)');
-					// Note: Only happens if screen is significantly small or node has significantly many children
-				this.modeRunning = false;
-				return;
-			}
-			while (true){
-				if (layoutNode.parent! == this.activeRoot){
-					break;
+			this.onLeafClick(layoutNode).then(success => {
+				if (success){
+					setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
+					return;
 				}
-				layoutNode = layoutNode.parent!;
-			}
-			this.onNonleafClickHeld(layoutNode);
-			setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
+				// Attempt expand-to-view on ancestor just below activeRoot
+				if (layoutNode == this.activeRoot){
+					console.log('Unable to complete search (not enough room to expand active root)');
+						// Note: Only happens if screen is significantly small or node has significantly many children
+					this.modeRunning = false;
+					return;
+				}
+				while (true){
+					if (layoutNode.parent! == this.activeRoot){
+						break;
+					}
+					layoutNode = layoutNode.parent!;
+				}
+				this.onNonleafClickHeld(layoutNode);
+				setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
+			});
 		},
 		// For auto-mode events
 		onPlayIconClick(){
@@ -385,7 +417,9 @@ export default defineComponent({
 						this.setLastFocused(node.parent!);
 						break;
 					case 'expand':
-						this.autoPrevActionFail = !this.onLeafClick(node);
+						this.onLeafClick(node)
+							.then(success => this.autoPrevActionFail = !success)
+							.catch(error => this.autoPrevActionFail = true);
 						break;
 					case 'collapse':
 						this.autoPrevActionFail = !this.onNonleafClick(node);
@@ -457,6 +491,20 @@ export default defineComponent({
 		window.addEventListener('keyup', this.onKeyUp);
 		tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 			{allowCollapse: true, layoutMap: this.layoutMap});
+		// Get initial tol node data
+		fetch('/tolnode/' + rootName)
+			.then(response => response.json())
+			.then(obj => {
+				Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap[key] = obj[key]});
+				this.layoutTree = initLayoutTree(this.tolMap, this.layoutTree.name, 0);
+				this.activeRoot = this.layoutTree;
+				this.layoutMap = initLayoutMap(this.layoutTree);
+				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
+					{allowCollapse: true, layoutMap: this.layoutMap});
+			})
+			.catch(error => {
+				console.log('ERROR loading initial tolnode data', error);
+			});
 	},
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);

@@ -1,11 +1,13 @@
 #!/usr/bin/python3
 
-import sys, re, json
+import sys, re, json, sqlite3
+import os.path
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
 usageInfo += "Reads labelled_supertree_ottnames.tre & annotations.json (from an Open Tree of Life release), \n"
-usageInfo += "and prints a JSON object, which maps node names to objects of the form \n"
-usageInfo += "{\"children\": [name1, ...], \"parent\": name1, \"tips\": int1, \"pSupport\": bool1}, which holds \n"
+usageInfo += "and creates an sqlite database otol.db, which holds entries of the form (name text, data text).\n"
+usageInfo += "Each row holds a tree-of-life node name, and a JSON string with the form \n"
+usageInfo += "{\"children\": [name1, ...], \"parent\": name1, \"tips\": int1, \"pSupport\": bool1}, holding \n"
 usageInfo += "child names, a parent name or null, descendant 'tips', and a phylogeny-support indicator\n"
 usageInfo += "\n"
 usageInfo += "This script was adapted to handle Open Tree of Life version 13.4.\n"
@@ -25,12 +27,20 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-nodeMap = {} # The JSON object to output
+treeFile = "otol/labelled_supertree_ottnames.tre"
+annFile = "otol/annotations.json"
+dbFile = "otol.db"
+nodeMap = {} # Maps node names to node objects
 idToName = {} # Maps node IDs to names
 
-# Parse labelled_supertree_ottnames.tre
+# Check for existing db
+if os.path.exists(dbFile):
+	print("ERROR: Existing {} file".format(dbFile), file=sys.stderr)
+	sys.exit(1)
+
+# Parse treeFile
 data = None
-with open("labelled_supertree_ottnames.tre") as file:
+with open(treeFile) as file:
 	data = file.read()
 dataIdx = 0
 def parseNewick():
@@ -67,6 +77,13 @@ def parseNewick():
 				for childName in childNames:
 					tips += nodeMap[childName]["tips"]
 				# Add node to nodeMap
+				if name in nodeMap: # Turns out the names might not actually be unique
+					count = 2
+					name2 = name + " [" + str(count) + "]"
+					while name2 in nodeMap:
+						count += 1
+						name2 = name + " [" + str(count) + "]"
+					name = name2
 				nodeMap[name] = {
 					"n": name, "id": id, "children": childNames, "parent": None, "tips": tips, "pSupport": False
 				}
@@ -112,6 +129,7 @@ def parseNewickName():
 			name = name[:-1]
 		dataIdx = end
 	# Convert to [name, id]
+	name = name.lower()
 	if name.startswith("mrca"):
 		return [name, name]
 	elif name[0] == "'":
@@ -127,29 +145,63 @@ def parseNewickName():
 		return [match.group(1).replace("_", " "), match.group(2)]
 rootName = parseNewick()
 
-# Parse annotations.json
+# Parse annFile
 data = None
-with open("annotations.json") as file:
+with open(annFile) as file:
 	data = file.read()
 obj = json.loads(data)
 nodeAnnsMap = obj['nodes']
 
-# Do some more postprocessing on each node
-def convertMrcaName(name):
-	"""Given an mrca* name, returns an expanded version with the form [name1 + name2]"""
-	match = re.fullmatch(r"mrca(ott\d+)(ott\d+)", name)
-	if match == None:
-		print("ERROR: Invalid name \"{}\"".format(name), file=sys.stderr)
-	else:
-		subName1 = match.group(1)
-		subName2 = match.group(2)
-		if subName1 not in idToName:
-			print("ERROR: MRCA name \"{}\" sub-name \"{}\" not found".format(subName1), file=sys.stderr)
-		elif subName2 not in idToName:
-			print("ERROR: MRCA name \"{}\" sub-name \"{}\" not found".format(subName2), file=sys.stderr)
-		else:
-			return "[{} + {}]".format(idToName[subName1], idToName[subName2])
-namesToSwap = [] # Will hold [oldName, newName] pairs, for renaming nodes in nodeMap
+# Change mrca* names
+def applyMrcaNameConvert(name, namesToSwap):
+	"""
+	Given an mrca* name, makes namesToSwap map it to an expanded version with the form [childName1 + childName2].
+	May recurse on child nodes with mrca* names.
+	Also returns the name of the highest-tips child (used when recursing).
+	"""
+	node = nodeMap[name]
+	childNames = node["children"]
+	if len(childNames) < 2:
+		print("WARNING: MRCA node \"{}\" has less than 2 children".format(name), file=sys.stderr)
+		return name
+	# Get 2 children with most tips
+	childTips = []
+	for n in childNames:
+		childTips.append(nodeMap[n]["tips"])
+	maxTips = max(childTips)
+	maxIdx = childTips.index(maxTips)
+	childTips[maxIdx] = 0
+	maxTips2 = max(childTips)
+	maxIdx2 = childTips.index(maxTips2)
+	#
+	childName1 = node["children"][maxIdx]
+	childName2 = node["children"][maxIdx2]
+	if childName1.startswith("mrca"):
+		childName1 = applyMrcaNameConvert(childName1, namesToSwap)
+	if childName2.startswith("mrca"):
+		childName2 = applyMrcaNameConvert(childName2, namesToSwap)
+	# Create composite name
+	namesToSwap[name] = "[{} + {}]".format(childName1, childName2)
+	return childName1
+namesToSwap = {} # Maps mrca* names to replacement names
+for node in nodeMap.values():
+	name = node["n"]
+	if (name.startswith("mrca") and name not in namesToSwap):
+		applyMrcaNameConvert(name, namesToSwap)
+for [oldName, newName] in namesToSwap.items():
+	nodeMap[newName] = nodeMap[oldName]
+	del nodeMap[oldName]
+for node in nodeMap.values():
+	parentName = node["parent"]
+	if (parentName in namesToSwap):
+		node["parent"] = namesToSwap[parentName]
+	childNames = node["children"]
+	for i in range(len(childNames)):
+		childName = childNames[i]
+		if (childName in namesToSwap):
+			childNames[i] = namesToSwap[childName]
+
+# Add annotations data, and delete certain fields
 for node in nodeMap.values():
 	# Set has-support value using annotations
 	id = node["id"]
@@ -158,24 +210,19 @@ for node in nodeMap.values():
 		supportQty = len(nodeAnns["supported_by"]) if "supported_by" in nodeAnns else 0
 		conflictQty = len(nodeAnns["conflicts_with"]) if "conflicts_with" in nodeAnns else 0
 		node["pSupport"] = supportQty > 0 and conflictQty == 0
-	# Change mrca* names
-	name = node["n"]
-	if (name.startswith("mrca")):
-		namesToSwap.append([name, convertMrcaName(name)])
-	parentName = node["parent"]
-	if (parentName != None and parentName.startswith("mrca")):
-		node["parent"] = convertMrcaName(parentName)
-	childNames = node["children"]
-	for i in range(len(childNames)):
-		if (childNames[i].startswith("mrca")):
-			childNames[i] = convertMrcaName(childNames[i])
+	# Root node gets support
+	if node["parent"] == None:
+		node["pSupport"] = True
 	# Delete some no-longer-needed fields
 	del node["n"]
 	del node["id"]
-# Finish mrca* renamings
-for [oldName, newName] in namesToSwap:
-	nodeMap[newName] = nodeMap[oldName]
-	del nodeMap[oldName]
 
-# Output JSON
-print(json.dumps(nodeMap))
+# Create db
+con = sqlite3.connect(dbFile)
+cur = con.cursor()
+cur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, data TEXT)")
+for name in nodeMap.keys():
+	cur.execute("INSERT INTO nodes VALUES (?, ?)", (name, json.dumps(nodeMap[name])))
+cur.execute("CREATE UNIQUE INDEX nodes_idx on nodes(name)")
+con.commit()
+con.close()

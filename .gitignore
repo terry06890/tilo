@@ -2,8 +2,7 @@ rem.not
 package-lock.json
 node_modules/
 dist/
-src/tolData.json
 public/img/
-data_tol_old/img/
-data_tol_old/tolData.json
-data_otol/
+backend/data/otol
+backend/data/otol.db
+backend/data/eol

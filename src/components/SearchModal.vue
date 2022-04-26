@@ -12,21 +12,36 @@ export default defineComponent({
 	},
 	methods: {
 		onCloseClick(evt: Event){
-			if (evt.target == this.$el || (this.$refs.searchInput as typeof SearchIcon).$el.contains(evt.target)){
+			if (evt.target == this.$el || (this.$refs.searchIcon as typeof SearchIcon).$el.contains(evt.target)){
 				this.$emit('search-close');
 			}
 		},
 		onSearchEnter(){
 			let input = this.$refs.searchInput as HTMLInputElement;
-			if (this.tolMap.hasOwnProperty(input.value)){
-				this.$emit('search-node', input.value);
-			} else {
-				input.value = '';
-				// Trigger failure animation
-				input.classList.remove('animate-red-then-fade');
-				input.offsetWidth; // Triggers reflow
-				input.classList.add('animate-red-then-fade');
-			}
+			// Query server
+			let url = new URL(window.location.href);
+			url.pathname = '/tolnode/' + input.value;
+			fetch(url)
+				.then(response => {
+					// Search successful. Get nodes in parent-chain, add to tolMap, then emit event.
+					url.search = '?type=chain';
+					fetch(url)
+						.then(response => response.json())
+						.then(obj => {
+							Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap[key] = obj[key]});
+							this.$emit('search-node', input.value);
+						})
+						.catch(error => {
+							console.log('ERROR loading tolnode chain', error);
+						});
+				})
+				.catch(error => {
+					input.value = '';
+					// Trigger failure animation
+					input.classList.remove('animate-red-then-fade');
+					input.offsetWidth; // Triggers reflow
+					input.classList.add('animate-red-then-fade');
+				});
 		},
 		focusInput(){
 			(this.$refs.searchInput as HTMLInputElement).focus();
@@ -46,7 +61,7 @@ export default defineComponent({
 		bg-stone-50 rounded-md shadow shadow-black flex gap-1">
 		<input type="text" class="block border"
 			@keyup.enter="onSearchEnter" @keyup.esc="onCloseClick" ref="searchInput"/>
-		<search-icon @click.stop="onSearchEnter"
+		<search-icon @click.stop="onSearchEnter" ref="searchIcon"
 			class="block w-6 h-6 ml-1 hover:cursor-pointer hover:bg-stone-200" />
 	</div>
 </div>
