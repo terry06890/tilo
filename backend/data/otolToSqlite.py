@@ -35,7 +35,7 @@ idToName = {} # Maps node IDs to names
 
 # Check for existing db
 if os.path.exists(dbFile):
-	print("ERROR: Existing {} file".format(dbFile), file=sys.stderr)
+	print("ERROR: Existing {} db".format(dbFile), file=sys.stderr)
 	sys.exit(1)
 
 # Parse treeFile

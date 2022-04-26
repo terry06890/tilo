@@ -189,7 +189,7 @@ export default defineComponent({
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				return fetch('/tolnode/' + layoutNode.name + '?type=children')
+				return fetch('/data/children?name=' + encodeURIComponent(layoutNode.name))
 					.then(response => response.json())
 					.then(obj => {
 						Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
@@ -492,7 +492,7 @@ export default defineComponent({
 		tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 			{allowCollapse: true, layoutMap: this.layoutMap});
 		// Get initial tol node data
-		fetch('/tolnode/' + rootName)
+		fetch('/data/node?name=' + encodeURIComponent(rootName))
 			.then(response => response.json())
 			.then(obj => {
 				Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});

@@ -12,13 +12,14 @@ tolnodeReqDepth = 2
 	# A depth of 0 means only respond with one node
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Starts a server that listens for GET requests to " + hostname + ":" + str(port) + "/tolnode/name1,\n"
-usageInfo += "and responds with JSON representing an object mapping names to node objects.\n"
-usageInfo += "Normally, the response includes node name1, and child nodes up to depth " + str(tolnodeReqDepth) + ".\n"
+usageInfo += "Starts a server that listens for GET requests to http://" + hostname + ":" + str(port) + ".\n"
+usageInfo += "Responds to path+query /data/type1?name=name1 with JSON data.\n"
 usageInfo += "\n"
-usageInfo += "A query section ?type=type1 can be used to affect the result.\n"
-usageInfo += "If type1 is 'children', the operation acts on node name1's children, and the results combined.\n"
-usageInfo += "If type1 is 'chain', the response includes nodes from name1 up to the root, and their direct children.\n"
+usageInfo += "If type1 is 'node': \n"
+usageInfo += "    Responds with a map from names to node objects, representing\n"
+usageInfo += "    nodes name1, and child nodes up to depth " + str(tolnodeReqDepth) + ".\n"
+usageInfo += "If type1 is 'children': Like 'node', but excludes node name1.\n"
+usageInfo += "If type1 is 'chain': Like 'node', but gets nodes from name1 up to the root, and their direct children.\n"
 
 dbCon = sqlite3.connect(dbFile)
 def lookupName(name):
@@ -26,21 +27,6 @@ def lookupName(name):
 	cur.execute("SELECT name, data FROM nodes WHERE name = ?", (name,))
 	row = cur.fetchone()
 	return row[1] if row != None else None
-#def lookupNameLike(name):
-#	cur = dbCon.cursor()
-#	found = False
-#	cur.execute("SELECT name, data FROM nodes WHERE name like ?", ("%{}%".format(name),))
-#	rows = cur.fetchall()
-#	if len(rows) == 0:
-#		return None
-#	else:
-#		jsonStr = "{"
-#		for i in range(len(rows)):
-#			jsonStr += json.dumps(rows[i][0]) + ":" + rows[i][1]
-#			if i < len(njList) - 1:
-#				jsonStr += ","
-#		jsonStr += "}"
-#		return jsonFromNameJsonList(rows)
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):
@@ -50,60 +36,60 @@ class DbServer(BaseHTTPRequestHandler):
 		queryDict = urllib.parse.parse_qs(urlParts.query)
 		# Check first element of path
 		match = re.match(r"/([^/]+)/(.+)", path)
-		if match != None:
-			reqType = match.group(1)
-			if reqType == "tolnode":
-				name = match.group(2)
-				# Check query string
-				if "type" not in queryDict:
-					nodeJson = lookupName(name)
-					if nodeJson != None:
-						results = []
-						getResultsUntilDepth(name, nodeJson, tolnodeReqDepth, results)
-						self.respondJson(nodeResultsToJSON(results))
-						return
-				elif queryDict["type"][0] == "children":
-					nodeJson = lookupName(name)
-					if nodeJson != None:
-						obj = json.loads(nodeJson)
-						results = []
-						for childName in obj["children"]:
-							nodeJson = lookupName(childName)
-							if nodeJson != None:
-								getResultsUntilDepth(childName, nodeJson, tolnodeReqDepth, results)
-						self.respondJson(nodeResultsToJSON(results))
-						return
-				elif queryDict["type"][0] == "chain":
+		if match != None and match.group(1) == "data" and "name" in queryDict:
+			reqType = match.group(2)
+			name = queryDict["name"][0]
+			print(name)
+			# Check query string
+			if reqType == "node":
+				nodeJson = lookupName(name)
+				if nodeJson != None:
 					results = []
-					ranOnce = False
-					while True:
-						jsonResult = lookupName(name)
-						if jsonResult == None:
-							if ranOnce:
-								print("ERROR: Parent-chain node {} not found".format(name), file=sys.stderr)
-							break
-						results.append([name, jsonResult])
-						obj = json.loads(jsonResult)
-						# Add children
-						if not ranOnce:
-							ranOnce = True
-						else:
-							internalFail = False
-							for childName in obj["children"]:
-								jsonResult = lookupName(childName)
-								if jsonResult == None:
-									print("ERROR: Parent-chain-child node {} not found".format(name), file=sys.stderr)
-									internalFail = True
-									break
-								results.append([childName, jsonResult])
-							if internalFail:
+					getResultsUntilDepth(name, nodeJson, tolnodeReqDepth, results)
+					self.respondJson(nodeResultsToJSON(results))
+					return
+			elif reqType == "children":
+				nodeJson = lookupName(name)
+				if nodeJson != None:
+					obj = json.loads(nodeJson)
+					results = []
+					for childName in obj["children"]:
+						nodeJson = lookupName(childName)
+						if nodeJson != None:
+							getResultsUntilDepth(childName, nodeJson, tolnodeReqDepth, results)
+					self.respondJson(nodeResultsToJSON(results))
+					return
+			elif reqType == "chain":
+				results = []
+				ranOnce = False
+				while True:
+					jsonResult = lookupName(name)
+					if jsonResult == None:
+						if ranOnce:
+							print("ERROR: Parent-chain node {} not found".format(name), file=sys.stderr)
+						break
+					results.append([name, jsonResult])
+					obj = json.loads(jsonResult)
+					# Add children
+					if not ranOnce:
+						ranOnce = True
+					else:
+						internalFail = False
+						for childName in obj["children"]:
+							jsonResult = lookupName(childName)
+							if jsonResult == None:
+								print("ERROR: Parent-chain-child node {} not found".format(name), file=sys.stderr)
+								internalFail = True
 								break
-						# Check if root
-						if obj["parent"] == None:
-							self.respondJson(nodeResultsToJSON(results))
-							return
-						else:
-							name = obj["parent"]
+							results.append([childName, jsonResult])
+						if internalFail:
+							break
+					# Check if root
+					if obj["parent"] == None:
+						self.respondJson(nodeResultsToJSON(results))
+						return
+					else:
+						name = obj["parent"]
 		self.send_response(404)
 		self.end_headers()
 		self.end_headers()
