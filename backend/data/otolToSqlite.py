@@ -223,6 +223,5 @@ cur = con.cursor()
 cur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, data TEXT)")
 for name in nodeMap.keys():
 	cur.execute("INSERT INTO nodes VALUES (?, ?)", (name, json.dumps(nodeMap[name])))
-cur.execute("CREATE UNIQUE INDEX nodes_idx on nodes(name)")
 con.commit()
 con.close()

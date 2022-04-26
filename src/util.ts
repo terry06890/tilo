@@ -10,6 +10,15 @@ export function range(len: number): number[] {
 export function arraySum(array: number[]): number {
 	return array.reduce((x,y) => x+y);
 }
+// Returns an array of increasing evenly-spaced numbers from 'start' to 'end' with size 'size'
+export function linspace(start: number, end: number, size: number): number[] {
+	let step = (end - start) / (size - 1);
+	let ar = [];
+	for (let i = 0; i < size; i++){
+		ar.push(start + step * i);
+	}
+	return ar;
+}
 // Returns array copy with vals clipped to within [min,max], redistributing to compensate
 // Returns null on failure
 export function limitVals(arr: number[], min: number, max: number): number[] | null {
