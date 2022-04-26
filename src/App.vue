@@ -40,7 +40,8 @@ function getReverseAction(action: Action): Action | null {
 
 // Get tree-of-life data
 const rootName = "cellular organisms";
-const tolMap: TolMap = {[rootName]: new TolNode()};
+const tolMap: TolMap = new Map();
+tolMap.set(rootName, new TolNode());
 
 // Configurable options
 const defaultLytOpts: LayoutOptions = {
@@ -186,12 +187,12 @@ export default defineComponent({
 				return success;
 			};
 			// Check if data for node-to-expand exists, getting from server if needed
-			let tolNode = this.tolMap[layoutNode.name];
-			if (tolNode.children[0] in this.tolMap == false){
+			let tolNode = this.tolMap.get(layoutNode.name)!;
+			if (!this.tolMap.has(tolNode.children[0])){
 				return fetch('/tolnode/' + layoutNode.name + '?type=children')
 					.then(response => response.json())
 					.then(obj => {
-						Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap[key] = obj[key]});
+						Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
 						doExpansion();
 					})
 					.catch(error => {
@@ -211,16 +212,15 @@ export default defineComponent({
 				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 			} else {
 				// Clear out excess nodes when a threshold is reached
-				let tolNodeNames = Object.getOwnPropertyNames(this.tolMap)
-				let extraNodes = tolNodeNames.length - this.layoutMap.size;
+				let numNodes = this.tolMap.size;
+				let extraNodes = numNodes - this.layoutMap.size;
 				if (extraNodes > this.excessTolNodeThreshold){
-					for (let n of tolNodeNames){
+					for (let n of this.tolMap.keys()){
 						if (!this.layoutMap.has(n)){
-							delete this.tolMap[n];
+							this.tolMap.delete(n)
 						}
 					}
-					let numRemovedNodes = tolNodeNames.length - Object.getOwnPropertyNames(this.tolMap).length;
-					console.log(`Cleaned up tolMap (removed ${numRemovedNodes} out of ${tolNodeNames.length})`);
+					console.log(`Cleaned up tolMap (removed ${numNodes - this.tolMap.size} out of ${numNodes})`);
 				}
 			}
 			return success;
@@ -289,7 +289,7 @@ export default defineComponent({
 			// Get nearest in-layout-tree ancestor
 			let ancestorName = name;
 			while (this.layoutMap.get(ancestorName) == null){
-				ancestorName = this.tolMap[ancestorName].parent!;
+				ancestorName = this.tolMap.get(ancestorName)!.parent!;
 			}
 			let layoutNode = this.layoutMap.get(ancestorName)!;
 			// If hidden, expand self/ancestor in ancestry-bar
@@ -349,7 +349,7 @@ export default defineComponent({
 				// Determine available actions
 				let action: Action | null;
 				let actionWeights: {[key: string]: number}; // Maps actions to choice weights
-				let node = this.lastFocused;
+				let node: LayoutNode = this.lastFocused;
 				if (node.children.length == 0){
 					actionWeights = {'move across': 1, 'move up': 2, 'expand': 3};
 					// Zero weights for disallowed actions
@@ -359,7 +359,7 @@ export default defineComponent({
 					if (node == this.activeRoot){
 						actionWeights['move up'] = 0;
 					}
-					if (this.tolMap[node.name].children.length == 0){
+					if (this.tolMap.get(node.name)!.children.length == 0){
 						actionWeights['expand'] = 0;
 					}
 				} else {
@@ -495,7 +495,7 @@ export default defineComponent({
 		fetch('/tolnode/' + rootName)
 			.then(response => response.json())
 			.then(obj => {
-				Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap[key] = obj[key]});
+				Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
 				this.layoutTree = initLayoutTree(this.tolMap, this.layoutTree.name, 0);
 				this.activeRoot = this.layoutTree;
 				this.layoutMap = initLayoutMap(this.layoutTree);

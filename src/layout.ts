@@ -54,7 +54,7 @@ export class LayoutNode {
 		if (chg != null && this == chg.node){
 			switch (chg.type){
 				case 'expand':
-					let children = chg.tolMap[this.name].children.map((name: string) => new LayoutNode(name, []));
+					let children = chg.tolMap.get(this.name)!.children.map((name: string) => new LayoutNode(name, []));
 					newNode = new LayoutNode(this.name, children);
 					newNode.children.forEach(n => {
 						n.parent = newNode;
@@ -200,11 +200,15 @@ export function initLayoutTree(tolMap: TolMap, rootName: string, depth: number):
 			node.depth = atDepth;
 			return node;
 		} else {
-			let children = tolMap[nodeName].children.map(
-				(name: string) => initHelper(tolMap, name, depthLeft-1, atDepth+1));
-			let node = new LayoutNode(nodeName, children);
-			children.forEach(n => n.parent = node);
-			return node;
+			let childNames = tolMap.get(nodeName)!.children;
+			if (childNames.length == 0 || !tolMap.has(childNames[0])){
+				return new LayoutNode(nodeName, []);
+			} else {
+				let children = childNames.map((name: string) => initHelper(tolMap, name, depthLeft-1, atDepth+1));
+				let node = new LayoutNode(nodeName, children);
+				children.forEach(n => n.parent = node);
+				return node;
+			}
 		}
 	}
 	return initHelper(tolMap, rootName, depth);

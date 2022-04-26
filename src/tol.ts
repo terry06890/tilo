@@ -3,7 +3,7 @@
  */
  
 // Maps tree-of-life node names to node objects
-export type TolMap = {[key: string]: TolNode};
+export type TolMap = Map<string, TolNode>;
 // Represents a tree-of-life node
 export class TolNode {
 	children: string[];

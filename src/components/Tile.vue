@@ -28,8 +28,8 @@ export default defineComponent({
 		};
 	},
 	computed: {
-		tolNode(): TolNode{
-			return this.tolMap[this.layoutNode.name];
+		tolNode(): TolNode {
+			return this.tolMap.get(this.layoutNode.name)!;
 		},
 		// Basic abbreviations
 		isLeaf(): boolean {

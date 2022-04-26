@@ -21,14 +21,14 @@ export default defineComponent({
 			// Query server
 			let url = new URL(window.location.href);
 			url.pathname = '/tolnode/' + input.value;
-			fetch(url)
+			fetch(url.toString())
 				.then(response => {
 					// Search successful. Get nodes in parent-chain, add to tolMap, then emit event.
 					url.search = '?type=chain';
-					fetch(url)
+					fetch(url.toString())
 						.then(response => response.json())
 						.then(obj => {
-							Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap[key] = obj[key]});
+							Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
 							this.$emit('search-node', input.value);
 						})
 						.catch(error => {
