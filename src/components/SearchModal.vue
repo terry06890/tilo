@@ -20,17 +20,19 @@ export default defineComponent({
 			let input = this.$refs.searchInput as HTMLInputElement;
 			// Query server
 			let url = new URL(window.location.href);
-			url.pathname = '/data/node';
+			url.pathname = '/data/search';
 			url.search = '?name=' + encodeURIComponent(input.value);
 			fetch(url.toString())
-				.then(response => {
+				.then(response => response.json())
+				.then(tolNodeName => {
 					// Search successful. Get nodes in parent-chain, add to tolMap, then emit event.
 					url.pathname = '/data/chain';
+					url.search = '?name=' + encodeURIComponent(tolNodeName);
 					fetch(url.toString())
 						.then(response => response.json())
 						.then(obj => {
 							Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
-							this.$emit('search-node', input.value);
+							this.$emit('search-node', tolNodeName);
 						})
 						.catch(error => {
 							console.log('ERROR loading tolnode chain', error);

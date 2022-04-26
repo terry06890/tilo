@@ -29,7 +29,7 @@ if len(sys.argv) > 1:
 
 treeFile = "otol/labelled_supertree_ottnames.tre"
 annFile = "otol/annotations.json"
-dbFile = "otol.db"
+dbFile = "data.db"
 nodeMap = {} # Maps node names to node objects
 idToName = {} # Maps node IDs to names
 

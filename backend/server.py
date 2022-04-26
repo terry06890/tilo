@@ -6,10 +6,9 @@ import urllib.parse
 
 hostname = "localhost"
 port = 8000
-dbFile = "data/otol.db"
-tolnodeReqDepth = 2
-	# For a /tolnode/name1 request, respond with name1's node, and descendent nodes in a subtree to some depth
-	# A depth of 0 means only respond with one node
+dbFile = "data/data.db"
+tolnodeReqDepth = 1
+	# For a /node?name=name1 request, respond with name1's node, and descendent nodes in a subtree to some depth > 0
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
 usageInfo += "Starts a server that listens for GET requests to http://" + hostname + ":" + str(port) + ".\n"
@@ -20,13 +19,19 @@ usageInfo += "    Responds with a map from names to node objects, representing\n
 usageInfo += "    nodes name1, and child nodes up to depth " + str(tolnodeReqDepth) + ".\n"
 usageInfo += "If type1 is 'children': Like 'node', but excludes node name1.\n"
 usageInfo += "If type1 is 'chain': Like 'node', but gets nodes from name1 up to the root, and their direct children.\n"
+usageInfo += "If type1 is 'search': Responds with a tolnode name that has alt-name name1, or null.\n"
 
 dbCon = sqlite3.connect(dbFile)
-def lookupName(name):
+def lookupNode(name):
 	cur = dbCon.cursor()
 	cur.execute("SELECT name, data FROM nodes WHERE name = ?", (name,))
 	row = cur.fetchone()
 	return row[1] if row != None else None
+def lookupName(name):
+	cur = dbCon.cursor()
+	cur.execute("SELECT name, alt_name FROM names WHERE alt_name = ?", (name,))
+	row = cur.fetchone()
+	return json.dumps(row[0]) if row != None else None
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):
@@ -42,19 +47,19 @@ class DbServer(BaseHTTPRequestHandler):
 			print(name)
 			# Check query string
 			if reqType == "node":
-				nodeJson = lookupName(name)
+				nodeJson = lookupNode(name)
 				if nodeJson != None:
 					results = []
 					getResultsUntilDepth(name, nodeJson, tolnodeReqDepth, results)
 					self.respondJson(nodeResultsToJSON(results))
 					return
 			elif reqType == "children":
-				nodeJson = lookupName(name)
+				nodeJson = lookupNode(name)
 				if nodeJson != None:
 					obj = json.loads(nodeJson)
 					results = []
 					for childName in obj["children"]:
-						nodeJson = lookupName(childName)
+						nodeJson = lookupNode(childName)
 						if nodeJson != None:
 							getResultsUntilDepth(childName, nodeJson, tolnodeReqDepth, results)
 					self.respondJson(nodeResultsToJSON(results))
@@ -63,7 +68,7 @@ class DbServer(BaseHTTPRequestHandler):
 				results = []
 				ranOnce = False
 				while True:
-					jsonResult = lookupName(name)
+					jsonResult = lookupNode(name)
 					if jsonResult == None:
 						if ranOnce:
 							print("ERROR: Parent-chain node {} not found".format(name), file=sys.stderr)
@@ -76,7 +81,7 @@ class DbServer(BaseHTTPRequestHandler):
 					else:
 						internalFail = False
 						for childName in obj["children"]:
-							jsonResult = lookupName(childName)
+							jsonResult = lookupNode(childName)
 							if jsonResult == None:
 								print("ERROR: Parent-chain-child node {} not found".format(name), file=sys.stderr)
 								internalFail = True
@@ -90,6 +95,11 @@ class DbServer(BaseHTTPRequestHandler):
 						return
 					else:
 						name = obj["parent"]
+			elif reqType == "search":
+				nameJson = lookupName(name)
+				if nameJson != None:
+					self.respondJson(nameJson)
+					return
 		self.send_response(404)
 		self.end_headers()
 		self.end_headers()
@@ -104,7 +114,7 @@ def getResultsUntilDepth(name, nodeJson, depth, results):
 	if depth > 0:
 		obj = json.loads(nodeJson)
 		for childName in obj["children"]:
-			childJson = lookupName(childName)
+			childJson = lookupNode(childName)
 			if childJson != None:
 				getResultsUntilDepth(childName, childJson, depth-1, results)
 def nodeResultsToJSON(results):
