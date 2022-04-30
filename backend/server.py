@@ -61,9 +61,10 @@ def nodeNameToFile(name, cur):
 	return {"filename": filename, "eolId": eolId, "sourceUrl": sUrl, "license": license, "copyrightOwner": cOwner}
 def lookupName(name):
 	cur = dbCon.cursor()
-	cur.execute("SELECT name, alt_name FROM names WHERE alt_name = ?", (name,))
-	row = cur.fetchone()
-	return json.dumps(row[0]) if row != None else None
+	results = []
+	for row in cur.execute("SELECT name, alt_name FROM names WHERE alt_name = ?", (name,)):
+		results.append(row[0])
+	return json.dumps(results)
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):
@@ -128,10 +129,8 @@ class DbServer(BaseHTTPRequestHandler):
 					else:
 						name = nodeObj["parent"]
 			elif reqType == "search":
-				nameJson = lookupName(name)
-				if nameJson != None:
-					self.respondJson(nameJson)
-					return
+				self.respondJson(lookupName(name))
+				return
 		self.send_response(404)
 		self.end_headers()
 		self.end_headers()
