@@ -88,9 +88,9 @@ export default defineComponent({
 		leafStyles(): Record<string,string> {
 			return {
 				// Image (and scrims)
-				backgroundImage: this.tolNode.imgFile != null ?
+				backgroundImage: this.tolNode.img?.filename != null ?
 					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
-						'url(\'/img/' + this.tolNode.imgFile.replaceAll('\'', '\\\'') + '\')' :
+						'url(\'/img/' + this.tolNode.img.filename.replaceAll('\'', '\\\'') + '\')' :
 					'none',
 				backgroundColor: '#1c1917',
 				backgroundSize: 'cover',

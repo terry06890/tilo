@@ -10,12 +10,18 @@ export class TolNode {
 	parent: string | null;
 	tips: number;
 	pSupport: boolean;
-	imgFile: string | null;
+	img: null | {
+		filename: string,
+		eolId: string,
+		sourceUrl: string,
+		license: string,
+		copyrightOwner: string
+	};
 	constructor(children: string[] = [], parent = null, tips = 0, pSupport = false){
 		this.children = children;
 		this.parent = parent;
 		this.tips = tips;
 		this.pSupport = pSupport;
-		this.imgFile = null;
+		this.img = null;
 	}
 }

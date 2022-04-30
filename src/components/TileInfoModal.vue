@@ -2,6 +2,8 @@
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import {LayoutNode} from '../layout';
+import type {TolMap} from '../tol';
+import {TolNode} from '../tol';
 
 // Displays information about a tree-of-life node
 export default defineComponent({
@@ -16,9 +18,9 @@ export default defineComponent({
 		},
 		imgStyles(): Record<string,string> {
 			return {
-				backgroundImage: this.tolNode.imgFile != null ?
+				backgroundImage: this.tolNode.img?.filename != null ?
 					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
-						'url(\'/img/' + this.tolNode.imgFile.replaceAll('\'', '\\\'') + '\')' :
+						'url(\'/img/' + this.tolNode.img.filename.replaceAll('\'', '\\\'') + '\')' :
 					'none',
 				width: this.uiOpts.infoModalImgSz + 'px',
 				height: this.uiOpts.infoModalImgSz + 'px',
@@ -47,14 +49,26 @@ export default defineComponent({
 			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
 		<h1 class="text-center text-xl font-bold mb-2">{{node.name}}</h1>
 		<hr class="mb-4 border-stone-400"/>
-		<div :style="imgStyles" class="float-left mr-4" alt="an image"></div>
-		<div>
-			Lorem ipsum dolor sit amet, consectetur adipiscing
-			elit, sed do eiusmod tempor incididunt ut labore
-			et dolore magna aliqua. Ut enim ad minim veniam,
-			quis nostrud exercitation ullamco laboris nisi ut
-			aliquip ex ea commodo consequat.
+		<div class="flex">
+			<div>
+				<div :style="imgStyles" class="mr-4" alt="an image"></div>
+				<div v-if="tolNode.img != null">
+					<ul>
+						<li>License: {{tolNode.img.license}}</li>
+						<li><a :href="tolNode.img.sourceUrl" class="underline">Source URL</a></li>
+						<li>Copyright Owner: {{tolNode.img.copyrightOwner}}</li>
+					</ul>
+				</div>
+			</div>
+			<div>
+				Lorem ipsum dolor sit amet, consectetur adipiscing
+				elit, sed do eiusmod tempor incididunt ut labore
+				et dolore magna aliqua. Ut enim ad minim veniam,
+				quis nostrud exercitation ullamco laboris nisi ut
+				aliquip ex ea commodo consequat.
+			</div>
 		</div>
+		
 	</div>
 </div>
 </template>

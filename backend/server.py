@@ -38,20 +38,27 @@ def lookupNode(name):
 	# Check for image file
 	match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
 	if match == None:
-		nodeObj["imgFile"] = nodeNameToFile(name, cur)
+		nodeObj["img"] = nodeNameToFile(name, cur)
 	else:
-		nodeObj["imgFile"] = nodeNameToFile(match.group(1), cur)
-		if nodeObj["imgFile"] == None:
-			nodeObj["imgFile"] = nodeNameToFile(match.group(2), cur)
+		nodeObj["img"] = nodeNameToFile(match.group(1), cur)
+		if nodeObj["img"] == None:
+			nodeObj["img"] = nodeNameToFile(match.group(2), cur)
 	return nodeObj;
 def nodeNameToFile(name, cur):
 	row = cur.execute("SELECT name, eol_id FROM names WHERE name = ?", (name,)).fetchone()
 	if row == None:
 		return None
-	imgFile = str(row[1]) + ".jpg"
-	if not os.path.exists(imgDir + imgFile):
+	eolId = row[1]
+	filename = str(eolId) + ".jpg"
+	if not os.path.exists(imgDir + filename):
 		return None
-	return imgFile
+	row = cur.execute(
+		"SELECT eol_id, source_url, license, copyright_owner FROM images WHERE eol_id = ?", (eolId,)).fetchone()
+	if row == None:
+		print("ERROR: No 'images' entry for image file {}".format(imgDir + filename), file=sys.stderr)
+		return None
+	[eolId, sUrl, license, cOwner] = row
+	return {"filename": filename, "eolId": eolId, "sourceUrl": sUrl, "license": license, "copyrightOwner": cOwner}
 def lookupName(name):
 	cur = dbCon.cursor()
 	cur.execute("SELECT name, alt_name FROM names WHERE alt_name = ?", (name,))

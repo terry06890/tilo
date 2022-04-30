@@ -4,5 +4,8 @@ node_modules/
 dist/
 public/img/
 backend/data/otol
-backend/data/otol.db
+backend/data/data.db
 backend/data/eol
+backend/data/imgsForReview/
+backend/data/imgsReviewed/
+backend/data/img/
