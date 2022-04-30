@@ -23,7 +23,8 @@ dbFile = "data.db"
 nameToPids = {}
 pidToNames = {}
 canonicalNameToPids = {}
-def updateMaps(name, pid, canonical):
+pidToPreferred = {}
+def updateMaps(name, pid, canonical, preferredAlt):
 	if name not in nameToPids:
 		nameToPids[name] = {pid}
 	else:
@@ -37,6 +38,8 @@ def updateMaps(name, pid, canonical):
 		pidToNames[pid] = {name}
 	else:
 		pidToNames[pid].add(name)
+	if preferredAlt:
+		pidToPreferred[pid] = name
 with open(vnamesFile, newline="") as csvfile:
 	reader = csv.reader(csvfile)
 	lineNum = 0
@@ -47,14 +50,15 @@ with open(vnamesFile, newline="") as csvfile:
 		pid = int(row[0])
 		name1 = re.sub(r"<[^>]+>", "", row[1].lower()) # Remove tags
 		name2 = row[2].lower()
+		preferred = row[6] == "preferred" and row[3] == "eng"
 		# Add to maps
-		updateMaps(name1, pid, True)
-		updateMaps(name2, pid, False)
+		updateMaps(name1, pid, True, False)
+		updateMaps(name2, pid, False, preferred)
 # Open db connection
 dbCon = sqlite3.connect(dbFile)
-cur = dbCon.cursor()
+dbCur = dbCon.cursor()
 # Create 'names' table
-cur.execute("CREATE TABLE names(name TEXT, alt_name TEXT, eol_id INT, PRIMARY KEY(name, alt_name))")
+dbCur.execute("CREATE TABLE names(name TEXT, alt_name TEXT, eol_id INT, pref_alt INT, PRIMARY KEY(name, alt_name))")
 # Iterate through 'nodes' table, resolving to canonical-names
 usedPids = set()
 unresolvedNodeNames = set()
@@ -75,10 +79,12 @@ for row in cur2.execute("SELECT name FROM nodes"):
 		if pidToUse > 0:
 			usedPids.add(pidToUse)
 			altNames = {name}
+			preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
 			for n in pidToNames[pidToUse]:
 				altNames.add(n)
 			for n in altNames:
-				cur.execute("INSERT INTO names VALUES (?, ?, ?)", (name, n, pidToUse))
+				isPreferred = 1 if (n == preferredName) else 0
+				dbCur.execute("INSERT INTO names VALUES (?, ?, ?, ?)", (name, n, pidToUse, isPreferred))
 	elif name in nameToPids:
 		unresolvedNodeNames.add(name)
 # Iterate through unresolved nodes, resolving to vernacular-names
@@ -96,9 +102,11 @@ for name in unresolvedNodeNames:
 	if pidToUse > 0:
 		usedPids.add(pidToUse)
 		altNames = {name}
+		preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
 		for n in pidToNames[pidToUse]:
 			altNames.add(n)
 		for n in altNames:
-			cur.execute("INSERT INTO names VALUES (?, ?, ?)", (name, n, pidToUse))
+			isPreferred = 1 if (n == preferredName) else 0
+			dbCur.execute("INSERT INTO names VALUES (?, ?, ?, ?)", (name, n, pidToUse, isPreferred))
 dbCon.commit()
 dbCon.close()

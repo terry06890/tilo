@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import sys, re, os
+import sqlite3
 import tkinter as tki
 from tkinter import ttk
 import PIL
@@ -17,6 +18,7 @@ if len(sys.argv) > 1:
 
 imgDir = "imgsForReview/"
 outDir = "imgsReviewed/"
+dbFile = "data.db"
 IMG_DISPLAY_SZ = 400
 MAX_IMGS_PER_ID = 3
 PLACEHOLDER_IMG = Image.new("RGB", (IMG_DISPLAY_SZ, IMG_DISPLAY_SZ), (88, 28, 135))
@@ -31,6 +33,9 @@ imgList.sort(key=lambda s: int(s.split(" ")[0]))
 if len(imgList) == 0:
 	print("No input images found", file=sys.stderr)
 	sys.exit(1)
+# Open db
+dbCon = sqlite3.connect(dbFile)
+dbCur = dbCon.cursor()
 
 class EolImgReviewer:
 	""" Provides the GUI for reviewing images """
@@ -120,8 +125,15 @@ class EolImgReviewer:
 		# Update title
 		firstImgIdx = self.imgListIdx - len(self.nextImgNames) + 1
 		lastImgIdx = self.imgListIdx
-		self.root.title("Reviewing EOL ID {} (imgs {} to {} out of {})".format(
-			self.nextEolId, firstImgIdx, lastImgIdx, len(self.imgList)))
+		row = dbCur.execute("SELECT alt_name, eol_id, pref_alt FROM names WHERE eol_id = ? and pref_alt = 1",
+			(self.nextEolId,)).fetchone()
+		if row != None:
+			commonName = row[0]
+			self.root.title("Reviewing EOL ID {}, aka \"{}\" (imgs {} to {} out of {})".format(
+				self.nextEolId, commonName, firstImgIdx, lastImgIdx, len(self.imgList)))
+		else:
+			self.root.title("Reviewing EOL ID {} (imgs {} to {} out of {})".format(
+				self.nextEolId, firstImgIdx, lastImgIdx, len(self.imgList)))
 	def accept(self, imgIdx):
 		""" React to a user selecting an image """
 		if imgIdx >= len(self.nextImgNames):
@@ -154,6 +166,7 @@ class EolImgReviewer:
 		self.labels[imgIdx].config(image=self.photoImgs[imgIdx])
 		self.rotations[imgIdx] = (self.rotations[imgIdx] + deg) % 360
 	def quit(self, e = None):
+		dbCon.close()
 		self.root.destroy()
 	def resizeForDisplay(self, img):
 		""" Returns a copy of an image, shrunk to fit the display (keeps aspect ratio), and with a background """
