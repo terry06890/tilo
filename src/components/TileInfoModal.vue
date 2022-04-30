@@ -7,13 +7,19 @@ import {LayoutNode} from '../layout';
 export default defineComponent({
 	props: {
 		node: {type: Object as PropType<LayoutNode>, required: true},
+		tolMap: {type: Object as PropType<TolMap>, required: true},
 		uiOpts: {type: Object, required: true},
 	},
 	computed: {
+		tolNode(): TolNode {
+			return this.tolMap.get(this.node.name)!;
+		},
 		imgStyles(): Record<string,string> {
 			return {
-				//backgroundImage: 'url(\'/img/' + this.node.name.replaceAll('\'', '\\\'') + '.png\')',
-				background: 'black',
+				backgroundImage: this.tolNode.imgFile != null ?
+					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
+						'url(\'/img/' + this.tolNode.imgFile.replaceAll('\'', '\\\'') + '\')' :
+					'none',
 				width: this.uiOpts.infoModalImgSz + 'px',
 				height: this.uiOpts.infoModalImgSz + 'px',
 				backgroundSize: 'cover',

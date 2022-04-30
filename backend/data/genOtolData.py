@@ -5,20 +5,17 @@ import os.path
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
 usageInfo += "Reads labelled_supertree_ottnames.tre & annotations.json (from an Open Tree of Life release), \n"
-usageInfo += "and creates an sqlite database otol.db, which holds entries of the form (name text, data text).\n"
+usageInfo += "and creates a sqlite database, which holds entries of the form (name text, data text).\n"
 usageInfo += "Each row holds a tree-of-life node name, and a JSON string with the form \n"
 usageInfo += "{\"children\": [name1, ...], \"parent\": name1, \"tips\": int1, \"pSupport\": bool1}, holding \n"
 usageInfo += "child names, a parent name or null, descendant 'tips', and a phylogeny-support indicator\n"
 usageInfo += "\n"
-usageInfo += "This script was adapted to handle Open Tree of Life version 13.4.\n"
-usageInfo += "Link: https://tree.opentreeoflife.org/about/synthesis-release/v13.4\n"
-usageInfo += "\n"
-usageInfo += "labelled_supertree_ottnames.tre format:\n"
+usageInfo += "Expected labelled_supertree_ottnames.tre format:\n"
 usageInfo += "    Represents a tree-of-life in Newick format, roughly like (n1,n2,(n3,n4)n5)n6,\n"
 usageInfo += "    where root node is named n6, and has children n1, n2, and n5.\n"
 usageInfo += "    Name forms include Homo_sapiens_ott770315, mrcaott6ott22687, and 'Oxalis san-miguelii ott5748753'\n"
 usageInfo += "    Some names can be split up into a 'simple' name (like Homo_sapiens) and an id (like ott770315)\n"
-usageInfo += "annotations.json format:\n"
+usageInfo += "Expected annotations.json format:\n"
 usageInfo += "    JSON object holding information about the tree-of-life release.\n"
 usageInfo += "    The object's 'nodes' field maps node IDs to objects holding information about that node,\n"
 usageInfo += "    such as phylogenetic trees that support/conflict with it's placement.\n"
@@ -50,8 +47,8 @@ def parseNewick():
 	if dataIdx == len(data):
 		print("ERROR: Unexpected EOF at index " + str(dataIdx), file=sys.stderr)
 		return None
-	# Check for inner-node start
-	if data[dataIdx] == "(":
+	# Check for node
+	if data[dataIdx] == "(": # parse inner node
 		dataIdx += 1
 		childNames = []
 		while True:
@@ -91,7 +88,7 @@ def parseNewick():
 				for childName in childNames:
 					nodeMap[childName]["parent"] = name
 				return name
-	else:
+	else: # Parse node name
 		[name, id] = parseNewickName()
 		idToName[id] = name
 		nodeMap[name] = {"n": name, "id": id, "children": [], "parent": None, "tips": 1, "pSupport": False}
@@ -173,9 +170,9 @@ def applyMrcaNameConvert(name, namesToSwap):
 	childTips[maxIdx] = 0
 	maxTips2 = max(childTips)
 	maxIdx2 = childTips.index(maxTips2)
-	#
 	childName1 = node["children"][maxIdx]
 	childName2 = node["children"][maxIdx2]
+	# Check for composite child names
 	if childName1.startswith("mrca"):
 		childName1 = applyMrcaNameConvert(childName1, namesToSwap)
 	if childName2.startswith("mrca"):
@@ -218,10 +215,10 @@ for node in nodeMap.values():
 	del node["id"]
 
 # Create db
-con = sqlite3.connect(dbFile)
-cur = con.cursor()
-cur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, data TEXT)")
+dbCon = sqlite3.connect(dbFile)
+dbCur = dbCon.cursor()
+dbCur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, data TEXT)")
 for name in nodeMap.keys():
-	cur.execute("INSERT INTO nodes VALUES (?, ?)", (name, json.dumps(nodeMap[name])))
-con.commit()
-con.close()
+	dbCur.execute("INSERT INTO nodes VALUES (?, ?)", (name, json.dumps(nodeMap[name])))
+dbCon.commit()
+dbCon.close()

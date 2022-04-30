@@ -541,7 +541,7 @@ export default defineComponent({
 			text-white/40 hover:text-white hover:cursor-pointer"/>
 	<!-- Modals -->
 	<transition name="fade">
-		<tile-info-modal v-if="infoModalNode != null" :node="infoModalNode" :uiOpts="uiOpts"
+		<tile-info-modal v-if="infoModalNode != null" :node="infoModalNode" :tolMap="tolMap" :uiOpts="uiOpts"
 			@info-modal-close="infoModalNode = null"/>
 	</transition>
 	<transition name="fade">

@@ -1,9 +1,20 @@
 #!/usr/bin/python3
 
+# 
+
 import sys, re
 import csv, sqlite3
 
-vnamesFile = "eol/vernacular_names.csv"
+usageInfo =  f"usage: {sys.argv[0]}\n"
+usageInfo += "Reads vernacular-names CSV data (from the Encyclopedia of Life site),\n"
+usageInfo += "makes associations with node data in a sqlite database, and writes\n"
+usageInfo += "name data to that database.\n"
+usageInfo += "\n"
+usageInfo += "Expects a CSV header describing lines with format:\n"
+usageInfo += "    page_id, canonical_form, vernacular_string, language_code,\n"
+usageInfo += "    resource_name, is_preferred_by_resource, is_preferred_by_eol\n"
+
+vnamesFile = "eol/vernacularNames.csv"
 dbFile = "data.db"
 
 # Read in vernacular-names data
@@ -34,7 +45,7 @@ with open(vnamesFile, newline="") as csvfile:
 		if lineNum == 1:
 			continue
 		pid = int(row[0])
-		name1 = re.sub(r"<[^>]+>", "", row[1].lower())
+		name1 = re.sub(r"<[^>]+>", "", row[1].lower()) # Remove tags
 		name2 = row[2].lower()
 		# Add to maps
 		updateMaps(name1, pid, True)

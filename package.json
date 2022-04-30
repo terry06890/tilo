@@ -11,6 +11,7 @@
 	"author": "Terry Truong",
 	"license": "MIT",
 	"dependencies": {
+		"smartcrop-cli": "^2.0.3",
 		"vue": "^3.2.25"
 	},
 	"devDependencies": {

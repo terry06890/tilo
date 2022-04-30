@@ -88,11 +88,11 @@ export default defineComponent({
 		leafStyles(): Record<string,string> {
 			return {
 				// Image (and scrims)
-				//backgroundImage:
-				//	'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
-				//	'url(\'/img/' + this.layoutNode.name.replaceAll('\'', '\\\'') + '.png\')',
-				backgroundImage:
-					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%)',
+				backgroundImage: this.tolNode.imgFile != null ?
+					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
+						'url(\'/img/' + this.tolNode.imgFile.replaceAll('\'', '\\\'') + '\')' :
+					'none',
+				backgroundColor: '#1c1917',
 				backgroundSize: 'cover',
 				// Other
 				borderRadius: this.uiOpts.borderRadius + 'px',

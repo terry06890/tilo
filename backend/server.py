@@ -1,13 +1,15 @@
 #!/usr/bin/python3
 
 import sys, re, sqlite3, json
+import os.path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
 
 hostname = "localhost"
 port = 8000
 dbFile = "data/data.db"
-tolnodeReqDepth = 1
+imgDir = "../public/img/"
+NODE_REQ_DEPTH = 1
 	# For a /node?name=name1 request, respond with name1's node, and descendent nodes in a subtree to some depth > 0
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
@@ -16,17 +18,40 @@ usageInfo += "Responds to path+query /data/type1?name=name1 with JSON data.\n"
 usageInfo += "\n"
 usageInfo += "If type1 is 'node': \n"
 usageInfo += "    Responds with a map from names to node objects, representing\n"
-usageInfo += "    nodes name1, and child nodes up to depth " + str(tolnodeReqDepth) + ".\n"
+usageInfo += "    nodes name1, and child nodes up to depth " + str(NODE_REQ_DEPTH) + ".\n"
 usageInfo += "If type1 is 'children': Like 'node', but excludes node name1.\n"
 usageInfo += "If type1 is 'chain': Like 'node', but gets nodes from name1 up to the root, and their direct children.\n"
 usageInfo += "If type1 is 'search': Responds with a tolnode name that has alt-name name1, or null.\n"
+if len(sys.argv) > 1:
+	print(usageInfo, file=sys.stderr)
+	sys.exit(1)
 
 dbCon = sqlite3.connect(dbFile)
 def lookupNode(name):
+	# Get from db
 	cur = dbCon.cursor()
 	cur.execute("SELECT name, data FROM nodes WHERE name = ?", (name,))
 	row = cur.fetchone()
-	return row[1] if row != None else None
+	if row == None:
+		return None
+	nodeObj = json.loads(row[1])
+	# Check for image file
+	match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
+	if match == None:
+		nodeObj["imgFile"] = nodeNameToFile(name, cur)
+	else:
+		nodeObj["imgFile"] = nodeNameToFile(match.group(1), cur)
+		if nodeObj["imgFile"] == None:
+			nodeObj["imgFile"] = nodeNameToFile(match.group(2), cur)
+	return nodeObj;
+def nodeNameToFile(name, cur):
+	row = cur.execute("SELECT name, eol_id FROM names WHERE name = ?", (name,)).fetchone()
+	if row == None:
+		return None
+	imgFile = str(row[1]) + ".jpg"
+	if not os.path.exists(imgDir + imgFile):
+		return None
+	return imgFile
 def lookupName(name):
 	cur = dbCon.cursor()
 	cur.execute("SELECT name, alt_name FROM names WHERE alt_name = ?", (name,))
@@ -44,57 +69,57 @@ class DbServer(BaseHTTPRequestHandler):
 		if match != None and match.group(1) == "data" and "name" in queryDict:
 			reqType = match.group(2)
 			name = queryDict["name"][0]
-			print(name)
 			# Check query string
 			if reqType == "node":
-				nodeJson = lookupNode(name)
-				if nodeJson != None:
-					results = []
-					getResultsUntilDepth(name, nodeJson, tolnodeReqDepth, results)
-					self.respondJson(nodeResultsToJSON(results))
+				nodeObj = lookupNode(name)
+				if nodeObj != None:
+					results = {}
+					getResultsUntilDepth(name, nodeObj, NODE_REQ_DEPTH, results)
+					self.respondJson(json.dumps(results))
 					return
 			elif reqType == "children":
-				nodeJson = lookupNode(name)
-				if nodeJson != None:
-					obj = json.loads(nodeJson)
-					results = []
-					for childName in obj["children"]:
-						nodeJson = lookupNode(childName)
-						if nodeJson != None:
-							getResultsUntilDepth(childName, nodeJson, tolnodeReqDepth, results)
-					self.respondJson(nodeResultsToJSON(results))
+				nodeObj = lookupNode(name)
+				if nodeObj != None:
+					results = {}
+					for childName in nodeObj["children"]:
+						nodeObj = lookupNode(childName)
+						if nodeObj != None:
+							getResultsUntilDepth(childName, nodeObj, NODE_REQ_DEPTH, results)
+					self.respondJson(json.dumps(results))
 					return
 			elif reqType == "chain":
-				results = []
+				results = {}
 				ranOnce = False
 				while True:
-					jsonResult = lookupNode(name)
-					if jsonResult == None:
+					# Get node
+					nodeObj = lookupNode(name)
+					if nodeObj == None:
 						if ranOnce:
 							print("ERROR: Parent-chain node {} not found".format(name), file=sys.stderr)
 						break
-					results.append([name, jsonResult])
-					obj = json.loads(jsonResult)
-					# Add children
+					results[name] = nodeObj
+					# Conditionally add children
 					if not ranOnce:
 						ranOnce = True
 					else:
 						internalFail = False
-						for childName in obj["children"]:
-							jsonResult = lookupNode(childName)
-							if jsonResult == None:
+						for childName in nodeObj["children"]:
+							if childName in results:
+								continue
+							nodeObj = lookupNode(childName)
+							if nodeObj == None:
 								print("ERROR: Parent-chain-child node {} not found".format(name), file=sys.stderr)
 								internalFail = True
 								break
-							results.append([childName, jsonResult])
+							results[childName] = nodeObj
 						if internalFail:
 							break
 					# Check if root
-					if obj["parent"] == None:
-						self.respondJson(nodeResultsToJSON(results))
+					if nodeObj["parent"] == None:
+						self.respondJson(json.dumps(results))
 						return
 					else:
-						name = obj["parent"]
+						name = nodeObj["parent"]
 			elif reqType == "search":
 				nameJson = lookupName(name)
 				if nameJson != None:
@@ -108,24 +133,14 @@ class DbServer(BaseHTTPRequestHandler):
 		self.send_header("Content-type", "application/json")
 		self.end_headers()
 		self.wfile.write(jsonStr.encode("utf-8"))
-def getResultsUntilDepth(name, nodeJson, depth, results):
-	"""Given a node [name, nodeJson] pair, adds child node pairs to 'results', up until 'depth'"""
-	results.append([name, nodeJson])
+def getResultsUntilDepth(name, nodeObj, depth, results):
+	"""Given a node [name, nodeObj] pair, adds child node pairs to 'results', up until 'depth'"""
+	results[name] = nodeObj
 	if depth > 0:
-		obj = json.loads(nodeJson)
-		for childName in obj["children"]:
-			childJson = lookupNode(childName)
-			if childJson != None:
-				getResultsUntilDepth(childName, childJson, depth-1, results)
-def nodeResultsToJSON(results):
-	"""Given a list of [name, nodeJson] pairs, returns a representative JSON string"""
-	jsonStr = "{"
-	for i in range(len(results)):
-		jsonStr += json.dumps(results[i][0]) + ":" + results[i][1]
-		if i < len(results) - 1:
-			jsonStr += ","
-	jsonStr += "}"
-	return jsonStr
+		for childName in nodeObj["children"]:
+			childObj = lookupNode(childName)
+			if childObj != None:
+				getResultsUntilDepth(childName, childObj, depth-1, results)
 
 server = HTTPServer((hostname, port), DbServer)
 print("Server started at http://{}:{}".format(hostname, port))

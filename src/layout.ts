@@ -6,7 +6,6 @@
  * find a tile-based layout, filling in node fields to represent placement.
  */
 
-import {TolNode} from './tol';
 import type {TolMap} from './tol';
 import {range, arraySum, linspace, limitVals, updateAscSeq} from './util';
 
