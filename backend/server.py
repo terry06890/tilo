@@ -68,9 +68,11 @@ def lookupName(name):
 	cur = dbCon.cursor()
 	results = []
 	hasMore = False
-	for row in cur.execute(
-		"SELECT DISTINCT name, alt_name FROM names WHERE alt_name LIKE ? LIMIT ?",
-		(name + "%", SEARCH_SUGG_LIMIT + 1)):
+	#nameQuery = "SELECT DISTINCT name, alt_name FROM names WHERE alt_name LIKE ? LIMIT ?"
+	nameQuery = "SELECT DISTINCT names.name, names.alt_name, nodes.tips FROM names" \
+		" INNER JOIN nodes on names.name = nodes.name " \
+		" WHERE alt_name LIKE ? ORDER BY nodes.tips DESC LIMIT " + str(SEARCH_SUGG_LIMIT + 1)
+	for row in cur.execute(nameQuery, (name + "%",)):
 		results.append({"name": row[0], "altName": row[1]})
 	if len(results) > SEARCH_SUGG_LIMIT:
 		hasMore = True
