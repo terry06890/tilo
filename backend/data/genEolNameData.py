@@ -48,13 +48,16 @@ with open(vnamesFile, newline="") as csvfile:
 		lineNum += 1
 		if lineNum == 1:
 			continue
+		# Parse line
 		pid = int(row[0])
 		name1 = re.sub(r"<[^>]+>", "", row[1].lower()) # Remove tags
 		name2 = row[2].lower()
-		preferred = row[6] == "preferred" and row[3] == "eng"
+		lang = row[3]
+		preferred = row[6] == "preferred"
 		# Add to maps
-		updateMaps(name1, pid, True, False)
-		updateMaps(name2, pid, False, preferred)
+		if lang == "eng":
+			updateMaps(name1, pid, True, False)
+			updateMaps(name2, pid, False, preferred)
 
 # Open db connection
 dbCon = sqlite3.connect(dbFile)

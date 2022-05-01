@@ -102,7 +102,7 @@ export default defineComponent({
 							this.focusedSuggIdx = null;
 						}
 					}),
-				500
+				300
 			);
 		},
 		onDownKey(){
