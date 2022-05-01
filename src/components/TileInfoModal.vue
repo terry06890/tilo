@@ -22,6 +22,7 @@ export default defineComponent({
 					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
 						'url(\'/img/' + this.tolNode.img.filename.replaceAll('\'', '\\\'') + '\')' :
 					'none',
+				backgroundColor: '#1c1917',
 				width: this.uiOpts.infoModalImgSz + 'px',
 				height: this.uiOpts.infoModalImgSz + 'px',
 				backgroundSize: 'cover',

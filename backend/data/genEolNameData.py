@@ -55,8 +55,8 @@ with open(vnamesFile, newline="") as csvfile:
 		lang = row[3]
 		preferred = row[6] == "preferred"
 		# Add to maps
+		updateMaps(name1, pid, True, False)
 		if lang == "eng":
-			updateMaps(name1, pid, True, False)
 			updateMaps(name2, pid, False, preferred)
 
 # Open db connection

@@ -8,7 +8,7 @@ File Generation Process
 4   Run genSpellfixNameData.py, which adds a 'spellfix\_alt\_names'
     table to data.db, using data in the 'names' table.
 5   Use downloadImgsForReview.py to download EOL images into imgsForReview/.
-    It uses data in eol/imagesList.db, and the 'nodes' table.
+    It uses data in eol/imagesList.db, and the 'names' table.
 6   Use reviewImgs.py to filter images in imgsForReview/ into EOL-id-unique
     images in imgsReviewed/ (uses 'names' to display common names).
 7   Use genImgsForWeb.py to create cropped/resized images in img/, using
