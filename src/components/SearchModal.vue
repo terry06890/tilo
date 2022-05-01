@@ -4,11 +4,15 @@ import SearchIcon from './icon/SearchIcon.vue';
 import {LayoutNode} from '../layout';
 import type {TolMap} from '../tol';
 
+type SearchSugg = {name: string, altName: string}; // Represents a search string suggestion
+type SearchSuggResponse = [SearchSugg[], boolean]; // Holds search suggestions and an indication of if there was more
+
 // Displays a search box, and sends search requests
 export default defineComponent({
 	data(){
 		return {
-			searchSuggs: [] as string[], // Holds suggestions for the search string
+			searchSuggs: [] as SearchSugg[],
+			searchHasMoreSuggs: false,
 			focusedSuggIdx: null as null | number, // Denotes a search-suggestion selected using the arrow keys
 			lastSuggReqId: 0, // Used to prevent late search-suggestion server-responses from taking effect
 		};
@@ -26,10 +30,10 @@ export default defineComponent({
 		onEnter(){
 			// Check for a focused search-suggestion
 			if (this.focusedSuggIdx != null){
-				this.resolveSearch(this.searchSuggs[this.focusedSuggIdx]);
+				this.resolveSearch(this.searchSuggs[this.focusedSuggIdx].name);
 				return;
 			}
-			// Ask server if input valid is valid name
+			// Get tol-node-name from server
 			let input = this.$refs.searchInput as HTMLInputElement;
 			let url = new URL(window.location.href);
 			url.pathname = '/data/search';
@@ -44,7 +48,7 @@ export default defineComponent({
 						input.offsetWidth; // Triggers reflow
 						input.classList.add('animate-red-then-fade');
 					} else {
-						this.resolveSearch(results[0])
+						this.resolveSearch(results[0].name)
 					}
 				})
 				.catch(error => {
@@ -74,6 +78,7 @@ export default defineComponent({
 			// Check for empty input
 			if (input.value.length == 0){
 				this.searchSuggs = [];
+				this.searchHasMoreSuggs = false;
 				this.focusedSuggIdx = null;
 				return;
 			}
@@ -85,9 +90,10 @@ export default defineComponent({
 			let suggsId = this.lastSuggReqId;
 			fetch(url.toString())
 				.then(response => response.json())
-				.then(results => {
+				.then((results: SearchSuggResponse) => {
 					if (this.lastSuggReqId == suggsId){
-						this.searchSuggs = results;
+						this.searchSuggs = results[0];
+						this.searchHasMoreSuggs = results[1];
 						this.focusedSuggIdx = null;
 					}
 				})
@@ -130,11 +136,13 @@ export default defineComponent({
 				@keyup.enter="onEnter" @keyup.esc="onCloseClick"
 				@input="onInput" @keydown.down.prevent="onDownKey" @keydown.up.prevent="onUpKey"/>
 			<div class="absolute top-[100%] w-full">
-				<div v-for="(item, idx) of searchSuggs" :key="item"
+				<div v-for="(sugg, idx) of searchSuggs"
 					:style="{backgroundColor: idx == focusedSuggIdx ? '#a3a3a3' : 'white'}"
-					class="bg-white border p-1 hover:underline hover:cursor-pointer" @click="resolveSearch(item)">
-					{{item}}
+					class="bg-white border p-1 hover:underline hover:cursor-pointer"
+					@click="resolveSearch(sugg.name)">
+					{{sugg.name == sugg.altName ? sugg.name : `${sugg.altName} (aka ${sugg.name})`}}
 				</div>
+				<div v-if="searchHasMoreSuggs" class="bg-white px-1 text-center border">...</div>
 			</div>
 		</div>
 		<search-icon @click.stop="onEnter" ref="searchIcon"

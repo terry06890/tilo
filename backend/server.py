@@ -11,6 +11,7 @@ dbFile = "data/data.db"
 imgDir = "../public/img/"
 NODE_REQ_DEPTH = 1
 	# For a /node?name=name1 request, respond with name1's node, and descendent nodes in a subtree to some depth > 0
+SEARCH_SUGG_LIMIT = 5
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
 usageInfo += "Starts a server that listens for GET requests to http://" + hostname + ":" + str(port) + ".\n"
@@ -62,9 +63,15 @@ def nodeNameToFile(name, cur):
 def lookupName(name):
 	cur = dbCon.cursor()
 	results = []
-	for row in cur.execute("SELECT name, alt_name FROM names WHERE alt_name = ?", (name,)):
-		results.append(row[0])
-	return json.dumps(results)
+	hasMore = False
+	for row in cur.execute(
+		"SELECT DISTINCT name, alt_name FROM names WHERE alt_name LIKE ? LIMIT ?",
+		(name + "%", SEARCH_SUGG_LIMIT + 1)):
+		results.append({"name": row[0], "altName": row[1]})
+	if len(results) > SEARCH_SUGG_LIMIT:
+		hasMore = True
+		del results[-1]
+	return json.dumps([results, hasMore])
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):
