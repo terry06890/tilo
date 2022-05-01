@@ -65,7 +65,11 @@ export default defineComponent({
 			fetch(url.toString())
 				.then(response => response.json())
 				.then(obj => {
-					Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
+					Object.getOwnPropertyNames(obj).forEach(key => {
+						if (!this.tolMap.has(key)){
+							this.tolMap.set(key, obj[key])
+						}
+					});
 					this.$emit('search-node', tolNodeName);
 				})
 				.catch(error => {
