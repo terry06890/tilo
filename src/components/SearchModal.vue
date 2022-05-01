@@ -14,6 +14,8 @@ export default defineComponent({
 			searchSuggs: [] as SearchSugg[],
 			searchHasMoreSuggs: false,
 			focusedSuggIdx: null as null | number, // Denotes a search-suggestion selected using the arrow keys
+			pendingSearchSuggReq: 0, // Set via setTimeout() upon a search-suggestion request
+				// Used to avoid sending many requests when search input is quickly changed multiple times
 			lastSuggReqId: 0, // Used to prevent late search-suggestion server-responses from taking effect
 		};
 	},
@@ -82,21 +84,26 @@ export default defineComponent({
 				this.focusedSuggIdx = null;
 				return;
 			}
+			// Clear any pending request
+			clearTimeout(this.pendingSearchSuggReq);
 			// Ask server for search-suggestions
 			let url = new URL(window.location.href);
 			url.pathname = '/data/search';
 			url.search = '?name=' + encodeURIComponent(input.value);
 			this.lastSuggReqId += 1;
 			let suggsId = this.lastSuggReqId;
-			fetch(url.toString())
-				.then(response => response.json())
-				.then((results: SearchSuggResponse) => {
-					if (this.lastSuggReqId == suggsId){
-						this.searchSuggs = results[0];
-						this.searchHasMoreSuggs = results[1];
-						this.focusedSuggIdx = null;
-					}
-				})
+			this.pendingSearchSuggReq = setTimeout(() =>
+				fetch(url.toString())
+					.then(response => response.json())
+					.then((results: SearchSuggResponse) => {
+						if (this.lastSuggReqId == suggsId){
+							this.searchSuggs = results[0];
+							this.searchHasMoreSuggs = results[1];
+							this.focusedSuggIdx = null;
+						}
+					}),
+				500
+			);
 		},
 		onDownKey(){
 			// Select next search-suggestion, if any

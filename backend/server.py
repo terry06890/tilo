@@ -27,7 +27,11 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
+# Connect to db, and load spellfix extension
 dbCon = sqlite3.connect(dbFile)
+dbCon.enable_load_extension(True)
+dbCon.load_extension('./data/spellfix')
+# Some functions
 def lookupNode(name):
 	# Get from db
 	cur = dbCon.cursor()
@@ -68,12 +72,22 @@ def lookupName(name):
 	cur = dbCon.cursor()
 	results = []
 	hasMore = False
-	#nameQuery = "SELECT DISTINCT name, alt_name FROM names WHERE alt_name LIKE ? LIMIT ?"
-	nameQuery = "SELECT DISTINCT names.name, names.alt_name, nodes.tips FROM names" \
-		" INNER JOIN nodes on names.name = nodes.name " \
-		" WHERE alt_name LIKE ? ORDER BY nodes.tips DESC LIMIT " + str(SEARCH_SUGG_LIMIT + 1)
-	for row in cur.execute(nameQuery, (name + "%",)):
-		results.append({"name": row[0], "altName": row[1]})
+	#for row in cur.execute(
+	#	"SELECT DISTINCT name, alt_name FROM names WHERE alt_name LIKE ? LIMIT ?",
+	#	(name, SEARCH_SUGG_LIMIT)):
+	#	results.append({"name": row[0], "altName": row[1]})
+	#for row in cur.execute(
+	#	"SELECT DISTINCT names.name, names.alt_name, nodes.tips FROM" \
+	#		" names INNER JOIN nodes ON names.name = nodes.name " \
+	#		" WHERE alt_name LIKE ? ORDER BY nodes.tips DESC LIMIT ?",
+	#	(name, SEARCH_SUGG_LIMIT)):
+	#	results.append({"name": row[0], "altName": row[1]})
+	for row in cur.execute(
+		"SELECT word, alt_name, name FROM" \
+			" spellfix_alt_names INNER JOIN names ON alt_name = word" \
+			" WHERE word MATCH ? LIMIT ?",
+		(name, SEARCH_SUGG_LIMIT)):
+		results.append({"name": row[2], "altName": row[0]})
 	if len(results) > SEARCH_SUGG_LIMIT:
 		hasMore = True
 		del results[-1]

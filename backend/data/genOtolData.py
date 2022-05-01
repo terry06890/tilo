@@ -18,7 +18,6 @@ usageInfo += "Expected annotations.json format:\n"
 usageInfo += "    JSON object holding information about the tree-of-life release.\n"
 usageInfo += "    The object's 'nodes' field maps node IDs to objects holding information about that node,\n"
 usageInfo += "    such as phylogenetic trees that support/conflict with it's placement.\n"
-
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)

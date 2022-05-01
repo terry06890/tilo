@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-# 
-
 import sys, re
 import csv, sqlite3
 
@@ -13,6 +11,9 @@ usageInfo += "\n"
 usageInfo += "Expects a CSV header describing lines with format:\n"
 usageInfo += "    page_id, canonical_form, vernacular_string, language_code,\n"
 usageInfo += "    resource_name, is_preferred_by_resource, is_preferred_by_eol\n"
+if len(sys.argv) > 1:
+	print(usageInfo, file=sys.stderr)
+	sys.exit(1)
 
 vnamesFile = "eol/vernacularNames.csv"
 dbFile = "data.db"
@@ -54,6 +55,7 @@ with open(vnamesFile, newline="") as csvfile:
 		# Add to maps
 		updateMaps(name1, pid, True, False)
 		updateMaps(name2, pid, False, preferred)
+
 # Open db connection
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
@@ -62,9 +64,9 @@ dbCur.execute("CREATE TABLE names(name TEXT, alt_name TEXT, eol_id INT, pref_alt
 # Iterate through 'nodes' table, resolving to canonical-names
 usedPids = set()
 unresolvedNodeNames = set()
-cur2 = dbCon.cursor()
+dbCur2 = dbCon.cursor()
 iterationNum = 0
-for row in cur2.execute("SELECT name FROM nodes"):
+for row in dbCur2.execute("SELECT name FROM nodes"):
 	name = row[0]
 	iterationNum += 1
 	if iterationNum % 10000 == 0:
@@ -108,5 +110,6 @@ for name in unresolvedNodeNames:
 		for n in altNames:
 			isPreferred = 1 if (n == preferredName) else 0
 			dbCur.execute("INSERT INTO names VALUES (?, ?, ?, ?)", (name, n, pidToUse, isPreferred))
+# Close db
 dbCon.commit()
 dbCon.close()
