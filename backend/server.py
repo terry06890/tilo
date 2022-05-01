@@ -31,11 +31,15 @@ dbCon = sqlite3.connect(dbFile)
 def lookupNode(name):
 	# Get from db
 	cur = dbCon.cursor()
-	cur.execute("SELECT name, data FROM nodes WHERE name = ?", (name,))
-	row = cur.fetchone()
+	row = cur.execute("SELECT name, children, parent, tips, p_support FROM nodes WHERE name = ?", (name,)).fetchone()
 	if row == None:
 		return None
-	nodeObj = json.loads(row[1])
+	nodeObj = {
+		"children": json.loads(row[1]),
+		"parent": None if row[2] == "" else row[2],
+		"tips": row[3],
+		"pSupport": True if row[4] == 1 else False,
+	}
 	# Check for image file
 	match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
 	if match == None:

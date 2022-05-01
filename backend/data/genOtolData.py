@@ -6,9 +6,8 @@ import os.path
 usageInfo =  f"usage: {sys.argv[0]}\n"
 usageInfo += "Reads labelled_supertree_ottnames.tre & annotations.json (from an Open Tree of Life release), \n"
 usageInfo += "and creates a sqlite database, which holds entries of the form (name text, data text).\n"
-usageInfo += "Each row holds a tree-of-life node name, and a JSON string with the form \n"
-usageInfo += "{\"children\": [name1, ...], \"parent\": name1, \"tips\": int1, \"pSupport\": bool1}, holding \n"
-usageInfo += "child names, a parent name or null, descendant 'tips', and a phylogeny-support indicator\n"
+usageInfo += "Each row holds a tree-of-life node's name, JSON-encoded child name array, a parent name or '', \n"
+usageInfo += "number of descendant 'tips', and a 1 or 0 indicating phylogenetic-support.\n"
 usageInfo += "\n"
 usageInfo += "Expected labelled_supertree_ottnames.tre format:\n"
 usageInfo += "    Represents a tree-of-life in Newick format, roughly like (n1,n2,(n3,n4)n5)n6,\n"
@@ -82,7 +81,7 @@ def parseNewick():
 						name2 = name + " [" + str(count) + "]"
 					name = name2
 				nodeMap[name] = {
-					"n": name, "id": id, "children": childNames, "parent": None, "tips": tips, "pSupport": False
+					"name": name, "id": id, "children": childNames, "parent": None, "tips": tips, "pSupport": False
 				}
 				# Update childrens' parent reference
 				for childName in childNames:
@@ -91,7 +90,7 @@ def parseNewick():
 	else: # Parse node name
 		[name, id] = parseNewickName()
 		idToName[id] = name
-		nodeMap[name] = {"n": name, "id": id, "children": [], "parent": None, "tips": 1, "pSupport": False}
+		nodeMap[name] = {"name": name, "id": id, "children": [], "parent": None, "tips": 1, "pSupport": False}
 		return name
 def parseNewickName():
 	"""Helper that parses an input node name, and returns a [name,id] pair"""
@@ -182,7 +181,7 @@ def applyMrcaNameConvert(name, namesToSwap):
 	return childName1
 namesToSwap = {} # Maps mrca* names to replacement names
 for node in nodeMap.values():
-	name = node["n"]
+	name = node["name"]
 	if (name.startswith("mrca") and name not in namesToSwap):
 		applyMrcaNameConvert(name, namesToSwap)
 for [oldName, newName] in namesToSwap.items():
@@ -198,7 +197,7 @@ for node in nodeMap.values():
 		if (childName in namesToSwap):
 			childNames[i] = namesToSwap[childName]
 
-# Add annotations data, and delete certain fields
+# Add annotations data
 for node in nodeMap.values():
 	# Set has-support value using annotations
 	id = node["id"]
@@ -210,15 +209,15 @@ for node in nodeMap.values():
 	# Root node gets support
 	if node["parent"] == None:
 		node["pSupport"] = True
-	# Delete some no-longer-needed fields
-	del node["n"]
-	del node["id"]
 
 # Create db
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
-dbCur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, data TEXT)")
+dbCur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, children TEXT, parent TEXT, tips INT, p_support INT)")
 for name in nodeMap.keys():
-	dbCur.execute("INSERT INTO nodes VALUES (?, ?)", (name, json.dumps(nodeMap[name])))
+	node = nodeMap[name]
+	dbCur.execute("INSERT INTO nodes VALUES (?, ?, ?, ?, ?)",
+		(name, json.dumps(node["children"]), "" if node["parent"] == None else node["parent"],
+			node["tips"], 1 if node["pSupport"] else 0))
 dbCon.commit()
 dbCon.close()
