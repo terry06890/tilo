@@ -42,7 +42,8 @@ export default defineComponent({
 			url.search = '?name=' + encodeURIComponent(input.value);
 			fetch(url.toString())
 				.then(response => response.json())
-				.then(results => {
+				.then(obj => {
+					let results = obj[0];
 					if (results.length == 0){
 						input.value = '';
 						// Trigger failure animation

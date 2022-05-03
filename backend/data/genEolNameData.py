@@ -62,8 +62,9 @@ with open(vnamesFile, newline="") as csvfile:
 # Open db connection
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
-# Create 'names' table
-dbCur.execute("CREATE TABLE names(name TEXT, alt_name TEXT, eol_id INT, pref_alt INT, PRIMARY KEY(name, alt_name))")
+# Create tables
+dbCur.execute("CREATE TABLE names(name TEXT, alt_name TEXT, pref_alt INT, PRIMARY KEY(name, alt_name))")
+dbCur.execute("CREATE TABLE eol_ids(id INT PRIMARY KEY, name TEXT)")
 # Iterate through 'nodes' table, resolving to canonical-names
 usedPids = set()
 unresolvedNodeNames = set()
@@ -85,11 +86,12 @@ for row in dbCur2.execute("SELECT name FROM nodes"):
 			usedPids.add(pidToUse)
 			altNames = {name}
 			preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
+			dbCur.execute("INSERT INTO eol_ids VALUES (?, ?)", (pidToUse, name))
 			for n in pidToNames[pidToUse]:
 				altNames.add(n)
 			for n in altNames:
 				isPreferred = 1 if (n == preferredName) else 0
-				dbCur.execute("INSERT INTO names VALUES (?, ?, ?, ?)", (name, n, pidToUse, isPreferred))
+				dbCur.execute("INSERT INTO names VALUES (?, ?, ?)", (name, n, isPreferred))
 	elif name in nameToPids:
 		unresolvedNodeNames.add(name)
 # Iterate through unresolved nodes, resolving to vernacular-names
@@ -108,11 +110,12 @@ for name in unresolvedNodeNames:
 		usedPids.add(pidToUse)
 		altNames = {name}
 		preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
+		dbCur.execute("INSERT INTO eol_ids VALUES (?, ?)", (name, pidToUse))
 		for n in pidToNames[pidToUse]:
 			altNames.add(n)
 		for n in altNames:
 			isPreferred = 1 if (n == preferredName) else 0
-			dbCur.execute("INSERT INTO names VALUES (?, ?, ?, ?)", (name, n, pidToUse, isPreferred))
+			dbCur.execute("INSERT INTO names VALUES (?, ?, ?)", (name, n, isPreferred))
 # Close db
 dbCon.commit()
 dbCon.close()

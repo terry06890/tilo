@@ -17,11 +17,13 @@ export class TolNode {
 		license: string,
 		copyrightOwner: string
 	};
+	desc: null | [string, boolean];
 	constructor(children: string[] = [], parent = null, tips = 0, pSupport = false){
 		this.children = children;
 		this.parent = parent;
 		this.tips = tips;
 		this.pSupport = pSupport;
 		this.img = null;
+		this.desc = null;
 	}
 }

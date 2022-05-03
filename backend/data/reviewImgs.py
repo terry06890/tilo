@@ -125,10 +125,12 @@ class EolImgReviewer:
 		# Update title
 		firstImgIdx = self.imgListIdx - len(self.nextImgNames) + 1
 		lastImgIdx = self.imgListIdx
-		row = dbCur.execute("SELECT alt_name, eol_id, pref_alt FROM names WHERE eol_id = ? and pref_alt = 1",
-			(self.nextEolId,)).fetchone()
+		query = "SELECT eol_ids.id, names.alt_name, names.pref_alt FROM" \
+			" names INNER JOIN eol_ids ON eol_ids.name = names.name" \
+			" WHERE id = ? and pref_alt = 1"
+		row = dbCur.execute(query, (self.nextEolId,)).fetchone()
 		if row != None:
-			commonName = row[0]
+			commonName = row[1]
 			self.root.title("Reviewing EOL ID {}, aka \"{}\" (imgs {} to {} out of {})".format(
 				self.nextEolId, commonName, firstImgIdx, lastImgIdx, len(self.imgList)))
 		else:

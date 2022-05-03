@@ -7,6 +7,12 @@ import {TolNode} from '../tol';
 
 // Displays information about a tree-of-life node
 export default defineComponent({
+	data(){
+		return {
+			desc: null as null | string,
+			fromRedirect: false,
+		};
+	},
 	props: {
 		node: {type: Object as PropType<LayoutNode>, required: true},
 		tolMap: {type: Object as PropType<TolMap>, required: true},
@@ -37,6 +43,19 @@ export default defineComponent({
 			}
 		},
 	},
+	created(){
+		let url = new URL(window.location.href);
+		url.pathname = '/data/desc';
+		url.search = '?name=' + encodeURIComponent(this.node.name);
+		fetch(url.toString())
+			.then(response => response.json())
+			.then(obj => {
+				if (obj != null){
+					this.desc = obj[0];
+					this.fromRedirect = obj[1];
+				}
+			});
+	},
 	components: {CloseIcon, },
 	emits: ['info-modal-close', ],
 });
@@ -61,12 +80,16 @@ export default defineComponent({
 					</ul>
 				</div>
 			</div>
-			<div>
-				Lorem ipsum dolor sit amet, consectetur adipiscing
-				elit, sed do eiusmod tempor incididunt ut labore
-				et dolore magna aliqua. Ut enim ad minim veniam,
-				quis nostrud exercitation ullamco laboris nisi ut
-				aliquip ex ea commodo consequat.
+			<div v-if="desc != null">
+				<div>
+					Redirected: {{fromRedirect}}
+				</div>
+				<div>
+					{{desc}}
+				</div>
+			</div>
+			<div v-else>
+				(No description found)
 			</div>
 		</div>
 		

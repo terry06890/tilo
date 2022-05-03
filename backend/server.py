@@ -52,9 +52,10 @@ def lookupNode(name):
 		nodeObj["img"] = nodeNameToFile(match.group(1), cur)
 		if nodeObj["img"] == None:
 			nodeObj["img"] = nodeNameToFile(match.group(2), cur)
+	#
 	return nodeObj;
 def nodeNameToFile(name, cur):
-	row = cur.execute("SELECT name, eol_id FROM names WHERE name = ?", (name,)).fetchone()
+	row = cur.execute("SELECT name, id FROM eol_ids WHERE name = ?", (name,)).fetchone()
 	if row == None:
 		return None
 	eolId = row[1]
@@ -92,6 +93,10 @@ def lookupName(name):
 		hasMore = True
 		del results[-1]
 	return json.dumps([results, hasMore])
+def lookupDesc(name):
+	cur = dbCon.cursor()
+	row = cur.execute("SELECT desc, redirected from descs WHERE descs.name = ?", (name,)).fetchone()
+	return json.dumps([row[0], row[1] == 1] if row != None else None)
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):
@@ -157,6 +162,9 @@ class DbServer(BaseHTTPRequestHandler):
 						name = nodeObj["parent"]
 			elif reqType == "search":
 				self.respondJson(lookupName(name))
+				return
+			elif reqType == "desc":
+				self.respondJson(lookupDesc(name))
 				return
 		self.send_response(404)
 		self.end_headers()

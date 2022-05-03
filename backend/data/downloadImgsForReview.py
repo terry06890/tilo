@@ -31,7 +31,7 @@ eolIds = set()
 print("Reading in EOL IDs")
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
-for row in dbCur.execute("SELECT DISTINCT eol_id FROM names"):
+for row in dbCur.execute("SELECT id FROM eol_ids"):
 	eolIds.add(row[0])
 dbCon.close()
 # Get eol-ids from images db
