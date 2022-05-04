@@ -271,6 +271,10 @@ export default defineComponent({
 			this.searchOpen = true;
 		},
 		onSearchNode(name: string){
+			if (this.modeRunning){
+				console.log("WARNING: Unexpected search event while search/auto mode is running")
+				return;
+			}
 			this.searchOpen = false;
 			this.modeRunning = true;
 			this.expandToNode(name);
