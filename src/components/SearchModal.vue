@@ -89,14 +89,17 @@ export default defineComponent({
 				this.focusedSuggIdx = null;
 				return;
 			}
-			// Clear any pending request
-			clearTimeout(this.pendingSearchSuggReq);
 			// Ask server for search-suggestions
 			let url = new URL(window.location.href);
 			url.pathname = '/data/search';
 			url.search = '?name=' + encodeURIComponent(input.value);
 			this.lastSuggReqId += 1;
 			let suggsId = this.lastSuggReqId;
+			let reqDelay = 0;
+			if (this.pendingSearchSuggReq != 0){
+				clearTimeout(this.pendingSearchSuggReq);
+				reqDelay = 300;
+			}
 			this.pendingSearchSuggReq = setTimeout(() =>
 				fetch(url.toString())
 					.then(response => response.json())
@@ -105,9 +108,10 @@ export default defineComponent({
 							this.searchSuggs = results[0];
 							this.searchHasMoreSuggs = results[1];
 							this.focusedSuggIdx = null;
+							this.pendingSearchSuggReq = 0;
 						}
 					}),
-				300
+				reqDelay
 			);
 		},
 		onDownKey(){
