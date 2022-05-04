@@ -134,8 +134,10 @@ class DbServer(BaseHTTPRequestHandler):
 					# Get node
 					nodeObj = lookupNode(name)
 					if nodeObj == None:
-						if ranOnce:
-							print("ERROR: Parent-chain node {} not found".format(name), file=sys.stderr)
+						if not ranOnce:
+							self.respondJson(json.dumps(results))
+							return
+						print("ERROR: Parent-chain node {} not found".format(name), file=sys.stderr)
 						break
 					results[name] = nodeObj
 					# Conditionally add children

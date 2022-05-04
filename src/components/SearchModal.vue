@@ -30,33 +30,11 @@ export default defineComponent({
 			}
 		},
 		onEnter(){
-			// Check for a focused search-suggestion
-			if (this.focusedSuggIdx != null){
+			if (this.focusedSuggIdx == null){
+				this.resolveSearch((this.$refs.searchInput as HTMLInputElement).value.toLowerCase())
+			} else {
 				this.resolveSearch(this.searchSuggs[this.focusedSuggIdx].name);
-				return;
 			}
-			// Get tol-node-name from server
-			let input = this.$refs.searchInput as HTMLInputElement;
-			let url = new URL(window.location.href);
-			url.pathname = '/data/search';
-			url.search = '?name=' + encodeURIComponent(input.value);
-			fetch(url.toString())
-				.then(response => response.json())
-				.then(obj => {
-					let results = obj[0];
-					if (results.length == 0){
-						input.value = '';
-						// Trigger failure animation
-						input.classList.remove('animate-red-then-fade');
-						input.offsetWidth; // Triggers reflow
-						input.classList.add('animate-red-then-fade');
-					} else {
-						this.resolveSearch(results[0].name)
-					}
-				})
-				.catch(error => {
-					console.log('ERROR getting search results from server', error);
-				});
 		},
 		resolveSearch(tolNodeName: string){
 			// Asks server for nodes in parent-chain, updates tolMap, then emits search event
@@ -66,12 +44,21 @@ export default defineComponent({
 			fetch(url.toString())
 				.then(response => response.json())
 				.then(obj => {
-					Object.getOwnPropertyNames(obj).forEach(key => {
-						if (!this.tolMap.has(key)){
-							this.tolMap.set(key, obj[key])
-						}
-					});
-					this.$emit('search-node', tolNodeName);
+					let keys = Object.getOwnPropertyNames(obj);
+					if (keys.length > 0){
+						keys.forEach(key => {
+							if (!this.tolMap.has(key)){
+								this.tolMap.set(key, obj[key])
+							}
+						});
+						this.$emit('search-node', tolNodeName);
+					} else {
+						// Trigger failure animation
+						let input = this.$refs.searchInput as HTMLInputElement;
+						input.classList.remove('animate-red-then-fade');
+						input.offsetWidth; // Triggers reflow
+						input.classList.add('animate-red-then-fade');
+					}
 				})
 				.catch(error => {
 					console.log('ERROR loading tolnode chain', error);
