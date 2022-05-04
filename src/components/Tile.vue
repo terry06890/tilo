@@ -211,17 +211,17 @@ export default defineComponent({
 	watch: {
 		// For setting transition state (can be triggered externally, like via search and auto-mode)
 		pos: {
-			handler(){
-				if (!this.inTransition){
-					this.prepForTransition();
+			handler(newVal, oldVal){
+				if ((newVal[0] != oldVal[0] || newVal[1] != oldVal[1]) && !this.inTransition){
+					this.inTransition = true;
 				}
 			},
 			deep: true,
 		},
 		dims: {
-			handler(){
-				if (!this.inTransition){
-					this.prepForTransition();
+			handler(newVal, oldVal){
+				if ((newVal[0] != oldVal[0] || newVal[1] != oldVal[1]) && !this.inTransition){
+					this.inTransition = true;
 				}
 			},
 			deep: true,
@@ -254,7 +254,6 @@ export default defineComponent({
 				return;
 			}
 			this.wasClicked = true;
-			setTimeout(() => {this.wasClicked = false}, this.uiOpts.tileChgDuration);
 			this.$emit(this.isLeaf ? 'leaf-click' : 'nonleaf-click', this.layoutNode);
 		},
 		onClickHold(){
@@ -279,12 +278,10 @@ export default defineComponent({
 		// Child event propagation
 		onInnerLeafClick(node: LayoutNode){
 			this.wasClicked = true;
-			setTimeout(() => {this.wasClicked = false}, this.uiOpts.tileChgDuration);
 			this.$emit('leaf-click', node);
 		},
 		onInnerNonleafClick(node: LayoutNode){
 			this.wasClicked = true;
-			setTimeout(() => {this.wasClicked = false}, this.uiOpts.tileChgDuration);
 			this.$emit('nonleaf-click', node);
 		},
 		onInnerLeafClickHeld(node: LayoutNode){
@@ -297,15 +294,10 @@ export default defineComponent({
 			this.$emit('info-icon-click', node);
 		},
 		// Other
-		prepForTransition(){
-			this.inTransition = true;
-			setTimeout(() => {this.inTransition = false}, this.uiOpts.tileChgDuration);
-			// Update hasExpanded
-			if (this.layoutNode.children.length > 0){
-				setTimeout(() => {this.hasExpanded = true}, this.uiOpts.tileChgDuration);
-			} else {
-				this.hasExpanded = false;
-			}
+		onTransitionEnd(){
+			this.inTransition = false;
+			this.wasClicked = false;
+			this.hasExpanded = this.layoutNode.children.length > 0;
 		},
 		triggerAnimation(animation: string){
 			this.$el.classList.remove(animation);
@@ -320,7 +312,7 @@ export default defineComponent({
 </script>
 
 <template>
-<div :style="styles"> <!-- Enclosing div needed for size transitions -->
+<div :style="styles" @transitionend="onTransitionEnd"> <!-- Enclosing div needed for size transitions -->
 	<div v-if="isLeaf" :style="leafStyles"
 		class="w-full h-full flex flex-col overflow-hidden" :class="{'hover:cursor-pointer': isExpandableLeaf}"
 		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
