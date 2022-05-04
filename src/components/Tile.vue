@@ -324,7 +324,7 @@ export default defineComponent({
 	<div v-if="isLeaf" :style="leafStyles"
 		class="w-full h-full flex flex-col overflow-hidden" :class="{'hover:cursor-pointer': isExpandableLeaf}"
 		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-		<h1 :style="leafHeaderStyles">{{layoutNode.name}}</h1>
+		<h1 :style="leafHeaderStyles" class="capitalize">{{layoutNode.name}}</h1>
 		<info-icon :style="[infoIconStyles, {marginTop: 'auto'}]"
 			class="self-end text-white/10 hover:text-white hover:cursor-pointer"
 			@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
@@ -332,7 +332,7 @@ export default defineComponent({
 	<div v-else :style="nonleafStyles" class="w-full h-full" ref="nonleaf">
 		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-			<h1 :style="nonleafHeaderTextStyles" class="grow">{{layoutNode.name}}</h1>
+			<h1 :style="nonleafHeaderTextStyles" class="grow capitalize">{{layoutNode.name}}</h1>
 			<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</div>
@@ -341,7 +341,7 @@ export default defineComponent({
 			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
 				:style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-				<h1 :style="nonleafHeaderTextStyles" class="grow">{{layoutNode.name}}</h1>
+				<h1 :style="nonleafHeaderTextStyles" class="grow capitalize">{{layoutNode.name}}</h1>
 				<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
 					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 			</div>
