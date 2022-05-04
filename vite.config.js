@@ -6,7 +6,10 @@ export default defineConfig({
 	server: {
 		proxy: {
 			'/data': 'http://localhost:8000',
-		}
+		},
+		watch: {
+			ignored: ['**/imgsForReview/*', '**/imgsReviewed/*', '**/img/*']
+		},
 	},
 	//server: {open: true} //open browser when dev server starts
 })
