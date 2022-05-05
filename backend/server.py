@@ -30,7 +30,6 @@ dbCon.load_extension('./data/spellfix')
 def lookupNodes(names):
 	nodeObjs = {}
 	cur = dbCon.cursor()
-	cur2 = dbCon.cursor()
 	query = "SELECT name, children, parent, tips, p_support FROM nodes WHERE" \
 		" name IN ({})".format(",".join(["?"] * len(names)))
 	for row in cur.execute(query, names):
@@ -44,15 +43,16 @@ def lookupNodes(names):
 		# Check for image file
 		match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
 		if match == None:
-			nodeObj["img"] = nodeNameToFile(name, cur2)
+			nodeObj["img"] = nodeNameToFile(name)
 		else:
-			nodeObj["img"] = nodeNameToFile(match.group(1), cur2)
+			nodeObj["img"] = nodeNameToFile(match.group(1))
 			if nodeObj["img"] == None:
-				nodeObj["img"] = nodeNameToFile(match.group(2), cur2)
+				nodeObj["img"] = nodeNameToFile(match.group(2))
 		# Add node object
 		nodeObjs[name] = nodeObj
 	return nodeObjs
-def nodeNameToFile(name, cur):
+def nodeNameToFile(name):
+	cur = dbCon.cursor()
 	row = cur.execute("SELECT name, id FROM eol_ids WHERE name = ?", (name,)).fetchone()
 	if row == None:
 		return None
