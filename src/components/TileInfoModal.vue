@@ -11,6 +11,7 @@ export default defineComponent({
 		return {
 			desc: null as null | string,
 			fromRedirect: false,
+			imgInfo: null as null | {eolId: string, sourceUrl: string, license: string, copyrightOwner: string},
 		};
 	},
 	props: {
@@ -24,9 +25,9 @@ export default defineComponent({
 		},
 		imgStyles(): Record<string,string> {
 			return {
-				backgroundImage: this.tolNode.img?.filename != null ?
+				backgroundImage: this.tolNode.imgName != null ?
 					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
-						'url(\'/img/' + this.tolNode.img.filename.replaceAll('\'', '\\\'') + '\')' :
+						'url(\'/img/' + this.tolNode.imgName.replaceAll('\'', '\\\'') + '\')' :
 					'none',
 				backgroundColor: '#1c1917',
 				width: this.uiOpts.infoModalImgSz + 'px',
@@ -45,14 +46,17 @@ export default defineComponent({
 	},
 	created(){
 		let url = new URL(window.location.href);
-		url.pathname = '/data/desc';
+		url.pathname = '/data/info';
 		url.search = '?name=' + encodeURIComponent(this.node.name);
 		fetch(url.toString())
 			.then(response => response.json())
 			.then(obj => {
 				if (obj != null){
-					this.desc = obj[0];
-					this.fromRedirect = obj[1];
+					if (obj.desc != null){
+						this.desc = obj.desc.text;
+						this.fromRedirect = obj.desc.fromRedirect;
+					}
+					this.imgInfo = obj.imgInfo;
 				}
 			});
 	},
@@ -72,11 +76,11 @@ export default defineComponent({
 		<div class="flex">
 			<div>
 				<div :style="imgStyles" class="mr-4" alt="an image"></div>
-				<div v-if="tolNode.img != null">
+				<div v-if="imgInfo != null">
 					<ul>
-						<li>License: {{tolNode.img.license}}</li>
-						<li><a :href="tolNode.img.sourceUrl" class="underline">Source URL</a></li>
-						<li>Copyright Owner: {{tolNode.img.copyrightOwner}}</li>
+						<li>License: {{imgInfo.license}}</li>
+						<li><a :href="imgInfo.sourceUrl" class="underline">Source URL</a></li>
+						<li>Copyright Owner: {{imgInfo.copyrightOwner}}</li>
 					</ul>
 				</div>
 			</div>

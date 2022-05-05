@@ -43,30 +43,23 @@ def lookupNodes(names):
 		# Check for image file
 		match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
 		if match == None:
-			nodeObj["img"] = nodeNameToFile(name)
+			nodeObj["imgName"] = getNodeImg(name)
 		else:
-			nodeObj["img"] = nodeNameToFile(match.group(1))
-			if nodeObj["img"] == None:
-				nodeObj["img"] = nodeNameToFile(match.group(2))
+			nodeObj["imgName"] = getNodeImg(match.group(1))
+			if nodeObj["imgName"] == None:
+				nodeObj["imgName"] = getNodeImg(match.group(2))
 		# Add node object
 		nodeObjs[name] = nodeObj
 	return nodeObjs
-def nodeNameToFile(name):
+def getNodeImg(name):
 	cur = dbCon.cursor()
 	row = cur.execute("SELECT name, id FROM eol_ids WHERE name = ?", (name,)).fetchone()
-	if row == None:
-		return None
-	eolId = row[1]
-	filename = str(eolId) + ".jpg"
-	if not os.path.exists(imgDir + filename):
-		return None
-	row = cur.execute(
-		"SELECT eol_id, source_url, license, copyright_owner FROM images WHERE eol_id = ?", (eolId,)).fetchone()
-	if row == None:
-		print("ERROR: No 'images' entry for image file {}".format(imgDir + filename), file=sys.stderr)
-		return None
-	[eolId, sUrl, license, cOwner] = row
-	return {"filename": filename, "eolId": eolId, "sourceUrl": sUrl, "license": license, "copyrightOwner": cOwner}
+	if row != None:
+		eolId = row[1]
+		filename = str(eolId) + ".jpg"
+		if os.path.exists(imgDir + filename):
+			return filename
+	return None
 def lookupName(name):
 	cur = dbCon.cursor()
 	results = []
@@ -90,11 +83,21 @@ def lookupName(name):
 	if len(results) > SEARCH_SUGG_LIMIT:
 		hasMore = True
 		del results[-1]
-	return json.dumps([results, hasMore])
-def lookupDesc(name):
+	return [results, hasMore]
+def lookupNodeInfo(name):
 	cur = dbCon.cursor()
+	# Get node desc
 	row = cur.execute("SELECT desc, redirected from descs WHERE descs.name = ?", (name,)).fetchone()
-	return json.dumps([row[0], row[1] == 1] if row != None else None)
+	desc = {"text": row[0], "fromRedirect": row[1] == 1} if row != None else None
+	# Get img info
+	imgInfoQuery = "SELECT eol_id, source_url, license, copyright_owner FROM" \
+		" images INNER JOIN eol_ids ON images.eol_id = eol_ids.id WHERE eol_ids.name = ?"
+	row = cur.execute(imgInfoQuery, (name,)).fetchone()
+	imgInfo = None
+	if row != None:
+		imgInfo = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
+	#
+	return {"desc": desc, "imgInfo": imgInfo}
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):
@@ -114,7 +117,7 @@ class DbServer(BaseHTTPRequestHandler):
 					nodeObj = nodeObjs[name]
 					childNodeObjs = lookupNodes(nodeObj["children"])
 					childNodeObjs[name] = nodeObj
-					self.respondJson(json.dumps(childNodeObjs))
+					self.respondJson(childNodeObjs)
 					return
 			elif reqType == "chain":
 				results = {}
@@ -124,7 +127,7 @@ class DbServer(BaseHTTPRequestHandler):
 					nodeObjs = lookupNodes([name])
 					if len(nodeObjs) == 0:
 						if not ranOnce:
-							self.respondJson(json.dumps(results))
+							self.respondJson(results)
 							return
 						print("ERROR: Parent-chain node {} not found".format(name), file=sys.stderr)
 						break
@@ -142,24 +145,24 @@ class DbServer(BaseHTTPRequestHandler):
 						results.update(childNodeObjs)
 					# Check if root
 					if nodeObj["parent"] == None:
-						self.respondJson(json.dumps(results))
+						self.respondJson(results)
 						return
 					else:
 						name = nodeObj["parent"]
 			elif reqType == "search":
 				self.respondJson(lookupName(name))
 				return
-			elif reqType == "desc":
-				self.respondJson(lookupDesc(name))
+			elif reqType == "info":
+				self.respondJson(lookupNodeInfo(name))
 				return
 		self.send_response(404)
 		self.end_headers()
 		self.end_headers()
-	def respondJson(self, jsonStr):
+	def respondJson(self, val):
 		self.send_response(200)
 		self.send_header("Content-type", "application/json")
 		self.end_headers()
-		self.wfile.write(jsonStr.encode("utf-8"))
+		self.wfile.write(json.dumps(val).encode("utf-8"))
 
 server = HTTPServer((hostname, port), DbServer)
 print("Server started at http://{}:{}".format(hostname, port))
