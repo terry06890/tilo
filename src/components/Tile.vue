@@ -21,7 +21,7 @@ export default defineComponent({
 	data(){
 		return {
 			highlight: false, // Used to draw a colored outline on mouse hover
-			inTransition: false, // Used to prevent content overlap and overflow during transitions
+			inTransition: false, // Used to prevent content overlap and overflow during user-perceivable transitions
 			wasClicked: false, // Used to increase z-index during transition after this tile (or a child) is clicked
 			hasExpanded: false, // Set to true after an expansion transition ends, and false upon collapse
 				// Used to hide overflow on tile expansion, but not hide a sepSweptArea on subsequent transitions
@@ -216,7 +216,8 @@ export default defineComponent({
 		// For setting transition state (can be triggered externally, like via search and auto-mode)
 		pos: {
 			handler(newVal, oldVal){
-				if ((newVal[0] != oldVal[0] || newVal[1] != oldVal[1]) && !this.inTransition){
+				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
+				if (valChanged && this.uiOpts.tileChgDuration > 100 && !this.inTransition){
 					this.inTransition = true;
 				}
 			},
@@ -224,7 +225,8 @@ export default defineComponent({
 		},
 		dims: {
 			handler(newVal, oldVal){
-				if ((newVal[0] != oldVal[0] || newVal[1] != oldVal[1]) && !this.inTransition){
+				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
+				if (valChanged && this.uiOpts.tileChgDuration > 100 && !this.inTransition){
 					this.inTransition = true;
 				}
 			},
