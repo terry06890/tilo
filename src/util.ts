@@ -97,3 +97,8 @@ export function randWeightedChoice(weights: number[]): number | null {
 	}
 	return null;
 }
+// Returns a string with words first-letter capitalised
+export function capitalizeWords(str: string){
+	return str.replace(/\b\w/g, x => x.toUpperCase());
+		// '\b' matches word boundary, '\w' is like [a-zA-Z0-9_],
+}

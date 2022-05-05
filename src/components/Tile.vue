@@ -5,6 +5,7 @@ import {LayoutNode} from '../layout';
 import type {LayoutOptions} from '../layout';
 import type {TolMap} from '../tol';
 import {TolNode} from '../tol';
+import {capitalizeWords} from '../util';
 
 // Displays one, or a hierarchy of, tree-of-life nodes, as a 'tile'
 export default defineComponent({
@@ -41,6 +42,9 @@ export default defineComponent({
 		showNonleafHeader(): boolean {
 			return (this.layoutNode.showHeader && this.layoutNode.sepSweptArea == null) ||
 				(this.layoutNode.sepSweptArea != null && this.layoutNode.sepSweptArea.sweptLeft);
+		},
+		displayName(): string {
+			return capitalizeWords(this.tolNode.commonName || this.layoutNode.name);
 		},
 		// Style related
 		nonleafBgColor(): string {
@@ -316,7 +320,7 @@ export default defineComponent({
 	<div v-if="isLeaf" :style="leafStyles"
 		class="w-full h-full flex flex-col overflow-hidden" :class="{'hover:cursor-pointer': isExpandableLeaf}"
 		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-		<h1 :style="leafHeaderStyles" class="capitalize">{{layoutNode.name}}</h1>
+		<h1 :style="leafHeaderStyles">{{displayName}}</h1>
 		<info-icon :style="[infoIconStyles, {marginTop: 'auto'}]"
 			class="self-end text-white/10 hover:text-white hover:cursor-pointer"
 			@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
@@ -324,7 +328,7 @@ export default defineComponent({
 	<div v-else :style="nonleafStyles" class="w-full h-full" ref="nonleaf">
 		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-			<h1 :style="nonleafHeaderTextStyles" class="grow capitalize">{{layoutNode.name}}</h1>
+			<h1 :style="nonleafHeaderTextStyles" class="grow">{{displayName}}</h1>
 			<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</div>
@@ -333,7 +337,7 @@ export default defineComponent({
 			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
 				:style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-				<h1 :style="nonleafHeaderTextStyles" class="grow capitalize">{{layoutNode.name}}</h1>
+				<h1 :style="nonleafHeaderTextStyles" class="grow">{{displayName}}</h1>
 				<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
 					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 			</div>

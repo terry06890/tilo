@@ -11,11 +11,13 @@ export class TolNode {
 	tips: number;
 	pSupport: boolean;
 	imgName: null | string;
+	commonName: null | string;
 	constructor(children: string[] = [], parent = null, tips = 0, pSupport = false){
 		this.children = children;
 		this.parent = parent;
 		this.tips = tips;
 		this.pSupport = pSupport;
 		this.imgName = null;
+		this.commonName = null;
 	}
 }

@@ -30,6 +30,7 @@ dbCon.load_extension('./data/spellfix')
 def lookupNodes(names):
 	nodeObjs = {}
 	cur = dbCon.cursor()
+	# Get node info
 	query = "SELECT name, children, parent, tips, p_support FROM nodes WHERE" \
 		" name IN ({})".format(",".join(["?"] * len(names)))
 	for row in cur.execute(query, names):
@@ -39,6 +40,7 @@ def lookupNodes(names):
 			"parent": None if row[2] == "" else row[2],
 			"tips": row[3],
 			"pSupport": True if row[4] == 1 else False,
+			"commonName": None,
 		}
 		# Check for image file
 		match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
@@ -50,6 +52,13 @@ def lookupNodes(names):
 				nodeObj["imgName"] = getNodeImg(match.group(2))
 		# Add node object
 		nodeObjs[name] = nodeObj
+	# Get preferred-name info
+	query = "SELECT name, alt_name FROM names WHERE pref_alt = 1 AND" \
+		" name IN ({})".format(",".join(["?"] * len(names)))
+	for row in cur.execute(query, names):
+		[name, altName] = row
+		nodeObjs[name]["commonName"] = altName
+	#
 	return nodeObjs
 def getNodeImg(name):
 	cur = dbCon.cursor()

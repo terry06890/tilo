@@ -4,6 +4,7 @@ import CloseIcon from './icon/CloseIcon.vue';
 import {LayoutNode} from '../layout';
 import type {TolMap} from '../tol';
 import {TolNode} from '../tol';
+import {capitalizeWords} from '../util';
 
 // Displays information about a tree-of-life node
 export default defineComponent({
@@ -22,6 +23,13 @@ export default defineComponent({
 	computed: {
 		tolNode(): TolNode {
 			return this.tolMap.get(this.node.name)!;
+		},
+		displayName(): string {
+			if (this.tolNode.commonName == null){
+				return capitalizeWords(this.node.name);
+			} else {
+				return `${capitalizeWords(this.tolNode.commonName)} (aka ${capitalizeWords(this.node.name)})`;
+			}
 		},
 		imgStyles(): Record<string,string> {
 			return {
@@ -71,7 +79,7 @@ export default defineComponent({
 		bg-stone-50 rounded-md shadow shadow-black">
 		<close-icon @click.stop="onCloseClick" ref="closeIcon"
 			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
-		<h1 class="text-center text-xl font-bold mb-2 capitalize">{{node.name}}</h1>
+		<h1 class="text-center text-xl font-bold mb-2">{{displayName}}</h1>
 		<hr class="mb-4 border-stone-400"/>
 		<div class="flex">
 			<div>
