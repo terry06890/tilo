@@ -23,6 +23,15 @@ File Generation Process
     2   Run genEnwikiData.py, which adds a 'descs' table to data.db,
         using data in enwiki/enwikiData.db, and the 'nodes' table.
 
+data.db tables
+==============
+nodes: name TEXT PRIMARY KEY, children TEXT, parent TEXT, tips INT, p\_support INT
+names: name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
+eol\_ids: id INT PRIMARY KEY, name TEXT
+spellfix\_alt\_names
+images: eol\_id INT PRIMARY KEY, source\_url TEXT, license TEXT, copyright\_owner TEXT
+descs: name TEXT PRIMARY KEY, desc TEXT, redirected INT
+
 spellfix.so
 ===========
 
