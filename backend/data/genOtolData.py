@@ -25,15 +25,17 @@ if len(sys.argv) > 1:
 treeFile = "otol/labelled_supertree_ottnames.tre"
 annFile = "otol/annotations.json"
 dbFile = "data.db"
-nodeMap = {} # Maps node names to node objects
+nodeMap = {} # Maps node IDs to node objects
 idToName = {} # Maps node IDs to names
+nameToFirstId = {} # Maps node names to first found ID (names might have multiple IDs)
+dupNameToIds = {} # Maps names of nodes with multiple IDs to those node IDs
 
-# Check for existing db
-if os.path.exists(dbFile):
-	print("ERROR: Existing {} db".format(dbFile), file=sys.stderr)
-	sys.exit(1)
-
+## Check for existing db
+#if os.path.exists(dbFile):
+#	print("ERROR: Existing {} db".format(dbFile), file=sys.stderr)
+#	sys.exit(1)
 # Parse treeFile
+print("Parsing tree file")
 data = None
 with open(treeFile) as file:
 	data = file.read()
@@ -48,13 +50,13 @@ def parseNewick():
 	# Check for node
 	if data[dataIdx] == "(": # parse inner node
 		dataIdx += 1
-		childNames = []
+		childIds = []
 		while True:
 			# Read child
-			childName = parseNewick()
-			if childName == None:
+			childId = parseNewick()
+			if childId == None:
 				return None
-			childNames.append(childName)
+			childIds.append(childId)
 			if (dataIdx == len(data)):
 				print("ERROR: Unexpected EOF", file=sys.stderr)
 				return None
@@ -63,34 +65,34 @@ def parseNewick():
 				dataIdx += 1
 				continue
 			else:
-				# Get node name
+				# Get node name and id
 				dataIdx += 1 # Consume an expected ')'
 				[name, id] = parseNewickName()
-				idToName[id] = name
+				updateNameMaps(name, id)
 				# Get child num-tips total
 				tips = 0
-				for childName in childNames:
-					tips += nodeMap[childName]["tips"]
+				for childId in childIds:
+					tips += nodeMap[childId]["tips"]
 				# Add node to nodeMap
-				if name in nodeMap: # Turns out the names might not actually be unique
-					count = 2
-					name2 = name + " [" + str(count) + "]"
-					while name2 in nodeMap:
-						count += 1
-						name2 = name + " [" + str(count) + "]"
-					name = name2
-				nodeMap[name] = {
-					"name": name, "id": id, "children": childNames, "parent": None, "tips": tips, "pSupport": False
-				}
+				nodeMap[id] = {"name": name, "children": childIds, "parent": None, "tips": tips, "pSupport": False}
 				# Update childrens' parent reference
-				for childName in childNames:
-					nodeMap[childName]["parent"] = name
-				return name
+				for childId in childIds:
+					nodeMap[childId]["parent"] = id
+				return id
 	else: # Parse node name
 		[name, id] = parseNewickName()
-		idToName[id] = name
-		nodeMap[name] = {"name": name, "id": id, "children": [], "parent": None, "tips": 1, "pSupport": False}
-		return name
+		updateNameMaps(name, id)
+		nodeMap[id] = {"name": name, "children": [], "parent": None, "tips": 1, "pSupport": False}
+		return id
+def updateNameMaps(name, id):
+	idToName[id] = name
+	if name not in nameToFirstId:
+		nameToFirstId[name] = id
+	else:
+		if name not in dupNameToIds:
+			dupNameToIds[name] = [nameToFirstId[name], id]
+		else:
+			dupNameToIds[name].append(id)
 def parseNewickName():
 	"""Helper that parses an input node name, and returns a [name,id] pair"""
 	global data, dataIdx
@@ -139,67 +141,66 @@ def parseNewickName():
 			raise Exception("ERROR: invalid name \"{}\"".format(name))
 		return [match.group(1).replace("_", " "), match.group(2)]
 rootName = parseNewick()
-
+# Resolve duplicate names
+print("Resolving duplicates")
+for [dupName, ids] in dupNameToIds.items():
+	# Get conflicting node with most tips
+	tipNums = [nodeMap[id]["tips"] for id in ids]
+	maxIdx = tipNums.index(max(tipNums))
+	maxId = ids[maxIdx]
+	# Adjust name of other conflicting nodes
+	counter = 2
+	for id in ids:
+		if id != maxId:
+			nodeMap[id]["name"] += " [" + str(counter)+ "]"
+			counter += 1
+# Change mrca* names
+print("Changing mrca* names")
+def convertMrcaName(id):
+		node = nodeMap[id]
+		name = node["name"]
+		childIds = node["children"]
+		if len(childIds) < 2:
+			print("WARNING: MRCA node \"{}\" has less than 2 children".format(name), file=sys.stderr)
+			return
+		# Get 2 children with most tips
+		childTips = [nodeMap[id]["tips"] for id in childIds]
+		maxIdx = childTips.index(max(childTips))
+		childTips[maxIdx] = 0
+		maxIdx2 = childTips.index(max(childTips))
+		childId1 = childIds[maxIdx]
+		childId2 = childIds[maxIdx2]
+		childName1 = nodeMap[childId1]["name"]
+		childName2 = nodeMap[childId2]["name"]
+		# Check for mrca* child names
+		if childName1.startswith("mrca"):
+			childName1 = convertMrcaName(childId1)
+		if childName2.startswith("mrca"):
+			childName2 = convertMrcaName(childId2)
+		# Check for composite names
+		match = re.fullmatch(r"\[(.+) \+ (.+)]", childName1)
+		if match != None:
+			childName1 = match.group(1)
+		match = re.fullmatch(r"\[(.+) \+ (.+)]", childName2)
+		if match != None:
+			childName2 = match.group(1)
+		# Create composite name
+		node["name"] = "[{} + {}]".format(childName1, childName2)
+		return childName1
+for [id, node] in nodeMap.items():
+	if node["name"].startswith("mrca"):
+		convertMrcaName(id)
 # Parse annFile
+print("Parsing annotations file")
 data = None
 with open(annFile) as file:
 	data = file.read()
 obj = json.loads(data)
 nodeAnnsMap = obj['nodes']
-
-# Change mrca* names
-def applyMrcaNameConvert(name, namesToSwap):
-	"""
-	Given an mrca* name, makes namesToSwap map it to an expanded version with the form [childName1 + childName2].
-	May recurse on child nodes with mrca* names.
-	Also returns the name of the highest-tips child (used when recursing).
-	"""
-	node = nodeMap[name]
-	childNames = node["children"]
-	if len(childNames) < 2:
-		print("WARNING: MRCA node \"{}\" has less than 2 children".format(name), file=sys.stderr)
-		return name
-	# Get 2 children with most tips
-	childTips = []
-	for n in childNames:
-		childTips.append(nodeMap[n]["tips"])
-	maxTips = max(childTips)
-	maxIdx = childTips.index(maxTips)
-	childTips[maxIdx] = 0
-	maxTips2 = max(childTips)
-	maxIdx2 = childTips.index(maxTips2)
-	childName1 = node["children"][maxIdx]
-	childName2 = node["children"][maxIdx2]
-	# Check for composite child names
-	if childName1.startswith("mrca"):
-		childName1 = applyMrcaNameConvert(childName1, namesToSwap)
-	if childName2.startswith("mrca"):
-		childName2 = applyMrcaNameConvert(childName2, namesToSwap)
-	# Create composite name
-	namesToSwap[name] = "[{} + {}]".format(childName1, childName2)
-	return childName1
-namesToSwap = {} # Maps mrca* names to replacement names
-for node in nodeMap.values():
-	name = node["name"]
-	if (name.startswith("mrca") and name not in namesToSwap):
-		applyMrcaNameConvert(name, namesToSwap)
-for [oldName, newName] in namesToSwap.items():
-	nodeMap[newName] = nodeMap[oldName]
-	del nodeMap[oldName]
-for node in nodeMap.values():
-	parentName = node["parent"]
-	if (parentName in namesToSwap):
-		node["parent"] = namesToSwap[parentName]
-	childNames = node["children"]
-	for i in range(len(childNames)):
-		childName = childNames[i]
-		if (childName in namesToSwap):
-			childNames[i] = namesToSwap[childName]
-
 # Add annotations data
-for node in nodeMap.values():
+print("Adding annotation data")
+for [id, node] in nodeMap.items():
 	# Set has-support value using annotations
-	id = node["id"]
 	if id in nodeAnnsMap:
 		nodeAnns = nodeAnnsMap[id]
 		supportQty = len(nodeAnns["supported_by"]) if "supported_by" in nodeAnns else 0
@@ -208,15 +209,15 @@ for node in nodeMap.values():
 	# Root node gets support
 	if node["parent"] == None:
 		node["pSupport"] = True
-
 # Create db
+print("Creating nodes table")
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 dbCur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, children TEXT, parent TEXT, tips INT, p_support INT)")
-for name in nodeMap.keys():
-	node = nodeMap[name]
+for node in nodeMap.values():
+	childNames = [nodeMap[id]["name"] for id in node["children"]]
+	parentName = "" if node["parent"] == None else nodeMap[node["parent"]]["name"]
 	dbCur.execute("INSERT INTO nodes VALUES (?, ?, ?, ?, ?)",
-		(name, json.dumps(node["children"]), "" if node["parent"] == None else node["parent"],
-			node["tips"], 1 if node["pSupport"] else 0))
+		(node["name"], json.dumps(childNames), parentName, node["tips"], 1 if node["pSupport"] else 0))
 dbCon.commit()
 dbCon.close()

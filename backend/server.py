@@ -81,7 +81,7 @@ def lookupName(name):
 	#	"SELECT DISTINCT names.name, names.alt_name, nodes.tips FROM" \
 	#		" names INNER JOIN nodes ON names.name = nodes.name " \
 	#		" WHERE alt_name LIKE ? ORDER BY nodes.tips DESC LIMIT ?",
-	#	(name, SEARCH_SUGG_LIMIT)):
+	#	(name + "%", SEARCH_SUGG_LIMIT)):
 	#	results.append({"name": row[0], "altName": row[1]})
 	for row in cur.execute(
 		"SELECT word, alt_name, name FROM" \
