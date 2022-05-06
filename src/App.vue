@@ -231,13 +231,31 @@ export default defineComponent({
 				console.log('Ignored expand-to-view on active-root node');
 				return;
 			}
-			LayoutNode.hideUpward(layoutNode);
-			this.activeRoot = layoutNode;
-			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
-				allowCollapse: true,
-				chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap},
-				layoutMap: this.layoutMap
-			});
+			// Function for expanding tile
+			let doExpansion = () => {
+				LayoutNode.hideUpward(layoutNode);
+				this.activeRoot = layoutNode;
+				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
+					allowCollapse: true,
+					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap},
+					layoutMap: this.layoutMap
+				});
+			};
+			// Check if data for node-to-expand exists, getting from server if needed
+			let tolNode = this.tolMap.get(layoutNode.name)!;
+			if (!this.tolMap.has(tolNode.children[0])){
+				return fetch('/data/node?name=' + encodeURIComponent(layoutNode.name))
+					.then(response => response.json())
+					.then(obj => {
+						Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
+						doExpansion();
+					})
+					.catch(error => {
+						console.log('ERROR loading tolnode data', error);
+					});
+			} else {
+				return new Promise((resolve, reject) => resolve(doExpansion()));
+			}
 		},
 		onNonleafClickHeld(layoutNode: LayoutNode){
 			if (layoutNode == this.activeRoot){
