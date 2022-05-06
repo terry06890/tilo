@@ -110,7 +110,7 @@ for name in unresolvedNodeNames:
 		usedPids.add(pidToUse)
 		altNames = {name}
 		preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
-		dbCur.execute("INSERT INTO eol_ids VALUES (?, ?)", (name, pidToUse))
+		dbCur.execute("INSERT INTO eol_ids VALUES (?, ?)", (pidToUse, name))
 		for n in pidToNames[pidToUse]:
 			altNames.add(n)
 		for n in altNames:
