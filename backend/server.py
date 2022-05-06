@@ -33,6 +33,9 @@ def lookupNodes(names):
 	# Get node info
 	query = "SELECT name, children, parent, tips, p_support FROM nodes WHERE" \
 		" name IN ({})".format(",".join(["?"] * len(names)))
+	namesForImgs = []
+	firstSubnames = {}
+	secondSubnames = {}
 	for row in cur.execute(query, names):
 		name = row[0]
 		nodeObj = {
@@ -41,17 +44,36 @@ def lookupNodes(names):
 			"tips": row[3],
 			"pSupport": True if row[4] == 1 else False,
 			"commonName": None,
+			"imgName": None,
 		}
 		# Check for image file
 		match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
 		if match == None:
-			nodeObj["imgName"] = getNodeImg(name)
+			namesForImgs.append(name)
 		else:
-			nodeObj["imgName"] = getNodeImg(match.group(1))
-			if nodeObj["imgName"] == None:
-				nodeObj["imgName"] = getNodeImg(match.group(2))
+			name1 = match.group(1)
+			name2 = match.group(2)
+			namesForImgs.extend([name1, name2])
+			firstSubnames[name1] = name
+			secondSubnames[name2] = name
 		# Add node object
 		nodeObjs[name] = nodeObj
+	# Get image names
+	query = "SELECT name, id FROM eol_ids WHERE" \
+		" name IN ({})".format(",".join(["?"] * len(namesForImgs)))
+	for [n, id] in cur.execute(query, namesForImgs):
+		filename = str(id) + ".jpg"
+		if not os.path.exists(imgDir + filename):
+			continue
+		if n in firstSubnames:
+			nodeName = firstSubnames[n]
+			nodeObjs[nodeName]["imgName"] = filename
+		elif n in secondSubnames:
+			nodeName = secondSubnames[n]
+			if nodeObjs[nodeName]["imgName"] == None:
+				nodeObjs[nodeName]["imgName"] = filename
+		else:
+			nodeObjs[n]["imgName"] = filename
 	# Get preferred-name info
 	query = "SELECT name, alt_name FROM names WHERE pref_alt = 1 AND" \
 		" name IN ({})".format(",".join(["?"] * len(names)))
