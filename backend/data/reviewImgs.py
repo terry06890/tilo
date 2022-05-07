@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys, re, os
+import sys, re, os, time
 import sqlite3
 import tkinter as tki
 from tkinter import ttk
@@ -80,6 +80,9 @@ class EolImgReviewer:
 		self.nextImgNames = []
 		self.rotations = []
 		self.getNextImgs()
+		# For more info
+		self.numReviewed = 0
+		self.startTime = time.time()
 	def getNextImgs(self):
 		""" Updates display with new images to review, or ends program """
 		# Gather names of next images to review
@@ -154,11 +157,13 @@ class EolImgReviewer:
 					os.remove(inFile)
 			else: # Delete non-accepted image
 				os.remove(inFile)
+		self.numReviewed += 1
 		self.getNextImgs()
 	def reject(self):
 		""" React to a user rejecting all images of a set """
 		for i in range(len(self.nextImgNames)):
 			os.remove(imgDir + self.nextImgNames[i])
+		self.numReviewed += 1
 		self.getNextImgs()
 	def rotate(self, imgIdx, anticlockwise = False):
 		""" Respond to a user rotating an image """
@@ -168,6 +173,11 @@ class EolImgReviewer:
 		self.labels[imgIdx].config(image=self.photoImgs[imgIdx])
 		self.rotations[imgIdx] = (self.rotations[imgIdx] + deg) % 360
 	def quit(self, e = None):
+		print("Number reviewed: {}".format(self.numReviewed))
+		timeElapsed = time.time() - self.startTime
+		print("Time elapsed: {:.2f} seconds".format(timeElapsed))
+		if self.numReviewed > 0:
+			print("Avg time per review: {:.2f} seconds".format(timeElapsed / self.numReviewed))
 		dbCon.close()
 		self.root.destroy()
 	def resizeForDisplay(self, img):
