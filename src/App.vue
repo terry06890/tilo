@@ -17,7 +17,7 @@ import type {TolMap} from './tol';
 import {TolNode} from './tol';
 import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import type {LayoutOptions, LayoutTreeChg} from './layout';
-import {arraySum, randWeightedChoice} from './util';
+import {arraySum, randWeightedChoice, getScrollBarWidth} from './util';
 // Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
 // Type representing auto-mode actions
@@ -38,7 +38,7 @@ function getReverseAction(action: Action): Action | null {
 	}
 }
 
-// Get tree-of-life data
+// Initialise tree-of-life data
 const rootName = "cellular organisms";
 const tolMap: TolMap = new Map();
 tolMap.set(rootName, new TolNode());
@@ -79,7 +79,7 @@ const defaultUiOpts = {
 	// For other components
 	appBgColor: '#292524',
 	tileAreaOffset: 5, //px (space between root tile and display boundary)
-	scrollGap: 12, //px (gap for overflown-root and ancestry-bar scrollbars, used to prevent overlap)
+	scrollGap: getScrollBarWidth(), //px (gap for overflown-root and ancestry-bar scrollbars, used to prevent overlap)
 	ancestryBarSz: defaultLytOpts.minTileSz * 2, //px (breadth of ancestry-bar area)
 	ancestryBarBgColor: '#44403c',
 	ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
@@ -520,6 +520,8 @@ export default defineComponent({
 			if (!this.resizeThrottled){
 				this.width = document.documentElement.clientWidth;
 				this.height = document.documentElement.clientHeight;
+				this.uiOpts.scrollGap = getScrollBarWidth();
+				// Re-layout
 				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, 
 					{allowCollapse: true, layoutMap: this.layoutMap});
 				this.overflownRoot = false;
