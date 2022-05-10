@@ -47,6 +47,11 @@ export default defineComponent({
 				(this.layoutNode.sepSweptArea != null && this.layoutNode.sepSweptArea.sweptLeft);
 		},
 		displayName(): string {
+			if (this.tolNode.commonName != null){
+				return "'" + capitalizeWords(this.tolNode.commonName) + "'";
+			} else {
+				return capitalizeWords(this.layoutNode.name);
+			}
 			return capitalizeWords(this.tolNode.commonName || this.layoutNode.name);
 		},
 		isOverflownRoot(): boolean {

@@ -15,7 +15,7 @@ File Generation Process
     1   Use downloadImgsForReview.py to download EOL images into imgsForReview/.
         It uses data in eol/imagesList.db, and the 'eol\_ids' table.
     2   Use reviewImgs.py to filter images in imgsForReview/ into EOL-id-unique
-        images in imgsReviewed/ (uses 'names' and 'eol_ids' to display extra info).
+        images in imgsReviewed/ (uses 'names' and 'eol\_ids' to display extra info).
     3   Use genImgsForWeb.py to create cropped/resized images in img/, using
         images in imgsReviewed, and also to add an 'images' table to data.db.
 4   Node Description Data
