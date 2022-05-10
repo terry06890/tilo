@@ -122,17 +122,22 @@ export default defineComponent({
 			};
 		},
 		leafHeaderStyles(): Record<string,string> {
+			let numChildren = this.tolNode.children.length;
+			let headerColor = this.uiOpts.headerColor;
+			for (let [threshold, color] of this.uiOpts.tipThresholds){
+				if (numChildren >= threshold){
+					headerColor = color;
+				} else {
+					break;
+				}
+			}
 			return {
 				height: (this.uiOpts.leafHeaderFontSz + this.uiOpts.leafTilePadding * 2) + 'px',
 				padding: this.uiOpts.leafTilePadding + 'px',
 				lineHeight: this.uiOpts.leafHeaderFontSz + 'px',
 				fontSize: this.uiOpts.leafHeaderFontSz + 'px',
 				fontStyle: this.tolNode.pSupport ? 'normal' : 'italic',
-				color: this.tolNode.children.length == 0 ?
-					this.uiOpts.headerColor :
-					this.tolNode.children.length < this.uiOpts.highTipsVal ?
-						this.uiOpts.headerColor2 :
-						this.uiOpts.headerColor3,
+				color: headerColor,
 				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',

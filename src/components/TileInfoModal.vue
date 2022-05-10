@@ -79,7 +79,10 @@ export default defineComponent({
 		bg-stone-50 rounded-md shadow shadow-black">
 		<close-icon @click.stop="onCloseClick" ref="closeIcon"
 			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
-		<h1 class="text-center text-xl font-bold mb-2">{{displayName}}</h1>
+		<h1 class="text-center text-xl font-bold mb-2">
+			{{displayName}}
+			<div v-if="tolNode.children.length > 0">({{tolNode.children.length}} children)</div>
+		</h1>
 		<hr class="mb-4 border-stone-400"/>
 		<div class="flex">
 			<div>
