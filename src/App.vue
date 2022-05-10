@@ -176,6 +176,7 @@ export default defineComponent({
 	methods: {
 		// For tile expand/collapse events
 		onLeafClick(layoutNode: LayoutNode){
+			this.setLastFocused(null);
 			// If clicking child of overflowing active-root
 			if (this.overflownRoot){
 				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
@@ -222,6 +223,7 @@ export default defineComponent({
 			}
 		},
 		onNonleafClick(layoutNode: LayoutNode){
+			this.setLastFocused(null);
 			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
 				allowCollapse: false,
 				chg: {type: 'collapse', node: layoutNode, tolMap: this.tolMap},
@@ -250,6 +252,7 @@ export default defineComponent({
 		},
 		// For expand-to-view and ancestry-bar events
 		onLeafClickHeld(layoutNode: LayoutNode){
+			this.setLastFocused(null);
 			if (layoutNode == this.activeRoot){
 				this.onLeafClick(layoutNode);
 				return;
@@ -297,6 +300,7 @@ export default defineComponent({
 			}
 		},
 		onNonleafClickHeld(layoutNode: LayoutNode){
+			this.setLastFocused(null);
 			if (layoutNode == this.activeRoot){
 				console.log('Ignored expand-to-view on active-root node');
 				return;
@@ -307,6 +311,7 @@ export default defineComponent({
 				{allowCollapse: true, layoutMap: this.layoutMap});
 		},
 		onDetachedAncestorClick(layoutNode: LayoutNode){
+			this.setLastFocused(null);
 			LayoutNode.showDownward(layoutNode);
 			this.activeRoot = layoutNode;
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
