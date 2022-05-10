@@ -9,8 +9,6 @@ File Generation Process
     1   Obtain data in eol/, as specified in it's README.
     2   Run genEolNameData.py, which adds 'names' and 'eol\_ids' tables to data.db, 
         using data in eol/vernacularNames.csv and the 'nodes' table.
-    3   Run genSpellfixNameData.py, which adds a 'spellfix\_alt\_names'
-        table to data.db, using data in the 'names' table.
 3   Image Data
     1   Use downloadImgsForReview.py to download EOL images into imgsForReview/.
         It uses data in eol/imagesList.db, and the 'eol\_ids' table.
@@ -31,24 +29,7 @@ data.db tables
     name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
 -   eol\_ids <br>
     id INT PRIMARY KEY, name TEXT
--   spellfix\_alt\_names
 -   images <br>
     eol\_id INT PRIMARY KEY, source\_url TEXT, license TEXT, copyright\_owner TEXT
 -   descs <br>
     name TEXT PRIMARY KEY, desc TEXT, redirected INT
-
-spellfix.so
-===========
-
-This file provides the spellfix1 extension for Sqlite, and
-is used for responding to fuzzy-search requests.
-
-It was obtained by:
-1   Downloading the sqlite source tree from
-    the github mirror at <https://github.com/sqlite/sqlite>,
-    into a directory sqlite/
-2   After making sure autoconf 2.61+ and libtool are installed,
-    running `mkdir bld; cd bld; ../sqlite/configure;`
-3   Running `make`
-4   Running `cp ../sqlite/ext/misc/spellfix.c .`
-5   Running `gcc -fPIC -shared spellfix.c -o spellfix.so`
