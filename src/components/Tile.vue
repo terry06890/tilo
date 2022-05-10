@@ -95,17 +95,17 @@ export default defineComponent({
 				}
 				layoutStyles.borderRadius = borderR;
 			}
+			if (this.isOverflownRoot){
+				layoutStyles.width = (this.layoutNode.dims[0] + this.uiOpts.scrollGap) + 'px';
+				layoutStyles.height = this.overflownDim + 'px';
+				layoutStyles.overflowY = 'scroll';
+			}
 			if (this.layoutNode.hidden){
 				layoutStyles.left = layoutStyles.top = layoutStyles.width = layoutStyles.height = '0';
 				layoutStyles.visibility = 'hidden';
 			}
 			if (this.nonAbsPos){
 				layoutStyles.position = 'static';
-			}
-			if (this.isOverflownRoot){
-				layoutStyles.width = (this.layoutNode.dims[0] + this.uiOpts.scrollGap) + 'px';
-				layoutStyles.height = this.overflownDim + 'px';
-				layoutStyles.overflow = 'scroll';
 			}
 			return layoutStyles;
 		},
@@ -148,21 +148,32 @@ export default defineComponent({
 				borderRadius: 'inherit',
 			};
 			if (this.isOverflownRoot){
-				styles.position = 'absolute';
 				styles.width = this.layoutNode.dims[0] + 'px';
 				styles.height = this.layoutNode.dims[1] + 'px';
 			}
 			return styles;
 		},
 		nonleafHeaderStyles(): Record<string,string> {
-			let borderR = this.uiOpts.borderRadius + 'px';
-			borderR = `${borderR} ${borderR} 0 0`;
-			return {
+			let styles = {
+				position: 'static',
 				height: this.lytOpts.headerSz + 'px',
-				borderRadius: borderR,
+				borderTopLeftRadius: 'inherit',
+				borderTopRightRadius: 'inherit',
 				backgroundColor: this.uiOpts.nonleafHeaderBgColor,
 				fontStyle: this.tolNode.pSupport ? 'normal' : 'italic',
 			};
+			if (this.isOverflownRoot){
+				styles = {
+					...styles,
+					position: 'sticky',
+					top: '0',
+					left: '0',
+					borderTopRightRadius: '0',
+					zIndex: '1',
+					boxShadow: this.uiOpts.shadowNormal,
+				};
+			}
+			return styles;
 		},
 		nonleafHeaderTextStyles(): Record<string,string> {
 			return {
@@ -320,10 +331,21 @@ export default defineComponent({
 			this.$emit('info-icon-click', node);
 		},
 		// Other
-		onTransitionEnd(){
-			this.inTransition = false;
-			this.wasClicked = false;
-			this.hasExpanded = this.layoutNode.children.length > 0;
+		onTransitionEnd(evt){
+			if (this.inTransition){
+				this.inTransition = false;
+				this.wasClicked = false;
+				this.hasExpanded = this.layoutNode.children.length > 0;
+				// Scroll to any focused node
+				if (this.isOverflownRoot){
+					let focusedChild = this.layoutNode.children.find(n => n.hasFocus);
+					if (focusedChild != null){
+						let bottomY = focusedChild.pos[1] + focusedChild.dims[1] + this.lytOpts.tileSpacing;
+						let scrollTop = Math.max(0, bottomY - this.overflownDim);
+						this.$el.scrollTop = scrollTop;
+					}
+				}
+			}
 		},
 		triggerAnimation(animation: string){
 			this.$el.classList.remove(animation);
