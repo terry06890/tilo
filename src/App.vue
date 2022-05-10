@@ -16,7 +16,7 @@ import SettingsIcon from './components/icon/SettingsIcon.vue';
 import type {TolMap} from './tol';
 import {TolNode} from './tol';
 import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
-import type {LayoutOptions} from './layout';
+import type {LayoutOptions, LayoutTreeChg} from './layout';
 import {arraySum, randWeightedChoice} from './util';
 // Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
@@ -79,10 +79,10 @@ const defaultUiOpts = {
 	// For other components
 	appBgColor: '#292524',
 	tileAreaOffset: 5, //px (space between root tile and display boundary)
+	scrollGap: 12, //px (gap for overflown-root and ancestry-bar scrollbars, used to prevent overlap)
 	ancestryBarSz: defaultLytOpts.minTileSz * 2, //px (breadth of ancestry-bar area)
 	ancestryBarBgColor: '#44403c',
 	ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
-	ancestryBarScrollGap: 10, //px (gap for ancestry-bar scrollbar, used to prevent overlap with tiles)
 	infoModalImgSz: 200,
 	autoWaitTime: 500, //ms (time to wait between actions (with their transitions))
 	// Timing related
@@ -98,6 +98,7 @@ export default defineComponent({
 			layoutTree: layoutTree,
 			activeRoot: layoutTree, // Differs from layoutTree root when expand-to-view is used
 			layoutMap: initLayoutMap(layoutTree), // Maps names to LayoutNode objects
+			overflownRoot: false, // Set when displaying a root tile with many children, with overflow
 			// Modals and settings related
 			infoModalNode: null as LayoutNode | null, // Node to display info for, or null
 			helpOpen: false,
@@ -175,12 +176,30 @@ export default defineComponent({
 	methods: {
 		// For tile expand/collapse events
 		onLeafClick(layoutNode: LayoutNode){
+			// If clicking child of overflowing active-root
+			if (this.overflownRoot){
+				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+				return Promise.resolve(false);
+			}
+			// Function for expanding tile
 			let doExpansion = () => {
-				let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
+				let lytFnOpts = {
 					allowCollapse: false,
-					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap},
+					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
 					layoutMap: this.layoutMap
-				});
+				};
+				let success = tryLayout(
+					this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, lytFnOpts);
+				// If expanding active-root with too many children to fit, allow overflow
+				if (!success && layoutNode == this.activeRoot){
+					success = tryLayout(this.activeRoot, this.tileAreaPos,
+						[this.tileAreaDims[0] - this.uiOpts.scrollGap, this.tileAreaDims[1]],
+						{...this.lytOpts, layoutType: 'flex-sqr'}, lytFnOpts);
+					if (success){
+						this.overflownRoot = true;
+					}
+				}
+				// Check for failure
 				if (!success){
 					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 				}
@@ -211,6 +230,10 @@ export default defineComponent({
 			if (!success){
 				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 			} else {
+				// Update overflownRoot if root was collapsed
+				if (this.overflownRoot){
+					this.overflownRoot = false;
+				}
 				// Clear out excess nodes when a threshold is reached
 				let numNodes = this.tolMap.size;
 				let extraNodes = numNodes - this.layoutMap.size;
@@ -228,18 +251,34 @@ export default defineComponent({
 		// For expand-to-view and ancestry-bar events
 		onLeafClickHeld(layoutNode: LayoutNode){
 			if (layoutNode == this.activeRoot){
-				console.log('Ignored expand-to-view on active-root node');
+				this.onLeafClick(layoutNode);
 				return;
 			}
 			// Function for expanding tile
 			let doExpansion = () => {
 				LayoutNode.hideUpward(layoutNode);
 				this.activeRoot = layoutNode;
-				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
-					allowCollapse: true,
-					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap},
+				this.overflownRoot = false;
+				let lytFnOpts = {
+					allowCollapse: false,
+					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
 					layoutMap: this.layoutMap
-				});
+				};
+				let success = tryLayout(
+					this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, lytFnOpts);
+				if (!success){
+					success = tryLayout(this.activeRoot, this.tileAreaPos,
+						[this.tileAreaDims[0] - this.uiOpts.scrollGap, this.tileAreaDims[1]],
+						{...this.lytOpts, layoutType: 'flex-sqr'}, lytFnOpts);
+					if (success){
+						this.overflownRoot = true;
+					}
+				}
+				// Check for failure
+				if (!success){
+					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+				}
+				return success;
 			};
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
@@ -272,6 +311,7 @@ export default defineComponent({
 			this.activeRoot = layoutNode;
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
+			this.overflownRoot = false;
 		},
 		// For tile-info events
 		onInfoIconClick(node: LayoutNode){
@@ -324,6 +364,11 @@ export default defineComponent({
 				return;
 			}
 			// Attempt tile-expand
+			if (this.overflownRoot){
+				this.onLeafClickHeld(layoutNode);
+				setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
+				return;
+			}
 			this.onLeafClick(layoutNode).then(success => {
 				if (success){
 					setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
@@ -331,8 +376,7 @@ export default defineComponent({
 				}
 				// Attempt expand-to-view on ancestor just below activeRoot
 				if (layoutNode == this.activeRoot){
-					console.log('Unable to complete search (not enough room to expand active root)');
-						// Note: Only happens if screen is significantly small or node has significantly many children
+					console.log('Screen too small to expand active root');
 					this.modeRunning = false;
 					return;
 				}
@@ -381,7 +425,7 @@ export default defineComponent({
 					if (node == this.activeRoot){
 						actionWeights['move up'] = 0;
 					}
-					if (this.tolMap.get(node.name)!.children.length == 0){
+					if (this.tolMap.get(node.name)!.children.length == 0 || this.overflownRoot){
 						actionWeights['expand'] = 0;
 					}
 				} else {
@@ -473,6 +517,7 @@ export default defineComponent({
 				this.height = document.documentElement.clientHeight;
 				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, 
 					{allowCollapse: true, layoutMap: this.layoutMap});
+				this.overflownRoot = false;
 				// Prevent re-triggering until after a delay
 				this.resizeThrottled = true;
 				setTimeout(() => {this.resizeThrottled = false;}, this.resizeDelay);
@@ -544,6 +589,7 @@ export default defineComponent({
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden" :style="{backgroundColor: uiOpts.appBgColor}">
 	<!-- Note: Making the above enclosing div's width/height dynamic seems to cause white flashes when resizing -->
 	<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+		:overflownDim="overflownRoot ? tileAreaDims[1] : 0"
 		@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
 		@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
 		@info-icon-click="onInfoIconClick"/>

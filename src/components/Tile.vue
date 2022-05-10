@@ -15,8 +15,11 @@ export default defineComponent({
 		// Options
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object, required: true},
-		// For a leaf node, prevents usage of absolute positioning (used by AncestryBar)
+		// Other
 		nonAbsPos: {type: Boolean, default: false},
+			// For a leaf node, prevents usage of absolute positioning (used by AncestryBar)
+		overflownDim: {type: Number, default: 0},
+			// For a non-leaf node, display with overflow within area of this height
 	},
 	data(){
 		return {
@@ -46,6 +49,9 @@ export default defineComponent({
 		displayName(): string {
 			return capitalizeWords(this.tolNode.commonName || this.layoutNode.name);
 		},
+		isOverflownRoot(): boolean {
+			return this.overflownDim > 0 && !this.layoutNode.hidden && this.layoutNode.children.length > 0;
+		},
 		// Style related
 		nonleafBgColor(): string {
 			let colorArray = this.uiOpts.nonleafBgColors;
@@ -68,16 +74,6 @@ export default defineComponent({
 				width: this.layoutNode.dims[0] + 'px',
 				height: this.layoutNode.dims[1] + 'px',
 				visibility: 'visible',
-			};
-			if (this.layoutNode.hidden){
-				layoutStyles.left = layoutStyles.top = layoutStyles.width = layoutStyles.height = '0';
-				layoutStyles.visibility = 'hidden';
-			}
-			if (this.nonAbsPos){
-				layoutStyles.position = 'static';
-			}
-			return {
-				...layoutStyles,
 				// Transition related
 				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
 				transitionProperty: 'left, top, width, height, visibility',
@@ -88,6 +84,19 @@ export default defineComponent({
 				'--nonleafBgColor': this.nonleafBgColor,
 				'--tileSpacing': this.lytOpts.tileSpacing + 'px',
 			};
+			if (this.layoutNode.hidden){
+				layoutStyles.left = layoutStyles.top = layoutStyles.width = layoutStyles.height = '0';
+				layoutStyles.visibility = 'hidden';
+			}
+			if (this.nonAbsPos){
+				layoutStyles.position = 'static';
+			}
+			if (this.isOverflownRoot){
+				layoutStyles.width = (this.layoutNode.dims[0] + this.uiOpts.scrollGap) + 'px';
+				layoutStyles.height = this.overflownDim + 'px';
+				layoutStyles.overflow = 'scroll';
+			}
+			return layoutStyles;
 		},
 		leafStyles(): Record<string,string> {
 			return {
@@ -128,11 +137,20 @@ export default defineComponent({
 					`${borderR} ${borderR} ${borderR} 0` :
 					`${borderR} 0 ${borderR} ${borderR}`;
 			}
-			return {
+			let styles = {
+				position: 'static',
+				width: '100%',
+				height: '100%',
 				backgroundColor: this.nonleafBgColor,
 				borderRadius: borderR,
 				boxShadow: this.boxShadow,
 			};
+			if (this.isOverflownRoot){
+				styles.position = 'absolute';
+				styles.width = this.layoutNode.dims[0] + 'px';
+				styles.height = this.layoutNode.dims[1] + 'px';
+			}
+			return styles;
 		},
 		nonleafHeaderStyles(): Record<string,string> {
 			let borderR = this.uiOpts.borderRadius + 'px';
@@ -327,7 +345,7 @@ export default defineComponent({
 			class="self-end text-white/10 hover:text-white hover:cursor-pointer"
 			@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 	</div>
-	<div v-else :style="nonleafStyles" class="w-full h-full" ref="nonleaf">
+	<div v-else :style="nonleafStyles" ref="nonleaf">
 		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
 			<h1 :style="nonleafHeaderTextStyles" class="grow">{{displayName}}</h1>
@@ -345,7 +363,7 @@ export default defineComponent({
 			</div>
 		</div>
 		<tile v-for="child in layoutNode.children" :key="child.name"
-			:layoutNode="child" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+			:layoutNode="child" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" :overflownDim="overflownDim"
 			@leaf-click="onInnerLeafClick" @nonleaf-click="onInnerNonleafClick"
 			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
 			@info-icon-click="onInnerInfoIconClick"/>

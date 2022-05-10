@@ -140,7 +140,7 @@ export type LayoutOptions = {
 	minTileSz: number; // Minimum size of a tile edge, in pixels
 	maxTileSz: number;
 	// Layout-algorithm related
-	layoutType: 'sqr' | 'rect' | 'sweep'; // The LayoutFn function to use
+	layoutType: 'sqr' | 'rect' | 'sweep' | 'flex-sqr'; // The LayoutFn function to use
 	rectMode: 'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row';
 		// Rect-layout in 1 row, 1 column, 1 row or column, or multiple rows (optionally with first-row-heuristic)
 	sweepMode: 'left' | 'top' | 'shorter' | 'auto'; // Sweep to left, top, shorter-side, or to minimise empty space
@@ -224,14 +224,17 @@ export function tryLayout(
 	let tempTree = layoutTree.cloneNodeTree(chg);
 	let success: boolean;
 	switch (options.layoutType){
-		case 'sqr':   success =   sqrLayout(tempTree, pos, dims, true, allowCollapse, options); break;
-		case 'rect':  success =  rectLayout(tempTree, pos, dims, true, allowCollapse, options); break;
+		case 'sqr': success = sqrLayout(tempTree, pos, dims, true, allowCollapse, options); break;
+		case 'rect': success = rectLayout(tempTree, pos, dims, true, allowCollapse, options); break;
 		case 'sweep': success = sweepLayout(tempTree, pos, dims, true, allowCollapse, options); break;
+		case 'flex-sqr': success = flexSqrLayout(tempTree, pos, dims, true, allowCollapse, options); break;
 	}
 	if (success){
-		// Center in layout area
-		tempTree.pos[0] += (dims[0] - tempTree.dims[0]) / 2;
-		tempTree.pos[1] += (dims[1] - tempTree.dims[1]) / 2;
+		if (options.layoutType != 'flex-sqr'){
+			// Center in layout area
+			tempTree.pos[0] += (dims[0] - tempTree.dims[0]) / 2;
+			tempTree.pos[1] += (dims[1] - tempTree.dims[1]) / 2;
+		}
 		// Copy to given LayoutNode tree
 		tempTree.copyTreeForRender(layoutTree, layoutMap);
 	}
@@ -794,5 +797,47 @@ let sweepLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse
 	}
 	let empSpc = leavesLyt.empSpc + nonLeavesLyt.empSpc;
 	node.assignLayoutData(pos, usedDims, {showHeader, empSpc, sepSweptArea: null});
+	return true;
+}
+// Lays out nodes like sqrLayout(), but may extend past the height limit to fit nodes
+// Does not recurse on child nodes with children
+let flexSqrLayout: LayoutFn = function(node, pos, dims, showHeader, allowCollapse, opts){
+	if (node.children.length == 0){
+		return oneSqrLayout(node, pos, dims, false, false, opts);
+	}
+	// Consider area excluding header and top/left spacing
+	let headerSz = showHeader ? opts.headerSz : 0;
+	let newPos = [opts.tileSpacing, opts.tileSpacing + headerSz];
+	let newWidth = dims[0] - opts.tileSpacing;
+	if (newWidth <= 0){
+		return false;
+	}
+	// Find number of rows and columns
+	let numChildren = node.children.length;
+	let maxNumCols = Math.floor(newWidth / (opts.minTileSz + opts.tileSpacing));
+	if (maxNumCols == 0){
+		if (allowCollapse){
+			node.children = [];
+			LayoutNode.updateDCounts(node, 1 - node.dCount);
+			return oneSqrLayout(node, pos, dims, false, false, opts);
+		}
+		return false;
+	}
+	let numCols = Math.min(numChildren, maxNumCols);
+	let numRows = Math.ceil(numChildren / numCols);
+	let tileSz = Math.min(opts.maxTileSz, Math.floor(newWidth / numCols) - opts.tileSpacing);
+	// Layout children
+	for (let i = 0; i < numChildren; i++){
+		let childX = newPos[0] + (i % numCols) * (tileSz + opts.tileSpacing);
+		let childY = newPos[1] + Math.floor(i / numCols) * (tileSz + opts.tileSpacing);
+		oneSqrLayout(node.children[i], [childX,childY], [tileSz,tileSz], false, false, opts);
+	}
+	// Create layout
+	let usedDims: [number, number] = [
+		numCols * (tileSz + opts.tileSpacing) + opts.tileSpacing,
+		numRows * (tileSz + opts.tileSpacing) + opts.tileSpacing + headerSz
+	];
+	let empSpc = 0; // Intentionally not used
+	node.assignLayoutData(pos, usedDims, {showHeader, empSpc});
 	return true;
 }

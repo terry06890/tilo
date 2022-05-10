@@ -24,7 +24,7 @@ export default defineComponent({
 		},
 		tileSz(){
 			return (this.wideArea ? this.dims[1] : this.dims[0]) -
-				(this.uiOpts.ancestryTileMargin * 2) - this.uiOpts.ancestryBarScrollGap;
+				(this.uiOpts.ancestryTileMargin * 2) - this.uiOpts.scrollGap;
 		},
 		usedNodes(){ // Childless versions of 'nodes' used to parameterise <tile>
 			return this.nodes.map(n => {
@@ -39,10 +39,10 @@ export default defineComponent({
 			return len > (this.wideArea ? this.dims[0] : this.dims[1]);
 		},
 		width(){
-			return this.dims[0] + (this.wideArea || this.overflowing ? 0 : -this.uiOpts.ancestryBarScrollGap);
+			return this.dims[0] + (this.wideArea || this.overflowing ? 0 : -this.uiOpts.scrollGap);
 		},
 		height(){
-			return this.dims[1] + (!this.wideArea || this.overflowing ? 0 : -this.uiOpts.ancestryBarScrollGap);
+			return this.dims[1] + (!this.wideArea || this.overflowing ? 0 : -this.uiOpts.scrollGap);
 		},
 		styles(): Record<string,string> {
 			return {
@@ -54,8 +54,8 @@ export default defineComponent({
 				overflowX: this.wideArea ? 'auto' : 'hidden',
 				overflowY: this.wideArea ? 'hidden' : 'auto',
 				// Extra padding for scrollbar inclusion
-				paddingRight: (this.overflowing && !this.wideArea ? this.uiOpts.ancestryBarScrollGap : 0) + 'px',
-				paddingBottom: (this.overflowing && this.wideArea ? this.uiOpts.ancestryBarScrollGap : 0) + 'px',
+				paddingRight: (this.overflowing && !this.wideArea ? this.uiOpts.scrollGap : 0) + 'px',
+				paddingBottom: (this.overflowing && this.wideArea ? this.uiOpts.scrollGap : 0) + 'px',
 				// For child layout
 				display: 'flex',
 				flexDirection: this.wideArea ? 'row' : 'column',
