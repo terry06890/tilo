@@ -74,6 +74,8 @@ export default defineComponent({
 				width: this.layoutNode.dims[0] + 'px',
 				height: this.layoutNode.dims[1] + 'px',
 				visibility: 'visible',
+				boxShadow: this.boxShadow,
+				borderRadius: this.uiOpts.borderRadius + 'px',
 				// Transition related
 				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
 				transitionProperty: 'left, top, width, height, visibility',
@@ -84,6 +86,15 @@ export default defineComponent({
 				'--nonleafBgColor': this.nonleafBgColor,
 				'--tileSpacing': this.lytOpts.tileSpacing + 'px',
 			};
+			if (!this.isLeaf){
+				let borderR = this.uiOpts.borderRadius + 'px';
+				if (this.layoutNode.sepSweptArea != null){
+					borderR = this.layoutNode.sepSweptArea.sweptLeft ?
+						`${borderR} ${borderR} ${borderR} 0` :
+						`${borderR} 0 ${borderR} ${borderR}`;
+				}
+				layoutStyles.borderRadius = borderR;
+			}
 			if (this.layoutNode.hidden){
 				layoutStyles.left = layoutStyles.top = layoutStyles.width = layoutStyles.height = '0';
 				layoutStyles.visibility = 'hidden';
@@ -107,9 +118,7 @@ export default defineComponent({
 					'none',
 				backgroundColor: '#1c1917',
 				backgroundSize: 'cover',
-				// Other
-				borderRadius: this.uiOpts.borderRadius + 'px',
-				boxShadow: this.boxShadow,
+				borderRadius: 'inherit',
 			};
 		},
 		leafHeaderStyles(): Record<string,string> {
@@ -131,19 +140,12 @@ export default defineComponent({
 			};
 		},
 		nonleafStyles(): Record<string,string> {
-			let borderR = this.uiOpts.borderRadius + 'px';
-			if (this.layoutNode.sepSweptArea != null){
-				borderR = this.layoutNode.sepSweptArea.sweptLeft ?
-					`${borderR} ${borderR} ${borderR} 0` :
-					`${borderR} 0 ${borderR} ${borderR}`;
-			}
 			let styles = {
 				position: 'static',
 				width: '100%',
 				height: '100%',
 				backgroundColor: this.nonleafBgColor,
-				borderRadius: borderR,
-				boxShadow: this.boxShadow,
+				borderRadius: 'inherit',
 			};
 			if (this.isOverflownRoot){
 				styles.position = 'absolute';
