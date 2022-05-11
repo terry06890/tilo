@@ -116,7 +116,7 @@ export function getScrollBarWidth(){
 	// Get width difference
 	let scrollBarWidth = outer.offsetWidth - inner.offsetWidth;
 	// Remove temporary divs
-	outer.parentNode.removeChild(outer);
+	outer.parentNode!.removeChild(outer);
 	//
 	return scrollBarWidth;
 }

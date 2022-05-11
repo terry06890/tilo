@@ -103,7 +103,7 @@ export default defineComponent({
 			if (this.isOverflownRoot){
 				layoutStyles.width = (this.layoutNode.dims[0] + this.uiOpts.scrollGap) + 'px';
 				layoutStyles.height = this.overflownDim + 'px';
-				layoutStyles.overflowY = 'scroll';
+				layoutStyles.overflow = 'hidden scroll';
 			}
 			if (this.layoutNode.hidden){
 				layoutStyles.left = layoutStyles.top = layoutStyles.width = layoutStyles.height = '0';
@@ -164,7 +164,7 @@ export default defineComponent({
 			return styles;
 		},
 		nonleafHeaderStyles(): Record<string,string> {
-			let styles = {
+			let styles: Record<string,string> = {
 				position: 'static',
 				height: this.lytOpts.headerSz + 'px',
 				borderTopLeftRadius: 'inherit',
@@ -341,7 +341,7 @@ export default defineComponent({
 			this.$emit('info-icon-click', node);
 		},
 		// Other
-		onTransitionEnd(evt){
+		onTransitionEnd(evt: Event){
 			if (this.inTransition){
 				this.inTransition = false;
 				this.wasClicked = false;
