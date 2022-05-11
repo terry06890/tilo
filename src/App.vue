@@ -39,9 +39,9 @@ function getReverseAction(action: Action): Action | null {
 }
 
 // Initialise tree-of-life data
-const rootName = "cellular organisms";
-const tolMap: TolMap = new Map();
-tolMap.set(rootName, new TolNode());
+const ROOT_NAME = "cellular organisms";
+const initialTolMap: TolMap = new Map();
+initialTolMap.set(ROOT_NAME, new TolNode());
 
 // Configurable options
 const defaultLytOpts: LayoutOptions = {
@@ -86,13 +86,15 @@ const defaultUiOpts = {
 	// Timing related
 	tileChgDuration: 300, //ms (for tile move/expand/collapse)
 	clickHoldDuration: 400, //ms (duration after mousedown when a click-and-hold is recognised)
+	// Other
+	useReducedTree: false,
 };
 
 export default defineComponent({
 	data(){
-		let layoutTree = initLayoutTree(tolMap, rootName, 0);
+		let layoutTree = initLayoutTree(initialTolMap, ROOT_NAME, 0);
 		return {
-			tolMap: tolMap,
+			tolMap: initialTolMap,
 			layoutTree: layoutTree,
 			activeRoot: layoutTree, // Differs from layoutTree root when expand-to-view is used
 			layoutMap: initLayoutMap(layoutTree), // Maps names to LayoutNode objects
@@ -207,7 +209,9 @@ export default defineComponent({
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				return fetch('/data/node?name=' + encodeURIComponent(layoutNode.name))
+				let urlPath = '/data/node?name=' + encodeURIComponent(layoutNode.name)
+				urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+				return fetch(urlPath)
 					.then(response => response.json())
 					.then(obj => {
 						Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
@@ -284,7 +288,9 @@ export default defineComponent({
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				return fetch('/data/node?name=' + encodeURIComponent(layoutNode.name))
+				let urlPath = '/data/node?name=' + encodeURIComponent(layoutNode.name)
+				urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+				return fetch(urlPath)
 					.then(response => response.json())
 					.then(obj => {
 						Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
@@ -513,6 +519,15 @@ export default defineComponent({
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
 		},
+		onTreeChange(){
+			// Collapse tree to root
+			if (this.activeRoot != this.layoutTree){
+				this.onDetachedAncestorClick(this.layoutTree);
+			}
+			this.onNonleafClick(this.layoutTree);
+			// Re-initialise tree
+			this.initTreeFromServer();
+		},
 		// For other events
 		onResize(){
 			if (!this.resizeThrottled){
@@ -540,6 +555,24 @@ export default defineComponent({
 			}
 		},
 		// Helper methods
+		initTreeFromServer(){
+			let urlPath = '/data/node?name=' + encodeURIComponent(ROOT_NAME);
+			urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+			fetch(urlPath)
+				.then(response => response.json())
+				.then(obj => {
+					this.tolMap.clear();
+					Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
+					this.layoutTree = initLayoutTree(this.tolMap, this.layoutTree.name, 0);
+					this.activeRoot = this.layoutTree;
+					this.layoutMap = initLayoutMap(this.layoutTree);
+					tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
+						{allowCollapse: true, layoutMap: this.layoutMap});
+				})
+				.catch(error => {
+					console.log('ERROR loading initial tolnode data', error);
+				});
+		},
 		resetMode(){
 			this.infoModalNode = null;
 			this.searchOpen = false;
@@ -563,20 +596,7 @@ export default defineComponent({
 		window.addEventListener('keyup', this.onKeyUp);
 		tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 			{allowCollapse: true, layoutMap: this.layoutMap});
-		// Get initial tol node data
-		fetch('/data/node?name=' + encodeURIComponent(rootName))
-			.then(response => response.json())
-			.then(obj => {
-				Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
-				this.layoutTree = initLayoutTree(this.tolMap, this.layoutTree.name, 0);
-				this.activeRoot = this.layoutTree;
-				this.layoutMap = initLayoutMap(this.layoutTree);
-				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-					{allowCollapse: true, layoutMap: this.layoutMap});
-			})
-			.catch(error => {
-				console.log('ERROR loading initial tolnode data', error);
-			});
+		this.initTreeFromServer();
 	},
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);
@@ -627,7 +647,8 @@ export default defineComponent({
 	<!-- Settings -->
 	<transition name="slide-bottom-right">
 		<settings-pane v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts"
-			@settings-close="settingsOpen = false" @layout-option-change="onLayoutOptionChange"/>
+			@settings-close="settingsOpen = false"
+			@layout-option-change="onLayoutOptionChange" @tree-change="onTreeChange"/>
 		<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px] invisible">
 			<!-- Note: Above enclosing div prevents transition interference with inner rotate -->
 			<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45

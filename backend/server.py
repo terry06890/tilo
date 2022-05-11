@@ -14,6 +14,7 @@ SEARCH_SUGG_LIMIT = 5
 usageInfo =  f"usage: {sys.argv[0]}\n"
 usageInfo += "Starts a server that listens for GET requests to http://" + hostname + ":" + str(port) + ".\n"
 usageInfo += "Responds to path+query /data/type1?name=name1 with JSON data.\n"
+usageInfo += "An additional query parameter tree=reduced is usable to get reduced-tree data\n"
 usageInfo += "\n"
 usageInfo += "If type1 is 'node': Responds with map from names to objects representing node name1 and it's children.\n"
 usageInfo += "If type1 is 'chain': Like 'node', but gets nodes from name1 up to the root, and their direct children.\n"
@@ -25,12 +26,13 @@ if len(sys.argv) > 1:
 # Connect to db, and load spellfix extension
 dbCon = sqlite3.connect(dbFile)
 # Some functions
-def lookupNodes(names):
+def lookupNodes(names, useReducedTree):
 	nodeObjs = {}
 	cur = dbCon.cursor()
 	# Get node info
-	query = "SELECT name, children, parent, tips, p_support FROM nodes WHERE" \
-		" name IN ({})".format(",".join(["?"] * len(names)))
+	nodesTable = "nodes" if not useReducedTree else "reduced_nodes"
+	query = "SELECT name, children, parent, tips, p_support FROM {} WHERE" \
+		" name IN ({})".format(nodesTable, ",".join(["?"] * len(names)))
 	namesForImgs = []
 	firstSubnames = {}
 	secondSubnames = {}
@@ -89,13 +91,19 @@ def getNodeImg(name):
 		if os.path.exists(imgDir + filename):
 			return filename
 	return None
-def lookupName(name):
+def lookupName(name, useReducedTree):
 	cur = dbCon.cursor()
 	results = []
 	hasMore = False
-	for row in cur.execute(
-		"SELECT DISTINCT name, alt_name FROM names WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?",
-		(name + "%", SEARCH_SUGG_LIMIT)):
+	query = None
+	if not useReducedTree:
+		query = "SELECT DISTINCT name, alt_name FROM names" \
+			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
+	else:
+		query = "SELECT DISTINCT names.name, alt_name FROM" \
+			" names INNER JOIN reduced_nodes ON names.name = reduced_nodes.name" \
+			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
+	for row in cur.execute(query, (name + "%", SEARCH_SUGG_LIMIT)):
 		results.append({"name": row[0], "altName": row[1]})
 	if len(results) > SEARCH_SUGG_LIMIT:
 		hasMore = True
@@ -124,15 +132,17 @@ class DbServer(BaseHTTPRequestHandler):
 		queryDict = urllib.parse.parse_qs(urlParts.query)
 		# Check first element of path
 		match = re.match(r"/([^/]+)/(.+)", path)
-		if match != None and match.group(1) == "data" and "name" in queryDict:
+		if match != None and match.group(1) == "data" and "name" in queryDict and \
+			("tree" not in queryDict or queryDict["tree"][0] == "reduced"):
 			reqType = match.group(2)
 			name = queryDict["name"][0]
+			useReducedTree = "tree" in queryDict
 			# Check query string
 			if reqType == "node":
-				nodeObjs = lookupNodes([name])
+				nodeObjs = lookupNodes([name], useReducedTree)
 				if len(nodeObjs) > 0:
 					nodeObj = nodeObjs[name]
-					childNodeObjs = lookupNodes(nodeObj["children"])
+					childNodeObjs = lookupNodes(nodeObj["children"], useReducedTree)
 					childNodeObjs[name] = nodeObj
 					self.respondJson(childNodeObjs)
 					return
@@ -141,7 +151,7 @@ class DbServer(BaseHTTPRequestHandler):
 				ranOnce = False
 				while True:
 					# Get node
-					nodeObjs = lookupNodes([name])
+					nodeObjs = lookupNodes([name], useReducedTree)
 					if len(nodeObjs) == 0:
 						if not ranOnce:
 							self.respondJson(results)
@@ -158,7 +168,7 @@ class DbServer(BaseHTTPRequestHandler):
 						for childName in nodeObj["children"]:
 							if childName not in results:
 								childNamesToAdd.append(childName)
-						childNodeObjs = lookupNodes(childNamesToAdd)
+						childNodeObjs = lookupNodes(childNamesToAdd, useReducedTree)
 						results.update(childNodeObjs)
 					# Check if root
 					if nodeObj["parent"] == None:
@@ -167,7 +177,7 @@ class DbServer(BaseHTTPRequestHandler):
 					else:
 						name = nodeObj["parent"]
 			elif reqType == "search":
-				self.respondJson(lookupName(name))
+				self.respondJson(lookupName(name, useReducedTree))
 				return
 			elif reqType == "info":
 				self.respondJson(lookupNodeInfo(name))

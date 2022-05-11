@@ -7,7 +7,7 @@ File Generation Process
         table using data in otol/*.
 2   Name Data for Search
     1   Obtain data in eol/, as specified in it's README.
-    2   Run genEolNameData.py, which adds 'names' and 'eol\_ids' tables to data.db, 
+    2   Run genEolNameData.py, which adds 'names' and 'eol\_ids' tables to data.db,
         using data in eol/vernacularNames.csv and the 'nodes' table.
 3   Image Data
     1   Use downloadImgsForReview.py to download EOL images into imgsForReview/.
@@ -20,6 +20,9 @@ File Generation Process
     1   Obtain data in enwiki/, as specified in it's README.
     2   Run genEnwikiData.py, which adds a 'descs' table to data.db,
         using data in enwiki/enwikiData.db, and the 'nodes' table.
+5   Reduced Tree Structure Data
+    1   Run genReducedTreeData.py, which adds a 'reduced_nodes' table to data.db,
+        using reducedTol/names.txt, and the 'nodes' and 'names' tables.
 
 data.db tables
 ==============
@@ -33,3 +36,5 @@ data.db tables
     eol\_id INT PRIMARY KEY, source\_url TEXT, license TEXT, copyright\_owner TEXT
 -   descs <br>
     name TEXT PRIMARY KEY, desc TEXT, redirected INT
+-   reduced\_nodes <br>
+    name TEXT PRIMARY KEY, children TEXT, parent TEXT, tips INT, p_support INT

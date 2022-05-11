@@ -82,6 +82,7 @@ export default defineComponent({
 		<h1 class="text-center text-xl font-bold mb-2">
 			{{displayName}}
 			<div v-if="tolNode.children.length > 0">({{tolNode.children.length}} children)</div>
+			<div>({{tolNode.tips}} tips)</div>
 		</h1>
 		<hr class="mb-4 border-stone-400"/>
 		<div class="flex">

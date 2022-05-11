@@ -41,6 +41,7 @@ export default defineComponent({
 			let url = new URL(window.location.href);
 			url.pathname = '/data/chain';
 			url.search = '?name=' + encodeURIComponent(tolNodeName);
+			url.search += (this.uiOpts.useReducedTree ? '&tree=reduced' : '');
 			fetch(url.toString())
 				.then(response => response.json())
 				.then(obj => {
@@ -80,6 +81,7 @@ export default defineComponent({
 			let url = new URL(window.location.href);
 			url.pathname = '/data/search';
 			url.search = '?name=' + encodeURIComponent(input.value);
+			url.search += (this.uiOpts.useReducedTree ? '&tree=reduced' : '');
 			this.lastSuggReqId += 1;
 			let suggsId = this.lastSuggReqId;
 			let reqDelay = 0;

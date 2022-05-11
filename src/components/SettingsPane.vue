@@ -34,9 +34,12 @@ export default defineComponent({
 			}
 			this.onLytOptChg();
 		},
+		onTreeChg(){
+			this.$emit('tree-change');
+		},
 	},
 	components: {CloseIcon, },
-	emits: ['settings-close', 'layout-option-change', ],
+	emits: ['settings-close', 'layout-option-change', 'tree-change', ],
 });
 </script>
 
@@ -114,6 +117,20 @@ export default defineComponent({
 	<div>
 		<label>Animation Duration <input type="range" min="0" max="3000" class="mx-2 w-[3cm]"
 			v-model.number="uiOpts.tileChgDuration"/></label>
+	</div>
+	<hr class="border-stone-400"/>
+	<div>
+		Tree
+		<ul>
+			<li>
+				<label> <input type="radio" v-model="uiOpts.useReducedTree" :value="false"
+					@change="onTreeChg"/> Default </label>
+			</li>
+			<li>
+				<label> <input type="radio" v-model="uiOpts.useReducedTree" :value="true"
+					@change="onTreeChg"/> Reduced </label>
+			</li>
+		</ul>
 	</div>
 </div>
 </template>
