@@ -48,7 +48,11 @@ export default defineComponent({
 		},
 		displayName(): string {
 			if (this.tolNode.commonName != null){
-				return "'" + capitalizeWords(this.tolNode.commonName) + "'";
+				let newName = capitalizeWords(this.tolNode.commonName)
+				if (/^['"].*['"]$/.test(newName) == false){
+					newName = "'" + newName + "'";
+				}
+				return newName;
 			} else {
 				return capitalizeWords(this.layoutNode.name);
 			}
