@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
-import sys, re, json, sqlite3
-import os.path
+import sys, os.path, re
+import json, sqlite3
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Reads labelled_supertree_ottnames.tre & annotations.json (from an Open Tree of Life release), \n"
+usageInfo += "Reads labelled_supertree_ottnames.tre & annotations.json (from an Open Tree of Life release),\n"
 usageInfo += "and creates a sqlite database, which holds entries of the form (name text, data text).\n"
-usageInfo += "Each row holds a tree-of-life node's name, JSON-encoded child name array, a parent name or '', \n"
+usageInfo += "Each row holds a tree-of-life node's name, JSON-encoded child name array, a parent name or '',\n"
 usageInfo += "number of descendant 'tips', and a 1 or 0 indicating phylogenetic-support.\n"
 usageInfo += "\n"
 usageInfo += "Expected labelled_supertree_ottnames.tre format:\n"
@@ -30,10 +30,10 @@ idToName = {} # Maps node IDs to names
 nameToFirstId = {} # Maps node names to first found ID (names might have multiple IDs)
 dupNameToIds = {} # Maps names of nodes with multiple IDs to those node IDs
 
-## Check for existing db
-#if os.path.exists(dbFile):
-#	print("ERROR: Existing {} db".format(dbFile), file=sys.stderr)
-#	sys.exit(1)
+# Check for existing db
+if os.path.exists(dbFile):
+	print("ERROR: Existing {} db".format(dbFile), file=sys.stderr)
+	sys.exit(1)
 # Parse treeFile
 print("Parsing tree file")
 data = None

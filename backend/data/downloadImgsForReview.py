@@ -66,10 +66,10 @@ if not os.path.exists(outDir):
 print("Finding next ID to download for")
 nextIdx = 0
 fileList = os.listdir(outDir)
-ids = list(map(lambda filename: int(filename.split(" ")[0]), fileList))
+ids = [int(filename.split(" ")[0]) for filename in fileList]
 if len(ids) > 0:
 	ids.sort()
-	nextIdx = eolIds.index(ids[-1])
+	nextIdx = eolIds.index(ids[-1]) + 1
 if nextIdx == len(eolIds):
 	print("No IDs left. Exiting...")
 	sys.exit(0)

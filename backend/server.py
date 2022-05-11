@@ -94,9 +94,7 @@ def lookupName(name):
 	results = []
 	hasMore = False
 	for row in cur.execute(
-		"SELECT DISTINCT names.name, names.alt_name, nodes.tips FROM" \
-			" names INNER JOIN nodes ON names.name = nodes.name " \
-			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?",
+		"SELECT DISTINCT name, alt_name FROM names WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?",
 		(name + "%", SEARCH_SUGG_LIMIT)):
 		results.append({"name": row[0], "altName": row[1]})
 	if len(results) > SEARCH_SUGG_LIMIT:
