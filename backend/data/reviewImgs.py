@@ -5,7 +5,7 @@ import sqlite3
 import tkinter as tki
 from tkinter import ttk
 import PIL
-from PIL import ImageTk, Image
+from PIL import ImageTk, Image, ImageOps
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
 usageInfo += "Provides a GUI for reviewing images. Looks in a for-review directory for\n"
@@ -110,6 +110,7 @@ class EolImgReviewer:
 			if idx < len(self.nextImgNames):
 				try:
 					img = Image.open(imgDir + self.nextImgNames[idx])
+					img = ImageOps.exif_transpose(img)
 				except PIL.UnidentifiedImageError:
 					os.remove(imgDir + self.nextImgNames[idx])
 					del self.nextImgNames[idx]
@@ -148,13 +149,12 @@ class EolImgReviewer:
 			inFile = imgDir + self.nextImgNames[i]
 			if i == imgIdx: # Move accepted image, rotating if needed
 				outFile = outDir + self.nextImgNames[i]
-				if self.rotations[i] == 0:
-					os.replace(inFile, outFile)
-				else:
-					img = Image.open(inFile)
+				img = Image.open(inFile)
+				img = ImageOps.exif_transpose(img)
+				if self.rotations[i] != 0:
 					img = img.rotate(self.rotations[i], expand=True)
-					img.save(outFile)
-					os.remove(inFile)
+				img.save(outFile)
+				os.remove(inFile)
 			else: # Delete non-accepted image
 				os.remove(inFile)
 		self.numReviewed += 1
