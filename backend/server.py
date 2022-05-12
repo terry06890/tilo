@@ -109,7 +109,7 @@ def lookupName(name, useReducedTree):
 		hasMore = True
 		del results[-1]
 	return [results, hasMore]
-def lookupNodeInfo(name):
+def lookupNodeInfo(name, useReducedTree):
 	cur = dbCon.cursor()
 	# Get node desc
 	row = cur.execute("SELECT desc, redirected from descs WHERE descs.name = ?", (name,)).fetchone()
@@ -122,7 +122,7 @@ def lookupNodeInfo(name):
 	if row != None:
 		imgInfo = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
 	# Get other info
-	temp = lookupNodes([name], False)
+	temp = lookupNodes([name], useReducedTree)
 	nodeObj = temp[name] if name in temp else None
 	#
 	return {"desc": desc, "imgInfo": imgInfo, "nodeObj": nodeObj}
@@ -183,7 +183,7 @@ class DbServer(BaseHTTPRequestHandler):
 				self.respondJson(lookupName(name, useReducedTree))
 				return
 			elif reqType == "info":
-				self.respondJson(lookupNodeInfo(name))
+				self.respondJson(lookupNodeInfo(name, useReducedTree))
 				return
 		self.send_response(404)
 		self.end_headers()

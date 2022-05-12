@@ -54,6 +54,7 @@ export default defineComponent({
 		let url = new URL(window.location.href);
 		url.pathname = '/data/info';
 		url.search = '?name=' + encodeURIComponent(this.nodeName);
+		url.search += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
 		fetch(url.toString())
 			.then(response => response.json())
 			.then(obj => {
