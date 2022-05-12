@@ -121,8 +121,11 @@ def lookupNodeInfo(name):
 	imgInfo = None
 	if row != None:
 		imgInfo = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
+	# Get other info
+	temp = lookupNodes([name], False)
+	nodeObj = temp[name] if name in temp else None
 	#
-	return {"desc": desc, "imgInfo": imgInfo}
+	return {"desc": desc, "imgInfo": imgInfo, "nodeObj": nodeObj}
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):

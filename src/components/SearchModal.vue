@@ -1,6 +1,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import SearchIcon from './icon/SearchIcon.vue';
+import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode} from '../layout';
 import type {TolMap} from '../tol';
 
@@ -22,6 +23,18 @@ export default defineComponent({
 	props: {
 		tolMap: {type: Object as PropType<TolMap>, required: true},
 		uiOpts: {type: Object, required: true},
+	},
+	computed: {
+		infoIconStyles(): Record<string,string> {
+			let size = this.uiOpts.infoIconSz + 'px';
+			return {
+				width: size,
+				height: size,
+				minWidth: size,
+				minHeight: size,
+				margin: this.uiOpts.infoIconMargin + 'px',
+			};
+		},
 	},
 	methods: {
 		onCloseClick(evt: Event){
@@ -123,12 +136,15 @@ export default defineComponent({
 				}
 			}
 		},
+		onInfoIconClick(nodeName: string){
+			this.$emit('info-icon-click', nodeName);
+		},
 	},
 	mounted(){
 		(this.$refs.searchInput as HTMLInputElement).focus();
 	},
-	components: {SearchIcon, },
-	emits: ['search-node', 'search-close', ],
+	components: {SearchIcon, InfoIcon, },
+	emits: ['search-node', 'search-close', 'info-icon-click'],
 });
 </script>
 
@@ -143,8 +159,10 @@ export default defineComponent({
 			<div class="absolute top-[100%] w-full">
 				<div v-for="(sugg, idx) of searchSuggs"
 					:style="{backgroundColor: idx == focusedSuggIdx ? '#a3a3a3' : 'white'}"
-					class="bg-white border p-1 hover:underline hover:cursor-pointer"
-					@click="resolveSearch(sugg.name)">
+					class="border p-1 hover:underline hover:cursor-pointer" @click="resolveSearch(sugg.name)">
+					<info-icon :style="infoIconStyles"
+						class="float-right text-stone-500 hover:text-stone-900 hover:cursor-pointer"
+						@click.stop="onInfoIconClick(sugg.name)"/>
 					{{sugg.name == sugg.altName ? sugg.name : `${sugg.altName} (aka ${sugg.name})`}}
 				</div>
 				<div v-if="searchHasMoreSuggs" class="bg-white px-1 text-center border">...</div>

@@ -315,7 +315,7 @@ export default defineComponent({
 			this.$emit(this.isLeaf ? 'leaf-click-held' : 'nonleaf-click-held', this.layoutNode);
 		},
 		onInfoIconClick(evt: Event){
-			this.$emit('info-icon-click', this.layoutNode);
+			this.$emit('info-icon-click', this.layoutNode.name);
 		},
 		// Mouse hover handling
 		onMouseEnter(evt: Event){
@@ -341,8 +341,8 @@ export default defineComponent({
 		onInnerNonleafClickHeld(node: LayoutNode){
 			this.$emit('nonleaf-click-held', node);
 		},
-		onInnerInfoIconClick(node: LayoutNode){
-			this.$emit('info-icon-click', node);
+		onInnerInfoIconClick(nodeName: string){
+			this.$emit('info-icon-click', nodeName);
 		},
 		// Other
 		onTransitionEnd(evt: Event){

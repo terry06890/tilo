@@ -13,27 +13,25 @@ export default defineComponent({
 			desc: null as null | string,
 			fromRedirect: false,
 			imgInfo: null as null | {eolId: string, sourceUrl: string, license: string, copyrightOwner: string},
+			tolNode: null as null | TolNode,
 		};
 	},
 	props: {
-		node: {type: Object as PropType<LayoutNode>, required: true},
+		nodeName: {type: String, required: true},
 		tolMap: {type: Object as PropType<TolMap>, required: true},
 		uiOpts: {type: Object, required: true},
 	},
 	computed: {
-		tolNode(): TolNode {
-			return this.tolMap.get(this.node.name)!;
-		},
 		displayName(): string {
-			if (this.tolNode.commonName == null){
-				return capitalizeWords(this.node.name);
+			if (this.tolNode == null || this.tolNode.commonName == null){
+				return capitalizeWords(this.nodeName);
 			} else {
-				return `${capitalizeWords(this.tolNode.commonName)} (aka ${capitalizeWords(this.node.name)})`;
+				return `${capitalizeWords(this.tolNode.commonName)} (aka ${capitalizeWords(this.nodeName)})`;
 			}
 		},
 		imgStyles(): Record<string,string> {
 			return {
-				backgroundImage: this.tolNode.imgName != null ?
+				backgroundImage: this.tolNode != null && this.tolNode.imgName != null ?
 					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
 						'url(\'/img/' + this.tolNode.imgName.replaceAll('\'', '\\\'') + '\')' :
 					'none',
@@ -55,7 +53,7 @@ export default defineComponent({
 	created(){
 		let url = new URL(window.location.href);
 		url.pathname = '/data/info';
-		url.search = '?name=' + encodeURIComponent(this.node.name);
+		url.search = '?name=' + encodeURIComponent(this.nodeName);
 		fetch(url.toString())
 			.then(response => response.json())
 			.then(obj => {
@@ -63,6 +61,7 @@ export default defineComponent({
 					if (obj.desc != null){
 						this.desc = obj.desc.text;
 						this.fromRedirect = obj.desc.fromRedirect;
+						this.tolNode = obj.nodeObj;
 					}
 					this.imgInfo = obj.imgInfo;
 				}
@@ -81,8 +80,9 @@ export default defineComponent({
 			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
 		<h1 class="text-center text-xl font-bold mb-2">
 			{{displayName}}
-			<div v-if="tolNode.children.length > 0">({{tolNode.children.length}} children)</div>
-			<div>({{tolNode.tips}} tips)</div>
+			<div v-if="tolNode != null">
+				({{tolNode.children.length}} children, {{tolNode.tips}} tips)
+			</div>
 		</h1>
 		<hr class="mb-4 border-stone-400"/>
 		<div class="flex">

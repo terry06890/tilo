@@ -100,7 +100,7 @@ export default defineComponent({
 			layoutMap: initLayoutMap(layoutTree), // Maps names to LayoutNode objects
 			overflownRoot: false, // Set when displaying a root tile with many children, with overflow
 			// Modals and settings related
-			infoModalNode: null as LayoutNode | null, // Node to display info for, or null
+			infoModalNodeName: null as string | null, // Name of node to display info for, or null
 			helpOpen: false,
 			searchOpen: false,
 			settingsOpen: false,
@@ -323,9 +323,11 @@ export default defineComponent({
 			this.overflownRoot = false;
 		},
 		// For tile-info events
-		onInfoIconClick(node: LayoutNode){
-			this.resetMode();
-			this.infoModalNode = node;
+		onInfoIconClick(nodeName: string){
+			if (!this.searchOpen){
+				this.resetMode();
+			}
+			this.infoModalNodeName = nodeName;
 		},
 		// For help events
 		onHelpIconClick(){
@@ -574,7 +576,7 @@ export default defineComponent({
 				});
 		},
 		resetMode(){
-			this.infoModalNode = null;
+			this.infoModalNodeName = null;
 			this.searchOpen = false;
 			this.helpOpen = false;
 			this.settingsOpen = false;
@@ -634,12 +636,12 @@ export default defineComponent({
 			text-white/40 hover:text-white hover:cursor-pointer"/>
 	<!-- Modals -->
 	<transition name="fade">
-		<tile-info-modal v-if="infoModalNode != null" :node="infoModalNode" :tolMap="tolMap" :uiOpts="uiOpts"
-			@info-modal-close="infoModalNode = null"/>
+		<search-modal v-if="searchOpen" :tolMap="tolMap" :uiOpts="uiOpts" ref="searchModal"
+			@search-close="searchOpen = false" @search-node="onSearchNode" @info-icon-click="onInfoIconClick"/>
 	</transition>
 	<transition name="fade">
-		<search-modal v-if="searchOpen" :tolMap="tolMap" :uiOpts="uiOpts"
-			@search-close="searchOpen = false" @search-node="onSearchNode" ref="searchModal"/>
+		<tile-info-modal v-if="infoModalNodeName != null" :nodeName="infoModalNodeName" :tolMap="tolMap" :uiOpts="uiOpts"
+			@info-modal-close="infoModalNodeName = null"/>
 	</transition>
 	<transition name="fade">
 		<help-modal v-if="helpOpen" :uiOpts="uiOpts" @help-modal-close="helpOpen = false"/>
