@@ -111,19 +111,19 @@ def lookupName(name, useReducedTree):
 	return [results, hasMore]
 def lookupNodeInfo(name, useReducedTree):
 	cur = dbCon.cursor()
+	# Get node-object info
+	temp = lookupNodes([name], useReducedTree)
+	nodeObj = temp[name] if name in temp else None
 	# Get node desc
 	row = cur.execute("SELECT desc, redirected from descs WHERE descs.name = ?", (name,)).fetchone()
 	desc = {"text": row[0], "fromRedirect": row[1] == 1} if row != None else None
 	# Get img info
-	imgInfoQuery = "SELECT eol_id, source_url, license, copyright_owner FROM" \
-		" images INNER JOIN eol_ids ON images.eol_id = eol_ids.id WHERE eol_ids.name = ?"
-	row = cur.execute(imgInfoQuery, (name,)).fetchone()
 	imgInfo = None
-	if row != None:
+	if nodeObj != None and nodeObj["imgName"] != None:
+		eolId = int(nodeObj["imgName"][:-4]) # Convert filename excluding .jpg suffix
+		imgInfoQuery = "SELECT eol_id, source_url, license, copyright_owner FROM images WHERE eol_id = ?"
+		row = cur.execute(imgInfoQuery, (eolId,)).fetchone()
 		imgInfo = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
-	# Get other info
-	temp = lookupNodes([name], useReducedTree)
-	nodeObj = temp[name] if name in temp else None
 	#
 	return {"desc": desc, "imgInfo": imgInfo, "nodeObj": nodeObj}
 

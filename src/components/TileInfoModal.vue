@@ -10,10 +10,10 @@ import {capitalizeWords} from '../util';
 export default defineComponent({
 	data(){
 		return {
+			tolNode: null as null | TolNode,
 			desc: null as null | string,
 			fromRedirect: false,
 			imgInfo: null as null | {eolId: string, sourceUrl: string, license: string, copyrightOwner: string},
-			tolNode: null as null | TolNode,
 		};
 	},
 	props: {
@@ -59,10 +59,10 @@ export default defineComponent({
 			.then(response => response.json())
 			.then(obj => {
 				if (obj != null){
+					this.tolNode = obj.nodeObj;
 					if (obj.desc != null){
 						this.desc = obj.desc.text;
 						this.fromRedirect = obj.desc.fromRedirect;
-						this.tolNode = obj.nodeObj;
 					}
 					this.imgInfo = obj.imgInfo;
 				}
