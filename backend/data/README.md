@@ -3,8 +3,8 @@ File Generation Process
 
 1   Tree Structure Data
     1   Obtain data in otol/, as specified in it's README.
-    2   Run genOtolData.py, which creates data.db, and adds a 'nodes'
-        table using data in otol/*.
+    2   Run genOtolData.py, which creates data.db, and adds
+        'nodes' and 'edges' tables using data in otol/*.
 2   Name Data for Search
     1   Obtain data in eol/, as specified in it's README.
     2   Run genEolNameData.py, which adds 'names' and 'eol\_ids' tables to data.db,
@@ -26,17 +26,19 @@ File Generation Process
         2   Run genEnwikiData.py, which adds to the 'descs' table, using data in
             enwiki/enwikiData.db, reducedTol/names.txt, and the 'nodes' table.
 5   Reduced Tree Structure Data
-    1   Run genReducedTreeData.py, which adds a 'reduced_nodes' table to data.db,
-        using reducedTol/names.txt, and the 'nodes' and 'names' tables.
+    1   Run genReducedTreeData.py, which adds 'r_nodes' and 'r_edges' tables to
+        data.db, using reducedTol/names.txt, and the 'nodes' and 'names' tables.
 
 data.db Tables
 ==============
--   nodes:          name TEXT PRIMARY KEY, children TEXT, parent TEXT, tips INT, p\_support INT
--   names:          name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
--   eol\_ids:       id INT PRIMARY KEY, name TEXT
--   images:         eol\_id INT PRIMARY KEY, source\_url TEXT, license TEXT, copyright\_owner TEXT
--   descs:          name TEXT PRIMARY KEY, desc TEXT, redirected INT
--   reduced\_nodes: name TEXT PRIMARY KEY, children TEXT, parent TEXT, tips INT, p\_support INT
+-   nodes:    name TEXT PRIMARY KEY, tips INT
+-   edges:    node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
+-   names:    name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
+-   eol\_ids: id INT PRIMARY KEY, name TEXT
+-   images:   eol\_id INT PRIMARY KEY, source\_url TEXT, license TEXT, copyright\_owner TEXT
+-   descs:    name TEXT PRIMARY KEY, desc TEXT, redirected INT
+-   r\_nodes: name TEXT PRIMARY KEY, tips INT
+-   r\_edges: node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
 
 Other Files
 ===========

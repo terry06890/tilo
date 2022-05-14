@@ -489,7 +489,7 @@ chlamydosaurus
 chondrichthyes
 chondrocladia
 chondrostei
-chordata
+chordate
 chromalveolate
 chrysanthemum
 chrysididae

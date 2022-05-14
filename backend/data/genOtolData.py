@@ -30,10 +30,6 @@ idToName = {} # Maps node IDs to names
 nameToFirstId = {} # Maps node names to first found ID (names might have multiple IDs)
 dupNameToIds = {} # Maps names of nodes with multiple IDs to those node IDs
 
-# Check for existing db
-if os.path.exists(dbFile):
-	print("ERROR: Existing {} db".format(dbFile), file=sys.stderr)
-	sys.exit(1)
 # Parse treeFile
 print("Parsing tree file")
 data = None
@@ -210,14 +206,18 @@ for [id, node] in nodeMap.items():
 	if node["parent"] == None:
 		node["pSupport"] = True
 # Create db
-print("Creating nodes table")
+print("Creating nodes and edges tables")
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
-dbCur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, children TEXT, parent TEXT, tips INT, p_support INT)")
+dbCur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, tips INT)")
+dbCur.execute("CREATE TABLE edges (node TEXT, child TEXT, p_support INT, PRIMARY KEY (node, child))")
+dbCur.execute("CREATE INDEX edges_child_idx ON edges(child)")
 for node in nodeMap.values():
-	childNames = [nodeMap[id]["name"] for id in node["children"]]
-	parentName = "" if node["parent"] == None else nodeMap[node["parent"]]["name"]
-	dbCur.execute("INSERT INTO nodes VALUES (?, ?, ?, ?, ?)",
-		(node["name"], json.dumps(childNames), parentName, node["tips"], 1 if node["pSupport"] else 0))
+	dbCur.execute("INSERT INTO nodes VALUES (?, ?)", (node["name"], node["tips"]))
+	childIds = node["children"]
+	for childId in childIds:
+		childNode = nodeMap[childId]
+		dbCur.execute("INSERT INTO edges VALUES (?, ?, ?)",
+			(node["name"], childNode["name"], 1 if childNode["pSupport"] else 0))
 dbCon.commit()
 dbCon.close()

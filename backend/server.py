@@ -27,26 +27,34 @@ if len(sys.argv) > 1:
 dbCon = sqlite3.connect(dbFile)
 # Some functions
 def lookupNodes(names, useReducedTree):
+	# Get node info
 	nodeObjs = {}
 	cur = dbCon.cursor()
-	# Get node info
-	nodesTable = "nodes" if not useReducedTree else "reduced_nodes"
-	query = "SELECT name, children, parent, tips, p_support FROM {} WHERE" \
-		" name IN ({})".format(nodesTable, ",".join(["?"] * len(names)))
-	namesForImgs = []
-	firstSubnames = {}
-	secondSubnames = {}
-	for row in cur.execute(query, names):
-		name = row[0]
-		nodeObj = {
-			"children": json.loads(row[1]),
-			"parent": None if row[2] == "" else row[2],
-			"tips": row[3],
-			"pSupport": True if row[4] == 1 else False,
+	nodesTable = "nodes" if not useReducedTree else "r_nodes"
+	edgesTable = "edges" if not useReducedTree else "r_edges"
+	queryParamStr = ",".join(["?"] * len(names))
+	query = "SELECT name, tips FROM {} WHERE name IN ({})".format(nodesTable, queryParamStr)
+	for (nodeName, tips) in cur.execute(query, names):
+		nodeObjs[nodeName] = {
+			"children": [],
+			"parent": None,
+			"tips": tips,
+			"pSupport": False,
 			"commonName": None,
 			"imgName": None,
 		}
-		# Check for image file
+	query = "SELECT node, child FROM {} WHERE node IN ({})".format(edgesTable, queryParamStr)
+	for (nodeName, childName) in cur.execute(query, names):
+		nodeObjs[nodeName]["children"].append(childName)
+	query = "SELECT node, child, p_support FROM {} WHERE child IN ({})".format(edgesTable, queryParamStr)
+	for (nodeName, childName, pSupport) in cur.execute(query, names):
+		nodeObjs[childName]["parent"] = None if nodeName == "" else nodeName
+		nodeObjs[childName]["pSupport"] = (pSupport == 1)
+	# Get names for image files
+	namesForImgs = []
+	firstSubnames = {}
+	secondSubnames = {}
+	for (name, nodeObj) in nodeObjs.items():
 		match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
 		if match == None:
 			namesForImgs.append(name)
@@ -56,8 +64,6 @@ def lookupNodes(names, useReducedTree):
 			namesForImgs.extend([name1, name2])
 			firstSubnames[name1] = name
 			secondSubnames[name2] = name
-		# Add node object
-		nodeObjs[name] = nodeObj
 	# Get image names
 	query = "SELECT name, id FROM eol_ids WHERE" \
 		" name IN ({})".format(",".join(["?"] * len(namesForImgs)))
@@ -75,10 +81,8 @@ def lookupNodes(names, useReducedTree):
 		else:
 			nodeObjs[n]["imgName"] = filename
 	# Get preferred-name info
-	query = "SELECT name, alt_name FROM names WHERE pref_alt = 1 AND" \
-		" name IN ({})".format(",".join(["?"] * len(names)))
-	for row in cur.execute(query, names):
-		[name, altName] = row
+	query = "SELECT name, alt_name FROM names WHERE pref_alt = 1 AND name IN ({})".format(queryParamStr)
+	for (name, altName) in cur.execute(query, names):
 		if altName != name:
 			nodeObjs[name]["commonName"] = altName
 	#
@@ -102,7 +106,7 @@ def lookupName(name, useReducedTree):
 			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
 	else:
 		query = "SELECT DISTINCT names.name, alt_name FROM" \
-			" names INNER JOIN reduced_nodes ON names.name = reduced_nodes.name" \
+			" names INNER JOIN r_nodes ON names.name = r_nodes.name" \
 			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
 	for row in cur.execute(query, (name + "%", SEARCH_SUGG_LIMIT)):
 		results.append({"name": row[0], "altName": row[1]})

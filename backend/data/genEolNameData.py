@@ -64,7 +64,10 @@ dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 # Create tables
 dbCur.execute("CREATE TABLE names(name TEXT, alt_name TEXT, pref_alt INT, PRIMARY KEY(name, alt_name))")
+dbCur.execute("CREATE INDEX names_alt_idx ON names(alt_name)")
+dbCur.execute("CREATE INDEX names_alt_idx_nc ON names(alt_name COLLATE NOCASE)")
 dbCur.execute("CREATE TABLE eol_ids(id INT PRIMARY KEY, name TEXT)")
+dbCur.execute("CREATE INDEX eol_name_idx ON eol_ids(name)")
 # Iterate through 'nodes' table, resolving to canonical-names
 usedPids = set()
 unresolvedNodeNames = set()

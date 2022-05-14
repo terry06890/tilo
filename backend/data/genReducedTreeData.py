@@ -47,14 +47,15 @@ for name in minimalNames:
 	prevName = None
 	while name != None:
 		if name not in nodeMap:
-			(parent, tips, p_support) = dbCur.execute(
-				"SELECT parent, tips, p_support from nodes WHERE name = ?", (name,)).fetchone()
-			parent = None if parent == "" else parent
+			(tips,) = dbCur.execute("SELECT tips from nodes where name = ?", (name,)).fetchone()
+			row = dbCur.execute("SELECT node, p_support from edges where child = ?", (name,)).fetchone()
+			parent = None if row == None or row[0] == "" else row[0]
+			pSupport = 1 if row == None or row[1] == 1 else 0
 			nodeMap[name] = {
 				"children": [] if prevName == None else [prevName],
 				"parent": parent,
 				"tips": 0,
-				"pSupport": p_support == 1,
+				"pSupport": pSupport,
 			}
 			prevName = name
 			name = parent
@@ -112,20 +113,21 @@ for (name, nodeObj) in nodeMap.items():
 	#
 	numChildren = len(nodeObj["children"])
 	if numChildren < PREF_NUM_CHILDREN:
-		row = dbCur.execute("SELECT children from nodes WHERE name = ?", (name,)).fetchone()
-		newChildren = [n for n in json.loads(row[0]) if
+		children = [row[0] for row in dbCur.execute("SELECT child FROM edges where node = ?", (name,))]
+		newChildren = [n for n in children if
 			not (n in nodeMap or n in namesToRemove) and
 			compNameRegex.fullmatch(n) == None]
 		newChildNames = newChildren[:max(0, PREF_NUM_CHILDREN - numChildren)]
 		nodeObj["children"].extend(newChildNames)
 		namesToAdd.extend(newChildNames)
 for name in namesToAdd:
-	(parent, pSupport) = dbCur.execute("SELECT parent, p_support from nodes WHERE name = ?", (name,)).fetchone()
+	(parent, pSupport) = dbCur.execute("SELECT node, p_support from edges WHERE child = ?", (name,)).fetchone()
+	parent = None if parent == "" else parent
 	nodeMap[name] = {
 		"children": [],
 		"parent": parent,
 		"tips": 0,
-		"pSupport": pSupport,
+		"pSupport": pSupport == 1,
 	}
 print("New node set has {} nodes".format(len(nodeMap)))
 # set tips vals
@@ -141,12 +143,15 @@ def setTips(nodeName):
 setTips(rootName)
 # Add new nodes to db
 print("Adding to db")
-dbCur.execute(
-	"CREATE TABLE reduced_nodes (name TEXT PRIMARY KEY, children TEXT, parent TEXT, tips INT, p_support INT)")
+dbCur.execute("CREATE TABLE r_nodes (name TEXT PRIMARY KEY, tips INT)")
+dbCur.execute("CREATE TABLE r_edges (node TEXT, child TEXT, p_support INT, PRIMARY KEY (node, child))")
+dbCur.execute("CREATE INDEX r_edges_child_idx ON r_edges(child)")
 for (name, nodeObj) in nodeMap.items():
 	parentName = "" if nodeObj["parent"] == None else nodeObj["parent"]
-	dbCur.execute("INSERT INTO reduced_nodes VALUES (?, ?, ?, ?, ?)",
-		(name, json.dumps(nodeObj["children"]), parentName, nodeObj["tips"], 1 if nodeObj["pSupport"] else 0))
+	dbCur.execute("INSERT INTO r_nodes VALUES (?, ?)", (name, nodeObj["tips"]))
+	for childName in nodeObj["children"]:
+		pSupport = 1 if nodeMap[childName]["pSupport"] else 0
+		dbCur.execute("INSERT INTO r_edges VALUES (?, ?, ?)", (name, childName, pSupport))
 # Close db
 dbCon.commit()
 dbCon.close()
