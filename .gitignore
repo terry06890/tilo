@@ -18,3 +18,5 @@
 /backend/data/enwiki/*.db
 /backend/data/enwiki/enwiki_content/
 /backend/data/enwiki/.venv/
+/backend/data/dbpedia/*.bz2
+/backend/data/dbpedia/*.db
