@@ -21,10 +21,10 @@ File Generation Process
         1   Obtain data in dbpedia/, as specified in it's README.
         2   Run genDbpData.py, which adds a 'descs' table to data.db, using
             data in dbpedia/dbpData.db, dbpPickedLabels.txt, and the 'nodes' table.
-    -   Using wikipedia dump (old method)
+    -   Supplementing with Wikipedia dump
         1   Obtain data in enwiki/, as specified in it's README.
-        2   Run genEnwikiData.py, which adds a 'descs' table to data.db,
-            using data in enwiki/enwikiData.db, and the 'nodes' table.
+        2   Run genEnwikiData.py, which adds to the 'descs' table, using data in
+            enwiki/enwikiData.db, reducedTol/names.txt, and the 'nodes' table.
 5   Reduced Tree Structure Data
     1   Run genReducedTreeData.py, which adds a 'reduced_nodes' table to data.db,
         using reducedTol/names.txt, and the 'nodes' and 'names' tables.
