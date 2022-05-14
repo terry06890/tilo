@@ -79,7 +79,8 @@ def lookupNodes(names, useReducedTree):
 		" name IN ({})".format(",".join(["?"] * len(names)))
 	for row in cur.execute(query, names):
 		[name, altName] = row
-		nodeObjs[name]["commonName"] = altName
+		if altName != name:
+			nodeObjs[name]["commonName"] = altName
 	#
 	return nodeObjs
 def getNodeImg(name):

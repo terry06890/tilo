@@ -45,7 +45,7 @@ eolIds = eolIds.intersection(imgListIds)
 eolIds = sorted(eolIds)
 
 MAX_IMGS_PER_ID = 3
-MAX_THREADS = 10
+MAX_THREADS = 5
 numThreads = 0
 threadException = None # Used for ending main thread after a non-main thread exception
 def downloadImg(url, outFile):

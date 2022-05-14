@@ -65,6 +65,7 @@ for (name, variants) in nameToVariants.items():
 		nodeToLabel[name] = variants[0]
 for name in nodeToLabel:
 	del nameToVariants[name]
+nodeToLabel["cellular organisms"] = "organism" # Special case for root node
 print("Number of conflicts: {}".format(len(nameToVariants)))
 # Try conflict resolution via category-list
 	# Does a generic-category pass first (avoid stuff like Pan being classified as a horse instead of an ape)
