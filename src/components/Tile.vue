@@ -29,11 +29,36 @@ export default defineComponent({
 			hasExpanded: false, // Set to true after an expansion transition ends, and false upon collapse
 				// Used to hide overflow on tile expansion, but not hide a sepSweptArea on subsequent transitions
 			clickHoldTimer: 0, // Used to recognise click-and-hold events
+			scrollOffset: 0, // Used to track scroll offset when displaying with overflow
+			scrollThrottled: false,
 		};
 	},
 	computed: {
 		tolNode(): TolNode {
 			return this.tolMap.get(this.layoutNode.name)!;
+		},
+		visibleChildren(): LayoutNode[] {
+			// If not displaying with overflow, return layout node children
+			let children = this.layoutNode.children;
+			if (!this.isOverflownRoot){
+				return children;
+			}
+			// Return visible children
+			let firstIdx = children.length - 1;
+			for (let i = 0; i < children.length; i++){
+				if (children[i].pos[1] + children[i].dims[1] >= this.scrollOffset){
+					firstIdx = i;
+					break;
+				}
+			}
+			let lastIdx = children.length;
+			for (let i = firstIdx + 1; i < children.length; i++){
+				if (children[i].pos[1] > this.scrollOffset + this.overflownDim){
+					lastIdx = i;
+					break;
+				}
+			}
+			return children.slice(firstIdx, lastIdx);
 		},
 		// Basic abbreviations
 		isLeaf(): boolean {
@@ -344,6 +369,12 @@ export default defineComponent({
 		onInnerInfoIconClick(nodeName: string){
 			this.$emit('info-icon-click', nodeName);
 		},
+		onScroll(evt: Event){
+			if (!this.scrollThrottled){
+				this.scrollOffset = this.$el.scrollTop;
+				setTimeout(() => {this.scrollThrottled = false;}, 300);
+			}
+		},
 		// Other
 		onTransitionEnd(evt: Event){
 			if (this.inTransition){
@@ -374,7 +405,7 @@ export default defineComponent({
 </script>
 
 <template>
-<div :style="styles" @transitionend="onTransitionEnd"> <!-- Enclosing div needed for size transitions -->
+<div :style="styles" @transitionend="onTransitionEnd" @scroll="onScroll"> <!-- Need enclosing div for transitions -->
 	<div v-if="isLeaf" :style="leafStyles"
 		class="w-full h-full flex flex-col overflow-hidden" :class="{'hover:cursor-pointer': isExpandableLeaf}"
 		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
@@ -400,7 +431,7 @@ export default defineComponent({
 					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 			</div>
 		</div>
-		<tile v-for="child in layoutNode.children" :key="child.name"
+		<tile v-for="child in visibleChildren" :key="child.name"
 			:layoutNode="child" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" :overflownDim="overflownDim"
 			@leaf-click="onInnerLeafClick" @nonleaf-click="onInnerNonleafClick"
 			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
