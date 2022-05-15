@@ -116,8 +116,7 @@ export default defineComponent({
 			// For window-resize handling
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
-			resizeThrottled: false,
-			resizeDelay: 50, //ms (increasing to 100 seems to cause resize-skipping when opening browser mobile-view)
+			pendingResizeHdlr: 0, // Set to a setTimeout() value
 			// Other
 			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries are removed (done on tile collapse)
 		};
@@ -532,17 +531,16 @@ export default defineComponent({
 		},
 		// For other events
 		onResize(){
-			if (!this.resizeThrottled){
-				this.width = document.documentElement.clientWidth;
-				this.height = document.documentElement.clientHeight;
-				this.uiOpts.scrollGap = getScrollBarWidth();
-				// Re-layout
-				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, 
-					{allowCollapse: true, layoutMap: this.layoutMap});
-				this.overflownRoot = false;
-				// Prevent re-triggering until after a delay
-				this.resizeThrottled = true;
-				setTimeout(() => {this.resizeThrottled = false;}, this.resizeDelay);
+			if (this.pendingResizeHdlr == 0){
+				this.pendingResizeHdlr = setTimeout(() => {
+					this.width = document.documentElement.clientWidth;
+					this.height = document.documentElement.clientHeight;
+					this.uiOpts.scrollGap = getScrollBarWidth();
+					tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
+						{allowCollapse: true, layoutMap: this.layoutMap});
+					this.overflownRoot = false;
+					this.pendingResizeHdlr = 0;
+				}, 100);
 			}
 		},
 		onKeyUp(evt: KeyboardEvent){

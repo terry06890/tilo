@@ -30,7 +30,7 @@ export default defineComponent({
 				// Used to hide overflow on tile expansion, but not hide a sepSweptArea on subsequent transitions
 			clickHoldTimer: 0, // Used to recognise click-and-hold events
 			scrollOffset: 0, // Used to track scroll offset when displaying with overflow
-			scrollThrottled: false,
+			pendingScrollHdlr: false,
 		};
 	},
 	computed: {
@@ -370,9 +370,12 @@ export default defineComponent({
 			this.$emit('info-icon-click', nodeName);
 		},
 		onScroll(evt: Event){
-			if (!this.scrollThrottled){
-				this.scrollOffset = this.$el.scrollTop;
-				setTimeout(() => {this.scrollThrottled = false;}, 300);
+			if (this.pendingScrollHdlr == 0){
+				this.pendingScrollHdlr = setTimeout(() => {
+					console.log('handling scroll')
+					this.scrollOffset = this.$el.scrollTop;
+					this.pendingScrollHdlr = 0;
+				}, 50);
 			}
 		},
 		// Other
