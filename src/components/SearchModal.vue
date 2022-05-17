@@ -5,7 +5,7 @@ import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode} from '../layout';
 import type {TolMap} from '../tol';
 
-type SearchSugg = {name: string, altName: string}; // Represents a search string suggestion
+type SearchSugg = {name: string, canonicalName: string | null}; // Represents a search string suggestion
 type SearchSuggResponse = [SearchSugg[], boolean]; // Holds search suggestions and an indication of if there was more
 
 // Displays a search box, and sends search requests
@@ -46,7 +46,8 @@ export default defineComponent({
 			if (this.focusedSuggIdx == null){
 				this.resolveSearch((this.$refs.searchInput as HTMLInputElement).value.toLowerCase())
 			} else {
-				this.resolveSearch(this.searchSuggs[this.focusedSuggIdx].name);
+				let sugg = this.searchSuggs[this.focusedSuggIdx]
+				this.resolveSearch(sugg.canonicalName || sugg.name);
 			}
 		},
 		resolveSearch(tolNodeName: string){
@@ -159,11 +160,12 @@ export default defineComponent({
 			<div class="absolute top-[100%] w-full">
 				<div v-for="(sugg, idx) of searchSuggs"
 					:style="{backgroundColor: idx == focusedSuggIdx ? '#a3a3a3' : 'white'}"
-					class="border p-1 hover:underline hover:cursor-pointer" @click="resolveSearch(sugg.name)">
+					class="border p-1 hover:underline hover:cursor-pointer"
+					@click="resolveSearch(sugg.canonicalName || sugg.name)">
 					<info-icon :style="infoIconStyles"
 						class="float-right text-stone-500 hover:text-stone-900 hover:cursor-pointer"
-						@click.stop="onInfoIconClick(sugg.name)"/>
-					{{sugg.name == sugg.altName ? sugg.name : `${sugg.altName} (aka ${sugg.name})`}}
+						@click.stop="onInfoIconClick(sugg.canonicalName || sugg.name)"/>
+					{{sugg.canonicalName == null ? sugg.name : `${sugg.name} (aka ${sugg.canonicalName})`}}
 				</div>
 				<div v-if="searchHasMoreSuggs" class="bg-white px-1 text-center border">...</div>
 			</div>

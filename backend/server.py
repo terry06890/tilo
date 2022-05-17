@@ -100,19 +100,31 @@ def lookupName(name, useReducedTree):
 	cur = dbCon.cursor()
 	results = []
 	hasMore = False
-	query = None
+	# Get node names and alt-names
+	(query1, query2) = (None, None)
 	if not useReducedTree:
-		query = "SELECT DISTINCT name, alt_name FROM names" \
+		query1 = "SELECT DISTINCT name FROM nodes" \
+			" WHERE name LIKE ? ORDER BY length(name) LIMIT ?"
+		query2 = "SELECT DISTINCT alt_name, name FROM names" \
 			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
 	else:
-		query = "SELECT DISTINCT names.name, alt_name FROM" \
+		query1 = "SELECT DISTINCT name FROM r_nodes" \
+			" WHERE name LIKE ? ORDER BY length(name) LIMIT ?"
+		query2 = "SELECT DISTINCT alt_name, names.name FROM" \
 			" names INNER JOIN r_nodes ON names.name = r_nodes.name" \
 			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
-	for row in cur.execute(query, (name + "%", SEARCH_SUGG_LIMIT)):
-		results.append({"name": row[0], "altName": row[1]})
-	if len(results) > SEARCH_SUGG_LIMIT:
+	# Join results, and get shortest
+	temp = []
+	for row in cur.execute(query1, (name + "%", SEARCH_SUGG_LIMIT + 1)):
+		temp.append({"name": row[0], "canonicalName": None})
+	for row in cur.execute(query2, (name + "%", SEARCH_SUGG_LIMIT + 1)):
+		temp.append({"name": row[0], "canonicalName": row[1]})
+	temp.sort(key=lambda x: x["name"])
+	temp.sort(key=lambda x: len(x["name"]))
+	results = temp[:SEARCH_SUGG_LIMIT]
+	if len(temp) > SEARCH_SUGG_LIMIT:
 		hasMore = True
-		del results[-1]
+	#
 	return [results, hasMore]
 def lookupNodeInfo(name, useReducedTree):
 	cur = dbCon.cursor()

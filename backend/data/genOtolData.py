@@ -210,6 +210,7 @@ print("Creating nodes and edges tables")
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 dbCur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, tips INT)")
+dbCur.execute("CREATE INDEX nodes_idx_nc ON nodes(name COLLATE NOCASE)")
 dbCur.execute("CREATE TABLE edges (node TEXT, child TEXT, p_support INT, PRIMARY KEY (node, child))")
 dbCur.execute("CREATE INDEX edges_child_idx ON edges(child)")
 for node in nodeMap.values():
