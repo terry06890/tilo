@@ -208,7 +208,7 @@ for (name, iri) in nodeToIri.items():
 	row = dbpCur.execute("SELECT target FROM redirects where iri = ?", (iri,)).fetchone()
 	if row != None:
 		nodeToIri[name] = row[0]
-		redirectingIriSet.add(iri)
+		redirectingIriSet.add(name)
 # Find descriptions, and add to db
 print("Adding node description data")
 dbCur.execute("CREATE TABLE descs (name TEXT PRIMARY KEY, desc TEXT, redirected INT)")
