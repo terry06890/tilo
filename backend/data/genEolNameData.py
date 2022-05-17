@@ -21,6 +21,7 @@ dbFile = "data.db"
 # Read in vernacular-names data
 	# Note: Canonical-names may have multiple pids
 	# Note: A canonical-name's associated pids might all have other associated names
+print("Reading in vernacular-names data")
 nameToPids = {}
 pidToNames = {}
 canonicalNameToPids = {}
@@ -58,7 +59,6 @@ with open(vnamesFile, newline="") as csvfile:
 		updateMaps(name1, pid, True, False)
 		if lang == "eng":
 			updateMaps(name2, pid, False, preferred)
-
 # Open db connection
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
@@ -87,11 +87,12 @@ for row in dbCur2.execute("SELECT name FROM nodes"):
 				break
 		if pidToUse > 0:
 			usedPids.add(pidToUse)
-			altNames = {name}
+			altNames = set()
 			preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
 			dbCur.execute("INSERT INTO eol_ids VALUES (?, ?)", (pidToUse, name))
 			for n in pidToNames[pidToUse]:
-				altNames.add(n)
+				if dbCur.execute("SELECT name FROM nodes WHERE name = ?", (n,)).fetchone() == None:
+					altNames.add(n)
 			for n in altNames:
 				isPreferred = 1 if (n == preferredName) else 0
 				dbCur.execute("INSERT INTO names VALUES (?, ?, ?)", (name, n, isPreferred))
@@ -101,7 +102,7 @@ for row in dbCur2.execute("SELECT name FROM nodes"):
 iterationNum = 0
 for name in unresolvedNodeNames:
 	iterationNum += 1
-	if iterationNum % 10000 == 0:
+	if iterationNum % 100 == 0:
 		print("Loop 2 iteration {}".format(iterationNum))
 	# Add alt-name entries to 'names' table for first corresponding pid
 	pidToUse = 0
@@ -111,11 +112,12 @@ for name in unresolvedNodeNames:
 			break
 	if pidToUse > 0:
 		usedPids.add(pidToUse)
-		altNames = {name}
+		altNames = set()
 		preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
 		dbCur.execute("INSERT INTO eol_ids VALUES (?, ?)", (pidToUse, name))
 		for n in pidToNames[pidToUse]:
-			altNames.add(n)
+			if dbCur.execute("SELECT name FROM nodes WHERE name = ?", (n,)).fetchone() == None:
+				altNames.add(n)
 		for n in altNames:
 			isPreferred = 1 if (n == preferredName) else 0
 			dbCur.execute("INSERT INTO names VALUES (?, ?, ?)", (name, n, isPreferred))
