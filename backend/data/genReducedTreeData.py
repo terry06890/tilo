@@ -28,7 +28,9 @@ with open(nodeNamesFile) as file:
 		if iterNum % 100 == 0:
 			print("Iteration {}".format(iterNum))
 		#
-		row = dbCur.execute("SELECT name, alt_name from names WHERE alt_name = ?", (line.rstrip(),)).fetchone()
+		row = dbCur.execute("SELECT name from nodes WHERE name = ?", (line.rstrip(),)).fetchone()
+		if row == None:
+			row = dbCur.execute("SELECT name from names WHERE alt_name = ?", (line.rstrip(),)).fetchone()
 		if row != None:
 			minimalNames.add(row[0])
 if len(minimalNames) == 0:
