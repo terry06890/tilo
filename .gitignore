@@ -14,7 +14,7 @@
 /backend/data/imgsForReview/
 /backend/data/imgsReviewed/
 /backend/data/img/
-/backend/data/enwiki/*.gz
+/backend/data/enwiki/*.bz2
 /backend/data/enwiki/*.db
 /backend/data/enwiki/enwiki_content/
 /backend/data/enwiki/.venv/

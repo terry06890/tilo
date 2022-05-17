@@ -88,7 +88,6 @@ balfouria (flatworm)
 ballana (leafhopper)
 Barcella
 Baryonyx
-basuto (horse)
 Begonia
 Belbina
 belisarius (scorpion)
@@ -320,7 +319,6 @@ Gymnopodium
 habeas corpus (pig)
 Halenia
 Halesia
-halla (horse)
 Hallucigenia
 Harmothoe
 Harpa
@@ -621,7 +619,6 @@ Thyreus
 tinerfe (ctenophore)
 Tiso
 Titanophora
-tokara (horse)
 tortricidae (snakes)
 Tortrix
 Triaenophorus

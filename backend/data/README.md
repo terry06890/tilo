@@ -24,7 +24,7 @@ File Generation Process
     -   Supplementing with Wikipedia dump
         1   Obtain data in enwiki/, as specified in it's README.
         2   Run genEnwikiData.py, which adds to the 'descs' table, using data in
-            enwiki/enwikiData.db, reducedTol/names.txt, and the 'nodes' table.
+            enwiki/enwikiData.db, and the 'nodes' table.
 5   Reduced Tree Structure Data
     1   Run genReducedTreeData.py, which adds 'r_nodes' and 'r_edges' tables to
         data.db, using reducedTol/names.txt, and the 'nodes' and 'names' tables.
