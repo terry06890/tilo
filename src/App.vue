@@ -53,7 +53,7 @@ const defaultLytOpts: LayoutOptions = {
 	layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
 	rectMode: 'auto first-row', //'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
 	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
-	sweptNodesPrio: 'pow-2/3', //'linear' | 'sqrt' | 'pow-2/3'
+	sweptNodesPrio: 'linear', //'linear' | 'sqrt' | 'pow-2/3'
 	sweepToParent: true,
 };
 const defaultUiOpts = {

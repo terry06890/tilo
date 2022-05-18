@@ -67,6 +67,27 @@ for name in nodeToLabel:
 	del nameToVariants[name]
 nodeToLabel["cellular organisms"] = "organism" # Special case for root node
 print("Number of conflicts: {}".format(len(nameToVariants)))
+# Try conflict resolution via picked-labels
+print("Resolving conflicts using picked-labels")
+with open(pickedLabelsFile) as file:
+	for line in file:
+		pickedLabel = line.rstrip()
+		name = pickedLabel.lower()
+		if name in nameToVariants:
+			nodeToLabel[name] = pickedLabel
+			del nameToVariants[name]
+		else:
+			match = nameVariantRegex.match(pickedLabel)
+			if match == None:
+				print("WARNING: Picked label {} not found (1)".format(pickedLabel), file=sys.stderr)
+			else:
+				name = match.group(1)
+				if name not in nameToVariants:
+					print("WARNING: Picked label {} not found (2)".format(pickedLabel), file=sys.stderr)
+				else:
+					nodeToLabel[name] = pickedLabel
+					del nameToVariants[name]
+print("Number of conflicts: {}".format(len(nameToVariants)))
 # Try conflict resolution via category-list
 	# Does a generic-category pass first (avoid stuff like Pan being classified as a horse instead of an ape)
 print("Resolving conflicts using category-list")
@@ -162,27 +183,6 @@ for (label, type) in dbpCur.execute("SELECT label, type from labels INNER JOIN t
 				name = match.group(1)
 				if name in nameToVariants:
 					nodeToLabel[name] = label
-					del nameToVariants[name]
-print("Number of conflicts: {}".format(len(nameToVariants)))
-# Try conflict resolution via picked-labels
-print("Resolving conflicts using picked-labels")
-with open(pickedLabelsFile) as file:
-	for line in file:
-		pickedLabel = line.rstrip()
-		name = pickedLabel.lower()
-		if name in nameToVariants:
-			nodeToLabel[name] = pickedLabel
-			del nameToVariants[name]
-		else:
-			match = nameVariantRegex.match(pickedLabel)
-			if match == None:
-				print("WARNING: Picked label {} not found (1)".format(pickedLabel), file=sys.stderr)
-			else:
-				name = match.group(1)
-				if name not in nameToVariants:
-					print("WARNING: Picked label {} not found (2)".format(pickedLabel), file=sys.stderr)
-				else:
-					nodeToLabel[name] = pickedLabel
 					del nameToVariants[name]
 print("Number of conflicts: {}".format(len(nameToVariants)))
 # Associate nodes with IRIs
