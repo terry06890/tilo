@@ -132,8 +132,10 @@ def lookupNodeInfo(name, useReducedTree):
 	temp = lookupNodes([name], useReducedTree)
 	nodeObj = temp[name] if name in temp else None
 	# Get node desc
-	row = cur.execute("SELECT desc, redirected from descs WHERE descs.name = ?", (name,)).fetchone()
-	desc = {"text": row[0], "fromRedirect": row[1] == 1} if row != None else None
+	row = cur.execute("SELECT desc, redirected, wiki_id, from_dbp from descs WHERE descs.name = ?", (name,)).fetchone()
+	descObj = None
+	if row != None:
+		descObj = {"text": row[0], "fromRedirect": row[1] == 1, "wikiId": row[2], "fromDbp": row[3] == 1}
 	# Get img info
 	imgInfo = None
 	if nodeObj != None and nodeObj["imgName"] != None:
@@ -142,7 +144,7 @@ def lookupNodeInfo(name, useReducedTree):
 		row = cur.execute(imgInfoQuery, (eolId,)).fetchone()
 		imgInfo = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
 	#
-	return {"desc": desc, "imgInfo": imgInfo, "nodeObj": nodeObj}
+	return {"descObj": descObj, "imgInfo": imgInfo, "nodeObj": nodeObj}
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):

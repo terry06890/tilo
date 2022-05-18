@@ -4,13 +4,14 @@ import sys, re
 import bz2, sqlite3
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Reads DBpedia labels+types+redirects+abstracts data,\n"
+usageInfo += "Reads DBpedia labels/types/abstracts/etc data,\n"
 usageInfo += "and creates a sqlite db containing that data.\n"
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
 labelsFile = "labels_lang=en.ttl.bz2" # Has about 16e6 lines
+idsFile = "page_lang=en_ids.ttl.bz2"
 redirectsFile = "redirects_lang=en_transitive.ttl.bz2"
 disambigFile = "disambiguations_lang=en.ttl.bz2"
 typesFile = "instance-types_lang=en_specific.ttl.bz2"
@@ -38,6 +39,28 @@ with bz2.open(labelsFile, mode='rt') as file:
 			sys.exit(1)
 		else:
 			dbCur.execute("INSERT INTO labels VALUES (?, ?)", (match.group(1), match.group(2)))
+dbCon.commit()
+# Read/store wiki page ids
+print("Reading/storing wiki page ids")
+dbCur.execute("CREATE TABLE ids (iri TEXT PRIMARY KEY, id INT)")
+idLineRegex = re.compile(r'<([^>]+)> <[^>]+> "(\d+)".*\n')
+lineNum = 0
+with bz2.open(idsFile, mode='rt') as file:
+	for line in file:
+		lineNum += 1
+		if lineNum % 1e5 == 0:
+			print("Processing line {}".format(lineNum))
+		#
+		match = idLineRegex.fullmatch(line)
+		if match == None:
+			print("ERROR: Line {} has unexpected format".format(lineNum), file=sys.stderr)
+			sys.exit(1)
+		else:
+			try:
+				dbCur.execute("INSERT INTO ids VALUES (?, ?)", (match.group(1), int(match.group(2))))
+			except sqlite3.IntegrityError as e:
+				# Accounts for certain lines that have the same IRI
+				print("Failed to add entry with IRI \"{}\": {}".format(match.group(1), e))
 dbCon.commit()
 # Read/store redirects
 print("Reading/storing redirection data")

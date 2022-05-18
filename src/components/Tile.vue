@@ -30,7 +30,7 @@ export default defineComponent({
 				// Used to hide overflow on tile expansion, but not hide a sepSweptArea on subsequent transitions
 			clickHoldTimer: 0, // Used to recognise click-and-hold events
 			scrollOffset: 0, // Used to track scroll offset when displaying with overflow
-			pendingScrollHdlr: false,
+			pendingScrollHdlr: 0,
 		};
 	},
 	computed: {

@@ -211,16 +211,18 @@ for (name, iri) in nodeToIri.items():
 		redirectingIriSet.add(name)
 # Find descriptions, and add to db
 print("Adding node description data")
-dbCur.execute("CREATE TABLE descs (name TEXT PRIMARY KEY, desc TEXT, redirected INT)")
+dbCur.execute("CREATE TABLE descs (name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki_id INT, from_dbp INT)")
 iterNum = 0
 for (name, iri) in nodeToIri.items():
 	iterNum += 1
 	if iterNum % 1e4 == 0:
 		print("At iteration {}".format(iterNum))
 	#
-	row = dbpCur.execute("SELECT abstract FROM abstracts where iri = ?", (iri,)).fetchone()
+	query = "SELECT abstract, id FROM abstracts INNER JOIN ids ON abstracts.iri = ids.iri WHERE ids.iri = ?"
+	row = dbpCur.execute(query, (iri,)).fetchone()
 	if row != None:
-		dbCur.execute("INSERT INTO descs VALUES (?, ?, ?)", (name, row[0], 1 if name in redirectingIriSet else 0))
+		dbCur.execute("INSERT INTO descs VALUES (?, ?, ?, ?, ?)",
+			(name, row[0], 1 if name in redirectingIriSet else 0, row[1], 1))
 # Close dbs
 dbCon.commit()
 dbCon.close()

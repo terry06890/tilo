@@ -63,7 +63,8 @@ for (name, pageId) in nodeToPageId.items():
 	#
 	row = enwikiCur.execute("SELECT desc FROM descs where descs.id = ?", (pageId,)).fetchone()
 	if row != None:
-		dbCur.execute("INSERT INTO descs VALUES (?, ?, ?)", (name, row[0], 1 if name in redirectingNames else 0))
+		dbCur.execute("INSERT INTO descs VALUES (?, ?, ?, ?, ?)",
+			(name, row[0], 1 if name in redirectingNames else 0, pageId, 0))
 # Close dbs
 dbCon.commit()
 dbCon.close()

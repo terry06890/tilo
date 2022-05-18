@@ -11,8 +11,7 @@ export default defineComponent({
 	data(){
 		return {
 			tolNode: null as null | TolNode,
-			desc: null as null | string,
-			fromRedirect: false,
+			descObj: null as null | {text: string, fromRedirect: boolean, wikiId: number, fromDbp: boolean},
 			imgInfo: null as null | {eolId: string, sourceUrl: string, license: string, copyrightOwner: string},
 		};
 	},
@@ -60,10 +59,7 @@ export default defineComponent({
 			.then(obj => {
 				if (obj != null){
 					this.tolNode = obj.nodeObj;
-					if (obj.desc != null){
-						this.desc = obj.desc.text;
-						this.fromRedirect = obj.desc.fromRedirect;
-					}
+					this.descObj = obj.descObj;
 					this.imgInfo = obj.imgInfo;
 				}
 			});
@@ -97,12 +93,17 @@ export default defineComponent({
 					</ul>
 				</div>
 			</div>
-			<div v-if="desc != null">
+			<div v-if="descObj != null">
 				<div>
-					Redirected: {{fromRedirect}}
+					Redirected: {{descObj.fromRedirect}} <br/>
+					Short-description from {{descObj.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
+					<a :href="'https://en.wikipedia.org/?curid=' + descObj.wikiId" class="underline">
+						Wikipedia Link
+					</a>
 				</div>
+				<hr/>
 				<div>
-					{{desc}}
+					{{descObj.text}}
 				</div>
 			</div>
 			<div v-else>
