@@ -60,6 +60,9 @@ export default defineComponent({
 			}
 			return children.slice(firstIdx, lastIdx);
 		},
+		hasFocusedChild(): boolean {
+			return this.layoutNode.children.some(n => n.hasFocus);
+		},
 		// Basic abbreviations
 		isLeaf(): boolean {
 			return this.layoutNode.children.length == 0;
@@ -306,6 +309,15 @@ export default defineComponent({
 		failFlag(){
 			this.triggerAnimation(this.isLeaf ? 'animate-expand-shrink' : 'animate-shrink-expand');
 		},
+		// For scrolling to a focused child if overflownRoot
+		hasFocusedChild(newVal, oldVal){
+			if (newVal && this.isOverflownRoot){
+				let focusedChild = this.layoutNode.children.find(n => n.hasFocus)
+				let bottomY = focusedChild.pos[1] + focusedChild.dims[1] + this.lytOpts.tileSpacing;
+				let scrollTop = Math.max(0, bottomY - (this.overflownDim / 2)); // 'scrollTop' won't go over max
+				this.$el.scrollTop = scrollTop;
+			}
+		},
 	},
 	methods: {
 		// Click handling
@@ -372,7 +384,6 @@ export default defineComponent({
 		onScroll(evt: Event){
 			if (this.pendingScrollHdlr == 0){
 				this.pendingScrollHdlr = setTimeout(() => {
-					console.log('handling scroll')
 					this.scrollOffset = this.$el.scrollTop;
 					this.pendingScrollHdlr = 0;
 				}, 50);
@@ -384,15 +395,6 @@ export default defineComponent({
 				this.inTransition = false;
 				this.wasClicked = false;
 				this.hasExpanded = this.layoutNode.children.length > 0;
-				// Scroll to any focused node
-				if (this.isOverflownRoot){
-					let focusedChild = this.layoutNode.children.find(n => n.hasFocus);
-					if (focusedChild != null){
-						let bottomY = focusedChild.pos[1] + focusedChild.dims[1] + this.lytOpts.tileSpacing;
-						let scrollTop = Math.max(0, bottomY - this.overflownDim);
-						this.$el.scrollTop = scrollTop;
-					}
-				}
 			}
 		},
 		triggerAnimation(animation: string){
