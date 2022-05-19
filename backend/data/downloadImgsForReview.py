@@ -140,4 +140,5 @@ for idx in range(nextIdx, len(eolIds)):
 	if exitLoop:
 		break
 # Close images-list db
+print("Finished downloading")
 imgDbCon.close()

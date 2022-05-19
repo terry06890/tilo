@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import sys, re
-import csv, sqlite3
+import html, csv, sqlite3
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
 usageInfo += "Reads vernacular-names CSV data (from the Encyclopedia of Life site),\n"
@@ -52,7 +52,7 @@ with open(vnamesFile, newline="") as csvfile:
 		# Parse line
 		pid = int(row[0])
 		name1 = re.sub(r"<[^>]+>", "", row[1].lower()) # Remove tags
-		name2 = row[2].lower()
+		name2 = html.unescape(row[2]).lower()
 		lang = row[3]
 		preferred = row[6] == "preferred"
 		# Add to maps
