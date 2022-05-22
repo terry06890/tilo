@@ -384,13 +384,14 @@ export default defineComponent({
 					setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
 					return;
 				}
-				// Attempt expand-to-view on ancestor just below activeRoot
+				// Attempt expand-to-view on an ancestor
 				if (layoutNode == this.activeRoot){
 					console.log('Screen too small to expand active root');
 					this.modeRunning = false;
 					return;
 				}
-				while (true){
+				const MAX_ANCESTOR_DIST = 5;
+				for (let i = 0; i < MAX_ANCESTOR_DIST; i++){
 					if (layoutNode.parent! == this.activeRoot){
 						break;
 					}
