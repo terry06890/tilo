@@ -71,7 +71,7 @@ export default defineComponent({
 		onTileClick(node: LayoutNode){
 			this.$emit('detached-ancestor-click', node);
 		},
-		onInfoIconClick(data: LayoutNode){
+		onInfoIconClick(data: string){
 			this.$emit('info-icon-click', data);
 		}
 	},

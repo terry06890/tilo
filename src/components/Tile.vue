@@ -86,6 +86,9 @@ export default defineComponent({
 			}
 			return capitalizeWords(this.tolNode.commonName || this.layoutNode.name);
 		},
+		hasCompoundImage(): boolean {
+			return Array.isArray(this.tolNode.imgName);
+		},
 		isOverflownRoot(): boolean {
 			return this.overflownDim > 0 && !this.layoutNode.hidden && this.layoutNode.children.length > 0;
 		},
@@ -147,16 +150,30 @@ export default defineComponent({
 			return layoutStyles;
 		},
 		leafStyles(): Record<string,string> {
-			return {
-				// Image (and scrims)
-				backgroundImage: this.tolNode.imgName != null ?
-					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
-						'url(\'/img/' + this.tolNode.imgName.replaceAll('\'', '\\\'') + '\')' :
-					'none',
-				backgroundColor: '#1c1917',
-				backgroundSize: 'cover',
-				borderRadius: 'inherit',
-			};
+			if (!this.hasCompoundImage){
+				return {
+					// Image (and scrims)
+					backgroundImage: this.tolNode.imgName != null ?
+						'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
+							'url(\'/img/' + (this.tolNode.imgName as string).replaceAll('\'', '\\\'') + '\')' :
+						'none',
+					backgroundColor: '#1c1917',
+					backgroundSize: 'cover',
+					// Child layout
+					display: 'flex',
+					flexDirection: 'column',
+					// Other
+					borderRadius: 'inherit',
+				};
+			} else {
+				return {
+					// Child layout
+					display: 'grid',
+					gridTemplateColumns: '1fr',
+					// Other
+					borderRadius: 'inherit',
+				};
+			}
 		},
 		leafHeaderStyles(): Record<string,string> {
 			let numChildren = this.tolNode.children.length;
@@ -180,6 +197,12 @@ export default defineComponent({
 				textOverflow: 'ellipsis',
 				whiteSpace: 'nowrap',
 			};
+		},
+		leafFirstImgStyles(): Record<string,string> {
+			return this.leafSubImgStyles(0);
+		},
+		leafSecondImgStyles(): Record<string,string> {
+			return this.leafSubImgStyles(1);
 		},
 		nonleafStyles(): Record<string,string> {
 			let styles = {
@@ -237,6 +260,8 @@ export default defineComponent({
 				minWidth: size,
 				minHeight: size,
 				margin: this.uiOpts.infoIconMargin + 'px',
+				marginTop: 'auto',
+				marginLeft: 'auto',
 			};
 		},
 		sepSweptAreaStyles(): Record<string,string> {
@@ -312,7 +337,7 @@ export default defineComponent({
 		// For scrolling to a focused child if overflownRoot
 		hasFocusedChild(newVal, oldVal){
 			if (newVal && this.isOverflownRoot){
-				let focusedChild = this.layoutNode.children.find(n => n.hasFocus)
+				let focusedChild = this.layoutNode.children.find(n => n.hasFocus)!
 				let bottomY = focusedChild.pos[1] + focusedChild.dims[1] + this.lytOpts.tileSpacing;
 				let scrollTop = Math.max(0, bottomY - (this.overflownDim / 2)); // 'scrollTop' won't go over max
 				this.$el.scrollTop = scrollTop;
@@ -390,6 +415,21 @@ export default defineComponent({
 			}
 		},
 		// Other
+		leafSubImgStyles(idx: number): Record<string,string> {
+			return {
+				width: '100%',
+				height: '100%',
+				// Image (and scrims)
+				backgroundImage: (this.tolNode.imgName![idx]! != null) ?
+					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
+						'url(\'/img/' + this.tolNode.imgName![idx]!.replaceAll('\'', '\\\'') + '\')' :
+					'none',
+				backgroundColor: '#1c1917',
+				backgroundSize: 'cover',
+				borderRadius: 'inherit',
+				clipPath: idx == 0 ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 100%, 100% 100%)',
+			};
+		},
 		onTransitionEnd(evt: Event){
 			if (this.inTransition){
 				this.inTransition = false;
@@ -411,13 +451,22 @@ export default defineComponent({
 
 <template>
 <div :style="styles" @transitionend="onTransitionEnd" @scroll="onScroll"> <!-- Need enclosing div for transitions -->
-	<div v-if="isLeaf" :style="leafStyles"
-		class="w-full h-full flex flex-col overflow-hidden" :class="{'hover:cursor-pointer': isExpandableLeaf}"
+	<div v-if="isLeaf" :style="leafStyles" class="w-full h-full" :class="{'hover:cursor-pointer': isExpandableLeaf}"
 		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-		<h1 :style="leafHeaderStyles">{{displayName}}</h1>
-		<info-icon :style="[infoIconStyles, {marginTop: 'auto'}]"
-			class="self-end text-white/10 hover:text-white hover:cursor-pointer"
-			@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
+		<template v-if="!hasCompoundImage">
+			<h1 :style="leafHeaderStyles">{{displayName}}</h1>
+			<info-icon :style="infoIconStyles"
+				class="text-white/10 hover:text-white hover:cursor-pointer"
+				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
+		</template>
+		<template v-else>
+			<div :style="leafFirstImgStyles" class="col-start-1 row-start-1"></div>
+			<div :style="leafSecondImgStyles" class="col-start-1 row-start-1"></div>
+			<h1 :style="leafHeaderStyles" class="col-start-1 row-start-1 z-10">{{displayName}}</h1>
+			<info-icon :style="infoIconStyles"
+				class="col-start-1 row-start-1 z-10 text-white/10 hover:text-white hover:cursor-pointer"
+				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
+		</template>
 	</div>
 	<div v-else :style="nonleafStyles" ref="nonleaf">
 		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"

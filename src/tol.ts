@@ -10,8 +10,8 @@ export class TolNode {
 	parent: string | null;
 	tips: number;
 	pSupport: boolean;
-	imgName: null | string;
 	commonName: null | string;
+	imgName: null | string | [string, string];
 	constructor(children: string[] = [], parent = null, tips = 0, pSupport = false){
 		this.children = children;
 		this.parent = parent;

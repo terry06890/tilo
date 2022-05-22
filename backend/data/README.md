@@ -39,7 +39,7 @@ data.db Tables
 -   names:        name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
 -   eol\_ids:     id INT PRIMARY KEY, name TEXT
 -   images:       eol\_id INT PRIMARY KEY, source\_url TEXT, license TEXT, copyright\_owner TEXT
--   linked\_imgs: name TEXT PRIMARY KEY, eol\_id INT
+-   linked\_imgs: name TEXT PRIMARY KEY, eol\_id INT, eol\_id2 INT
 -   descs:        name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki\_id INT, from\_dbp INT
 -   r\_nodes:     name TEXT PRIMARY KEY, tips INT
 -   r\_edges:     node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)

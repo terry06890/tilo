@@ -1,26 +1,34 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
+import Tile from './Tile.vue'
 import {LayoutNode} from '../layout';
+import type {LayoutOptions} from '../layout';
 import type {TolMap} from '../tol';
 import {TolNode} from '../tol';
 import {capitalizeWords} from '../util';
 
-type DescData = {text: string, fromRedirect: boolean, wikiId: number, fromDbp: boolean};
-	// Represents a node description
+type DescInfo = {text: string, fromRedirect: boolean, wikiId: number, fromDbp: boolean};
+type ImgInfo = {eolId: string, sourceUrl: string, license: string, copyrightOwner: string}
+type TileInfoResponse = {
+	tolNode: null | TolNode,
+	descData: null | DescInfo | [DescInfo, DescInfo],
+	imgData: null | ImgInfo | [ImgInfo, ImgInfo],
+};
 
 // Displays information about a tree-of-life node
 export default defineComponent({
 	data(){
 		return {
 			tolNode: null as null | TolNode,
-			descData: null as null | DescData | [DescData, DescData],
-			imgInfo: null as null | {eolId: string, sourceUrl: string, license: string, copyrightOwner: string},
+			descData: null as null | DescInfo | [DescInfo, DescInfo],
+			imgData: null as null | ImgInfo | [ImgInfo, ImgInfo],
 		};
 	},
 	props: {
 		nodeName: {type: String, required: true},
 		tolMap: {type: Object as PropType<TolMap>, required: true},
+		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object, required: true},
 	},
 	computed: {
@@ -31,18 +39,16 @@ export default defineComponent({
 				return `${capitalizeWords(this.tolNode.commonName)} (aka ${capitalizeWords(this.nodeName)})`;
 			}
 		},
-		imgStyles(): Record<string,string> {
-			return {
-				backgroundImage: this.tolNode != null && this.tolNode.imgName != null ?
-					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
-						'url(\'/img/' + this.tolNode.imgName.replaceAll('\'', '\\\'') + '\')' :
-					'none',
-				backgroundColor: '#1c1917',
-				width: this.uiOpts.infoModalImgSz + 'px',
-				height: this.uiOpts.infoModalImgSz + 'px',
-				backgroundSize: 'cover',
-				borderRadius: this.uiOpts.borderRadius + 'px',
-			};
+		subName1(): string {
+			return this.displayName.substring(1, this.displayName.indexOf(' + '));
+		},
+		subName2(): string {
+			return this.displayName.substring(this.displayName.indexOf(' + ') + 3, this.displayName.length - 1);
+		},
+		dummyNode(): LayoutNode {
+			let newNode = new LayoutNode(this.nodeName, []);
+			newNode.dims = [this.uiOpts.infoModalImgSz, this.uiOpts.infoModalImgSz];
+			return newNode;
 		},
 	},
 	methods: {
@@ -63,18 +69,18 @@ export default defineComponent({
 				if (obj != null){
 					this.tolNode = obj.nodeObj;
 					this.descData = obj.descData;
-					this.imgInfo = obj.imgInfo;
+					this.imgData = obj.imgData;
 				}
 			});
 	},
-	components: {CloseIcon, },
+	components: {CloseIcon, Tile, },
 	emits: ['info-modal-close', ],
 });
 </script>
 
 <template>
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onCloseClick">
-	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 top-1/2 -translate-y-1/2 p-4
+	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 h-4/5 overflow-scroll top-1/2 -translate-y-1/2 p-4
 		bg-stone-50 rounded-md shadow shadow-black">
 		<close-icon @click.stop="onCloseClick" ref="closeIcon"
 			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
@@ -87,13 +93,35 @@ export default defineComponent({
 		<hr class="mb-4 border-stone-400"/>
 		<div class="flex">
 			<div>
-				<div :style="imgStyles" class="mr-4" alt="an image"></div>
-				<div v-if="imgInfo != null">
+				<tile :layoutNode="dummyNode" :tolMap="tolMap" :nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
+					class="mr-4"/>
+				<div v-if="imgData == null">
+					(No image found)
+				</div>
+				<div v-else-if="!Array.isArray(imgData)">
 					<ul>
-						<li>License: {{imgInfo.license}}</li>
-						<li><a :href="imgInfo.sourceUrl" class="underline">Source URL</a></li>
-						<li>Copyright Owner: {{imgInfo.copyrightOwner}}</li>
+						<li>License: {{imgData.license}}</li>
+						<li><a :href="imgData.sourceUrl" class="underline">Source URL</a></li>
+						<li>Copyright Owner: {{imgData.copyrightOwner}}</li>
 					</ul>
+				</div>
+				<div v-else>
+					<div v-if="imgData[0] != null">
+						<h2 class="font-bold">Top-left Image</h2>
+						<ul>
+							<li>License: {{imgData[0].license}}</li>
+							<li><a :href="imgData[0].sourceUrl" class="underline">Source URL</a></li>
+							<li>Copyright Owner: {{imgData[0].copyrightOwner}}</li>
+						</ul>
+					</div>
+					<div v-if="imgData[1] != null">
+						<h2 class="font-bold">Bottom-right Image</h2>
+						<ul>
+							<li>License: {{imgData[1].license}}</li>
+							<li><a :href="imgData[1].sourceUrl" class="underline">Source URL</a></li>
+							<li>Copyright Owner: {{imgData[1].copyrightOwner}}</li>
+						</ul>
+					</div>
 				</div>
 			</div>
 			<div v-if="descData == null">
@@ -112,11 +140,11 @@ export default defineComponent({
 			</div>
 			<div v-else>
 				<div>
-					<h2 class="font-bold">{{displayName.substring(1, displayName.indexOf(' + '))}}</h2>
+					<h2 class="font-bold">{{subName1}}</h2>
 					<div>{{descData[0].text}}</div>
 				</div>
 				<div>
-					<h2 class="font-bold">{{displayName.substring(displayName.indexOf(' + ') + 3, displayName.length - 1)}}</h2>
+					<h2 class="font-bold">{{subName2}}</h2>
 					<div>{{descData[1].text}}</div>
 				</div>
 			</div>

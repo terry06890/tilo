@@ -638,7 +638,8 @@ export default defineComponent({
 			@search-close="searchOpen = false" @search-node="onSearchNode" @info-icon-click="onInfoIconClick"/>
 	</transition>
 	<transition name="fade">
-		<tile-info-modal v-if="infoModalNodeName != null" :nodeName="infoModalNodeName" :tolMap="tolMap" :uiOpts="uiOpts"
+		<tile-info-modal v-if="infoModalNodeName != null"
+			:nodeName="infoModalNodeName" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 			@info-modal-close="infoModalNodeName = null"/>
 	</transition>
 	<transition name="fade">

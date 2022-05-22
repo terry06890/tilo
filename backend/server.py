@@ -16,9 +16,11 @@ usageInfo += "Starts a server that listens for GET requests to http://" + hostna
 usageInfo += "Responds to path+query /data/type1?name=name1 with JSON data.\n"
 usageInfo += "An additional query parameter tree=reduced is usable to get reduced-tree data\n"
 usageInfo += "\n"
-usageInfo += "If type1 is 'node': Responds with map from names to objects representing node name1 and it's children.\n"
+usageInfo += "If type1 is 'node': Responds with map from names to TolNode objects for node name1 and it's children.\n"
 usageInfo += "If type1 is 'chain': Like 'node', but gets nodes from name1 up to the root, and their direct children.\n"
-usageInfo += "If type1 is 'search': Responds with a tolnode name that has alt-name name1, or null.\n"
+usageInfo += "If type1 is 'search': Responds with a SearchSuggResponse object.\n"
+usageInfo += "If type1 is 'info': Responds with a TileInfoResponse object.\n"
+usageInfo += "(Object type information can be found in src/)\n"
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -59,9 +61,16 @@ def lookupNodes(names, useReducedTree):
 		nodeObjs[name]["imgName"] = str(eolId) + ".jpg"
 	# Get 'linked' images for unresolved names
 	unresolvedNames = [n for n in nodeObjs if nodeObjs[n]["imgName"] == None]
-	query = "SELECT name, eol_id from linked_imgs WHERE name IN ({})".format(",".join(["?"] * len(unresolvedNames)))
-	for (name, eolId) in cur.execute(query, unresolvedNames):
-		nodeObjs[name]["imgName"] = str(eolId) + ".jpg"
+	query = "SELECT name, eol_id, eol_id2 from linked_imgs WHERE name IN ({})"
+	query = query.format(",".join(["?"] * len(unresolvedNames)))
+	for (name, eolId, eolId2) in cur.execute(query, unresolvedNames):
+		if eolId2 == None:
+			nodeObjs[name]["imgName"] = str(eolId) + ".jpg"
+		else:
+			nodeObjs[name]["imgName"] = [
+				str(eolId) + ".jpg" if eolId != 0 else None,
+				str(eolId2) + ".jpg" if eolId2 != 0 else None,
+			]
 	# Get preferred-name info
 	query = "SELECT name, alt_name FROM names WHERE pref_alt = 1 AND name IN ({})".format(queryParamStr)
 	for (name, altName) in cur.execute(query, names):
@@ -106,30 +115,41 @@ def lookupNodeInfo(name, useReducedTree):
 	nodeObj = temp[name] if name in temp else None
 	# Get node desc
 	descData = None
-	query = "SELECT desc, redirected, wiki_id, from_dbp from descs WHERE descs.name = ?"
 	match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
 	if match == None:
+		query = "SELECT desc, redirected, wiki_id, from_dbp from descs WHERE descs.name = ?"
 		row = cur.execute(query, (name,)).fetchone()
 		if row != None:
 			descData = {"text": row[0], "fromRedirect": row[1] == 1, "wikiId": row[2], "fromDbp": row[3] == 1}
 	else:
-		# Get descs for compound-node elements
+		# Get descs for compound-node element
 		descData = [None, None]
-		row = cur.execute(query, (match.group(1),)).fetchone()
-		if row != None:
-			descData[0] = {"text": row[0], "fromRedirect": row[1] == 1, "wikiId": row[2], "fromDbp": row[3] == 1}
-		row = cur.execute(query, (match.group(2),)).fetchone()
-		if row != None:
-			descData[1] = {"text": row[0], "fromRedirect": row[1] == 1, "wikiId": row[2], "fromDbp": row[3] == 1}
+		query = "SELECT name, desc, redirected, wiki_id, from_dbp from descs WHERE descs.name IN (?, ?)"
+		for row in cur.execute(query, match.group(1,2)):
+			if row[0] == match.group(1):
+				descData[0] = {"text": row[1], "fromRedirect": row[2] == 1, "wikiId": row[3], "fromDbp": row[4] == 1}
+			else:
+				descData[1] = {"text": row[1], "fromRedirect": row[2] == 1, "wikiId": row[3], "fromDbp": row[4] == 1}
 	# Get img info
-	imgInfo = None
-	if nodeObj != None and nodeObj["imgName"] != None:
-		eolId = int(nodeObj["imgName"][:-4]) # Convert filename excluding .jpg suffix
-		imgInfoQuery = "SELECT eol_id, source_url, license, copyright_owner FROM images WHERE eol_id = ?"
-		row = cur.execute(imgInfoQuery, (eolId,)).fetchone()
-		imgInfo = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
+	imgData = None
+	if nodeObj != None:
+		if isinstance(nodeObj["imgName"], str):
+			eolId = int(nodeObj["imgName"][:-4]) # Convert filename excluding .jpg suffix
+			query = "SELECT eol_id, source_url, license, copyright_owner FROM images WHERE eol_id = ?"
+			row = cur.execute(query, (eolId,)).fetchone()
+			imgData = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
+		elif isinstance(nodeObj["imgName"], list):
+			# Get info for compound-image parts
+			imgData = [None, None]
+			idsToLookup = [int(n[:-4]) for n in nodeObj["imgName"] if n != None]
+			query = "SELECT eol_id, source_url, license, copyright_owner FROM images WHERE eol_id IN (?, ?)"
+			for row in cur.execute(query, idsToLookup):
+				if str(row[0]) == nodeObj["imgName"][0][:-4]:
+					imgData[0] = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
+				else:
+					imgData[1] = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
 	#
-	return {"descData": descData, "imgInfo": imgInfo, "nodeObj": nodeObj}
+	return {"descData": descData, "imgData": imgData, "nodeObj": nodeObj}
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):
