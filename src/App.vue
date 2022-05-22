@@ -5,8 +5,8 @@ import Tile from './components/Tile.vue';
 import AncestryBar from './components/AncestryBar.vue';
 import TileInfoModal from './components/TileInfoModal.vue';
 import HelpModal from './components/HelpModal.vue';
+import SettingsModal from './components/SettingsModal.vue';
 import SearchModal from './components/SearchModal.vue';
-import SettingsPane from './components/SettingsPane.vue';
 // Icons
 import HelpIcon from './components/icon/HelpIcon.vue';
 import SearchIcon from './components/icon/SearchIcon.vue';
@@ -104,6 +104,7 @@ export default defineComponent({
 			helpOpen: false,
 			searchOpen: false,
 			settingsOpen: false,
+			tutorialOpen: true,
 			// For search and auto-mode
 			modeRunning: false,
 			lastFocused: null as LayoutNode | null,
@@ -604,8 +605,8 @@ export default defineComponent({
 	},
 	components: {
 		Tile, AncestryBar,
-		HelpIcon, SearchIcon, PlayIcon, SettingsIcon,
-		TileInfoModal, HelpModal, SearchModal, SettingsPane,
+		HelpIcon, SettingsIcon, SearchIcon, PlayIcon,
+		TileInfoModal, HelpModal, SearchModal, SettingsModal,
 	},
 });
 </script>
@@ -624,13 +625,16 @@ export default defineComponent({
 		@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
 	<!-- Icons -->
 	<help-icon @click="onHelpIconClick"
-		class="absolute bottom-[6px] left-[6px] w-[18px] h-[18px]
+		class="absolute bottom-[6px] right-[6px] w-[18px] h-[18px]
+			text-white/40 hover:text-white hover:cursor-pointer"/>
+	<settings-icon @click="onSettingsIconClick"
+		class="absolute bottom-[6px] right-[30px] w-[18px] h-[18px]
 			text-white/40 hover:text-white hover:cursor-pointer"/>
 	<search-icon @click="onSearchIconClick"
-		class="absolute bottom-[6px] left-[30px] w-[18px] h-[18px]
+		class="absolute bottom-[6px] right-[54px] w-[18px] h-[18px]
 			text-white/40 hover:text-white hover:cursor-pointer"/>
 	<play-icon @click="onPlayIconClick"
-		class="absolute bottom-[6px] left-[54px] w-[18px] h-[18px]
+		class="absolute bottom-[6px] right-[78px] w-[18px] h-[18px]
 			text-white/40 hover:text-white hover:cursor-pointer"/>
 	<!-- Modals -->
 	<transition name="fade">
@@ -646,18 +650,9 @@ export default defineComponent({
 		<help-modal v-if="helpOpen" :uiOpts="uiOpts" @help-modal-close="helpOpen = false"/>
 	</transition>
 	<!-- Settings -->
-	<transition name="slide-bottom-right">
-		<settings-pane v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts"
-			@settings-close="settingsOpen = false"
-			@layout-option-change="onLayoutOptionChange" @tree-change="onTreeChange"/>
-		<div v-else class="absolute bottom-0 right-0 w-[100px] h-[100px] invisible">
-			<!-- Note: Above enclosing div prevents transition interference with inner rotate -->
-			<div class="absolute bottom-[-50px] right-[-50px] w-[100px] h-[100px] visible -rotate-45
-				bg-black text-white hover:cursor-pointer" @click="onSettingsIconClick">
-				<settings-icon class="w-6 h-6 mx-auto mt-2"/>
-			</div>
-		</div>
-	</transition>
+	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts"
+		@settings-close="settingsOpen = false"
+		@layout-option-change="onLayoutOptionChange" @tree-change="onTreeChange"/>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = false"></div>
@@ -672,14 +667,5 @@ export default defineComponent({
 	transition-property: opacity;
 	transition-duration: 300ms;
 	transition-timing-function: ease-out;
-}
-.slide-bottom-right-enter-from, .slide-bottom-right-leave-to {
-	transform: translate(100%, 100%);
-	opacity: 0;
-}
-.slide-bottom-right-enter-active, .slide-bottom-right-leave-active {
-	transition-property: transform, opacity;
-	transition-duration: 300ms;
-	transition-timing-function: ease-in-out;
 }
 </style>
