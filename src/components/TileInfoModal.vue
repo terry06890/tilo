@@ -6,12 +6,15 @@ import type {TolMap} from '../tol';
 import {TolNode} from '../tol';
 import {capitalizeWords} from '../util';
 
+type DescData = {text: string, fromRedirect: boolean, wikiId: number, fromDbp: boolean};
+	// Represents a node description
+
 // Displays information about a tree-of-life node
 export default defineComponent({
 	data(){
 		return {
 			tolNode: null as null | TolNode,
-			descObj: null as null | {text: string, fromRedirect: boolean, wikiId: number, fromDbp: boolean},
+			descData: null as null | DescData | [DescData, DescData],
 			imgInfo: null as null | {eolId: string, sourceUrl: string, license: string, copyrightOwner: string},
 		};
 	},
@@ -59,7 +62,7 @@ export default defineComponent({
 			.then(obj => {
 				if (obj != null){
 					this.tolNode = obj.nodeObj;
-					this.descObj = obj.descObj;
+					this.descData = obj.descData;
 					this.imgInfo = obj.imgInfo;
 				}
 			});
@@ -93,21 +96,29 @@ export default defineComponent({
 					</ul>
 				</div>
 			</div>
-			<div v-if="descObj != null">
+			<div v-if="descData == null">
+				(No description found)
+			</div>
+			<div v-else-if="!Array.isArray(descData)">
 				<div>
-					Redirected: {{descObj.fromRedirect}} <br/>
-					Short-description from {{descObj.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
-					<a :href="'https://en.wikipedia.org/?curid=' + descObj.wikiId" class="underline">
+					Redirected: {{descData.fromRedirect}} <br/>
+					Short-description from {{descData.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
+					<a :href="'https://en.wikipedia.org/?curid=' + descData.wikiId" class="underline">
 						Wikipedia Link
 					</a>
 				</div>
 				<hr/>
-				<div>
-					{{descObj.text}}
-				</div>
+				<div>{{descData.text}}</div>
 			</div>
 			<div v-else>
-				(No description found)
+				<div>
+					<h2 class="font-bold">{{displayName.substring(1, displayName.indexOf(' + '))}}</h2>
+					<div>{{descData[0].text}}</div>
+				</div>
+				<div>
+					<h2 class="font-bold">{{displayName.substring(displayName.indexOf(' + ') + 3, displayName.length - 1)}}</h2>
+					<div>{{descData[1].text}}</div>
+				</div>
 			</div>
 		</div>
 		

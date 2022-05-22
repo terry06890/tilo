@@ -105,10 +105,22 @@ def lookupNodeInfo(name, useReducedTree):
 	temp = lookupNodes([name], useReducedTree)
 	nodeObj = temp[name] if name in temp else None
 	# Get node desc
-	row = cur.execute("SELECT desc, redirected, wiki_id, from_dbp from descs WHERE descs.name = ?", (name,)).fetchone()
-	descObj = None
-	if row != None:
-		descObj = {"text": row[0], "fromRedirect": row[1] == 1, "wikiId": row[2], "fromDbp": row[3] == 1}
+	descData = None
+	query = "SELECT desc, redirected, wiki_id, from_dbp from descs WHERE descs.name = ?"
+	match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
+	if match == None:
+		row = cur.execute(query, (name,)).fetchone()
+		if row != None:
+			descData = {"text": row[0], "fromRedirect": row[1] == 1, "wikiId": row[2], "fromDbp": row[3] == 1}
+	else:
+		# Get descs for compound-node elements
+		descData = [None, None]
+		row = cur.execute(query, (match.group(1),)).fetchone()
+		if row != None:
+			descData[0] = {"text": row[0], "fromRedirect": row[1] == 1, "wikiId": row[2], "fromDbp": row[3] == 1}
+		row = cur.execute(query, (match.group(2),)).fetchone()
+		if row != None:
+			descData[1] = {"text": row[0], "fromRedirect": row[1] == 1, "wikiId": row[2], "fromDbp": row[3] == 1}
 	# Get img info
 	imgInfo = None
 	if nodeObj != None and nodeObj["imgName"] != None:
@@ -117,7 +129,7 @@ def lookupNodeInfo(name, useReducedTree):
 		row = cur.execute(imgInfoQuery, (eolId,)).fetchone()
 		imgInfo = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
 	#
-	return {"descObj": descObj, "imgInfo": imgInfo, "nodeObj": nodeObj}
+	return {"descData": descData, "imgInfo": imgInfo, "nodeObj": nodeObj}
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):
