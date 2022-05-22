@@ -384,19 +384,18 @@ export default defineComponent({
 					setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
 					return;
 				}
-				// Attempt expand-to-view on an ancestor
+				// Attempt expand-to-view on an ancestor halfway to the active root
 				if (layoutNode == this.activeRoot){
 					console.log('Screen too small to expand active root');
 					this.modeRunning = false;
 					return;
 				}
-				const MAX_ANCESTOR_DIST = 5;
-				for (let i = 0; i < MAX_ANCESTOR_DIST; i++){
-					if (layoutNode.parent! == this.activeRoot){
-						break;
-					}
+				let ancestorChain = [layoutNode];
+				while (layoutNode.parent! != this.activeRoot){
 					layoutNode = layoutNode.parent!;
+					ancestorChain.push(layoutNode);
 				}
+				layoutNode = ancestorChain[Math.floor((ancestorChain.length - 1) / 2)]
 				this.onNonleafClickHeld(layoutNode);
 				setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
 			});
