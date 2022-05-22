@@ -10,12 +10,15 @@ File Generation Process
     2   Run genEolNameData.py, which adds 'names' and 'eol\_ids' tables to data.db,
         using data in eol/vernacularNames.csv and the 'nodes' table.
 3   Image Data
-    1   Use downloadImgsForReview.py to download EOL images into imgsForReview/.
+    1   Run downloadImgsForReview.py to download EOL images into imgsForReview/.
         It uses data in eol/imagesList.db, and the 'eol\_ids' table.
-    2   Use reviewImgs.py to filter images in imgsForReview/ into EOL-id-unique
+    2   Run reviewImgs.py to filter images in imgsForReview/ into EOL-id-unique
         images in imgsReviewed/ (uses 'names' and 'eol\_ids' to display extra info).
-    3   Use genImgsForWeb.py to create cropped/resized images in img/, using
+    3   Run genImgsForWeb.py to create cropped/resized images in img/, using
         images in imgsReviewed, and also to add an 'images' table to data.db.
+    4   Run genLinkedImgs.py to add a 'linked_imgs' table to data.db,
+        which uses 'nodes', 'edges', 'eol_ids', and 'images', to associate
+        nodes without images to child images.
 4   Node Description Data
     -   Using DBpedia
         1   Obtain data in dbpedia/, as specified in it's README.
@@ -31,14 +34,15 @@ File Generation Process
 
 data.db Tables
 ==============
--   nodes:    name TEXT PRIMARY KEY, tips INT
--   edges:    node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
--   names:    name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
--   eol\_ids: id INT PRIMARY KEY, name TEXT
--   images:   eol\_id INT PRIMARY KEY, source\_url TEXT, license TEXT, copyright\_owner TEXT
--   descs:    name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki\_id INT, from\_dbp INT
--   r\_nodes: name TEXT PRIMARY KEY, tips INT
--   r\_edges: node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
+-   nodes:        name TEXT PRIMARY KEY, tips INT
+-   edges:        node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
+-   names:        name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
+-   eol\_ids:     id INT PRIMARY KEY, name TEXT
+-   images:       eol\_id INT PRIMARY KEY, source\_url TEXT, license TEXT, copyright\_owner TEXT
+-   linked\_imgs: name TEXT PRIMARY KEY, eol\_id INT
+-   descs:        name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki\_id INT, from\_dbp INT
+-   r\_nodes:     name TEXT PRIMARY KEY, tips INT
+-   r\_edges:     node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
 
 Other Files
 ===========

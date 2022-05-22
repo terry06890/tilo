@@ -28,7 +28,7 @@ if not os.path.exists(outDir):
 # Open images-list db
 imagesListDbCon = sqlite3.connect(imagesListDb)
 imagesListCur = imagesListDbCon.cursor()
-# Create/open data db
+# Open data db
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 if dbCur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='images'").fetchone() == None:

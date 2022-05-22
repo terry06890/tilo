@@ -50,36 +50,18 @@ def lookupNodes(names, useReducedTree):
 	for (nodeName, childName, pSupport) in cur.execute(query, names):
 		nodeObjs[childName]["parent"] = None if nodeName == "" else nodeName
 		nodeObjs[childName]["pSupport"] = (pSupport == 1)
-	# Get names for image files
-	namesForImgs = []
-	firstSubnames = {}
-	secondSubnames = {}
-	for (name, nodeObj) in nodeObjs.items():
-		match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
-		if match == None:
-			namesForImgs.append(name)
-		else:
-			name1 = match.group(1)
-			name2 = match.group(2)
-			namesForImgs.extend([name1, name2])
-			firstSubnames[name1] = name
-			secondSubnames[name2] = name
 	# Get image names
-	query = "SELECT name, id FROM eol_ids WHERE" \
-		" name IN ({})".format(",".join(["?"] * len(namesForImgs)))
-	for [n, id] in cur.execute(query, namesForImgs):
-		filename = str(id) + ".jpg"
-		if not os.path.exists(imgDir + filename):
-			continue
-		if n in firstSubnames:
-			nodeName = firstSubnames[n]
-			nodeObjs[nodeName]["imgName"] = filename
-		elif n in secondSubnames:
-			nodeName = secondSubnames[n]
-			if nodeObjs[nodeName]["imgName"] == None:
-				nodeObjs[nodeName]["imgName"] = filename
-		else:
-			nodeObjs[n]["imgName"] = filename
+	query = "SELECT nodes.name, eol_id FROM" \
+		" nodes INNER JOIN eol_ids ON nodes.name = eol_ids.name" \
+			" INNER JOIN images ON eol_ids.id = images.eol_id WHERE" \
+		" nodes.name IN ({})".format(",".join(["?"] * len(nodeObjs)))
+	for (name, eolId) in cur.execute(query, list(nodeObjs.keys())):
+		nodeObjs[name]["imgName"] = str(eolId) + ".jpg"
+	# Get 'linked' images for unresolved names
+	unresolvedNames = [n for n in nodeObjs if nodeObjs[n]["imgName"] == None]
+	query = "SELECT name, eol_id from linked_imgs WHERE name IN ({})".format(",".join(["?"] * len(unresolvedNames)))
+	for (name, eolId) in cur.execute(query, unresolvedNames):
+		nodeObjs[name]["imgName"] = str(eolId) + ".jpg"
 	# Get preferred-name info
 	query = "SELECT name, alt_name FROM names WHERE pref_alt = 1 AND name IN ({})".format(queryParamStr)
 	for (name, altName) in cur.execute(query, names):
@@ -87,15 +69,6 @@ def lookupNodes(names, useReducedTree):
 			nodeObjs[name]["commonName"] = altName
 	#
 	return nodeObjs
-def getNodeImg(name):
-	cur = dbCon.cursor()
-	row = cur.execute("SELECT name, id FROM eol_ids WHERE name = ?", (name,)).fetchone()
-	if row != None:
-		eolId = row[1]
-		filename = str(eolId) + ".jpg"
-		if os.path.exists(imgDir + filename):
-			return filename
-	return None
 def lookupName(name, useReducedTree):
 	cur = dbCon.cursor()
 	results = []

@@ -8,7 +8,7 @@ export default defineConfig({
 			'/data': 'http://localhost:8000',
 		},
 		watch: {
-			ignored: ['**/imgsForReview/*', '**/imgsReviewed/*', '**/img/*']
+			ignored: ['**/backend', '**/public']
 		},
 	},
 	//server: {open: true} //open browser when dev server starts
