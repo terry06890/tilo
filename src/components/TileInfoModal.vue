@@ -21,8 +21,12 @@ export default defineComponent({
 	data(){
 		return {
 			tolNode: null as null | TolNode,
-			descData: null as null | DescInfo | [DescInfo, DescInfo],
-			imgData: null as null | ImgInfo | [ImgInfo, ImgInfo],
+			descInfo: null as null | DescInfo,
+			descInfo1: null as null | DescInfo,
+			descInfo2: null as null | DescInfo,
+			imgInfo: null as null | ImgInfo,
+			imgInfo1: null as null | ImgInfo,
+			imgInfo2: null as null | ImgInfo,
 		};
 	},
 	props: {
@@ -45,6 +49,15 @@ export default defineComponent({
 		subName2(): string {
 			return this.displayName.substring(this.displayName.indexOf(' + ') + 3, this.displayName.length - 1);
 		},
+		imgStyles(): Record<string,string> {
+			return this.getImgStyles(this.tolNode == null ? null : this.tolNode.imgName as string);
+		},
+		firstImgStyles(): Record<string,string> {
+			return this.getImgStyles(this.tolNode!.imgName![0]);
+		},
+		secondImgStyles(): Record<string,string> {
+			return this.getImgStyles(this.tolNode!.imgName![1]);
+		},
 		dummyNode(): LayoutNode {
 			let newNode = new LayoutNode(this.nodeName, []);
 			newNode.dims = [this.uiOpts.infoModalImgSz, this.uiOpts.infoModalImgSz];
@@ -57,6 +70,20 @@ export default defineComponent({
 				this.$emit('info-modal-close');
 			}
 		},
+		getImgStyles(imgName: string | null){
+			return {
+				boxShadow: this.uiOpts.shadowNormal,
+				borderRadius: this.uiOpts.borderRadius + 'px',
+				backgroundImage: imgName != null ?
+					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
+						'url(\'/img/' + imgName.replaceAll('\'', '\\\'') + '\')' :
+					'none',
+				backgroundColor: '#1c1917',
+				backgroundSize: 'cover',
+				width: this.uiOpts.infoModalImgSz + 'px',
+				height: this.uiOpts.infoModalImgSz + 'px',
+			};
+		},
 	},
 	created(){
 		let url = new URL(window.location.href);
@@ -68,8 +95,17 @@ export default defineComponent({
 			.then(obj => {
 				if (obj != null){
 					this.tolNode = obj.nodeObj;
-					this.descData = obj.descData;
-					this.imgData = obj.imgData;
+					if (!Array.isArray(obj.descData)){
+						this.descInfo = obj.descData;
+					} else {
+						[this.descInfo1, this.descInfo2] = obj.descData;
+					}
+					if (!Array.isArray(obj.imgData)){
+						this.imgInfo = obj.imgData;
+					} else {
+						[this.imgInfo1, this.imgInfo2] = obj.imgData;
+					}
+					
 				}
 			});
 	},
@@ -92,60 +128,55 @@ export default defineComponent({
 		</h1>
 		<hr class="mb-4 border-stone-400"/>
 		<div class="flex">
-			<div>
-				<tile :layoutNode="dummyNode" :tolMap="tolMap" :nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
-					class="mr-4"/>
-				<div v-if="imgData == null">
-					(No image found)
-				</div>
-				<div v-else-if="!Array.isArray(imgData)">
-					<ul>
-						<li>License: {{imgData.license}}</li>
-						<li><a :href="imgData.sourceUrl" class="underline">Source URL</a></li>
-						<li>Copyright Owner: {{imgData.copyrightOwner}}</li>
+			<div class="mr-4">
+				<div v-if="tolNode == null"/>
+				<div v-else-if="!Array.isArray(tolNode.imgName)">
+					<div :style="imgStyles"/>
+					<ul v-if="imgInfo != null">
+						<li>License: {{imgInfo.license}}</li>
+						<li><a :href="imgInfo.sourceUrl" class="underline">Source URL</a></li>
+						<li>Copyright Owner: {{imgInfo.copyrightOwner}}</li>
 					</ul>
 				</div>
 				<div v-else>
-					<div v-if="imgData[0] != null">
-						<h2 class="font-bold">Top-left Image</h2>
-						<ul>
-							<li>License: {{imgData[0].license}}</li>
-							<li><a :href="imgData[0].sourceUrl" class="underline">Source URL</a></li>
-							<li>Copyright Owner: {{imgData[0].copyrightOwner}}</li>
-						</ul>
-					</div>
-					<div v-if="imgData[1] != null">
-						<h2 class="font-bold">Bottom-right Image</h2>
-						<ul>
-							<li>License: {{imgData[1].license}}</li>
-							<li><a :href="imgData[1].sourceUrl" class="underline">Source URL</a></li>
-							<li>Copyright Owner: {{imgData[1].copyrightOwner}}</li>
-						</ul>
-					</div>
+					<div :style="firstImgStyles"/>
+					<ul v-if="imgInfo1 != null">
+						<li>License: {{imgInfo1.license}}</li>
+						<li><a :href="imgInfo1.sourceUrl" class="underline">Source URL</a></li>
+						<li>Copyright Owner: {{imgInfo1.copyrightOwner}}</li>
+					</ul>
+					<div :style="secondImgStyles"/>
+					<ul v-if="imgInfo2 != null">
+						<li>License: {{imgInfo2.license}}</li>
+						<li><a :href="imgInfo2.sourceUrl" class="underline">Source URL</a></li>
+						<li>Copyright Owner: {{imgInfo2.copyrightOwner}}</li>
+					</ul>
 				</div>
 			</div>
-			<div v-if="descData == null">
+			<div v-if="descInfo == null && descInfo1 == null && descInfo2 == null">
 				(No description found)
 			</div>
-			<div v-else-if="!Array.isArray(descData)">
+			<div v-else-if="descInfo != null">
 				<div>
-					Redirected: {{descData.fromRedirect}} <br/>
-					Short-description from {{descData.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
-					<a :href="'https://en.wikipedia.org/?curid=' + descData.wikiId" class="underline">
+					Redirected: {{descInfo.fromRedirect}} <br/>
+					Short-description from {{descInfo.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
+					<a :href="'https://en.wikipedia.org/?curid=' + descInfo.wikiId" class="underline">
 						Wikipedia Link
 					</a>
 				</div>
 				<hr/>
-				<div>{{descData.text}}</div>
+				<div>{{descInfo.text}}</div>
 			</div>
 			<div v-else>
 				<div>
 					<h2 class="font-bold">{{subName1}}</h2>
-					<div>{{descData[0].text}}</div>
+					<div v-if="descInfo1 != null">{{descInfo1.text}}</div>
+					<div v-else>(No description found)</div>
 				</div>
 				<div>
 					<h2 class="font-bold">{{subName2}}</h2>
-					<div>{{descData[1].text}}</div>
+					<div v-if="descInfo2 != null">{{descInfo2.text}}</div>
+					<div v-else>(No description found)</div>
 				</div>
 			</div>
 		</div>
