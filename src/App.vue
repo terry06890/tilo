@@ -7,6 +7,7 @@ import TileInfoModal from './components/TileInfoModal.vue';
 import HelpModal from './components/HelpModal.vue';
 import SettingsModal from './components/SettingsModal.vue';
 import SearchModal from './components/SearchModal.vue';
+import TutorialPane from './components/TutorialPane.vue';
 // Icons
 import HelpIcon from './components/icon/HelpIcon.vue';
 import SearchIcon from './components/icon/SearchIcon.vue';
@@ -83,6 +84,9 @@ const defaultUiOpts = {
 	ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
 	infoModalImgSz: 200,
 	autoWaitTime: 500, //ms (time to wait between actions (with their transitions))
+	tutorialPaneSz: 200,
+	tutorialPaneBgColor: '#1c1917',
+	tutorialPaneTextColor: 'white',
 	// Timing related
 	tileChgDuration: 300, //ms (for tile move/expand/collapse)
 	clickHoldDuration: 400, //ms (duration after mousedown when a click-and-hold is recognised)
@@ -149,6 +153,9 @@ export default defineComponent({
 					pos[1] += this.uiOpts.ancestryBarSz;
 				}
 			}
+			if (this.tutorialOpen){
+				pos[1] += this.uiOpts.tutorialPaneSz;
+			}
 			return pos;
 		},
 		tileAreaDims(){
@@ -163,14 +170,31 @@ export default defineComponent({
 					dims[1] -= this.uiOpts.ancestryBarSz;
 				}
 			}
+			if (this.tutorialOpen){
+				dims[1] -= this.uiOpts.tutorialPaneSz;
+			}
 			return dims;
+		},
+		ancestryBarPos(): [number, number] {
+			let pos = [0, 0];
+			if (this.tutorialOpen){
+				pos[1] += this.uiOpts.tutorialPaneSz;
+			}
+			return pos;
 		},
 		ancestryBarDims(): [number, number] {
 			if (this.wideArea){
-				return [this.uiOpts.ancestryBarSz, this.height];
+				let dims = [this.uiOpts.ancestryBarSz, this.height];
+				if (this.tutorialOpen){
+					dims[1] -= this.uiOpts.tutorialPaneSz;
+				}
+				return dims;
 			} else {
 				return [this.width, this.uiOpts.ancestryBarSz];
 			}
+		},
+		tutorialPaneDims(): [number, number] {
+			return [this.width, this.uiOpts.tutorialPaneSz];
 		},
 	},
 	methods: {
@@ -530,6 +554,12 @@ export default defineComponent({
 			// Re-initialise tree
 			this.initTreeFromServer();
 		},
+		// For tutorial events
+		onTutorialClose(){
+			this.tutorialOpen = false;
+			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
+				{allowCollapse: true, layoutMap: this.layoutMap});
+		},
 		// For other events
 		onResize(){
 			if (this.pendingResizeHdlr == 0){
@@ -606,7 +636,7 @@ export default defineComponent({
 	components: {
 		Tile, AncestryBar,
 		HelpIcon, SettingsIcon, SearchIcon, PlayIcon,
-		TileInfoModal, HelpModal, SearchModal, SettingsModal,
+		TileInfoModal, HelpModal, SearchModal, SettingsModal, TutorialPane,
 	},
 });
 </script>
@@ -620,9 +650,11 @@ export default defineComponent({
 		@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
 		@info-icon-click="onInfoIconClick"/>
 	<ancestry-bar v-if="detachedAncestors != null"
-		:pos="[0,0]" :dims="ancestryBarDims" :nodes="detachedAncestors"
+		:pos="ancestryBarPos" :dims="ancestryBarDims" :nodes="detachedAncestors"
 		:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
+	<tutorial-pane v-if="tutorialOpen" :pos="[0,0]" :dims="tutorialPaneDims" :uiOpts="uiOpts"
+		@tutorial-close="onTutorialClose"/>
 	<!-- Icons -->
 	<help-icon @click="onHelpIconClick"
 		class="absolute bottom-[6px] right-[6px] w-[18px] h-[18px]
