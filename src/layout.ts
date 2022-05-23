@@ -7,7 +7,7 @@
  */
 
 import type {TolMap} from './tol';
-import {range, arraySum, linspace, limitVals, updateAscSeq} from './util';
+import {range, arraySum, linspace, limitVals, updateAscSeq} from './lib';
 
 // Represents a node/tree that holds layout data for a TolNode node/tree
 export class LayoutNode {

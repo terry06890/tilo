@@ -1,5 +1,24 @@
+
 /*
- * Contains utility functions.
+ * Types
+ */
+export class EnabledFeatures {
+	// Expand/collapse
+	expand = true;
+	collapse = true;
+	// AncestorBar related
+	expandToView = true;
+	unhideAncestor = true;
+	// Other
+	infoIcon = true;
+	search = true;
+	autoMode = true;
+	settings = true;
+	help = true;
+};
+
+/*
+ * General utility functions
  */
 
 // Returns [0 ... len]

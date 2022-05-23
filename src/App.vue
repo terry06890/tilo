@@ -18,7 +18,7 @@ import type {TolMap} from './tol';
 import {TolNode} from './tol';
 import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import type {LayoutOptions, LayoutTreeChg} from './layout';
-import {arraySum, randWeightedChoice, getScrollBarWidth} from './util';
+import {EnabledFeatures, arraySum, randWeightedChoice, getScrollBarWidth} from './lib';
 // Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
 // Type representing auto-mode actions
@@ -109,6 +109,7 @@ export default defineComponent({
 			searchOpen: false,
 			settingsOpen: false,
 			tutorialOpen: true,
+			enabledFeatures: new EnabledFeatures(),
 			// For search and auto-mode
 			modeRunning: false,
 			lastFocused: null as LayoutNode | null,
@@ -176,7 +177,7 @@ export default defineComponent({
 			return dims;
 		},
 		ancestryBarPos(): [number, number] {
-			let pos = [0, 0];
+			let pos = [0, 0] as [number, number];
 			if (this.tutorialOpen){
 				pos[1] += this.uiOpts.tutorialPaneSz;
 			}
@@ -184,7 +185,7 @@ export default defineComponent({
 		},
 		ancestryBarDims(): [number, number] {
 			if (this.wideArea){
-				let dims = [this.uiOpts.ancestryBarSz, this.height];
+				let dims = [this.uiOpts.ancestryBarSz, this.height] as [number, number];
 				if (this.tutorialOpen){
 					dims[1] -= this.uiOpts.tutorialPaneSz;
 				}
@@ -200,6 +201,9 @@ export default defineComponent({
 	methods: {
 		// For tile expand/collapse events
 		onLeafClick(layoutNode: LayoutNode){
+			if (!this.enabledFeatures.expand){
+				return Promise.resolve(false);
+			}
 			this.setLastFocused(null);
 			// If clicking child of overflowing active-root
 			if (this.overflownRoot){
@@ -249,6 +253,9 @@ export default defineComponent({
 			}
 		},
 		onNonleafClick(layoutNode: LayoutNode){
+			if (!this.enabledFeatures.collapse){
+				return false;
+			}
 			this.setLastFocused(null);
 			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
 				allowCollapse: false,
@@ -278,6 +285,9 @@ export default defineComponent({
 		},
 		// For expand-to-view and ancestry-bar events
 		onLeafClickHeld(layoutNode: LayoutNode){
+			if (!this.enabledFeatures.expandToView){
+				return;
+			}
 			this.setLastFocused(null);
 			if (layoutNode == this.activeRoot){
 				this.onLeafClick(layoutNode);
@@ -328,6 +338,9 @@ export default defineComponent({
 			}
 		},
 		onNonleafClickHeld(layoutNode: LayoutNode){
+			if (!this.enabledFeatures.expandToView){
+				return;
+			}
 			this.setLastFocused(null);
 			if (layoutNode == this.activeRoot){
 				console.log('Ignored expand-to-view on active-root node');
@@ -339,6 +352,9 @@ export default defineComponent({
 				{allowCollapse: true, layoutMap: this.layoutMap});
 		},
 		onDetachedAncestorClick(layoutNode: LayoutNode){
+			if (!this.enabledFeatures.unhideAncestor){
+				return;
+			}
 			this.setLastFocused(null);
 			LayoutNode.showDownward(layoutNode);
 			this.activeRoot = layoutNode;
@@ -348,18 +364,19 @@ export default defineComponent({
 		},
 		// For tile-info events
 		onInfoIconClick(nodeName: string){
+			if (!this.enabledFeatures.infoIcon){
+				return;
+			}
 			if (!this.searchOpen){
 				this.resetMode();
 			}
 			this.infoModalNodeName = nodeName;
 		},
-		// For help events
-		onHelpIconClick(){
-			this.resetMode();
-			this.helpOpen = true;
-		},
 		// For search events
 		onSearchIconClick(){
+			if (!this.enabledFeatures.search){
+				return;
+			}
 			this.resetMode();
 			this.searchOpen = true;
 		},
@@ -427,6 +444,9 @@ export default defineComponent({
 		},
 		// For auto-mode events
 		onPlayIconClick(){
+			if (!this.enabledFeatures.autoMode){
+				return;
+			}
 			this.resetMode();
 			this.modeRunning = true;
 			this.autoAction();
@@ -538,6 +558,9 @@ export default defineComponent({
 		},
 		// For settings events
 		onSettingsIconClick(){
+			if (!this.enabledFeatures.settings){
+				return;
+			}
 			this.resetMode();
 			this.settingsOpen = true;
 		},
@@ -554,11 +577,24 @@ export default defineComponent({
 			// Re-initialise tree
 			this.initTreeFromServer();
 		},
+		// For help events
+		onHelpIconClick(){
+			if (!this.enabledFeatures.help){
+				return;
+			}
+			this.resetMode();
+			this.helpOpen = true;
+		},
 		// For tutorial events
 		onTutorialClose(){
 			this.tutorialOpen = false;
+			this.enabledFeatures = new EnabledFeatures();
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
+		},
+		onSetEnabledFeatures(x: EnabledFeatures){
+			this.enabledFeatures = x;
+			this.resetMode();
 		},
 		// For other events
 		onResize(){
@@ -654,19 +690,19 @@ export default defineComponent({
 		:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
 	<tutorial-pane v-if="tutorialOpen" :pos="[0,0]" :dims="tutorialPaneDims" :uiOpts="uiOpts"
-		@tutorial-close="onTutorialClose"/>
+		@tutorial-close="onTutorialClose" @set-enabled-features="onSetEnabledFeatures"/>
 	<!-- Icons -->
-	<help-icon @click="onHelpIconClick"
-		class="absolute bottom-[6px] right-[6px] w-[18px] h-[18px]
+	<search-icon @click="onSearchIconClick"
+		class="absolute bottom-[6px] right-[78px] w-[18px] h-[18px]
+			text-white/40 hover:text-white hover:cursor-pointer"/>
+	<play-icon @click="onPlayIconClick"
+		class="absolute bottom-[6px] right-[54px] w-[18px] h-[18px]
 			text-white/40 hover:text-white hover:cursor-pointer"/>
 	<settings-icon @click="onSettingsIconClick"
 		class="absolute bottom-[6px] right-[30px] w-[18px] h-[18px]
 			text-white/40 hover:text-white hover:cursor-pointer"/>
-	<search-icon @click="onSearchIconClick"
-		class="absolute bottom-[6px] right-[54px] w-[18px] h-[18px]
-			text-white/40 hover:text-white hover:cursor-pointer"/>
-	<play-icon @click="onPlayIconClick"
-		class="absolute bottom-[6px] right-[78px] w-[18px] h-[18px]
+	<help-icon @click="onHelpIconClick"
+		class="absolute bottom-[6px] right-[6px] w-[18px] h-[18px]
 			text-white/40 hover:text-white hover:cursor-pointer"/>
 	<!-- Modals -->
 	<transition name="fade">

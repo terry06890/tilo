@@ -6,7 +6,7 @@ import {LayoutNode} from '../layout';
 import type {LayoutOptions} from '../layout';
 import type {TolMap} from '../tol';
 import {TolNode} from '../tol';
-import {capitalizeWords} from '../util';
+import {capitalizeWords} from '../lib';
 
 type DescInfo = {text: string, fromRedirect: boolean, wikiId: number, fromDbp: boolean};
 type ImgInfo = {eolId: string, sourceUrl: string, license: string, copyrightOwner: string}

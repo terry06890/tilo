@@ -5,7 +5,7 @@ import {LayoutNode} from '../layout';
 import type {LayoutOptions} from '../layout';
 import type {TolMap} from '../tol';
 import {TolNode} from '../tol';
-import {capitalizeWords} from '../util';
+import {capitalizeWords} from '../lib';
 
 // Displays one, or a hierarchy of, tree-of-life nodes, as a 'tile'
 export default defineComponent({
