@@ -109,6 +109,7 @@ export default defineComponent({
 			searchOpen: false,
 			settingsOpen: false,
 			tutorialOpen: true,
+			tutorialFirstRun: true,
 			enabledFeatures: new EnabledFeatures(),
 			// For search and auto-mode
 			modeRunning: false,
@@ -586,8 +587,16 @@ export default defineComponent({
 			this.helpOpen = true;
 		},
 		// For tutorial events
+		onStartTutorial(){
+			if (this.tutorialOpen == false){
+				this.tutorialOpen = true;
+				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
+					{allowCollapse: true, layoutMap: this.layoutMap});
+			}
+		},
 		onTutorialClose(){
 			this.tutorialOpen = false;
+			this.tutorialFirstRun = false;
 			this.enabledFeatures = new EnabledFeatures();
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
@@ -689,7 +698,8 @@ export default defineComponent({
 		:pos="ancestryBarPos" :dims="ancestryBarDims" :nodes="detachedAncestors"
 		:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
-	<tutorial-pane v-if="tutorialOpen" :pos="[0,0]" :dims="tutorialPaneDims" :uiOpts="uiOpts"
+	<tutorial-pane v-if="tutorialOpen"
+		:skipWelcome="!tutorialFirstRun" :pos="[0,0]" :dims="tutorialPaneDims" :uiOpts="uiOpts"
 		@tutorial-close="onTutorialClose" @set-enabled-features="onSetEnabledFeatures"/>
 	<!-- Icons -->
 	<search-icon @click="onSearchIconClick"
@@ -706,18 +716,18 @@ export default defineComponent({
 			text-white/40 hover:text-white hover:cursor-pointer"/>
 	<!-- Modals -->
 	<transition name="fade">
-		<search-modal v-if="searchOpen" :tolMap="tolMap" :uiOpts="uiOpts" ref="searchModal"
-			@search-close="searchOpen = false" @search-node="onSearchNode" @info-icon-click="onInfoIconClick"/>
-	</transition>
-	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null"
 			:nodeName="infoModalNodeName" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 			@info-modal-close="infoModalNodeName = null"/>
 	</transition>
 	<transition name="fade">
-		<help-modal v-if="helpOpen" :uiOpts="uiOpts" @help-modal-close="helpOpen = false"/>
+		<search-modal v-if="searchOpen" :tolMap="tolMap" :uiOpts="uiOpts" ref="searchModal"
+			@search-close="searchOpen = false" @search-node="onSearchNode" @info-icon-click="onInfoIconClick"/>
 	</transition>
-	<!-- Settings -->
+	<transition name="fade">
+		<help-modal v-if="helpOpen" :uiOpts="uiOpts"
+			@help-modal-close="helpOpen = false" @start-tutorial="onStartTutorial"/>
+	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@settings-close="settingsOpen = false"
 		@layout-option-change="onLayoutOptionChange" @tree-change="onTreeChange"/>

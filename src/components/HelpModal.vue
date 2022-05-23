@@ -13,9 +13,13 @@ export default defineComponent({
 				this.$emit('help-modal-close');
 			}
 		},
+		onStartTutorial(){
+			this.$emit('start-tutorial');
+			this.$emit('help-modal-close');
+		},
 	},
 	components: {CloseIcon, },
-	emits: ['help-modal-close', ],
+	emits: ['help-modal-close', 'start-tutorial', ],
 });
 </script>
 
@@ -46,6 +50,9 @@ export default defineComponent({
 			in culpa qui officia deserunt mollit anim id
 			est laborum.
 		</div>
+		<button class="block bg-stone-700 text-white px-4 py-2 rounded" @click.stop="onStartTutorial">
+			Start Tutorial
+		</button>
 	</div>
 </div>
 </template>

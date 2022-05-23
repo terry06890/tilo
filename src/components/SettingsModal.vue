@@ -47,7 +47,7 @@ export default defineComponent({
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onCloseClick">
 	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 top-1/2 -translate-y-1/2 max-h-[80%]
 		p-3 bg-stone-50 visible rounded-md shadow shadow-black">
-		<close-icon @click="onCloseClick" ref="closeIcon"
+		<close-icon @click.stop="onCloseClick" ref="closeIcon"
 			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer" />
 		<h1 class="text-xl font-bold mb-2">Settings</h1>
 		<hr class="border-stone-400"/>

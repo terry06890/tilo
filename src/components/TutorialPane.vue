@@ -5,13 +5,14 @@ import {EnabledFeatures} from '../lib';
 
 export default defineComponent({
 	props: {
+		skipWelcome: {type: Boolean, default: false},
 		pos: {type: Array as unknown as PropType<[number,number]>, required: true},
 		dims: {type: Array as unknown as PropType<[number,number]>, required: true},
 		uiOpts: {type: Object, required: true},
 	},
 	data(){
 		return {
-			stage: 0,
+			stage: this.skipWelcome ? 1 : 0,
 			maxStage: 10,
 		};
 	},
@@ -79,6 +80,11 @@ export default defineComponent({
 			this.$emit('set-enabled-features', x);
 		},
 	},
+	created(){
+		if (this.skipWelcome){
+			this.sendEnabledFeatures();
+		}
+	},
 	components: {CloseIcon, },
 	emits: ['tutorial-close', 'set-enabled-features', ],
 });
@@ -101,7 +107,7 @@ export default defineComponent({
 				Start Tutorial
 			</button>
 			<button :style="buttonStyles" class="hover:brightness-125" @click="onClose">
-				Continue
+				Close
 			</button>
 		</div>
 	</template>
