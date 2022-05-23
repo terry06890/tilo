@@ -111,6 +111,8 @@ export default defineComponent({
 			tutorialOpen: true,
 			tutorialFirstRun: true,
 			enabledFeatures: new EnabledFeatures(),
+			tutTriggerFeature: null as string | null,
+			tutTrigger: false,
 			// For search and auto-mode
 			modeRunning: false,
 			lastFocused: null as LayoutNode | null,
@@ -202,7 +204,7 @@ export default defineComponent({
 	methods: {
 		// For tile expand/collapse events
 		onLeafClick(layoutNode: LayoutNode){
-			if (!this.enabledFeatures.expand){
+			if (this.tutorialOpen && !this.handleActionForTutorial('expand')){
 				return Promise.resolve(false);
 			}
 			this.setLastFocused(null);
@@ -254,7 +256,7 @@ export default defineComponent({
 			}
 		},
 		onNonleafClick(layoutNode: LayoutNode){
-			if (!this.enabledFeatures.collapse){
+			if (this.tutorialOpen && !this.handleActionForTutorial('collapse')){
 				return false;
 			}
 			this.setLastFocused(null);
@@ -286,7 +288,7 @@ export default defineComponent({
 		},
 		// For expand-to-view and ancestry-bar events
 		onLeafClickHeld(layoutNode: LayoutNode){
-			if (!this.enabledFeatures.expandToView){
+			if (this.tutorialOpen && !this.handleActionForTutorial('expandToView')){
 				return;
 			}
 			this.setLastFocused(null);
@@ -339,7 +341,7 @@ export default defineComponent({
 			}
 		},
 		onNonleafClickHeld(layoutNode: LayoutNode){
-			if (!this.enabledFeatures.expandToView){
+			if (this.tutorialOpen && !this.handleActionForTutorial('expandToView')){
 				return;
 			}
 			this.setLastFocused(null);
@@ -353,7 +355,7 @@ export default defineComponent({
 				{allowCollapse: true, layoutMap: this.layoutMap});
 		},
 		onDetachedAncestorClick(layoutNode: LayoutNode){
-			if (!this.enabledFeatures.unhideAncestor){
+			if (this.tutorialOpen && !this.handleActionForTutorial('unhideAncestor')){
 				return;
 			}
 			this.setLastFocused(null);
@@ -365,7 +367,7 @@ export default defineComponent({
 		},
 		// For tile-info events
 		onInfoIconClick(nodeName: string){
-			if (!this.enabledFeatures.infoIcon){
+			if (this.tutorialOpen && !this.handleActionForTutorial('infoIcon')){
 				return;
 			}
 			if (!this.searchOpen){
@@ -375,7 +377,7 @@ export default defineComponent({
 		},
 		// For search events
 		onSearchIconClick(){
-			if (!this.enabledFeatures.search){
+			if (this.tutorialOpen && !this.handleActionForTutorial('search')){
 				return;
 			}
 			this.resetMode();
@@ -445,7 +447,7 @@ export default defineComponent({
 		},
 		// For auto-mode events
 		onPlayIconClick(){
-			if (!this.enabledFeatures.autoMode){
+			if (this.tutorialOpen && !this.handleActionForTutorial('autoMode')){
 				return;
 			}
 			this.resetMode();
@@ -559,7 +561,7 @@ export default defineComponent({
 		},
 		// For settings events
 		onSettingsIconClick(){
-			if (!this.enabledFeatures.settings){
+			if (this.tutorialOpen && !this.handleActionForTutorial('settings')){
 				return;
 			}
 			this.resetMode();
@@ -580,7 +582,7 @@ export default defineComponent({
 		},
 		// For help events
 		onHelpIconClick(){
-			if (!this.enabledFeatures.help){
+			if (this.tutorialOpen && !this.handleActionForTutorial('help')){
 				return;
 			}
 			this.resetMode();
@@ -601,9 +603,9 @@ export default defineComponent({
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
 		},
-		onSetEnabledFeatures(x: EnabledFeatures){
-			this.enabledFeatures = x;
-			this.resetMode();
+		onTutStageChg(data: {enabledFeatures: EnabledFeatures, tutTriggerFeature: string}){
+			this.enabledFeatures = data.enabledFeatures;
+			this.tutTriggerFeature = data.tutTriggerFeature;
 		},
 		// For other events
 		onResize(){
@@ -666,6 +668,23 @@ export default defineComponent({
 				node.hasFocus = true;
 			}
 		},
+		handleActionForTutorial(action: string): boolean {
+			if (this.tutTriggerFeature == action){
+				this.tutTrigger = !this.tutTrigger;
+			}
+			switch (action){
+				case 'expand': return this.enabledFeatures.expand;
+				case 'collapse': return this.enabledFeatures.collapse;
+				case 'expandToView': return this.enabledFeatures.expandToView;
+				case 'unhideAncestor': return this.enabledFeatures.unhideAncestor;
+				case 'infoIcon': return this.enabledFeatures.infoIcon;
+				case 'search': return this.enabledFeatures.search;
+				case 'autoMode': return this.enabledFeatures.autoMode;
+				case 'settings': return this.enabledFeatures.settings;
+				case 'help': return this.enabledFeatures.help;
+			}
+			return false;
+		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
@@ -699,8 +718,8 @@ export default defineComponent({
 		:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
 	<tutorial-pane v-if="tutorialOpen"
-		:skipWelcome="!tutorialFirstRun" :pos="[0,0]" :dims="tutorialPaneDims" :uiOpts="uiOpts"
-		@tutorial-close="onTutorialClose" @set-enabled-features="onSetEnabledFeatures"/>
+		:skipWelcome="!tutorialFirstRun" :pos="[0,0]" :dims="tutorialPaneDims" :uiOpts="uiOpts" :triggerFlag="tutTrigger"
+		@tutorial-close="onTutorialClose" @tutorial-stage-chg="onTutStageChg"/>
 	<!-- Icons -->
 	<search-icon @click="onSearchIconClick"
 		class="absolute bottom-[6px] right-[78px] w-[18px] h-[18px]

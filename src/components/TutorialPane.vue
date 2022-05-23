@@ -9,6 +9,7 @@ export default defineComponent({
 		pos: {type: Array as unknown as PropType<[number,number]>, required: true},
 		dims: {type: Array as unknown as PropType<[number,number]>, required: true},
 		uiOpts: {type: Object, required: true},
+		triggerFlag: {type: Boolean, required: true},
 	},
 	data(){
 		return {
@@ -46,6 +47,15 @@ export default defineComponent({
 			};
 		 },
 	},
+	watch: {
+		triggerFlag(){
+			if (this.stage < this.maxStage){
+				this.onNextClick();
+			} else {
+				this.onClose();
+			}
+		},
+	},
 	methods: {
 		onStartTutorial(){
 			this.stage = 1;
@@ -60,24 +70,37 @@ export default defineComponent({
 			this.sendEnabledFeatures();
 		},
 		onClose(){
-			this.$emit('set-enabled-features', new EnabledFeatures());
+			this.$emit('tutorial-stage-chg', {enabledFeatures: new EnabledFeatures(), tutTriggerFeature: null});
 			this.$emit('tutorial-close');
 		},
 		sendEnabledFeatures(){
-			let x = new EnabledFeatures();
+			let ef = new EnabledFeatures();
 			switch (this.stage){
 				case  1:
-				case  2: x.collapse = false;
-				case  3: x.expandToView = false;
-				case  4: x.unhideAncestor = false;
-				case  5: x.infoIcon = false;
-				case  6: x.search = false;
-				case  7: x.autoMode = false;
-				case  8: x.settings = false;
-				case  9: x.help = false;
+				case  2: ef.collapse = false;
+				case  3: ef.expandToView = false;
+				case  4: ef.unhideAncestor = false;
+				case  5: ef.infoIcon = false;
+				case  6: ef.search = false;
+				case  7: ef.autoMode = false;
+				case  8: ef.settings = false;
+				case  9: ef.help = false;
 				case 10:
 			}
-			this.$emit('set-enabled-features', x);
+			let tf = null;
+			switch (this.stage){
+				case  1:
+				case  2: tf = 'expand'; break;
+				case  3: tf = 'collapse'; break;
+				case  4: tf = 'expandToView'; break;
+				case  5: tf = 'unhideAncestor'; break;
+				case  6: tf = 'infoIcon'; break;
+				case  7: tf = 'search'; break;
+				case  8: tf = 'autoMode'; break;
+				case  9: tf = 'settings'; break;
+				case 10: tf = 'help'; break;
+			}
+			this.$emit('tutorial-stage-chg', {enabledFeatures: ef, tutTriggerFeature: tf});
 		},
 	},
 	created(){
@@ -86,7 +109,7 @@ export default defineComponent({
 		}
 	},
 	components: {CloseIcon, },
-	emits: ['tutorial-close', 'set-enabled-features', ],
+	emits: ['tutorial-close', 'tutorial-stage-chg', ],
 });
 </script>
 
