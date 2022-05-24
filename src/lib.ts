@@ -2,20 +2,10 @@
 /*
  * Types
  */
-export class EnabledFeatures {
-	// Expand/collapse
-	expand = true;
-	collapse = true;
-	// AncestorBar related
-	expandToView = true;
-	unhideAncestor = true;
-	// Other
-	infoIcon = true;
-	search = true;
-	autoMode = true;
-	settings = true;
-	help = true;
-};
+// Used by auto-mode and tutorial
+export type Action =
+	'expand' | 'collapse' | 'expandToView' | 'unhideAncestor' |
+	'tileInfo' | 'search' | 'autoMode' | 'settings' | 'help';
 
 /*
  * General utility functions

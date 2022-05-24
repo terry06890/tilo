@@ -1,15 +1,15 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
-import {EnabledFeatures} from '../lib';
+import {Action} from '../lib';
 
 export default defineComponent({
 	props: {
-		skipWelcome: {type: Boolean, default: false},
 		pos: {type: Array as unknown as PropType<[number,number]>, required: true},
 		dims: {type: Array as unknown as PropType<[number,number]>, required: true},
 		uiOpts: {type: Object, required: true},
 		triggerFlag: {type: Boolean, required: true},
+		skipWelcome: {type: Boolean, default: false},
 	},
 	data(){
 		return {
@@ -70,37 +70,21 @@ export default defineComponent({
 			this.sendEnabledFeatures();
 		},
 		onClose(){
-			this.$emit('tutorial-stage-chg', {enabledFeatures: new EnabledFeatures(), tutTriggerFeature: null});
 			this.$emit('tutorial-close');
 		},
 		sendEnabledFeatures(){
-			let ef = new EnabledFeatures();
-			switch (this.stage){
-				case  1:
-				case  2: ef.collapse = false;
-				case  3: ef.expandToView = false;
-				case  4: ef.unhideAncestor = false;
-				case  5: ef.infoIcon = false;
-				case  6: ef.search = false;
-				case  7: ef.autoMode = false;
-				case  8: ef.settings = false;
-				case  9: ef.help = false;
-				case 10:
+			const stageActions = [
+				null,
+				'expand', 'expand', 'collapse', 'expandToView', 'unhideAncestor',
+				'tileInfo', 'search', 'autoMode', 'settings', 'help'
+			] as (Action | null)[];
+			let disabledActions = new Set() as Set<Action>;
+			for (let i = this.stage + 1; i < this.maxStage; i++){
+				disabledActions.add(stageActions[i] as Action);
 			}
-			let tf = null;
-			switch (this.stage){
-				case  1:
-				case  2: tf = 'expand'; break;
-				case  3: tf = 'collapse'; break;
-				case  4: tf = 'expandToView'; break;
-				case  5: tf = 'unhideAncestor'; break;
-				case  6: tf = 'infoIcon'; break;
-				case  7: tf = 'search'; break;
-				case  8: tf = 'autoMode'; break;
-				case  9: tf = 'settings'; break;
-				case 10: tf = 'help'; break;
-			}
-			this.$emit('tutorial-stage-chg', {enabledFeatures: ef, tutTriggerFeature: tf});
+			disabledActions.delete(stageActions[this.stage] as Action);
+			let triggerAction = stageActions[this.stage] as Action;
+			this.$emit('tutorial-stage-chg', disabledActions, triggerAction);
 		},
 	},
 	created(){

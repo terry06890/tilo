@@ -18,18 +18,18 @@ import type {TolMap} from './tol';
 import {TolNode} from './tol';
 import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import type {LayoutOptions, LayoutTreeChg} from './layout';
-import {EnabledFeatures, arraySum, randWeightedChoice, getScrollBarWidth} from './lib';
+import {arraySum, randWeightedChoice, getScrollBarWidth} from './lib';
+import type {Action} from './lib';
 // Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
 // Type representing auto-mode actions
-type Action = 'move across' | 'move down' | 'move up' |
-	'expand' | 'collapse' | 'expand to view' | 'expand ancestry bar';
+type AutoAction = 'move across' | 'move down' | 'move up' | Action;
 // Used in auto-mode to help avoid action cycles
-function getReverseAction(action: Action): Action | null {
-	let reversePairs: Action[][] = [
+function getReverseAction(action: AutoAction): AutoAction | null {
+	let reversePairs: AutoAction[][] = [
 		['move down', 'move up'],
 		['expand', 'collapse'],
-		['expand to view', 'expand ancestry bar'],
+		['expandToView', 'unhideAncestor'],
 	];
 	let pair = reversePairs.find(pair => pair.includes(action));
 	if (pair != null){
@@ -110,14 +110,14 @@ export default defineComponent({
 			settingsOpen: false,
 			tutorialOpen: true,
 			tutorialFirstRun: true,
-			enabledFeatures: new EnabledFeatures(),
-			tutTriggerFeature: null as string | null,
-			tutTrigger: false,
+			disabledActions: new Set(),
+			tutTriggerAction: null as Action | null,
+			tutTriggerFlag: false,
 			// For search and auto-mode
 			modeRunning: false,
 			lastFocused: null as LayoutNode | null,
 			// For auto-mode
-			autoPrevAction: null as Action | null, // Used to help prevent action cycles
+			autoPrevAction: null as AutoAction | null, // Used to help prevent action cycles
 			autoPrevActionFail: false, // Used to avoid re-trying a failed expand/collapse
 			// Options
 			lytOpts: {...defaultLytOpts},
@@ -367,7 +367,7 @@ export default defineComponent({
 		},
 		// For tile-info events
 		onInfoIconClick(nodeName: string){
-			if (this.tutorialOpen && !this.handleActionForTutorial('infoIcon')){
+			if (this.tutorialOpen && !this.handleActionForTutorial('tileInfo')){
 				return;
 			}
 			if (!this.searchOpen){
@@ -471,7 +471,7 @@ export default defineComponent({
 				setTimeout(this.autoAction, this.uiOpts.autoWaitTime);
 			} else {
 				// Determine available actions
-				let action: Action | null;
+				let action: AutoAction | null;
 				let actionWeights: {[key: string]: number}; // Maps actions to choice weights
 				let node: LayoutNode = this.lastFocused;
 				if (node.children.length == 0){
@@ -489,7 +489,7 @@ export default defineComponent({
 				} else {
 					actionWeights = {
 						'move across': 1, 'move down': 2, 'move up': 1,
-						'collapse': 1, 'expand to view': 1, 'expand ancestry bar': 1
+						'collapse': 1, 'expandToView': 1, 'unhideAncestor': 1
 					};
 					// Zero weights for disallowed actions
 					if (node == this.activeRoot || node.parent!.children.length == 1){
@@ -502,10 +502,10 @@ export default defineComponent({
 						actionWeights['collapse'] = 0; // Only collapse if all children are leaves
 					}
 					if (node.parent != this.activeRoot){
-						actionWeights['expand to view'] = 0; // Only expand-to-view if direct child of activeRoot
+						actionWeights['expandToView'] = 0; // Only expand-to-view if direct child of activeRoot
 					}
 					if (this.activeRoot.parent == null || node != this.activeRoot){
-						actionWeights['expand ancestry bar'] = 0; // Only expand ancestry-bar if able and activeRoot
+						actionWeights['unhideAncestor'] = 0; // Only expand ancestry-bar if able and activeRoot
 					}
 				}
 				if (this.autoPrevAction != null){ // Avoid undoing previous action
@@ -523,7 +523,7 @@ export default defineComponent({
 				if (arraySum(weightList) == 0){
 					action = null;
 				} else {
-					action = actionList[randWeightedChoice(weightList)!] as Action;
+					action = actionList[randWeightedChoice(weightList)!] as AutoAction;
 				}
 				// Perform action
 				this.autoPrevActionFail = false;
@@ -548,10 +548,10 @@ export default defineComponent({
 					case 'collapse':
 						this.autoPrevActionFail = !this.onNonleafClick(node);
 						break;
-					case 'expand to view':
+					case 'expandToView':
 						this.onNonleafClickHeld(node);
 						break;
-					case 'expand ancestry bar':
+					case 'unhideAncestor':
 						this.onDetachedAncestorClick(node.parent!);
 						break;
 				}
@@ -599,13 +599,21 @@ export default defineComponent({
 		onTutorialClose(){
 			this.tutorialOpen = false;
 			this.tutorialFirstRun = false;
-			this.enabledFeatures = new EnabledFeatures();
+			this.disabledActions.clear();
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
 		},
-		onTutStageChg(data: {enabledFeatures: EnabledFeatures, tutTriggerFeature: string}){
-			this.enabledFeatures = data.enabledFeatures;
-			this.tutTriggerFeature = data.tutTriggerFeature;
+		onTutStageChg(disabledActions: Set<Action>, triggerAction: Action | null){
+			this.disabledActions = disabledActions;
+			this.tutTriggerAction = triggerAction;
+		},
+		handleActionForTutorial(action: Action): boolean {
+			// Tell TutorialPane if trigger-action was done
+			if (this.tutTriggerAction == action){
+				this.tutTriggerFlag = !this.tutTriggerFlag;
+			}
+			// Indicate whether the action is allowed
+			return !this.disabledActions.has(action);
 		},
 		// For other events
 		onResize(){
@@ -668,23 +676,6 @@ export default defineComponent({
 				node.hasFocus = true;
 			}
 		},
-		handleActionForTutorial(action: string): boolean {
-			if (this.tutTriggerFeature == action){
-				this.tutTrigger = !this.tutTrigger;
-			}
-			switch (action){
-				case 'expand': return this.enabledFeatures.expand;
-				case 'collapse': return this.enabledFeatures.collapse;
-				case 'expandToView': return this.enabledFeatures.expandToView;
-				case 'unhideAncestor': return this.enabledFeatures.unhideAncestor;
-				case 'infoIcon': return this.enabledFeatures.infoIcon;
-				case 'search': return this.enabledFeatures.search;
-				case 'autoMode': return this.enabledFeatures.autoMode;
-				case 'settings': return this.enabledFeatures.settings;
-				case 'help': return this.enabledFeatures.help;
-			}
-			return false;
-		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
@@ -718,8 +709,8 @@ export default defineComponent({
 		:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
 	<tutorial-pane v-if="tutorialOpen"
-		:skipWelcome="!tutorialFirstRun" :pos="[0,0]" :dims="tutorialPaneDims" :uiOpts="uiOpts" :triggerFlag="tutTrigger"
-		@tutorial-close="onTutorialClose" @tutorial-stage-chg="onTutStageChg"/>
+		:pos="[0,0]" :dims="tutorialPaneDims" :uiOpts="uiOpts" :triggerFlag="tutTriggerFlag"
+		:skipWelcome="!tutorialFirstRun" @tutorial-close="onTutorialClose" @tutorial-stage-chg="onTutStageChg"/>
 	<!-- Icons -->
 	<search-icon @click="onSearchIconClick"
 		class="absolute bottom-[6px] right-[78px] w-[18px] h-[18px]
