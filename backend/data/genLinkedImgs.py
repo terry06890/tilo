@@ -96,10 +96,14 @@ for nodeName in processedNodes.keys():
 			eolIdPair[0] = processedNodes[subName1]
 		if subName2 in processedNodes:
 			eolIdPair[1] = processedNodes[subName2]
+		# Skip if both subimages not found
+		if eolIdPair[0] == 0 and eolIdPair[1] == 0:
+			continue
+		# Add to db
 		dbCur.execute("UPDATE linked_imgs SET eol_id = ?, eol_id2 = ? WHERE name = ?",
 			(eolIdPair[0], eolIdPair[1], nodeName,))
+		# Possibly repeat operation upon parent/ancestors
 		if upPropagateCompoundImgs:
-			# Repeat operation for parents, where needed
 			while True:
 				# Get parent
 				row = dbCur.execute("SELECT node FROM edges WHERE child = ?", (nodeName,)).fetchone()
