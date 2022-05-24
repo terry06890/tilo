@@ -15,9 +15,8 @@ export default defineComponent({
 			searchSuggs: [] as SearchSugg[],
 			searchHasMoreSuggs: false,
 			focusedSuggIdx: null as null | number, // Denotes a search-suggestion selected using the arrow keys
-			pendingSearchSuggReq: 0, // Set via setTimeout() upon a search-suggestion request
-				// Used to avoid sending many requests when search input is quickly changed multiple times
-			lastSuggReqId: 0, // Used to prevent late search-suggestion server-responses from taking effect
+			pendingSuggReq: 0, // Set via setTimeout() upon a search-suggestion request
+			pendingSuggReqUrl: null, // Used by a pendingSuggReq callback to use the latest user input
 		};
 	},
 	props: {
@@ -96,25 +95,20 @@ export default defineComponent({
 			url.pathname = '/data/search';
 			url.search = '?name=' + encodeURIComponent(input.value);
 			url.search += (this.uiOpts.useReducedTree ? '&tree=reduced' : '');
-			this.lastSuggReqId += 1;
-			let suggsId = this.lastSuggReqId;
-			let reqDelay = 0;
-			if (this.pendingSearchSuggReq != 0){
-				clearTimeout(this.pendingSearchSuggReq);
-				reqDelay = 200;
+			this.pendingSuggReqUrl = url.toString();
+			if (this.pendingSuggReq != 0){
+				return;
 			}
-			this.pendingSearchSuggReq = setTimeout(() =>
-				fetch(url.toString())
+			this.pendingSuggReq = setTimeout(() =>
+				fetch(this.pendingSuggReqUrl)
 					.then(response => response.json())
 					.then((results: SearchSuggResponse) => {
-						if (this.lastSuggReqId == suggsId){
-							this.searchSuggs = results[0];
-							this.searchHasMoreSuggs = results[1];
-							this.focusedSuggIdx = null;
-							this.pendingSearchSuggReq = 0;
-						}
+						this.searchSuggs = results[0];
+						this.searchHasMoreSuggs = results[1];
+						this.focusedSuggIdx = null;
+						this.pendingSuggReq = 0;
 					}),
-				reqDelay
+				200
 			);
 		},
 		onDownKey(){
