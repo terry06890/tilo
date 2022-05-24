@@ -124,7 +124,7 @@ export class LayoutNode {
 					map.set(node.name, node);
 				}
 			});
-			LayoutNode.updateDCounts(layoutNode, layoutNode.children.length);
+			LayoutNode.updateDCounts(layoutNode, layoutNode.children.length - 1);
 			// Get matching child node
 			let childNode = layoutNode.children.find(n => n.name == childName);
 			if (childNode == null){
@@ -141,16 +141,19 @@ export class LayoutNode {
 		}
 	}
 	// These are used to hide/show parent nodes upon an expand-to-view
-	static hideUpward(node: LayoutNode): void {
+	static hideUpward(node: LayoutNode, map: LayoutMap): void {
 		if (node.parent != null){
 			node.parent.hidden = true;
-			node.parent.children.filter(n => n != node).forEach(n => LayoutNode.hideDownward(n));
-			LayoutNode.hideUpward(node.parent);
+			node.parent.children.filter(child => child != node).forEach(sibling => {
+				sibling.hidden = true;
+				// Remove sibling children from layout tree
+				LayoutNode.updateDCounts(sibling, 1 - sibling.children.length);
+				sibling.children.forEach(n => removeFromLayoutMap(n, map));
+				sibling.children = [];
+			});
+			// Recurse
+			LayoutNode.hideUpward(node.parent, map);
 		}
-	}
-	static hideDownward(node: LayoutNode): void {
-		node.hidden = true;
-		node.children.forEach(n => LayoutNode.hideDownward(n));
 	}
 	static showDownward(node: LayoutNode): void {
 		if (node.hidden){

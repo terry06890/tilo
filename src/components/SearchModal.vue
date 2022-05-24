@@ -101,7 +101,7 @@ export default defineComponent({
 			let reqDelay = 0;
 			if (this.pendingSearchSuggReq != 0){
 				clearTimeout(this.pendingSearchSuggReq);
-				reqDelay = 300;
+				reqDelay = 200;
 			}
 			this.pendingSearchSuggReq = setTimeout(() =>
 				fetch(url.toString())

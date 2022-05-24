@@ -299,7 +299,7 @@ export default defineComponent({
 			}
 			// Function for expanding tile
 			let doExpansion = () => {
-				LayoutNode.hideUpward(layoutNode);
+				LayoutNode.hideUpward(layoutNode, this.layoutMap);
 				this.activeRoot = layoutNode;
 				this.overflownRoot = false;
 				let lytFnOpts = {
@@ -350,7 +350,7 @@ export default defineComponent({
 				console.log('Ignored expand-to-view on active-root node');
 				return;
 			}
-			LayoutNode.hideUpward(layoutNode);
+			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			this.activeRoot = layoutNode;
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
