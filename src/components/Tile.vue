@@ -416,6 +416,7 @@ export default defineComponent({
 		},
 		// Other
 		leafSubImgStyles(idx: number): Record<string,string> {
+			let [w, h] = this.layoutNode.dims;
 			return {
 				width: '100%',
 				height: '100%',
@@ -428,7 +429,7 @@ export default defineComponent({
 				backgroundSize: '125%',
 				borderRadius: 'inherit',
 				clipPath: idx == 0 ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 100%, 100% 100%)',
-				backgroundPosition: idx == 0 ? 'right bottom' : 'left top',
+				backgroundPosition: idx == 0 ? `${-w/4}px ${-h/4}px` : `${w/4}px ${h/4}px`,
 			};
 		},
 		onTransitionEnd(evt: Event){
