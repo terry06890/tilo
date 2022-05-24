@@ -142,7 +142,8 @@ def lookupNodeInfo(name, useReducedTree):
 			# Get info for compound-image parts
 			imgData = [None, None]
 			idsToLookup = [int(n[:-4]) for n in nodeObj["imgName"] if n != None]
-			query = "SELECT eol_id, source_url, license, copyright_owner FROM images WHERE eol_id IN (?, ?)"
+			query = "SELECT eol_id, source_url, license, copyright_owner FROM" \
+				" images WHERE eol_id IN ({})".format(",".join(["?"] * len(idsToLookup)))
 			for row in cur.execute(query, idsToLookup):
 				if str(row[0]) == nodeObj["imgName"][0][:-4]:
 					imgData[0] = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
