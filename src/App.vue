@@ -109,7 +109,7 @@ export default defineComponent({
 			searchOpen: false,
 			settingsOpen: false,
 			tutorialOpen: true,
-			tutorialFirstRun: true,
+			welcomeOpen: true,
 			disabledActions: new Set(),
 			tutTriggerAction: null as Action | null,
 			tutTriggerFlag: false,
@@ -204,7 +204,7 @@ export default defineComponent({
 	methods: {
 		// For tile expand/collapse events
 		onLeafClick(layoutNode: LayoutNode){
-			if (this.tutorialOpen && !this.handleActionForTutorial('expand')){
+			if (!this.handleActionForTutorial('expand')){
 				return Promise.resolve(false);
 			}
 			this.setLastFocused(null);
@@ -256,7 +256,7 @@ export default defineComponent({
 			}
 		},
 		onNonleafClick(layoutNode: LayoutNode){
-			if (this.tutorialOpen && !this.handleActionForTutorial('collapse')){
+			if (!this.handleActionForTutorial('collapse')){
 				return false;
 			}
 			this.setLastFocused(null);
@@ -288,7 +288,7 @@ export default defineComponent({
 		},
 		// For expand-to-view and ancestry-bar events
 		onLeafClickHeld(layoutNode: LayoutNode){
-			if (this.tutorialOpen && !this.handleActionForTutorial('expandToView')){
+			if (!this.handleActionForTutorial('expandToView')){
 				return;
 			}
 			this.setLastFocused(null);
@@ -341,7 +341,7 @@ export default defineComponent({
 			}
 		},
 		onNonleafClickHeld(layoutNode: LayoutNode){
-			if (this.tutorialOpen && !this.handleActionForTutorial('expandToView')){
+			if (!this.handleActionForTutorial('expandToView')){
 				return;
 			}
 			this.setLastFocused(null);
@@ -355,7 +355,7 @@ export default defineComponent({
 				{allowCollapse: true, layoutMap: this.layoutMap});
 		},
 		onDetachedAncestorClick(layoutNode: LayoutNode){
-			if (this.tutorialOpen && !this.handleActionForTutorial('unhideAncestor')){
+			if (!this.handleActionForTutorial('unhideAncestor')){
 				return;
 			}
 			this.setLastFocused(null);
@@ -367,7 +367,7 @@ export default defineComponent({
 		},
 		// For tile-info events
 		onInfoIconClick(nodeName: string){
-			if (this.tutorialOpen && !this.handleActionForTutorial('tileInfo')){
+			if (!this.handleActionForTutorial('tileInfo')){
 				return;
 			}
 			if (!this.searchOpen){
@@ -377,7 +377,7 @@ export default defineComponent({
 		},
 		// For search events
 		onSearchIconClick(){
-			if (this.tutorialOpen && !this.handleActionForTutorial('search')){
+			if (!this.handleActionForTutorial('search')){
 				return;
 			}
 			this.resetMode();
@@ -447,7 +447,7 @@ export default defineComponent({
 		},
 		// For auto-mode events
 		onPlayIconClick(){
-			if (this.tutorialOpen && !this.handleActionForTutorial('autoMode')){
+			if (!this.handleActionForTutorial('autoMode')){
 				return;
 			}
 			this.resetMode();
@@ -561,7 +561,7 @@ export default defineComponent({
 		},
 		// For settings events
 		onSettingsIconClick(){
-			if (this.tutorialOpen && !this.handleActionForTutorial('settings')){
+			if (!this.handleActionForTutorial('settings')){
 				return;
 			}
 			this.resetMode();
@@ -582,7 +582,7 @@ export default defineComponent({
 		},
 		// For help events
 		onHelpIconClick(){
-			if (this.tutorialOpen && !this.handleActionForTutorial('help')){
+			if (!this.handleActionForTutorial('help')){
 				return;
 			}
 			this.resetMode();
@@ -598,16 +598,24 @@ export default defineComponent({
 		},
 		onTutorialClose(){
 			this.tutorialOpen = false;
-			this.tutorialFirstRun = false;
+			this.welcomeOpen = false;
 			this.disabledActions.clear();
 			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
 		},
 		onTutStageChg(disabledActions: Set<Action>, triggerAction: Action | null){
+			this.welcomeOpen = false;
 			this.disabledActions = disabledActions;
 			this.tutTriggerAction = triggerAction;
 		},
 		handleActionForTutorial(action: Action): boolean {
+			if (!this.tutorialOpen){
+				return true;
+			}
+			// Close welcome message on first action
+			if (this.welcomeOpen){
+				this.onTutorialClose();
+			}
 			// Tell TutorialPane if trigger-action was done
 			if (this.tutTriggerAction == action){
 				this.tutTriggerFlag = !this.tutTriggerFlag;
@@ -710,7 +718,7 @@ export default defineComponent({
 		@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
 	<tutorial-pane v-if="tutorialOpen"
 		:pos="[0,0]" :dims="tutorialPaneDims" :uiOpts="uiOpts" :triggerFlag="tutTriggerFlag"
-		:skipWelcome="!tutorialFirstRun" @tutorial-close="onTutorialClose" @tutorial-stage-chg="onTutStageChg"/>
+		:skipWelcome="!welcomeOpen" @tutorial-close="onTutorialClose" @tutorial-stage-chg="onTutStageChg"/>
 	<!-- Icons -->
 	<search-icon @click="onSearchIconClick"
 		class="absolute bottom-[6px] right-[78px] w-[18px] h-[18px]
