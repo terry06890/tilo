@@ -107,6 +107,32 @@ export class LayoutNode {
 		this.sepSweptArea = sepSweptArea;
 		this.empSpc = empSpc;
 	}
+	// Add descendant nodes, along a sequence from a child to a grandchild, and so on
+	addDescendantChain(nameChain: string[], tolMap: TolMap, map?: LayoutMap): void {
+		let layoutNode = this as LayoutNode;
+		for (let childName of nameChain){
+			if (layoutNode.children.length > 0){
+				throw new Error('Expected child node without children');
+			}
+			// Add children
+			let tolNode = tolMap.get(layoutNode.name)!;
+			layoutNode.children = tolNode.children.map((name: string) => new LayoutNode(name, []));
+			layoutNode.children.forEach(node => {
+				node.parent = layoutNode;
+				node.depth = layoutNode.depth + 1;
+				if (map != null){
+					map.set(node.name, node);
+				}
+			});
+			LayoutNode.updateDCounts(layoutNode, layoutNode.children.length);
+			// Get matching child node
+			let childNode = layoutNode.children.find(n => n.name == childName);
+			if (childNode == null){
+				throw new Error('Child name not found');
+			}
+			layoutNode = childNode;
+		}
+	}
 	// Used to update a LayoutNode tree's dCount fields after adding/removing a node's children
 	static updateDCounts(node: LayoutNode | null, diff: number): void {
 		while (node != null){

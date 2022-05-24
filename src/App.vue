@@ -92,6 +92,7 @@ const defaultUiOpts = {
 	clickHoldDuration: 400, //ms (duration after mousedown when a click-and-hold is recognised)
 	// Other
 	useReducedTree: false,
+	jumpToSearchedNode: false,
 };
 
 export default defineComponent({
@@ -397,9 +398,9 @@ export default defineComponent({
 				return;
 			}
 			// Check if searched node is displayed
-			let layoutNodeVal = this.layoutMap.get(name);
-			if (layoutNodeVal != null && !layoutNodeVal.hidden){
-				this.setLastFocused(layoutNodeVal);
+			let targetNode = this.layoutMap.get(name);
+			if (targetNode != null && !targetNode.hidden){
+				this.setLastFocused(targetNode);
 				this.modeRunning = false;
 				return;
 			}
@@ -411,14 +412,37 @@ export default defineComponent({
 			let layoutNode = this.layoutMap.get(ancestorName)!;
 			// If hidden, expand self/ancestor in ancestry-bar
 			if (layoutNode.hidden){
-				while (!this.detachedAncestors!.includes(layoutNode)){
-					layoutNode = layoutNode.parent!;
+				let visibleNode = layoutNode;
+				while (!this.detachedAncestors!.includes(visibleNode)){
+					visibleNode = visibleNode.parent!;
 				}
-				this.onDetachedAncestorClick(layoutNode!);
-				setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
-				return;
+				if (!this.uiOpts.jumpToSearchedNode){
+					this.onDetachedAncestorClick(visibleNode!);
+					setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
+					return;
+				} else {
+					LayoutNode.showDownward(visibleNode);
+				}
 			}
 			// Attempt tile-expand
+			if (this.uiOpts.jumpToSearchedNode){
+				// Extend layout tree
+				let tolNode = this.tolMap.get(name)!;
+				let nodesToAdd = [name] as string[];
+				while (tolNode.parent != layoutNode.name){
+					nodesToAdd.push(tolNode.parent!);
+					tolNode = this.tolMap.get(tolNode.parent!)!;
+				}
+				nodesToAdd.reverse();
+				layoutNode.addDescendantChain(nodesToAdd, this.tolMap, this.layoutMap);
+				// Expand-to-view on target-node's parent
+				targetNode = this.layoutMap.get(name);
+				this.onLeafClickHeld(targetNode!.parent!);
+				//
+				this.setLastFocused(targetNode!);
+				this.modeRunning = false;
+				return;
+			}
 			if (this.overflownRoot){
 				this.onLeafClickHeld(layoutNode);
 				setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
