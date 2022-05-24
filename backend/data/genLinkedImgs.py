@@ -96,8 +96,9 @@ for nodeName in processedNodes.keys():
 			eolIdPair[0] = processedNodes[subName1]
 		if subName2 in processedNodes:
 			eolIdPair[1] = processedNodes[subName2]
-		# Skip if both subimages not found
+		# Use no image if both subimages not found
 		if eolIdPair[0] == 0 and eolIdPair[1] == 0:
+			dbCur.execute("DELETE FROM linked_imgs WHERE name = ?", (nodeName,))
 			continue
 		# Add to db
 		dbCur.execute("UPDATE linked_imgs SET eol_id = ?, eol_id2 = ? WHERE name = ?",
