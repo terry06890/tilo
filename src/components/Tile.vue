@@ -429,7 +429,7 @@ export default defineComponent({
 				backgroundSize: '125%',
 				borderRadius: 'inherit',
 				clipPath: idx == 0 ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 100%, 100% 100%)',
-				backgroundPosition: idx == 0 ? `${-w/4}px ${-h/4}px` : `${w/4}px ${h/4}px`,
+				backgroundPosition: idx == 0 ? `${-w/4}px ${-h/4}px` : '0px 0px',
 			};
 		},
 		onTransitionEnd(evt: Event){
