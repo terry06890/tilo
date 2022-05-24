@@ -352,8 +352,7 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			this.activeRoot = layoutNode;
-			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-				{allowCollapse: true, layoutMap: this.layoutMap});
+			this.relayoutWithCollapse();
 		},
 		onDetachedAncestorClick(layoutNode: LayoutNode){
 			if (!this.handleActionForTutorial('unhideAncestor')){
@@ -362,8 +361,7 @@ export default defineComponent({
 			this.setLastFocused(null);
 			LayoutNode.showDownward(layoutNode);
 			this.activeRoot = layoutNode;
-			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-				{allowCollapse: true, layoutMap: this.layoutMap});
+			this.relayoutWithCollapse();
 			this.overflownRoot = false;
 		},
 		// For tile-info events
@@ -591,10 +589,6 @@ export default defineComponent({
 			this.resetMode();
 			this.settingsOpen = true;
 		},
-		onLayoutOptionChange(){
-			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-				{allowCollapse: true, layoutMap: this.layoutMap});
-		},
 		onTreeChange(){
 			// Collapse tree to root
 			if (this.activeRoot != this.layoutTree){
@@ -610,7 +604,7 @@ export default defineComponent({
 			}
 			Object.assign(this.lytOpts, defaultLytOpts);
 			Object.assign(this.uiOpts, defaultUiOpts);
-			this.onLayoutOptionChange();
+			this.relayoutWithCollapse();
 		},
 		// For help events
 		onHelpIconClick(){
@@ -624,16 +618,14 @@ export default defineComponent({
 		onStartTutorial(){
 			if (this.tutorialOpen == false){
 				this.tutorialOpen = true;
-				tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-					{allowCollapse: true, layoutMap: this.layoutMap});
+				this.relayoutWithCollapse();
 			}
 		},
 		onTutorialClose(){
 			this.tutorialOpen = false;
 			this.welcomeOpen = false;
 			this.disabledActions.clear();
-			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-				{allowCollapse: true, layoutMap: this.layoutMap});
+			this.relayoutWithCollapse();
 		},
 		onTutStageChg(disabledActions: Set<Action>, triggerAction: Action | null){
 			this.welcomeOpen = false;
@@ -662,8 +654,7 @@ export default defineComponent({
 					this.width = document.documentElement.clientWidth;
 					this.height = document.documentElement.clientHeight;
 					this.uiOpts.scrollGap = getScrollBarWidth();
-					tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-						{allowCollapse: true, layoutMap: this.layoutMap});
+					this.relayoutWithCollapse();
 					this.overflownRoot = false;
 					this.pendingResizeHdlr = 0;
 				}, 100);
@@ -692,8 +683,7 @@ export default defineComponent({
 					this.layoutTree = initLayoutTree(this.tolMap, this.layoutTree.name, 0);
 					this.activeRoot = this.layoutTree;
 					this.layoutMap = initLayoutMap(this.layoutTree);
-					tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-						{allowCollapse: true, layoutMap: this.layoutMap});
+					this.relayoutWithCollapse();
 				})
 				.catch(error => {
 					console.log('ERROR loading initial tolnode data', error);
@@ -746,12 +736,18 @@ export default defineComponent({
 				node.hasFocus = true;
 			}
 		},
+		relayoutWithCollapse(){
+			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
+				{allowCollapse: true, layoutMap: this.layoutMap});
+			// Relayout again to allocate remaining tiles 'evenly'
+			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
+				{allowCollapse: false, layoutMap: this.layoutMap});
+		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
 		window.addEventListener('keyup', this.onKeyUp);
-		tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
-			{allowCollapse: true, layoutMap: this.layoutMap});
+		this.relayoutWithCollapse();
 		this.initTreeFromServer();
 	},
 	unmounted(){
@@ -810,7 +806,7 @@ export default defineComponent({
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@settings-close="settingsOpen = false" @reset-settings="onResetSettings"
-		@layout-option-change="onLayoutOptionChange" @tree-change="onTreeChange"/>
+		@layout-option-change="relayoutWithCollapse" @tree-change="onTreeChange"/>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = false"></div>
