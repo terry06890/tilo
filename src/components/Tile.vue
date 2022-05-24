@@ -425,9 +425,10 @@ export default defineComponent({
 						'url(\'/img/' + this.tolNode.imgName![idx]!.replaceAll('\'', '\\\'') + '\')' :
 					'none',
 				backgroundColor: '#1c1917',
-				backgroundSize: 'cover',
+				backgroundSize: '125%',
 				borderRadius: 'inherit',
 				clipPath: idx == 0 ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 100%, 100% 100%)',
+				backgroundPosition: idx == 0 ? 'right bottom' : 'left top',
 			};
 		},
 		onTransitionEnd(evt: Event){
