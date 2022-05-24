@@ -37,9 +37,25 @@ export default defineComponent({
 		onTreeChg(){
 			this.$emit('tree-change');
 		},
+		onSave(){
+			const savedLytOpts = ['tileSpacing', 'minTileSz', 'maxTileSz', 'layoutType', 'sweepMode', ];
+			for (let prop of savedLytOpts){
+				localStorage.setItem('lyt ' + prop, String(this.lytOpts[prop as keyof LayoutOptions]));
+			}
+			const savedUiOpts = ['tileChgDuration', 'jumpToSearchedNode', 'useReducedTree', ];
+			for (let prop of savedUiOpts){
+				localStorage.setItem('ui ' + prop, String(this.uiOpts[prop]));
+			}
+			console.log('Settings saved');
+		},
+		onReset(){
+			localStorage.clear();
+			this.$emit('reset-settings');
+			console.log('Settings reset');
+		},
 	},
 	components: {CloseIcon, },
-	emits: ['settings-close', 'layout-option-change', 'tree-change', ],
+	emits: ['settings-close', 'layout-option-change', 'tree-change', 'reset-settings', ],
 });
 </script>
 
@@ -137,6 +153,15 @@ export default defineComponent({
 						@change="onTreeChg"/> Reduced </label>
 				</li>
 			</ul>
+		</div>
+		<hr class="border-stone-400"/>
+		<div class="flex justify-around mt-2">
+			<button class="block rounded px-4 py-2 bg-stone-800 text-white" @click="onSave">
+				Save
+			</button>
+			<button class="block rounded px-4 py-2 bg-stone-800 text-white" @click="onReset">
+				Reset
+			</button>
 		</div>
 	</div>
 </div>

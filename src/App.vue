@@ -121,8 +121,8 @@ export default defineComponent({
 			autoPrevAction: null as AutoAction | null, // Used to help prevent action cycles
 			autoPrevActionFail: false, // Used to avoid re-trying a failed expand/collapse
 			// Options
-			lytOpts: {...defaultLytOpts},
-			uiOpts: {...defaultUiOpts},
+			lytOpts: this.getLytOpts(),
+			uiOpts: this.getUiOpts(),
 			// For window-resize handling
 			width: document.documentElement.clientWidth,
 			height: document.documentElement.clientHeight,
@@ -604,6 +604,14 @@ export default defineComponent({
 			// Re-initialise tree
 			this.initTreeFromServer();
 		},
+		onResetSettings(){
+			if (this.uiOpts.useReducedTree != defaultUiOpts.useReducedTree){
+				this.onTreeChange();
+			}
+			Object.assign(this.lytOpts, defaultLytOpts);
+			Object.assign(this.uiOpts, defaultUiOpts);
+			this.onLayoutOptionChange();
+		},
 		// For help events
 		onHelpIconClick(){
 			if (!this.handleActionForTutorial('help')){
@@ -691,6 +699,36 @@ export default defineComponent({
 					console.log('ERROR loading initial tolnode data', error);
 				});
 		},
+		getLytOpts(){
+			let opts: {[x: string]: boolean|number|string} = {...defaultLytOpts};
+			for (let prop of Object.getOwnPropertyNames(opts)){
+				let item = localStorage.getItem('lyt ' + prop);
+				if (item != null){
+					switch (typeof(opts[prop])){
+						case 'boolean': opts[prop] = Boolean(item); break;
+						case 'number': opts[prop] = Number(item); break;
+						case 'string': opts[prop] = item; break;
+						default: console.log(`WARNING: Found saved layout setting "${prop}" with unexpected type`);
+					}
+				}
+			}
+			return opts;
+		},
+		getUiOpts(){
+			let opts: {[x: string]: boolean|number|string|string[]|(string|number)[][]} = {...defaultUiOpts};
+			for (let prop of Object.getOwnPropertyNames(opts)){
+				let item = localStorage.getItem('ui ' + prop);
+				if (item != null){
+					switch (typeof(opts[prop])){
+						case 'boolean': opts[prop] = item == 'true'; break;
+						case 'number': opts[prop] = Number(item); break;
+						case 'string': opts[prop] = item; break;
+						default: console.log(`WARNING: Found saved UI setting "${prop}" with unexpected type`);
+					}
+				}
+			}
+			return opts;
+		},
 		resetMode(){
 			this.infoModalNodeName = null;
 			this.searchOpen = false;
@@ -771,7 +809,7 @@ export default defineComponent({
 			@help-modal-close="helpOpen = false" @start-tutorial="onStartTutorial"/>
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts"
-		@settings-close="settingsOpen = false"
+		@settings-close="settingsOpen = false" @reset-settings="onResetSettings"
 		@layout-option-change="onLayoutOptionChange" @tree-change="onTreeChange"/>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"
