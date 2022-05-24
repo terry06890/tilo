@@ -139,13 +139,13 @@ export default defineComponent({
 					</ul>
 				</div>
 				<div v-else>
-					<div :style="firstImgStyles"/>
+					<div v-if="tolNode.imgName[0] != null" :style="firstImgStyles"/>
 					<ul v-if="imgInfo1 != null">
 						<li>License: {{imgInfo1.license}}</li>
 						<li><a :href="imgInfo1.sourceUrl" class="underline">Source URL</a></li>
 						<li>Copyright Owner: {{imgInfo1.copyrightOwner}}</li>
 					</ul>
-					<div :style="secondImgStyles"/>
+					<div v-if="tolNode.imgName[1] != null" :style="secondImgStyles"/>
 					<ul v-if="imgInfo2 != null">
 						<li>License: {{imgInfo2.license}}</li>
 						<li><a :href="imgInfo2.sourceUrl" class="underline">Source URL</a></li>

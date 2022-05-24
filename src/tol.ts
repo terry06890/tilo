@@ -11,7 +11,7 @@ export class TolNode {
 	tips: number;
 	pSupport: boolean;
 	commonName: null | string;
-	imgName: null | string | [string, string];
+	imgName: null | string | [string, string] | [null, string] | [string, null];
 	constructor(children: string[] = [], parent = null, tips = 0, pSupport = false){
 		this.children = children;
 		this.parent = parent;
