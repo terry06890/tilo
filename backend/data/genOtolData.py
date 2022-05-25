@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys, os.path, re
+import sys, os, re
 import json, sqlite3
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
@@ -18,6 +18,9 @@ usageInfo += "Expected annotations.json format:\n"
 usageInfo += "    JSON object holding information about the tree-of-life release.\n"
 usageInfo += "    The object's 'nodes' field maps node IDs to objects holding information about that node,\n"
 usageInfo += "    such as phylogenetic trees that support/conflict with it's placement.\n"
+usageInfo += "\n"
+usageInfo += "Some node trimming is done on the extracted tree, for performance and relevance reasons.\n"
+usageInfo += "The app can get quite laggy when some nodes in the chain have over 10k children.\n"
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -26,9 +29,10 @@ treeFile = "otol/labelled_supertree_ottnames.tre"
 annFile = "otol/annotations.json"
 dbFile = "data.db"
 nodeMap = {} # Maps node IDs to node objects
-idToName = {} # Maps node IDs to names
 nameToFirstId = {} # Maps node names to first found ID (names might have multiple IDs)
 dupNameToIds = {} # Maps names of nodes with multiple IDs to those node IDs
+softChildLimit = 100
+keptNamesFile = "namesToKeep.txt" # Contains names to keep when doing node trimming
 
 # Parse treeFile
 print("Parsing tree file")
@@ -81,7 +85,6 @@ def parseNewick():
 		nodeMap[id] = {"name": name, "children": [], "parent": None, "tips": 1, "pSupport": False}
 		return id
 def updateNameMaps(name, id):
-	idToName[id] = name
 	if name not in nameToFirstId:
 		nameToFirstId[name] = id
 	else:
@@ -136,7 +139,69 @@ def parseNewickName():
 		if match == None:
 			raise Exception("ERROR: invalid name \"{}\"".format(name))
 		return [match.group(1).replace("_", " "), match.group(2)]
-rootName = parseNewick()
+rootId = parseNewick()
+# For nodes with *many* children, remove some of those children
+print("Trimming nodes from tree")
+namesToKeep = set()
+if os.path.exists(keptNamesFile):
+	with open(keptNamesFile) as file: # Contains names with an image (incl linked), desc, or reduced-tree-presence
+		for line in file:
+			namesToKeep.add(line.rstrip())
+else:
+	print("WARNING: No '{}' file found".format(keptNamesFile))
+def trimChildren(nodeId):
+	""" Traverse node tree, looking for nodes with too many children """
+	nodeObj = nodeMap[nodeId]
+	tipsRemoved = 0
+	if len(nodeObj["children"]) > softChildLimit:
+		childIds = nodeObj["children"]
+		# Look for children to delete, excluding 'kept nodes'
+		idsToKeep, otherIds = [], []
+		for id in childIds:
+			if nodeMap[id]["name"] in namesToKeep:
+				idsToKeep.append(id)
+			else:
+				otherIds.append(id)
+		if len(idsToKeep) < softChildLimit:
+			# Order by decreasing number of tips, placing excess children in list
+			numMoreToKeep = softChildLimit - len(idsToKeep)
+			otherIds.sort(key = lambda id: nodeMap[id]["tips"], reverse=True)
+			idsToKeep.extend(otherIds[:numMoreToKeep])
+			otherIds = otherIds[numMoreToKeep:]
+		# Perform deletion
+		nodeObj["children"] = idsToKeep
+		for id in otherIds:
+			tipsRemoved += deleteDownward(id)
+	# Recurse on children
+	for childId in nodeObj["children"]:
+		tipsRemoved += trimChildren(childId)
+	nodeObj["tips"] -= tipsRemoved
+	return tipsRemoved
+def deleteDownward(nodeId):
+	""" Deletes a node and it's descendants from the node map, along with associated data """
+	nodeObj = nodeMap[nodeId]
+	name = nodeObj["name"]
+	# Recurse on children
+	tipsRemoved = 0
+	if len(nodeObj["children"]) == 0:
+		tipsRemoved = 1
+	else:
+		for childId in nodeObj["children"]:
+			tipsRemoved += deleteDownward(childId)
+	# Delete from name maps
+	if name not in dupNameToIds:
+		del nameToFirstId[name]
+	else:
+		dupNameToIds[name].remove(nodeId)
+		if nameToFirstId[name] == nodeId:
+			nameToFirstId[name] = dupNameToIds[name][0]
+		if len(dupNameToIds[name]) == 1:
+			del dupNameToIds[name]
+	# Delete from node map
+	del nodeMap[nodeId]
+	#
+	return tipsRemoved
+trimChildren(rootId)
 # Resolve duplicate names
 print("Resolving duplicates")
 for [dupName, ids] in dupNameToIds.items():
@@ -153,36 +218,36 @@ for [dupName, ids] in dupNameToIds.items():
 # Change mrca* names
 print("Changing mrca* names")
 def convertMrcaName(id):
-		node = nodeMap[id]
-		name = node["name"]
-		childIds = node["children"]
-		if len(childIds) < 2:
-			print("WARNING: MRCA node \"{}\" has less than 2 children".format(name), file=sys.stderr)
-			return
-		# Get 2 children with most tips
-		childTips = [nodeMap[id]["tips"] for id in childIds]
-		maxIdx = childTips.index(max(childTips))
-		childTips[maxIdx] = 0
-		maxIdx2 = childTips.index(max(childTips))
-		childId1 = childIds[maxIdx]
-		childId2 = childIds[maxIdx2]
-		childName1 = nodeMap[childId1]["name"]
-		childName2 = nodeMap[childId2]["name"]
-		# Check for mrca* child names
-		if childName1.startswith("mrca"):
-			childName1 = convertMrcaName(childId1)
-		if childName2.startswith("mrca"):
-			childName2 = convertMrcaName(childId2)
-		# Check for composite names
-		match = re.fullmatch(r"\[(.+) \+ (.+)]", childName1)
-		if match != None:
-			childName1 = match.group(1)
-		match = re.fullmatch(r"\[(.+) \+ (.+)]", childName2)
-		if match != None:
-			childName2 = match.group(1)
-		# Create composite name
-		node["name"] = "[{} + {}]".format(childName1, childName2)
-		return childName1
+	node = nodeMap[id]
+	name = node["name"]
+	childIds = node["children"]
+	if len(childIds) < 2:
+		print("WARNING: MRCA node \"{}\" has less than 2 children".format(name), file=sys.stderr)
+		return
+	# Get 2 children with most tips
+	childTips = [nodeMap[id]["tips"] for id in childIds]
+	maxIdx = childTips.index(max(childTips))
+	childTips[maxIdx] = 0
+	maxIdx2 = childTips.index(max(childTips))
+	childId1 = childIds[maxIdx]
+	childId2 = childIds[maxIdx2]
+	childName1 = nodeMap[childId1]["name"]
+	childName2 = nodeMap[childId2]["name"]
+	# Check for mrca* child names
+	if childName1.startswith("mrca"):
+		childName1 = convertMrcaName(childId1)
+	if childName2.startswith("mrca"):
+		childName2 = convertMrcaName(childId2)
+	# Check for composite names
+	match = re.fullmatch(r"\[(.+) \+ (.+)]", childName1)
+	if match != None:
+		childName1 = match.group(1)
+	match = re.fullmatch(r"\[(.+) \+ (.+)]", childName2)
+	if match != None:
+		childName2 = match.group(1)
+	# Create composite name
+	node["name"] = "[{} + {}]".format(childName1, childName2)
+	return childName1
 for [id, node] in nodeMap.items():
 	if node["name"].startswith("mrca"):
 		convertMrcaName(id)
