@@ -410,16 +410,16 @@ export default defineComponent({
 			let layoutNode = this.layoutMap.get(ancestorName)!;
 			// If hidden, expand self/ancestor in ancestry-bar
 			if (layoutNode.hidden){
-				let visibleNode = layoutNode;
-				while (!this.detachedAncestors!.includes(visibleNode)){
-					visibleNode = visibleNode.parent!;
+				let nodeInAncestryBar = layoutNode;
+				while (!this.detachedAncestors!.includes(nodeInAncestryBar)){
+					nodeInAncestryBar = nodeInAncestryBar.parent!;
 				}
-				if (!this.uiOpts.jumpToSearchedNode){
-					this.onDetachedAncestorClick(visibleNode!);
+				if (!this.uiOpts.jumpToSearchedNode || nodeInAncestryBar.name == name){
+					this.onDetachedAncestorClick(nodeInAncestryBar!);
 					setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
 					return;
 				} else {
-					LayoutNode.showDownward(visibleNode);
+					LayoutNode.showDownward(nodeInAncestryBar);
 				}
 			}
 			// Attempt tile-expand
