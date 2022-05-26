@@ -67,6 +67,14 @@ export default defineComponent({
 			};
 		},
 	},
+	watch: {
+		nodes(){
+			setTimeout(() => this.scrollToEnd(), 0); // Without timeout, seems to run before new tiles are added
+		},
+		wideArea(){
+			setTimeout(() => this.scrollToEnd(), 0);
+		},
+	},
 	methods: {
 		onTileClick(node: LayoutNode){
 			this.$emit('detached-ancestor-click', node);
@@ -80,6 +88,16 @@ export default defineComponent({
 				this.$el.scrollLeft -= (evt.deltaY > 0 ? 30 : -30);
 			}
 		},
+		scrollToEnd(){
+			if (this.wideArea){
+				this.$el.scrollLeft = this.$el.scrollWidth;
+			} else {
+				this.$el.scrollTop = this.$el.scrollHeight;
+			}
+		},
+	},
+	mounted(){
+		this.scrollToEnd();
 	},
 	components: {Tile, },
 	emits: ['detached-ancestor-click', 'info-icon-click', ],
