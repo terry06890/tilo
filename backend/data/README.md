@@ -21,14 +21,15 @@ File Generation Process
         which uses 'nodes', 'edges', 'eol_ids', and 'images', to associate
         nodes without images to child images.
 4   Node Description Data
-    -   Using DBpedia
-        1   Obtain data in dbpedia/, as specified in it's README.
-        2   Run genDbpData.py, which adds a 'descs' table to data.db, using
-            data in dbpedia/dbpData.db, dbpPickedLabels.txt, and the 'nodes' table.
-    -   Supplementing with Wikipedia dump
-        1   Obtain data in enwiki/, as specified in it's README.
-        2   Run genEnwikiData.py, which adds to the 'descs' table, using data in
-            enwiki/enwikiData.db, and the 'nodes' table.
+    1   Obtain data in dbpedia/, as specified in it's README.
+    2   Run genDbpData.py, which adds a 'descs' table to data.db, using
+        data in dbpedia/dbpData.db, dbpPickedLabels.txt, and the 'nodes' table.
+5   Supplementary Name/Description Data
+    1   Obtain data in enwiki/, as specified in it's README.
+    2   Run genEnwikiDescData.py, which adds to the 'descs' table, using data in
+        enwiki/enwikiData.db, and the 'nodes' table.
+    3   Run genEnwikiNameData.py, which adds to the 'names' table, using data in
+        enwiki/enwikiData.db, and the 'names' and 'descs' tables.
 5   Reduced Tree Structure Data
     1   Run genReducedTreeData.py, which adds 'r_nodes' and 'r_edges' tables to
         data.db, using reducedTol/names.txt, and the 'nodes' and 'names' tables.

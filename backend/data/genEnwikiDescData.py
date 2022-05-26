@@ -68,5 +68,4 @@ for (name, pageId) in nodeToPageId.items():
 # Close dbs
 dbCon.commit()
 dbCon.close()
-enwikiCon.commit()
 enwikiCon.close()

@@ -91,6 +91,7 @@ dbCur = dbCon.cursor()
 dbCur.execute("CREATE TABLE pages (id INT PRIMARY KEY, title TEXT UNIQUE)")
 dbCur.execute("CREATE INDEX pages_title_idx ON pages(title COLLATE NOCASE)")
 dbCur.execute("CREATE TABLE redirects (id INT PRIMARY KEY, target TEXT)")
+dbCur.execute("CREATE INDEX redirects_idx ON redirects(target)")
 dbCur.execute("CREATE TABLE descs (id INT PRIMARY KEY, desc TEXT)")
 # Read through dump file
 print("Reading dump file")
