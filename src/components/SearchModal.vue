@@ -15,8 +15,9 @@ export default defineComponent({
 			searchSuggs: [] as SearchSugg[],
 			searchHasMoreSuggs: false,
 			focusedSuggIdx: null as null | number, // Denotes a search-suggestion selected using the arrow keys
-			pendingSuggReq: 0, // Set via setTimeout() upon a search-suggestion request
+			lastSuggReqTime: 0, // Set when a search-suggestions request is initiated
 			pendingSuggReqUrl: '', // Used by a pendingSuggReq callback to use the latest user input
+			pendingDelayedSuggReq: 0, // Set via setTimeout() for a non-initial search-suggestions request
 		};
 	},
 	props: {
@@ -90,26 +91,49 @@ export default defineComponent({
 				this.focusedSuggIdx = null;
 				return;
 			}
-			// Ask server for search-suggestions
+			// Get URL to use for querying search-suggestions
 			let url = new URL(window.location.href);
 			url.pathname = '/data/search';
 			url.search = '?name=' + encodeURIComponent(input.value);
 			url.search += (this.uiOpts.useReducedTree ? '&tree=reduced' : '');
+			// Query server, delaying/ignoring if a request was recently sent
 			this.pendingSuggReqUrl = url.toString();
-			if (this.pendingSuggReq != 0){
-				return;
-			}
-			this.pendingSuggReq = setTimeout(() =>
-				fetch(this.pendingSuggReqUrl)
-					.then(response => response.json())
+			let doReq = () => {
+				return fetch(this.pendingSuggReqUrl)
+					.then(response => {
+						if (!response.ok){
+							throw new Error('Server response not OK')
+						}
+						return response.json()
+					})
 					.then((results: SearchSuggResponse) => {
 						this.searchSuggs = results[0];
 						this.searchHasMoreSuggs = results[1];
 						this.focusedSuggIdx = null;
-						this.pendingSuggReq = 0;
-					}),
-				200
-			);
+					})
+					.catch(error => {
+						console.error('Error encountered during fetch operation', error);
+					});
+			};
+			let currentTime = new Date().getTime();
+			if (this.lastSuggReqTime == 0){
+				this.lastSuggReqTime = currentTime;
+				doReq().finally(() => {
+					if (this.lastSuggReqTime == currentTime){
+						this.lastSuggReqTime = 0;
+					}
+				});
+			} else if (this.pendingDelayedSuggReq == 0){
+				this.lastSuggReqTime = currentTime;
+				this.pendingDelayedSuggReq = setTimeout(() => {
+					this.pendingDelayedSuggReq = 0;
+					doReq().finally(() => {
+						if (this.lastSuggReqTime == currentTime){
+							this.lastSuggReqTime = 0;
+						}
+					});
+				}, 300);
+			}
 		},
 		onDownKey(){
 			// Select next search-suggestion, if any

@@ -127,7 +127,8 @@ export default defineComponent({
 			// For layout and resize-handling
 			mainAreaDims: [0, 0] as [number, number],
 			tileAreaDims: [0, 0] as [number, number],
-			pendingResizeHdlr: 0, // Set to a setTimeout() value
+			lastResizeHdlrTime: 0, // Used to throttle resize handling
+			pendingResizeHdlr: 0, // Set via setTimeout() for a non-initial resize event
 			// Other
 			justInitialised: false,
 			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries are removed (done on tile collapse)
@@ -590,14 +591,28 @@ export default defineComponent({
 		},
 		// For other events
 		onResize(){
+			// Handle event, delaying/ignoring if this was recently done
 			if (this.pendingResizeHdlr == 0){
-				this.pendingResizeHdlr = setTimeout(() => {
+				const resizeDelay = 100;
+				let handleResize = () => {
 					this.uiOpts.scrollGap = getScrollBarWidth();
-					this.updateAreaDims().then(() => {
-						this.relayoutWithCollapse();
-						this.pendingResizeHdlr = 0;
+					return this.updateAreaDims().then(() => this.relayoutWithCollapse());
+				};
+				let currentTime = new Date().getTime();
+				if (currentTime - this.lastResizeHdlrTime > resizeDelay){
+					this.lastResizeHdlrTime = currentTime;
+					handleResize().then(() => {
+						this.lastResizeHdlrTime = new Date().getTime();
 					});
-				}, 100);
+				} else {
+					let remainingDelay = resizeDelay - (currentTime - this.lastResizeHdlrTime);
+					this.pendingResizeHdlr = setTimeout(() => {
+						this.pendingResizeHdlr = 0;
+						handleResize().then(() => {
+							this.lastResizeHdlrTime = new Date().getTime();
+						});
+					}, remainingDelay);
+				}
 			}
 		},
 		onKeyUp(evt: KeyboardEvent){
