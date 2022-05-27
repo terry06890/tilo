@@ -111,3 +111,21 @@ export function capitalizeWords(str: string){
 	return str.replace(/\b\w/g, x => x.toUpperCase());
 		// '\b' matches word boundary, '\w' is like [a-zA-Z0-9_],
 }
+// Dynamically obtains scroll bar width
+// From stackoverflow.com/questions/13382516/getting-scroll-bar-width-using-javascript
+export function getScrollBarWidth(){
+	// Create hidden outer div
+	let outer = document.createElement('div');
+	outer.style.visibility = 'hidden';
+	outer.style.overflow = 'scroll';
+	document.body.appendChild(outer);
+	// Create inner div
+	let inner = document.createElement('div');
+	outer.appendChild(inner);
+	// Get width difference
+	let scrollBarWidth = outer.offsetWidth - inner.offsetWidth;
+	// Remove temporary divs
+	outer.parentNode!.removeChild(outer);
+	//
+	return scrollBarWidth;
+}

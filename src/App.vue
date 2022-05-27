@@ -18,7 +18,7 @@ import type {TolMap} from './tol';
 import {TolNode} from './tol';
 import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import type {LayoutOptions, LayoutTreeChg} from './layout';
-import {arraySum, randWeightedChoice} from './lib';
+import {arraySum, randWeightedChoice, getScrollBarWidth} from './lib';
 import type {Action} from './lib';
 // Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
@@ -78,6 +78,7 @@ const defaultUiOpts = {
 	// For other components
 	appBgColor: '#292524',
 	tileAreaOffset: 5, //px (space between root tile and display boundary)
+	scrollGap: getScrollBarWidth(),
 	ancestryBarImgSz: defaultLytOpts.minTileSz * 2, //px
 	ancestryBarBgColor: '#44403c',
 	ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
@@ -591,6 +592,7 @@ export default defineComponent({
 		onResize(){
 			if (this.pendingResizeHdlr == 0){
 				this.pendingResizeHdlr = setTimeout(() => {
+					this.uiOpts.scrollGap = getScrollBarWidth();
 					this.updateAreaDims().then(() => {
 						this.relayoutWithCollapse();
 						this.pendingResizeHdlr = 0;
@@ -687,7 +689,6 @@ export default defineComponent({
 			this.overflownRoot = false;
 		},
 		updateAreaDims(){
-			console.log('updating dims')
 			let mainAreaEl = this.$refs.mainArea as HTMLElement;
 			this.mainAreaDims = [mainAreaEl.offsetWidth, mainAreaEl.offsetHeight];
 			// Need to wait until ancestor-bar is laid-out before computing tileAreaDims
