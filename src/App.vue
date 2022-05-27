@@ -304,6 +304,7 @@ export default defineComponent({
 			this.setLastFocused(null);
 			LayoutNode.showDownward(layoutNode);
 			this.activeRoot = layoutNode;
+			this.overflownRoot = false;
 			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
 		// For tile-info events
@@ -596,6 +597,7 @@ export default defineComponent({
 				const resizeDelay = 100;
 				let handleResize = () => {
 					this.uiOpts.scrollGap = getScrollBarWidth();
+					this.overflownRoot = false;
 					return this.updateAreaDims().then(() => this.relayoutWithCollapse());
 				};
 				let currentTime = new Date().getTime();
@@ -696,7 +698,11 @@ export default defineComponent({
 			}
 		},
 		relayoutWithCollapse(secondPass = true){
-			this.overflownRoot = false;
+			if (this.overflownRoot){
+				tryLayout(this.activeRoot, [0,0], this.tileAreaDims,
+					{...this.lytOpts, layoutType: 'flex-sqr'}, {allowCollapse: false, layoutMap: this.layoutMap});
+				return;
+			}
 			tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
 			if (secondPass){
