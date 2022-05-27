@@ -639,7 +639,7 @@ export default defineComponent({
 					this.activeRoot = this.layoutTree;
 					this.layoutMap = initLayoutMap(this.layoutTree);
 					this.updateAreaDims().then(() => {
-						this.relayoutWithCollapse();
+						this.relayoutWithCollapse(false);
 						this.justInitialised = true;
 						setTimeout(() => {this.justInitialised = false;}, this.uiOpts.tileChgDuration);
 					});
@@ -695,13 +695,15 @@ export default defineComponent({
 				node.hasFocus = true;
 			}
 		},
-		relayoutWithCollapse(){
+		relayoutWithCollapse(secondPass = true){
+			this.overflownRoot = false;
 			tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
-			// Relayout again to allocate remaining tiles 'evenly'
-			tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts,
-				{allowCollapse: false, layoutMap: this.layoutMap});
-			this.overflownRoot = false;
+			if (secondPass){
+				// Relayout again to allocate remaining tiles 'evenly'
+				tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts,
+					{allowCollapse: false, layoutMap: this.layoutMap});
+			}
 		},
 		updateAreaDims(){
 			let mainAreaEl = this.$refs.mainArea as HTMLElement;
@@ -755,7 +757,7 @@ export default defineComponent({
 			@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
 		<div class="relative m-[5px] grow" ref="tileArea">
 			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-				:overflownDim="overflownRoot ? mainAreaDims[1] : 0" :skipTransition="justInitialised"
+				:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
 				@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
 				@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
 				@info-icon-click="onInfoIconClick"/>
