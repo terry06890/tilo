@@ -97,6 +97,7 @@ const defaultUiOpts = {
 export default defineComponent({
 	data(){
 		let layoutTree = initLayoutTree(initialTolMap, ROOT_NAME, 0);
+		layoutTree.hidden = true;
 		return {
 			tolMap: initialTolMap,
 			layoutTree: layoutTree,
@@ -127,6 +128,7 @@ export default defineComponent({
 			tileAreaDims: [0, 0] as [number, number],
 			pendingResizeHdlr: 0, // Set to a setTimeout() value
 			// Other
+			justInitialised: false,
 			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries are removed (done on tile collapse)
 		};
 	},
@@ -619,7 +621,11 @@ export default defineComponent({
 					this.layoutTree = initLayoutTree(this.tolMap, this.layoutTree.name, 0);
 					this.activeRoot = this.layoutTree;
 					this.layoutMap = initLayoutMap(this.layoutTree);
-					this.updateAreaDims().then(() => this.relayoutWithCollapse());
+					this.updateAreaDims().then(() => {
+						this.relayoutWithCollapse();
+						this.justInitialised = true;
+						setTimeout(() => {this.justInitialised = false;}, this.uiOpts.tileChgDuration);
+					});
 				})
 				.catch(error => {
 					console.log('ERROR loading initial tolnode data', error);
@@ -733,7 +739,7 @@ export default defineComponent({
 			@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
 		<div class="relative m-[5px] grow" ref="tileArea">
 			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-				:overflownDim="overflownRoot ? mainAreaDims[1] : 0"
+				:overflownDim="overflownRoot ? mainAreaDims[1] : 0" :skipTransition="justInitialised"
 				@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
 				@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
 				@info-icon-click="onInfoIconClick"/>

@@ -16,6 +16,7 @@ export default defineComponent({
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object, required: true},
 		// Other
+		skipTransition: {type: Boolean, default: false},
 		nonAbsPos: {type: Boolean, default: false},
 			// For a leaf node, prevents usage of absolute positioning (used by AncestryBar)
 		overflownDim: {type: Number, default: 0},
@@ -117,7 +118,7 @@ export default defineComponent({
 				boxShadow: this.boxShadow,
 				borderRadius: this.uiOpts.borderRadius + 'px',
 				// Transition related
-				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
+				transitionDuration: (this.skipTransition ? 0 : this.uiOpts.tileChgDuration) + 'ms',
 				transitionProperty: 'left, top, width, height, visibility',
 				transitionTimingFunction: 'ease-out',
 				zIndex: this.inTransition && this.wasClicked ? '1' : '0',
