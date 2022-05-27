@@ -18,7 +18,7 @@ import type {TolMap} from './tol';
 import {TolNode} from './tol';
 import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import type {LayoutOptions, LayoutTreeChg} from './layout';
-import {arraySum, randWeightedChoice, getScrollBarWidth} from './lib';
+import {arraySum, randWeightedChoice} from './lib';
 import type {Action} from './lib';
 // Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 
@@ -78,8 +78,7 @@ const defaultUiOpts = {
 	// For other components
 	appBgColor: '#292524',
 	tileAreaOffset: 5, //px (space between root tile and display boundary)
-	scrollGap: getScrollBarWidth(), //px (gap for overflown-root and ancestry-bar scrollbars, used to prevent overlap)
-	ancestryBarSz: defaultLytOpts.minTileSz * 2, //px (breadth of ancestry-bar area)
+	ancestryBarImgSz: defaultLytOpts.minTileSz * 2, //px
 	ancestryBarBgColor: '#44403c',
 	ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
 	infoModalImgSz: 200,
@@ -123,18 +122,15 @@ export default defineComponent({
 			// Options
 			lytOpts: this.getLytOpts(),
 			uiOpts: this.getUiOpts(),
-			// For window-resize handling
-			width: document.documentElement.clientWidth,
-			height: document.documentElement.clientHeight,
+			// For layout and resize-handling
+			mainAreaDims: [0, 0] as [number, number],
+			tileAreaDims: [0, 0] as [number, number],
 			pendingResizeHdlr: 0, // Set to a setTimeout() value
 			// Other
 			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries are removed (done on tile collapse)
 		};
 	},
 	computed: {
-		wideArea(): boolean {
-			return this.width >= this.height;
-		},
 		// Nodes to show in ancestry-bar, with tol root first
 		detachedAncestors(): LayoutNode[] | null {
 			if (this.activeRoot == this.layoutTree){
@@ -147,59 +143,6 @@ export default defineComponent({
 				node = node.parent;
 			}
 			return ancestors.reverse();
-		},
-		// Placement info for Tile and AncestryBar
-		tileAreaPos(){
-			let pos = [this.uiOpts.tileAreaOffset, this.uiOpts.tileAreaOffset] as [number, number];
-			if (this.detachedAncestors != null){
-				if (this.wideArea){
-					pos[0] += this.uiOpts.ancestryBarSz;
-				} else {
-					pos[1] += this.uiOpts.ancestryBarSz;
-				}
-			}
-			if (this.tutorialOpen){
-				pos[1] += this.uiOpts.tutorialPaneSz;
-			}
-			return pos;
-		},
-		tileAreaDims(){
-			let dims = [
-				this.width - this.uiOpts.tileAreaOffset*2,
-				this.height - this.uiOpts.tileAreaOffset*2
-			] as [number, number];
-			if (this.detachedAncestors != null){
-				if (this.wideArea){
-					dims[0] -= this.uiOpts.ancestryBarSz;
-				} else {
-					dims[1] -= this.uiOpts.ancestryBarSz;
-				}
-			}
-			if (this.tutorialOpen){
-				dims[1] -= this.uiOpts.tutorialPaneSz;
-			}
-			return dims;
-		},
-		ancestryBarPos(): [number, number] {
-			let pos = [0, 0] as [number, number];
-			if (this.tutorialOpen){
-				pos[1] += this.uiOpts.tutorialPaneSz;
-			}
-			return pos;
-		},
-		ancestryBarDims(): [number, number] {
-			if (this.wideArea){
-				let dims = [this.uiOpts.ancestryBarSz, this.height] as [number, number];
-				if (this.tutorialOpen){
-					dims[1] -= this.uiOpts.tutorialPaneSz;
-				}
-				return dims;
-			} else {
-				return [this.width, this.uiOpts.ancestryBarSz];
-			}
-		},
-		tutorialPaneDims(): [number, number] {
-			return [this.width, this.uiOpts.tutorialPaneSz];
 		},
 	},
 	methods: {
@@ -221,12 +164,10 @@ export default defineComponent({
 					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
 					layoutMap: this.layoutMap
 				};
-				let success = tryLayout(
-					this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, lytFnOpts);
+				let success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts, lytFnOpts);
 				// If expanding active-root with too many children to fit, allow overflow
 				if (!success && layoutNode == this.activeRoot){
-					success = tryLayout(this.activeRoot, this.tileAreaPos,
-						[this.tileAreaDims[0] - this.uiOpts.scrollGap, this.tileAreaDims[1]],
+					success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims,
 						{...this.lytOpts, layoutType: 'flex-sqr'}, lytFnOpts);
 					if (success){
 						this.overflownRoot = true;
@@ -261,7 +202,7 @@ export default defineComponent({
 				return false;
 			}
 			this.setLastFocused(null);
-			let success = tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, {
+			let success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts, {
 				allowCollapse: false,
 				chg: {type: 'collapse', node: layoutNode, tolMap: this.tolMap},
 				layoutMap: this.layoutMap
@@ -301,27 +242,27 @@ export default defineComponent({
 			let doExpansion = () => {
 				LayoutNode.hideUpward(layoutNode, this.layoutMap);
 				this.activeRoot = layoutNode;
-				this.overflownRoot = false;
-				let lytFnOpts = {
-					allowCollapse: false,
-					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
-					layoutMap: this.layoutMap
-				};
-				let success = tryLayout(
-					this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts, lytFnOpts);
-				if (!success){
-					success = tryLayout(this.activeRoot, this.tileAreaPos,
-						[this.tileAreaDims[0] - this.uiOpts.scrollGap, this.tileAreaDims[1]],
-						{...this.lytOpts, layoutType: 'flex-sqr'}, lytFnOpts);
-					if (success){
-						this.overflownRoot = true;
+				return this.updateAreaDims().then(() => {
+					this.overflownRoot = false;
+					let lytFnOpts = {
+						allowCollapse: false,
+						chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
+						layoutMap: this.layoutMap
+					};
+					let success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts, lytFnOpts);
+					if (!success){
+						success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims,
+							{...this.lytOpts, layoutType: 'flex-sqr'}, lytFnOpts);
+						if (success){
+							this.overflownRoot = true;
+						}
 					}
-				}
-				// Check for failure
-				if (!success){
-					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
-				}
-				return success;
+					// Check for failure
+					if (!success){
+						layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+					}
+					return success;
+				});
 			};
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
@@ -330,15 +271,13 @@ export default defineComponent({
 				urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
 				return fetch(urlPath)
 					.then(response => response.json())
-					.then(obj => {
-						Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
-						doExpansion();
-					})
+					.then(obj => {Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])})})
+					.then(doExpansion)
 					.catch(error => {
 						console.log('ERROR loading tolnode data', error);
 					});
 			} else {
-				return new Promise((resolve, reject) => resolve(doExpansion()));
+				return doExpansion();
 			}
 		},
 		onNonleafClickHeld(layoutNode: LayoutNode){
@@ -352,7 +291,7 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			this.activeRoot = layoutNode;
-			this.relayoutWithCollapse();
+			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
 		onDetachedAncestorClick(layoutNode: LayoutNode){
 			if (!this.handleActionForTutorial('unhideAncestor')){
@@ -361,8 +300,7 @@ export default defineComponent({
 			this.setLastFocused(null);
 			LayoutNode.showDownward(layoutNode);
 			this.activeRoot = layoutNode;
-			this.relayoutWithCollapse();
-			this.overflownRoot = false;
+			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
 		// For tile-info events
 		onInfoIconClick(nodeName: string){
@@ -618,14 +556,14 @@ export default defineComponent({
 		onStartTutorial(){
 			if (this.tutorialOpen == false){
 				this.tutorialOpen = true;
-				this.relayoutWithCollapse();
+				this.updateAreaDims().then(() => this.relayoutWithCollapse());
 			}
 		},
 		onTutorialClose(){
 			this.tutorialOpen = false;
 			this.welcomeOpen = false;
 			this.disabledActions.clear();
-			this.relayoutWithCollapse();
+			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
 		onTutStageChg(disabledActions: Set<Action>, triggerAction: Action | null){
 			this.welcomeOpen = false;
@@ -651,12 +589,10 @@ export default defineComponent({
 		onResize(){
 			if (this.pendingResizeHdlr == 0){
 				this.pendingResizeHdlr = setTimeout(() => {
-					this.width = document.documentElement.clientWidth;
-					this.height = document.documentElement.clientHeight;
-					this.uiOpts.scrollGap = getScrollBarWidth();
-					this.relayoutWithCollapse();
-					this.overflownRoot = false;
-					this.pendingResizeHdlr = 0;
+					this.updateAreaDims().then(() => {
+						this.relayoutWithCollapse();
+						this.pendingResizeHdlr = 0;
+					});
 				}, 100);
 			}
 		},
@@ -683,7 +619,7 @@ export default defineComponent({
 					this.layoutTree = initLayoutTree(this.tolMap, this.layoutTree.name, 0);
 					this.activeRoot = this.layoutTree;
 					this.layoutMap = initLayoutMap(this.layoutTree);
-					this.relayoutWithCollapse();
+					this.updateAreaDims().then(() => this.relayoutWithCollapse());
 				})
 				.catch(error => {
 					console.log('ERROR loading initial tolnode data', error);
@@ -737,17 +673,27 @@ export default defineComponent({
 			}
 		},
 		relayoutWithCollapse(){
-			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
+			tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
 			// Relayout again to allocate remaining tiles 'evenly'
-			tryLayout(this.activeRoot, this.tileAreaPos, this.tileAreaDims, this.lytOpts,
+			tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts,
 				{allowCollapse: false, layoutMap: this.layoutMap});
+			this.overflownRoot = false;
+		},
+		updateAreaDims(){
+			console.log('updating dims')
+			let mainAreaEl = this.$refs.mainArea as HTMLElement;
+			this.mainAreaDims = [mainAreaEl.offsetWidth, mainAreaEl.offsetHeight];
+			// Need to wait until ancestor-bar is laid-out before computing tileAreaDims
+			return this.$nextTick(() => {
+				let tileAreaEl = this.$refs.tileArea as HTMLElement;
+				this.tileAreaDims = [tileAreaEl.offsetWidth, tileAreaEl.offsetHeight];
+			});
 		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
 		window.addEventListener('keyup', this.onKeyUp);
-		this.relayoutWithCollapse();
 		this.initTreeFromServer();
 	},
 	unmounted(){
@@ -763,33 +709,36 @@ export default defineComponent({
 </script>
 
 <template>
-<div class="absolute left-0 top-0 w-screen h-screen overflow-hidden" :style="{backgroundColor: uiOpts.appBgColor}">
-	<!-- Note: Making the above enclosing div's width/height dynamic seems to cause white flashes when resizing -->
-	<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-		:overflownDim="overflownRoot ? tileAreaDims[1] : 0"
-		@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
-		@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
-		@info-icon-click="onInfoIconClick"/>
-	<ancestry-bar v-if="detachedAncestors != null"
-		:pos="ancestryBarPos" :dims="ancestryBarDims" :nodes="detachedAncestors"
-		:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-		@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
-	<tutorial-pane v-if="tutorialOpen"
-		:pos="[0,0]" :dims="tutorialPaneDims" :uiOpts="uiOpts" :triggerFlag="tutTriggerFlag"
-		:skipWelcome="!welcomeOpen" @tutorial-close="onTutorialClose" @tutorial-stage-chg="onTutStageChg"/>
-	<!-- Icons -->
-	<search-icon @click="onSearchIconClick"
-		class="absolute bottom-[6px] right-[78px] w-[18px] h-[18px]
-			text-white/40 hover:text-white hover:cursor-pointer"/>
-	<play-icon @click="onPlayIconClick"
-		class="absolute bottom-[6px] right-[54px] w-[18px] h-[18px]
-			text-white/40 hover:text-white hover:cursor-pointer"/>
-	<settings-icon @click="onSettingsIconClick"
-		class="absolute bottom-[6px] right-[30px] w-[18px] h-[18px]
-			text-white/40 hover:text-white hover:cursor-pointer"/>
-	<help-icon @click="onHelpIconClick"
-		class="absolute bottom-[6px] right-[6px] w-[18px] h-[18px]
-			text-white/40 hover:text-white hover:cursor-pointer"/>
+<div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
+	:style="{backgroundColor: uiOpts.appBgColor}">
+	<div class="flex bg-black">
+		<h1 class="text-white text-bold px-2">Title</h1>
+		<!-- Icons -->
+		<search-icon @click="onSearchIconClick"
+			class="ml-auto mr-[6px] my-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
+		<play-icon @click="onPlayIconClick"
+			class="mr-[6px] my-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
+		<settings-icon @click="onSettingsIconClick"
+			class="mr-[6px] my-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
+		<help-icon @click="onHelpIconClick"
+			class="mr-[6px] my-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
+	</div>
+	<tutorial-pane v-if="tutorialOpen" :height="uiOpts.tutorialPaneSz + 'px'" class="grow-0 shrink-0"
+		:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!welcomeOpen"
+		@tutorial-close="onTutorialClose" @tutorial-stage-chg="onTutStageChg"/>
+	<div :class="['flex', mainAreaDims[0] > mainAreaDims[1] ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">
+		<ancestry-bar v-if="detachedAncestors != null"
+			:nodes="detachedAncestors" :vert="mainAreaDims[0] > mainAreaDims[1]"
+			:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+			@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
+		<div class="relative m-[5px] grow" ref="tileArea">
+			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+				:overflownDim="overflownRoot ? mainAreaDims[1] : 0"
+				@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
+				@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
+				@info-icon-click="onInfoIconClick"/>
+		</div>
+	</div>
 	<!-- Modals -->
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null"

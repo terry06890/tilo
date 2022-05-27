@@ -16,7 +16,7 @@ export default defineComponent({
 			searchHasMoreSuggs: false,
 			focusedSuggIdx: null as null | number, // Denotes a search-suggestion selected using the arrow keys
 			pendingSuggReq: 0, // Set via setTimeout() upon a search-suggestion request
-			pendingSuggReqUrl: null, // Used by a pendingSuggReq callback to use the latest user input
+			pendingSuggReqUrl: '', // Used by a pendingSuggReq callback to use the latest user input
 		};
 	},
 	props: {

@@ -5,11 +5,10 @@ import {Action} from '../lib';
 
 export default defineComponent({
 	props: {
-		pos: {type: Array as unknown as PropType<[number,number]>, required: true},
-		dims: {type: Array as unknown as PropType<[number,number]>, required: true},
 		uiOpts: {type: Object, required: true},
 		triggerFlag: {type: Boolean, required: true},
 		skipWelcome: {type: Boolean, default: false},
+		height: {type: String, default: 'auto'},
 	},
 	data(){
 		return {
@@ -20,13 +19,9 @@ export default defineComponent({
 	computed: {
 		 styles(): Record<string,string> {
 			return {
-				position: 'absolute',
-				left: this.pos[0] + 'px',
-				top: this.pos[1] + 'px',
-				width: this.dims[0] + 'px',
-				height: this.dims[1] + 'px',
 				backgroundColor: this.uiOpts.tutorialPaneBgColor,
 				color: this.uiOpts.tutorialPaneTextColor,
+				height: this.height,
 			};
 		 },
 		 contentStyles(): Record<string,string> {
@@ -98,18 +93,20 @@ export default defineComponent({
 </script>
 
 <template>
-<div :style="styles" class="flex flex-col justify-evenly">
-	<close-icon @click.stop="onClose"
-		class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
+<div :style="styles" class="p-2 flex flex-col justify-between">
+	<div class="flex">
+		<h2 class="text-center mb-2">{{stage == 0 ? 'Welcome' : 'Tutorial'}}</h2>
+		<close-icon @click.stop="onClose"
+			class="block ml-auto w-6 h-6 hover:cursor-pointer"/>
+	</div>
 	<template v-if="stage == 0">
-		<h2 class="text-center">Welcome</h2>
 		<div :style="contentStyles">
 			Lorem ipsum dolor sit amet, consectetur adipiscing
 			elit, sed do eiusmod tempor incididunt ut labore
 			et dolore magna aliqua. Ut enim ad minim veniam,
 			quis nostrud exercitation ullamco.
 		</div>
-		<div class="w-full flex justify-evenly">
+		<div class="w-full flex justify-evenly mt-2">
 			<button :style="buttonStyles" class="hover:brightness-125" @click="onStartTutorial">
 				Start Tutorial
 			</button>
@@ -119,8 +116,6 @@ export default defineComponent({
 		</div>
 	</template>
 	<template v-else>
-		<h2 class="text-center">Tutorial</h2>
-		<!-- Text content -->
 		<div v-if="stage == 1" :style="contentStyles">
 			Click/touch on the tile to expand it and see it's children. <br/>
 			A green title means the tile has children. Orange and red mean 100+ or 1000+ children.
@@ -170,7 +165,7 @@ export default defineComponent({
 			And finally, the help icon provides summarised usage information.
 		</div>
 		<!-- Buttons -->
-		<div class="w-full flex justify-evenly">
+		<div class="w-full flex justify-evenly mt-2">
 			<button :style="buttonStyles"
 				:disabled="stage == 1" :class="stage == 1 ? ['brightness-75'] : ['hover:brightness-125']"
 				@click="onPrevClick">
