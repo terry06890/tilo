@@ -41,7 +41,7 @@ iterNum = 0
 for (label,) in dbpCur.execute("SELECT label from labels"):
 	iterNum += 1
 	if iterNum % 1e5 == 0:
-		print("Processing line {}".format(iterNum))
+		print(f"Processing line {iterNum}")
 	#
 	if label in disambigLabels:
 		continue
@@ -66,7 +66,7 @@ for (name, variants) in nameToVariants.items():
 for name in nodeToLabel:
 	del nameToVariants[name]
 nodeToLabel["cellular organisms"] = "organism" # Special case for root node
-print("Number of conflicts: {}".format(len(nameToVariants)))
+print(f"Number of conflicts: {len(nameToVariants)}")
 # Try conflict resolution via picked-labels
 print("Resolving conflicts using picked-labels")
 with open(pickedLabelsFile) as file:
@@ -79,15 +79,15 @@ with open(pickedLabelsFile) as file:
 		else:
 			match = nameVariantRegex.match(pickedLabel)
 			if match == None:
-				print("WARNING: Picked label {} not found (1)".format(pickedLabel), file=sys.stderr)
+				print(f"WARNING: Picked label {pickedLabel} not found (1)", file=sys.stderr)
 			else:
 				name = match.group(1)
 				if name not in nameToVariants:
-					print("WARNING: Picked label {} not found (2)".format(pickedLabel), file=sys.stderr)
+					print(f"WARNING: Picked label {pickedLabel} not found (2)", file=sys.stderr)
 				else:
 					nodeToLabel[name] = pickedLabel
 					del nameToVariants[name]
-print("Number of conflicts: {}".format(len(nameToVariants)))
+print(f"Number of conflicts: {len(nameToVariants)}")
 # Try conflict resolution via category-list
 	# Does a generic-category pass first (avoid stuff like Pan being classified as a horse instead of an ape)
 print("Resolving conflicts using category-list")
@@ -131,7 +131,7 @@ for (name, variants) in nameToVariants.items():
 				break
 for name in namesToRemove:
 	del nameToVariants[name]
-print("Number of conflicts: {}".format(len(nameToVariants)))
+print(f"Number of conflicts: {len(nameToVariants)}")
 # Try conflict resolution via taxon-type information
 print("Resolving conflicts using instance-type data")
 taxonTypes = { # Obtained from the DBpedia ontology
@@ -170,7 +170,7 @@ iterNum = 0
 for (label, type) in dbpCur.execute("SELECT label, type from labels INNER JOIN types on labels.iri = types.iri"):
 	iterNum += 1
 	if iterNum % 1e5 == 0:
-		print("Processing line {}".format(iterNum))
+		print(f"Processing line {iterNum}")
 	#
 	if type in taxonTypes:
 		name = label.lower()
@@ -184,7 +184,7 @@ for (label, type) in dbpCur.execute("SELECT label, type from labels INNER JOIN t
 				if name in nameToVariants:
 					nodeToLabel[name] = label
 					del nameToVariants[name]
-print("Number of conflicts: {}".format(len(nameToVariants)))
+print(f"Number of conflicts: {len(nameToVariants)}")
 # Associate nodes with IRIs
 print("Getting nodes IRIs")
 nodeToIri = {}
@@ -192,7 +192,7 @@ iterNum = 0
 for (name, label) in nodeToLabel.items():
 	row = dbpCur.execute("SELECT iri FROM labels where label = ? COLLATE NOCASE", (label,)).fetchone()
 	if row == None:
-		print("ERROR: Couldn't find label {}".format(label), file=sys.stderr)
+		print(f"ERROR: Couldn't find label {label}", file=sys.stderr)
 		sys.exit(1)
 	else:
 		nodeToIri[name] = row[0]
@@ -203,7 +203,7 @@ iterNum = 0
 for (name, iri) in nodeToIri.items():
 	iterNum += 1
 	if iterNum % 1e4 == 0:
-		print("At iteration {}".format(iterNum))
+		print(f"At iteration {iterNum}")
 	#
 	row = dbpCur.execute("SELECT target FROM redirects where iri = ?", (iri,)).fetchone()
 	if row != None:
@@ -216,7 +216,7 @@ iterNum = 0
 for (name, iri) in nodeToIri.items():
 	iterNum += 1
 	if iterNum % 1e4 == 0:
-		print("At iteration {}".format(iterNum))
+		print(f"At iteration {iterNum}")
 	#
 	query = "SELECT abstract, id FROM abstracts INNER JOIN ids ON abstracts.iri = ids.iri WHERE ids.iri = ?"
 	row = dbpCur.execute(query, (iri,)).fetchone()

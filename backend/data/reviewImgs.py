@@ -135,11 +135,12 @@ class EolImgReviewer:
 		row = dbCur.execute(query, (self.nextEolId,)).fetchone()
 		if row != None:
 			commonName = row[1]
-			self.root.title("Reviewing EOL ID {}, aka \"{}\" (imgs {} to {} out of {})".format(
-				self.nextEolId, commonName, firstImgIdx, lastImgIdx, len(self.imgList)))
+			self.root.title(
+				f"Reviewing EOL ID {self.nextEolId}, aka \"{commonName}\"" \
+				f"(imgs {firstImgIdx} to {lastImgIdx} out of {len(self.imgList)})")
 		else:
-			self.root.title("Reviewing EOL ID {} (imgs {} to {} out of {})".format(
-				self.nextEolId, firstImgIdx, lastImgIdx, len(self.imgList)))
+			self.root.title(
+				f"Reviewing EOL ID {self.nextEolId} (imgs {firstImgIdx} to {lastImgIdx} out of {len(self.imgList)})")
 	def accept(self, imgIdx):
 		""" React to a user selecting an image """
 		if imgIdx >= len(self.nextImgNames):
@@ -173,11 +174,11 @@ class EolImgReviewer:
 		self.labels[imgIdx].config(image=self.photoImgs[imgIdx])
 		self.rotations[imgIdx] = (self.rotations[imgIdx] + deg) % 360
 	def quit(self, e = None):
-		print("Number reviewed: {}".format(self.numReviewed))
+		print(f"Number reviewed: {self.numReviewed}")
 		timeElapsed = time.time() - self.startTime
-		print("Time elapsed: {:.2f} seconds".format(timeElapsed))
+		print(f"Time elapsed: {timeElapsed:.2f} seconds")
 		if self.numReviewed > 0:
-			print("Avg time per review: {:.2f} seconds".format(timeElapsed / self.numReviewed))
+			print(f"Avg time per review: {timeElapsed/self.numReviewed:.2f} seconds")
 		dbCon.close()
 		self.root.destroy()
 	def resizeForDisplay(self, img):

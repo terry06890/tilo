@@ -25,7 +25,7 @@ print("Getting nodes with wiki IDs")
 nodeToWikiId = {}
 for row in dbCur.execute("SELECT name, wiki_id from descs"):
 	nodeToWikiId[row[0]] = row[1]
-print("Found {} nodes".format(len(nodeToWikiId)))
+print(f"Found {len(nodeToWikiId)} nodes")
 # Find wiki-ids that redirect to each node
 print("Finding redirecter names")
 nodeToAltNames = {}
@@ -34,7 +34,7 @@ iterNum = 0
 for (nodeName, wikiId) in nodeToWikiId.items():
 	iterNum += 1
 	if iterNum % 1e4 == 0:
-		print("At iteration {}".format(iterNum))
+		print(f"At iteration {iterNum}")
 	#
 	nodeToAltNames[nodeName] = set()
 	query = "SELECT p1.title FROM pages p1" \
@@ -44,7 +44,7 @@ for (nodeName, wikiId) in nodeToWikiId.items():
 		if altNameRegex.fullmatch(name) != None:
 			nodeToAltNames[nodeName].add(name.lower())
 			numAltNames += 1
-print("Found {} alt-names".format(numAltNames))
+print(f"Found {numAltNames} alt-names")
 # Remove existing alt-names
 print("Removing existing alt-names")
 query = "SELECT alt_name FROM names WHERE alt_name IN ({})"
@@ -52,14 +52,14 @@ iterNum = 0
 for (nodeName, altNames) in nodeToAltNames.items():
 	iterNum += 1
 	if iterNum % 1e4 == 0:
-		print("At iteration {}".format(iterNum))
+		print(f"At iteration {iterNum}")
 	#
 	existingNames = set()
 	for (name,) in dbCur.execute(query.format(",".join(["?"] * len(altNames))), list(altNames)):
 		existingNames.add(name)
 	numAltNames -= len(existingNames)
 	altNames.difference_update(existingNames)
-print("Left with {} alt-names".format(numAltNames))
+print(f"Left with {numAltNames} alt-names")
 # Add alt-names
 print("Adding alt-names")
 for (nodeName, altNames) in nodeToAltNames.items():

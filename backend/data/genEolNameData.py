@@ -77,7 +77,7 @@ for row in dbCur2.execute("SELECT name FROM nodes"):
 	name = row[0]
 	iterationNum += 1
 	if iterationNum % 10000 == 0:
-		print("Loop 1 iteration {}".format(iterationNum))
+		print(f"Loop 1 iteration {iterationNum}")
 	# If name matches a canonical-name, add alt-name entries to 'names' table
 	if name in canonicalNameToPids:
 		pidToUse = 0
@@ -103,7 +103,7 @@ iterationNum = 0
 for name in unresolvedNodeNames:
 	iterationNum += 1
 	if iterationNum % 100 == 0:
-		print("Loop 2 iteration {}".format(iterationNum))
+		print(f"Loop 2 iteration {iterationNum}")
 	# Add alt-name entries to 'names' table for first corresponding pid
 	pidToUse = 0
 	for pid in nameToPids[name]:

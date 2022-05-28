@@ -25,7 +25,7 @@ nodeNames = set()
 query = "SELECT nodes.name FROM nodes LEFT JOIN descs ON nodes.name = descs.name WHERE desc IS NULL"
 for row in dbCur.execute(query):
 	nodeNames.add(row[0])
-print("Found {} names".format(len(nodeNames)))
+print(f"Found {len(nodeNames)} names")
 # Find page id for each node name
 print("Getting node page-ids")
 nodeToPageId = {}
@@ -33,7 +33,7 @@ iterNum = 0
 for name in nodeNames:
 	iterNum += 1
 	if iterNum % 1e4 == 0:
-		print("At iteration {}".format(iterNum))
+		print(f"At iteration {iterNum}")
 	#
 	row = enwikiCur.execute("SELECT id FROM pages WHERE pages.title = ? COLLATE NOCASE", (name,)).fetchone()
 	if row != None:
@@ -45,7 +45,7 @@ iterNum = 0
 for (name, pageId) in nodeToPageId.items():
 	iterNum += 1
 	if iterNum % 1000 == 0:
-		print("At iteration {}".format(iterNum))
+		print(f"At iteration {iterNum}")
 	#
 	row = enwikiCur.execute(
 		"SELECT pages.id FROM redirects INNER JOIN pages ON redirects.target = pages.title WHERE redirects.id = ?",
@@ -59,7 +59,7 @@ iterNum = 0
 for (name, pageId) in nodeToPageId.items():
 	iterNum += 1
 	if iterNum % 1000 == 0:
-		print("At iteration {}".format(iterNum))
+		print(f"At iteration {iterNum}")
 	#
 	row = enwikiCur.execute("SELECT desc FROM descs where descs.id = ?", (pageId,)).fetchone()
 	if row != None:

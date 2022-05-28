@@ -31,11 +31,11 @@ with bz2.open(labelsFile, mode='rt') as file:
 	for line in file:
 		lineNum += 1
 		if lineNum % 1e5 == 0:
-			print("Processing line {}".format(lineNum))
+			print(f"Processing line {lineNum}")
 		#
 		match = labelLineRegex.fullmatch(line)
 		if match == None:
-			print("ERROR: Line {} has unexpected format".format(lineNum), file=sys.stderr)
+			print(f"ERROR: Line {lineNum} has unexpected format", file=sys.stderr)
 			sys.exit(1)
 		else:
 			dbCur.execute("INSERT INTO labels VALUES (?, ?)", (match.group(1), match.group(2)))
@@ -49,18 +49,18 @@ with bz2.open(idsFile, mode='rt') as file:
 	for line in file:
 		lineNum += 1
 		if lineNum % 1e5 == 0:
-			print("Processing line {}".format(lineNum))
+			print(f"Processing line {lineNum}")
 		#
 		match = idLineRegex.fullmatch(line)
 		if match == None:
-			print("ERROR: Line {} has unexpected format".format(lineNum), file=sys.stderr)
+			print(f"ERROR: Line {lineNum} has unexpected format", file=sys.stderr)
 			sys.exit(1)
 		else:
 			try:
 				dbCur.execute("INSERT INTO ids VALUES (?, ?)", (match.group(1), int(match.group(2))))
 			except sqlite3.IntegrityError as e:
 				# Accounts for certain lines that have the same IRI
-				print("Failed to add entry with IRI \"{}\": {}".format(match.group(1), e))
+				print(f"Failed to add entry with IRI \"{match.group(1)}\": {e}")
 dbCon.commit()
 # Read/store redirects
 print("Reading/storing redirection data")
@@ -71,11 +71,11 @@ with bz2.open(redirectsFile, mode='rt') as file:
 	for line in file:
 		lineNum += 1
 		if lineNum % 1e5 == 0:
-			print("Processing line {}".format(lineNum))
+			print(f"Processing line {lineNum}")
 		#
 		match = redirLineRegex.fullmatch(line)
 		if match == None:
-			print("ERROR: Line {} has unexpected format".format(lineNum), file=sys.stderr)
+			print(f"ERROR: Line {lineNum} has unexpected format", file=sys.stderr)
 			sys.exit(1)
 		else:
 			dbCur.execute("INSERT INTO redirects VALUES (?, ?)", (match.group(1), match.group(2)))
@@ -89,11 +89,11 @@ with bz2.open(disambigFile, mode='rt') as file:
 	for line in file:
 		lineNum += 1
 		if lineNum % 1e5 == 0:
-			print("Processing line {}".format(lineNum))
+			print(f"Processing line {lineNum}")
 		#
 		match = disambigLineRegex.fullmatch(line)
 		if match == None:
-			print("ERROR: Line {} has unexpected format".format(lineNum), file=sys.stderr)
+			print(f"ERROR: Line {lineNum} has unexpected format", file=sys.stderr)
 			sys.exit(1)
 		else:
 			disambigNames.add(match.group(1))
@@ -111,11 +111,11 @@ with bz2.open(typesFile, mode='rt') as file:
 	for line in file:
 		lineNum += 1
 		if lineNum % 1e5 == 0:
-			print("Processing line {}".format(lineNum))
+			print(f"Processing line {lineNum}")
 		#
 		match = typeLineRegex.fullmatch(line)
 		if match == None:
-			print("ERROR: Line {} has unexpected format".format(lineNum), file=sys.stderr)
+			print(f"ERROR: Line {lineNum} has unexpected format", file=sys.stderr)
 			sys.exit(1)
 		else:
 			dbCur.execute("INSERT INTO types VALUES (?, ?)", (match.group(1), match.group(2)))
@@ -129,13 +129,13 @@ with bz2.open(abstractsFile, mode='rt') as file:
 	for line in file:
 		lineNum += 1
 		if lineNum % 1e5 == 0:
-			print("Processing line {}".format(lineNum))
+			print(f"Processing line {lineNum}")
 		#
 		if line[0] == "#":
 			continue
 		match = descLineRegex.fullmatch(line)
 		if match == None:
-			print("ERROR: Line {} has unexpected format".format(lineNum), file=sys.stderr)
+			print(f"ERROR: Line {lineNum} has unexpected format", file=sys.stderr)
 			sys.exit(1)
 		else:
 			dbCur.execute("INSERT INTO abstracts VALUES (?, ?)",

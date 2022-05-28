@@ -24,9 +24,9 @@ parensGrpRegex = re.compile(r" \([^()]*\)")
 leftoverBraceRegex = re.compile(r"(?:{\||{{).*")
 def convertTemplateReplace(match):
 	if match.group(2) == None:
-		return "{} {}".format(match.group(1), match.group(4))
+		return f"{match.group(1)} {match.group(4)}"
 	else:
-		return "{} {} {} {}".format(match.group(1), match.group(2), match.group(3), match.group(4))
+		return f"{match.group(1)} {match.group(2)} {match.group(3)} {match.group(4)}"
 def parseDesc(text):
 	# Find first matching line outside a {{...}} and [[...]] block-html-comments, then accumulate lines until a blank
 	# Some cases not accounted for: disambiguation pages, abstracts with sentences split-across-lines, 
@@ -83,7 +83,7 @@ def convertTitle(title):
 
 # Check for existing db
 if os.path.exists(enwikiDb):
-	print("ERROR: Existing {}".format(enwikiDb), file=sys.stderr)
+	print(f"ERROR: Existing {enwikiDb}", file=sys.stderr)
 	sys.exit(1)
 # Create db
 dbCon = sqlite3.connect(enwikiDb)
@@ -101,14 +101,14 @@ with bz2.open(dumpFile, mode='rt') as file:
 	for page in dump:
 		pageNum += 1
 		if pageNum % 1e4 == 0:
-			print("At page {}".format(pageNum))
+			print(f"At page {pageNum}")
 		# Parse page
 		if page.namespace == 0:
 			try:
 				dbCur.execute("INSERT INTO pages VALUES (?, ?)", (page.id, convertTitle(page.title)))
 			except sqlite3.IntegrityError as e:
 				# Accounts for certain pages that have the same title
-				print("Failed to add page with title \"{}\": {}".format(page.title, e))
+				print(f"Failed to add page with title \"{page.title}\": {e}")
 				continue
 			if page.redirect != None:
 				dbCur.execute("INSERT INTO redirects VALUES (?, ?)", (page.id, convertTitle(page.redirect)))

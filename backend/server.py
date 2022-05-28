@@ -35,7 +35,7 @@ def lookupNodes(names, useReducedTree):
 	nodesTable = "nodes" if not useReducedTree else "r_nodes"
 	edgesTable = "edges" if not useReducedTree else "r_edges"
 	queryParamStr = ",".join(["?"] * len(names))
-	query = "SELECT name, tips FROM {} WHERE name IN ({})".format(nodesTable, queryParamStr)
+	query = f"SELECT name, tips FROM {nodesTable} WHERE name IN ({queryParamStr})"
 	for (nodeName, tips) in cur.execute(query, names):
 		nodeObjs[nodeName] = {
 			"children": [],
@@ -45,10 +45,10 @@ def lookupNodes(names, useReducedTree):
 			"commonName": None,
 			"imgName": None,
 		}
-	query = "SELECT node, child FROM {} WHERE node IN ({})".format(edgesTable, queryParamStr)
+	query = f"SELECT node, child FROM {edgesTable} WHERE node IN ({queryParamStr})"
 	for (nodeName, childName) in cur.execute(query, names):
 		nodeObjs[nodeName]["children"].append(childName)
-	query = "SELECT node, child, p_support FROM {} WHERE child IN ({})".format(edgesTable, queryParamStr)
+	query = f"SELECT node, child, p_support FROM {edgesTable} WHERE child IN ({queryParamStr})"
 	for (nodeName, childName, pSupport) in cur.execute(query, names):
 		nodeObjs[childName]["parent"] = None if nodeName == "" else nodeName
 		nodeObjs[childName]["pSupport"] = (pSupport == 1)
@@ -72,7 +72,7 @@ def lookupNodes(names, useReducedTree):
 				str(eolId2) + ".jpg" if eolId2 != 0 else None,
 			]
 	# Get preferred-name info
-	query = "SELECT name, alt_name FROM names WHERE pref_alt = 1 AND name IN ({})".format(queryParamStr)
+	query = f"SELECT name, alt_name FROM names WHERE pref_alt = 1 AND name IN ({queryParamStr})"
 	for (name, altName) in cur.execute(query, names):
 		if altName != name:
 			nodeObjs[name]["commonName"] = altName
@@ -185,7 +185,7 @@ class DbServer(BaseHTTPRequestHandler):
 						if not ranOnce:
 							self.respondJson(results)
 							return
-						print("ERROR: Parent-chain node {} not found".format(name), file=sys.stderr)
+						print(f"ERROR: Parent-chain node {name} not found", file=sys.stderr)
 						break
 					nodeObj = nodeObjs[name]
 					results[name] = nodeObj
@@ -221,7 +221,7 @@ class DbServer(BaseHTTPRequestHandler):
 		self.wfile.write(json.dumps(val).encode("utf-8"))
 
 server = HTTPServer((hostname, port), DbServer)
-print("Server started at http://{}:{}".format(hostname, port))
+print(f"Server started at http://{hostname}:{port}")
 try:
 	server.serve_forever()
 except KeyboardInterrupt:

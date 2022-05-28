@@ -76,7 +76,7 @@ for i in range(inputImgIdx, len(inputImgList)):
 	imgName = inputImgList[i]
 	[eolIdStr, otherStr] = imgName.split(" ")
 	contentId = int(otherStr.split(".")[0])
-	print("Converting {}".format(imgName))
+	print(f"Converting {imgName}")
 	subprocess.run(
 		['npx', 'smartcrop-cli', 
 			'--width', str(IMG_OUT_SZ),

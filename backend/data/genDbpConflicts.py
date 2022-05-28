@@ -45,7 +45,7 @@ iterNum = 0
 for (label,) in dbpCur.execute("SELECT label from labels"):
 	iterNum += 1
 	if iterNum % 1e5 == 0:
-		print("Processing line {}".format(iterNum))
+		print(f"Processing line {iterNum}")
 	#
 	if label in disambigLabels:
 		continue
@@ -70,7 +70,7 @@ for (name, variants) in nameToVariants.items():
 		namesToRemove.add(name)
 for name in namesToRemove:
 	del nameToVariants[name]
-print("Number of conflicts: {}".format(len(nameToVariants)))
+print(f"Number of conflicts: {len(nameToVariants)}")
 # Try conflict resolution via taxon-type information
 print("Resolving conflicts using instance-type data")
 taxonTypes = { # Obtained from the DBpedia ontology
@@ -109,7 +109,7 @@ iterNum = 0
 for (label, type) in dbpCur.execute("SELECT label, type from labels INNER JOIN types on labels.iri = types.iri"):
 	iterNum += 1
 	if iterNum % 1e5 == 0:
-		print("Processing line {}".format(iterNum))
+		print(f"Processing line {iterNum}")
 	#
 	if type in taxonTypes:
 		name = label.lower()
@@ -121,7 +121,7 @@ for (label, type) in dbpCur.execute("SELECT label, type from labels INNER JOIN t
 				name = match.group(1)
 				if name in nameToVariants:
 					del nameToVariants[name]
-print("Number of conflicts: {}".format(len(nameToVariants)))
+print(f"Number of conflicts: {len(nameToVariants)}")
 # Try conflict resolution via category-list
 	# Does a generic-category pass first (avoid stuff like Pan being classified as a horse instead of an ape)
 print("Resolving conflicts using category-list")
@@ -163,7 +163,7 @@ for (name, variants) in nameToVariants.items():
 				break
 for name in namesToRemove:
 	del nameToVariants[name]
-print("Number of conflicts: {}".format(len(nameToVariants)))
+print(f"Number of conflicts: {len(nameToVariants)}")
 # Find descriptions for plain-named labels
 print("Finding descriptions for plain-named labels")
 labelToDesc = {}
@@ -172,7 +172,7 @@ query = "SELECT label, abstract from labels INNER JOIN abstracts ON labels.iri =
 for (label, desc,) in dbpCur.execute(query):
 	iterNum += 1
 	if iterNum % 1e5 == 0:
-		print("Processing line {}".format(iterNum))
+		print(f"Processing line {iterNum}")
 	#
 	if label.lower() in nameToVariants:
 		labelToDesc[label] = desc
@@ -183,7 +183,7 @@ query = "SELECT label, abstract from labels" \
 for (label, desc,) in dbpCur.execute(query):
 	iterNum += 1
 	if iterNum % 1e5 == 0:
-		print("Processing line {}".format(iterNum))
+		print(f"Processing line {iterNum}")
 	#
 	if label.lower() in nameToVariants:
 		labelToDesc[label] = desc
@@ -196,7 +196,7 @@ with open(outFile, "w") as file:
 		file.write("\n")
 		for n in variants:
 			if n in labelToDesc:
-				file.write("\t{}: {}\n".format(n, labelToDesc[n]))
+				file.write(f"\t{n}: {labelToDesc[n]}\n")
 # Close dbs
 dbCon.close()
 dbpCon.close()

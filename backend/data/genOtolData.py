@@ -131,13 +131,13 @@ def parseNewickName():
 	elif name[0] == "'":
 		match = re.fullmatch(r"'([^\\\"]+) (ott\d+)'", name)
 		if match == None:
-			raise Exception("ERROR: invalid name \"{}\"".format(name))
+			raise Exception(f"ERROR: invalid name \"{name}\"")
 		name = match.group(1).replace("''", "'")
 		return [name, match.group(2)]
 	else:
 		match = re.fullmatch(r"([^\\\"]+)_(ott\d+)", name)
 		if match == None:
-			raise Exception("ERROR: invalid name \"{}\"".format(name))
+			raise Exception(f"ERROR: invalid name \"{name}\"")
 		return [match.group(1).replace("_", " "), match.group(2)]
 rootId = parseNewick()
 # For nodes with *many* children, remove some of those children
@@ -148,8 +148,8 @@ if os.path.exists(keptNamesFile):
 		for line in file:
 			namesToKeep.add(line.rstrip())
 else:
-	print("WARNING: No '{}' file found".format(keptNamesFile))
-print("Read in {} nodes".format(len(namesToKeep)))
+	print(f"WARNING: No '{keptNamesFile}' file found")
+print(f"Read in {len(namesToKeep)} nodes")
 keptAncestors = set()
 for name in namesToKeep:
 	if name in nameToFirstId:
@@ -237,7 +237,7 @@ def convertMrcaName(id):
 	name = node["name"]
 	childIds = node["children"]
 	if len(childIds) < 2:
-		print("WARNING: MRCA node \"{}\" has less than 2 children".format(name), file=sys.stderr)
+		print(f"WARNING: MRCA node \"{name}\" has less than 2 children", file=sys.stderr)
 		return
 	# Get 2 children with most tips
 	childTips = [nodeMap[id]["tips"] for id in childIds]
@@ -261,7 +261,7 @@ def convertMrcaName(id):
 	if match != None:
 		childName2 = match.group(1)
 	# Create composite name
-	node["name"] = "[{} + {}]".format(childName1, childName2)
+	node["name"] = f"[{childName1} + {childName2}]"
 	return childName1
 for [id, node] in nodeMap.items():
 	if node["name"].startswith("mrca"):

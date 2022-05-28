@@ -26,7 +26,7 @@ if row == None:
 	sys.exit(0)
 (_, pageOffset, endOffset) = row
 dbCon.close()
-print("Found chunk at offset {}".format(pageOffset))
+print(f"Found chunk at offset {pageOffset}")
 # Read dump file
 print("Reading dump file")
 content = []
@@ -51,7 +51,7 @@ with open(dumpFile, mode='rb') as file:
 			titleLine = lines[lineIdx]
 			if titleLine.lstrip() == '<title>' + pageTitle + '</title>':
 				found = True
-				print("Found title in chunk as page {}".format(pageNum))
+				print(f"Found title in chunk as page {pageNum}")
 				content.append(line)
 				content.append(titleLine)
 				while True:

@@ -56,7 +56,7 @@ def downloadImg(url, outFile):
 			file.write(data.content)
 		time.sleep(random.random() * (POST_DL_DELAY_MAX - POST_DL_DELAY_MIN) + POST_DL_DELAY_MIN)
 	except Exception as e:
-		print("Error while downloading to {}: {}".format(outFile, str(e)), file=sys.stderr)
+		print(f"Error while downloading to {outFile}: {str(e)}", file=sys.stderr)
 		threadException = e
 	numThreads -= 1
 # Create output directory if not present
@@ -113,7 +113,7 @@ for idx in range(nextIdx, len(eolIds)):
 		urlParts = urllib.parse.urlparse(url)
 		extension = os.path.splitext(urlParts.path)[1]
 		if len(extension) <= 1:
-			print("WARNING: No filename extension found in URL {}".format(url), file=sys.stderr)
+			print(f"WARNING: No filename extension found in URL {url}", file=sys.stderr)
 			continue
 		outFiles.append(str(eolId) + " " + str(contentId) + extension)
 		urls.append(url)
@@ -132,7 +132,7 @@ for idx in range(nextIdx, len(eolIds)):
 					time.sleep(1)
 				exitLoop = True
 				break
-			print("Downloading image to {}".format(outPath))
+			print("Downloading image to {outPath}")
 			# Perform download
 			numThreads += 1
 			thread = Thread(target=downloadImg, args=(urls[i], outPath), daemon=True)

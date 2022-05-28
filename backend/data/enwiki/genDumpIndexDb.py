@@ -16,7 +16,7 @@ indexDb = "dumpIndex.db"
 
 # Check for existing db
 if os.path.exists(indexDb):
-	print("ERROR: Existing {}".format(indexDb), file=sys.stderr)
+	print(f"ERROR: Existing {indexDb}", file=sys.stderr)
 	sys.exit(1)
 # Create db
 dbCon = sqlite3.connect(indexDb)
@@ -31,7 +31,7 @@ with bz2.open(indexFile, mode='rt') as file:
 	for line in file:
 		lineNum += 1
 		if lineNum % 1e5 == 0:
-			print("At line {}".format(lineNum))
+			print(f"At line {lineNum}")
 		#
 		match = lineRegex.fullmatch(line.rstrip())
 		(offset, _, title) = match.group(1,2,3)
@@ -42,7 +42,7 @@ with bz2.open(indexFile, mode='rt') as file:
 					dbCur.execute("INSERT INTO offsets VALUES (?, ?, ?)", (t, lastOffset, offset))
 				except sqlite3.IntegrityError as e:
 					# Accounts for certain entries in the file that have the same title
-					print("Failed on title \"{}\": {}".format(t, e))
+					print(f"Failed on title \"{t}\": {e}")
 			titlesToAdd = []
 			lastOffset = offset
 		titlesToAdd.append(title)
@@ -50,7 +50,7 @@ for title in titlesToAdd:
 	try:
 		dbCur.execute("INSERT INTO offsets VALUES (?, ?, ?)", (title, lastOffset, -1))
 	except sqlite3.IntegrityError as e:
-		print("Failed on title \"{}\": {}".format(t, e))
+		print(f"Failed on title \"{t}\": {e}")
 # Close db
 dbCon.commit()
 dbCon.close()

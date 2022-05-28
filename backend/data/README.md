@@ -1,6 +1,5 @@
 File Generation Process
 =======================
-
 1   Tree Structure Data
     1   Obtain data in otol/, as specified in it's README.
     2   Run genOtolData.py, which creates data.db, and adds

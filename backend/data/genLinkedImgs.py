@@ -27,7 +27,7 @@ query = "SELECT nodes.name, eol_ids.id FROM" \
 		" INNER JOIN images ON eol_ids.id = images.eol_id"
 for (name, eolId) in dbCur.execute(query):
 	resolvedNodes[name] = eolId
-print("Got {} nodes".format(len(resolvedNodes)))
+print(f"Got {len(resolvedNodes)} nodes")
 # Iterate through resolved nodes, resolving ancestors where able
 print("Resolving ancestor nodes")
 nodesToResolve = {}
@@ -37,7 +37,7 @@ iterNum = 0
 while len(resolvedNodes) > 0:
 	iterNum += 1
 	if iterNum % 1e3 == 0:
-		print("At iteration {}".format(iterNum))
+		print(f"At iteration {iterNum}")
 	# Get next node
 	(nodeName, eolId) = resolvedNodes.popitem()
 	processedNodes[nodeName] = eolId
@@ -85,7 +85,7 @@ iterNum = 0
 for nodeName in processedNodes.keys():
 	iterNum += 1
 	if iterNum % 1e3 == 0:
-		print("At iteration {}".format(iterNum))
+		print(f"At iteration {iterNum}")
 	#
 	match = compoundNameRegex.fullmatch(nodeName)
 	if match != None:

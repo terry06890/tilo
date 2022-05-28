@@ -26,7 +26,7 @@ with open(nodeNamesFile) as file:
 	for line in file:
 		iterNum += 1
 		if iterNum % 100 == 0:
-			print("Iteration {}".format(iterNum))
+			print(f"Iteration {iterNum}")
 		#
 		row = dbCur.execute("SELECT name from nodes WHERE name = ?", (line.rstrip(),)).fetchone()
 		if row == None:
@@ -36,7 +36,7 @@ with open(nodeNamesFile) as file:
 if len(minimalNames) == 0:
 	print("ERROR: No names found", file=sys.stderr)
 	sys.exit(1)
-print("Name set has {} names".format(len(minimalNames)))
+print(f"Name set has {len(minimalNames)} names")
 # Add nodes that connect up to root
 print("Getting connected nodes set")
 iterNum = 0
@@ -44,7 +44,7 @@ rootName = None
 for name in minimalNames:
 	iterNum += 1
 	if iterNum % 100 == 0:
-		print("Iteration {}".format(iterNum))
+		print(f"Iteration {iterNum}")
 	#
 	prevName = None
 	while name != None:
@@ -67,7 +67,7 @@ for name in minimalNames:
 			break
 	if name == None:
 		rootName = prevName
-print("New node set has {} nodes".format(len(nodeMap)))
+print(f"New node set has {len(nodeMap)} nodes")
 # Remove certain 'chain collapsible' nodes
 print("Removing 'chain collapsible' nodes")
 namesToRemove = set()
@@ -85,7 +85,7 @@ for (name, nodeObj) in nodeMap.items():
 		namesToRemove.add(name)
 for name in namesToRemove:
 	del nodeMap[name]
-print("New node set has {} nodes".format(len(nodeMap)))
+print(f"New node set has {len(nodeMap)} nodes")
 # Merge-upward compsite-named nodes
 print("Merging-upward composite-named nodes")
 namesToRemove2 = set()
@@ -103,7 +103,7 @@ for (name, nodeObj) in nodeMap.items():
 for name in namesToRemove2:
 	del nodeMap[name]
 	namesToRemove.add(name)
-print("New node set has {} nodes".format(len(nodeMap)))
+print(f"New node set has {len(nodeMap)} nodes")
 # Add some connected children
 print("Adding additional nearby children")
 namesToAdd = []
@@ -111,7 +111,7 @@ iterNum = 0
 for (name, nodeObj) in nodeMap.items():
 	iterNum += 1
 	if iterNum % 100 == 0:
-		print("Iteration {}".format(iterNum))
+		print(f"Iteration {iterNum}")
 	#
 	numChildren = len(nodeObj["children"])
 	if numChildren < PREF_NUM_CHILDREN:
@@ -131,7 +131,7 @@ for name in namesToAdd:
 		"tips": 0,
 		"pSupport": pSupport == 1,
 	}
-print("New node set has {} nodes".format(len(nodeMap)))
+print(f"New node set has {len(nodeMap)} nodes")
 # set tips vals
 print("Setting tips vals")
 def setTips(nodeName):
