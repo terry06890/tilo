@@ -32,6 +32,7 @@ export default defineComponent({
 			clickHoldTimer: 0, // Used to recognise click-and-hold events
 			scrollOffset: 0, // Used to track scroll offset when displaying with overflow
 			pendingScrollHdlr: 0,
+			justUnhidden: false,
 		};
 	},
 	computed: {
@@ -122,7 +123,8 @@ export default defineComponent({
 				transitionProperty: 'left, top, width, height, visibility',
 				transitionTimingFunction: 'ease-out',
 				zIndex: this.inTransition && this.wasClicked ? '1' : '0',
-				overflow: this.inTransition && !this.isLeaf && !this.hasExpanded ? 'hidden' : 'visible',
+				overflow: (this.inTransition && !this.isLeaf && !this.hasExpanded && !this.justUnhidden) ?
+					'hidden' : 'visible',
 				// CSS variables
 				'--nonleafBgColor': this.nonleafBgColor,
 				'--tileSpacing': this.lytOpts.tileSpacing + 'px',
@@ -310,6 +312,9 @@ export default defineComponent({
 		failFlag(){
 			return this.layoutNode.failFlag;
 		},
+		hidden(){
+			return this.layoutNode.hidden;
+		},
 	},
 	watch: {
 		// For setting transition state (can be triggered externally, like via search and auto-mode)
@@ -342,6 +347,13 @@ export default defineComponent({
 				let bottomY = focusedChild.pos[1] + focusedChild.dims[1] + this.lytOpts.tileSpacing;
 				let scrollTop = Math.max(0, bottomY - (this.overflownDim / 2)); // 'scrollTop' won't go over max
 				this.$el.scrollTop = scrollTop;
+			}
+		},
+		//
+		hidden(newVal, oldVal){
+			if (oldVal && !newVal){
+				this.justUnhidden = true;
+				setTimeout(() => {this.justUnhidden = false;}, this.uiOpts.tileChgDuration);
 			}
 		},
 	},
