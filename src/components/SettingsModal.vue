@@ -1,6 +1,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
+import RButton from './RButton.vue';
 import type {LayoutOptions} from '../layout';
 
 // Displays configurable options, and sends option-change requests
@@ -54,7 +55,7 @@ export default defineComponent({
 			console.log('Settings reset');
 		},
 	},
-	components: {CloseIcon, },
+	components: {CloseIcon, RButton, },
 	emits: ['settings-close', 'layout-option-change', 'tree-change', 'reset-settings', ],
 });
 </script>
@@ -156,12 +157,12 @@ export default defineComponent({
 		</div>
 		<hr class="border-stone-400"/>
 		<div class="flex justify-around mt-2">
-			<button class="block rounded px-4 py-2 bg-stone-800 text-white" @click="onSave">
+			<r-button class="bg-stone-800 text-white" @click="onSave">
 				Save
-			</button>
-			<button class="block rounded px-4 py-2 bg-stone-800 text-white" @click="onReset">
+			</r-button>
+			<r-button class="bg-stone-800 text-white" @click="onReset">
 				Reset
-			</button>
+			</r-button>
 		</div>
 	</div>
 </div>

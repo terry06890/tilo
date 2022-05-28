@@ -1,6 +1,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
+import RButton from './RButton.vue';
 import {Action} from '../lib';
 
 export default defineComponent({
@@ -31,14 +32,6 @@ export default defineComponent({
 				margin: '0 auto',
 				fontSize: 'small',
 				overflow: 'auto',
-			};
-		 },
-		 buttonStyles(): Record<string,string> {
-			return {
-				display: 'block',
-				padding: '8px 16px',
-				borderRadius: '5px',
-				backgroundColor: '#292524',
 			};
 		 },
 	},
@@ -87,7 +80,7 @@ export default defineComponent({
 			this.sendEnabledFeatures();
 		}
 	},
-	components: {CloseIcon, },
+	components: {CloseIcon, RButton, },
 	emits: ['tutorial-close', 'tutorial-stage-chg', ],
 });
 </script>
@@ -107,12 +100,12 @@ export default defineComponent({
 			quis nostrud exercitation ullamco.
 		</div>
 		<div class="w-full flex justify-evenly mt-2">
-			<button :style="buttonStyles" class="hover:brightness-125" @click="onStartTutorial">
+			<r-button class="bg-stone-800 text-white" @click="onStartTutorial">
 				Start Tutorial
-			</button>
-			<button :style="buttonStyles" class="hover:brightness-125" @click="onClose">
+			</r-button>
+			<r-button class="bg-stone-800 text-white" @click="onClose">
 				Close
-			</button>
+			</r-button>
 		</div>
 	</template>
 	<template v-else>
@@ -166,15 +159,12 @@ export default defineComponent({
 		</div>
 		<!-- Buttons -->
 		<div class="w-full flex justify-evenly mt-2">
-			<button :style="buttonStyles"
-				:disabled="stage == 1" :class="stage == 1 ? ['brightness-75'] : ['hover:brightness-125']"
-				@click="onPrevClick">
+			<r-button :disabled="stage == 1" class="bg-stone-800 text-white" @click="onPrevClick">
 				Prev
-			</button>
-			<button :style="buttonStyles" class="hover:brightness-125"
-				@click="(stage != maxStage) ? onNextClick() : onClose()">
+			</r-button>
+			<r-button class="bg-stone-800 text-white" @click="(stage != maxStage) ? onNextClick() : onClose()">
 				{{stage != maxStage ? 'Next' : 'Finish'}}
-			</button>
+			</r-button>
 		</div>
 	</template>
 </div>
