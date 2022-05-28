@@ -141,14 +141,29 @@ def parseNewickName():
 		return [match.group(1).replace("_", " "), match.group(2)]
 rootId = parseNewick()
 # For nodes with *many* children, remove some of those children
-print("Trimming nodes from tree")
+print("Getting nodes for which to avoid trimming")
 namesToKeep = set()
 if os.path.exists(keptNamesFile):
-	with open(keptNamesFile) as file: # Contains names with an image (incl linked), desc, or reduced-tree-presence
+	with open(keptNamesFile) as file: # Contains names with an image, desc, or reduced-tree-presence
 		for line in file:
 			namesToKeep.add(line.rstrip())
 else:
 	print("WARNING: No '{}' file found".format(keptNamesFile))
+print("Read in {} nodes".format(len(namesToKeep)))
+keptAncestors = set()
+for name in namesToKeep:
+	if name in nameToFirstId:
+		ids = [nameToFirstId[name]] if name not in dupNameToIds else dupNameToIds[name]
+		for id in ids:
+			parentId = nodeMap[id]["parent"]
+			while parentId != None:
+				parentObj = nodeMap[parentId]
+				keptAncestors.add(parentObj["name"])
+				parentId = parentObj["parent"]
+oldNamesToKeepSz = len(namesToKeep)
+namesToKeep.update(keptAncestors)
+print("Added {} ancestor nodes".format(len(namesToKeep) - oldNamesToKeepSz))
+print("Trimming nodes from tree")
 def trimChildren(nodeId):
 	""" Traverse node tree, looking for nodes with too many children """
 	nodeObj = nodeMap[nodeId]

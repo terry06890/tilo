@@ -65,6 +65,6 @@ Other Files
     of possibly-significant nodes are removed, using a short-sighted
     heuristic. <br>
     One way to generate this list is to generate the files as usual,
-    then get node names that have an associated image, linked-image,
-    description, or presence in r_nodes. Then run the genOtolData.py
-    and genEolNameData.py scripts again.
+    then get node names that have an associated image, description, or
+    presence in r_nodes. Then run the genOtolData.py and genEolNameData.py
+    scripts again (after deleting their created tables).

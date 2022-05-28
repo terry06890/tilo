@@ -65,7 +65,7 @@ const defaultUiOpts = {
 	shadowFocused: '0 0 1px 2px orange',
 	infoIconSz: 18, //px
 	infoIconMargin: 2, //px
-	tipThresholds: [[1, 'greenyellow'], [30, 'orange'], [100, 'red']],
+	tipThresholds: [[1, 'greenyellow'], [100, 'orange'], [1000, 'red']],
 	headerColor: '#fafaf9',
 	// For leaf tiles
 	leafTilePadding: 4, //px
@@ -771,13 +771,13 @@ export default defineComponent({
 	</div>
 	<!-- Modals -->
 	<transition name="fade">
+		<search-modal v-if="searchOpen" :tolMap="tolMap" :uiOpts="uiOpts" ref="searchModal"
+			@search-close="searchOpen = false" @search-node="onSearchNode" @info-icon-click="onInfoIconClick"/>
+	</transition>
+	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null"
 			:nodeName="infoModalNodeName" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 			@info-modal-close="infoModalNodeName = null"/>
-	</transition>
-	<transition name="fade">
-		<search-modal v-if="searchOpen" :tolMap="tolMap" :uiOpts="uiOpts" ref="searchModal"
-			@search-close="searchOpen = false" @search-node="onSearchNode" @info-icon-click="onInfoIconClick"/>
 	</transition>
 	<transition name="fade">
 		<help-modal v-if="helpOpen" :uiOpts="uiOpts"
