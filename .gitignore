@@ -20,4 +20,6 @@
 /backend/data/enwiki/.venv/
 /backend/data/dbpedia/*.bz2
 /backend/data/dbpedia/*.db
-/backend/data/namesToKeep.txt
+/backend/data/genOtolNamesToKeep.txt
+/backend/data/genEnwikiDescNamesToSkip.txt
+/backend/data/genEnwikiDescTitlesToUse.txt
