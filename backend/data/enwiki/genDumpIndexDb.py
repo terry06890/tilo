@@ -21,12 +21,12 @@ if os.path.exists(indexDb):
 # Create db
 dbCon = sqlite3.connect(indexDb)
 dbCur = dbCon.cursor()
-dbCur.execute("CREATE TABLE offsets (title TEXT PRIMARY KEY, offset INT, next_offset INT)")
+dbCur.execute("CREATE TABLE offsets (title TEXT PRIMARY KEY, id INT UNIQUE, offset INT, next_offset INT)")
 # Reading index file
 lineRegex = re.compile(r"([^:]+):([^:]+):(.*)")
 lastOffset = 0
 lineNum = 0
-titlesToAdd = []
+entriesToAdd = []
 with bz2.open(indexFile, mode='rt') as file:
 	for line in file:
 		lineNum += 1
@@ -34,21 +34,21 @@ with bz2.open(indexFile, mode='rt') as file:
 			print(f"At line {lineNum}")
 		#
 		match = lineRegex.fullmatch(line.rstrip())
-		(offset, _, title) = match.group(1,2,3)
+		(offset, pageId, title) = match.group(1,2,3)
 		offset = int(offset)
 		if offset > lastOffset:
-			for t in titlesToAdd:
+			for (t, p) in entriesToAdd:
 				try:
-					dbCur.execute("INSERT INTO offsets VALUES (?, ?, ?)", (t, lastOffset, offset))
+					dbCur.execute("INSERT INTO offsets VALUES (?, ?, ?, ?)", (t, p, lastOffset, offset))
 				except sqlite3.IntegrityError as e:
 					# Accounts for certain entries in the file that have the same title
 					print(f"Failed on title \"{t}\": {e}")
-			titlesToAdd = []
+			entriesToAdd = []
 			lastOffset = offset
-		titlesToAdd.append(title)
-for title in titlesToAdd:
+		entriesToAdd.append([title, pageId])
+for (title, pageId) in entriesToAdd:
 	try:
-		dbCur.execute("INSERT INTO offsets VALUES (?, ?, ?)", (title, lastOffset, -1))
+		dbCur.execute("INSERT INTO offsets VALUES (?, ?, ?, ?)", (title, pageId, lastOffset, -1))
 	except sqlite3.IntegrityError as e:
 		print(f"Failed on title \"{t}\": {e}")
 # Close db

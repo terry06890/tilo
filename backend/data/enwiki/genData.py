@@ -18,7 +18,7 @@ enwikiDb = "enwikiData.db"
 # Some regexps and functions for parsing wikitext
 descLineRegex = re.compile("^ *[A-Z'\"]")
 embeddedHtmlRegex = re.compile(r"<[^<]+/>|<!--[^<]+-->|<[^</]+>([^<]*|[^<]*<[^<]+>[^<]*)</[^<]+>|<[^<]+$")
-	# Recognises a self-closing HTML tag, a tag 0 children, tag with 1 child with 0 children, or unclosed tag
+	# Recognises a self-closing HTML tag, a tag with 0 children, tag with 1 child with 0 children, or unclosed tag
 convertTemplateRegex = re.compile(r"{{convert\|(\d[^|]*)\|(?:(to|-)\|(\d[^|]*)\|)?([a-z][^|}]*)[^}]*}}")
 parensGrpRegex = re.compile(r" \([^()]*\)")
 leftoverBraceRegex = re.compile(r"(?:{\||{{).*")

@@ -23,7 +23,7 @@ query = "SELECT title, offset, next_offset FROM offsets WHERE title = ?"
 row = dbCur.execute(query, (pageTitle,)).fetchone()
 if row == None:
 	print("Title not found")
-	sys.exit(0)
+	sys.exit(1)
 (_, pageOffset, endOffset) = row
 dbCon.close()
 print(f"Found chunk at offset {pageOffset}")
