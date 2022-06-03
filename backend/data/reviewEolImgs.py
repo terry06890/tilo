@@ -16,8 +16,8 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-imgDir = "imgsForReview/"
-outDir = "imgsReviewed/"
+imgDir = "eolImgsForReview/"
+outDir = "eolImgsReviewed/"
 dbFile = "data.db"
 IMG_DISPLAY_SZ = 400
 MAX_IMGS_PER_ID = 3

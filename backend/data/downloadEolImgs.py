@@ -21,7 +21,7 @@ if len(sys.argv) > 1:
 
 imagesListDb = "eol/imagesList.db"
 dbFile = "data.db"
-outDir = "imgsForReview/"
+outDir = "eolImgsForReview/"
 LICENSE_REGEX = r"cc-by((-nc)?(-sa)?(-[234]\.[05])?)|cc-publicdomain|cc-0-1\.0|public domain"
 POST_DL_DELAY_MIN = 2 # Minimum delay in seconds to pause after download before starting another (for each thread)
 POST_DL_DELAY_MAX = 3

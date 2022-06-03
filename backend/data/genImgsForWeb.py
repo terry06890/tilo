@@ -16,7 +16,7 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-imgDir = "imgsReviewed/"
+imgDir = "eolImgsReviewed/"
 outDir = "img/"
 imagesListDb = "eol/imagesList.db"
 dbFile = "data.db"

@@ -10,12 +10,12 @@ File Generation Process
     2   Run genEolNameData.py, which adds 'names' and 'eol\_ids' tables to data.db,
         using data in eol/vernacularNames.csv and the 'nodes' table.
 3   Image Data
-    1   Run downloadImgsForReview.py to download EOL images into imgsForReview/.
+    1   Run downloadEolImgs.py to download EOL images into eolImgsForReview/.
         It uses data in eol/imagesList.db, and the 'eol\_ids' table.
-    2   Run reviewImgs.py to filter images in imgsForReview/ into EOL-id-unique
-        images in imgsReviewed/ (uses 'names' and 'eol\_ids' to display extra info).
+    2   Run reviewEolImgs.py to filter images in eolImgsForReview/ into EOL-id-unique
+        images in eolImgsReviewed/ (uses 'names' and 'eol\_ids' to display extra info).
     3   Run genImgsForWeb.py to create cropped/resized images in img/, using
-        images in imgsReviewed, and also to add an 'images' table to data.db.
+        images in eolImgsReviewed/, and also to add an 'images' table to data.db.
     4   Run genLinkedImgs.py to add a 'linked_imgs' table to data.db,
         which uses 'nodes', 'edges', 'eol_ids', and 'images', to associate
         nodes without images to child images.
