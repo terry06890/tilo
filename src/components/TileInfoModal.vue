@@ -123,7 +123,9 @@ export default defineComponent({
 		<h1 class="text-center text-xl font-bold mb-2">
 			{{displayName}}
 			<div v-if="tolNode != null">
-				({{tolNode.children.length}} children, {{tolNode.tips}} tips)
+				({{tolNode.children.length}} children, {{tolNode.tips}} tips,
+					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId">
+						OTOL Link</a>)
 			</div>
 		</h1>
 		<hr class="mb-4 border-stone-400"/>

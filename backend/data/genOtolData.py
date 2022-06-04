@@ -32,7 +32,7 @@ nodeMap = {} # Maps node IDs to node objects
 nameToFirstId = {} # Maps node names to first found ID (names might have multiple IDs)
 dupNameToIds = {} # Maps names of nodes with multiple IDs to those node IDs
 softChildLimit = 100
-keptNamesFile = "namesToKeep.txt" # Contains names to keep when doing node trimming
+keptNamesFile = "genOtolNamesToKeep.txt" # Contains names to keep when doing node trimming
 
 # Parse treeFile
 print("Parsing tree file")
@@ -289,12 +289,12 @@ for [id, node] in nodeMap.items():
 print("Creating nodes and edges tables")
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
-dbCur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, tips INT)")
+dbCur.execute("CREATE TABLE nodes (name TEXT PRIMARY KEY, id TEXT UNIQUE, tips INT)")
 dbCur.execute("CREATE INDEX nodes_idx_nc ON nodes(name COLLATE NOCASE)")
 dbCur.execute("CREATE TABLE edges (node TEXT, child TEXT, p_support INT, PRIMARY KEY (node, child))")
 dbCur.execute("CREATE INDEX edges_child_idx ON edges(child)")
-for node in nodeMap.values():
-	dbCur.execute("INSERT INTO nodes VALUES (?, ?)", (node["name"], node["tips"]))
+for (otolId, node) in nodeMap.items():
+	dbCur.execute("INSERT INTO nodes VALUES (?, ?, ?)", (node["name"], otolId, node["tips"]))
 	childIds = node["children"]
 	for childId in childIds:
 		childNode = nodeMap[childId]

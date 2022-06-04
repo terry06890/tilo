@@ -49,11 +49,12 @@ for name in minimalNames:
 	prevName = None
 	while name != None:
 		if name not in nodeMap:
-			(tips,) = dbCur.execute("SELECT tips from nodes where name = ?", (name,)).fetchone()
+			(id, tips) = dbCur.execute("SELECT id, tips from nodes where name = ?", (name,)).fetchone()
 			row = dbCur.execute("SELECT node, p_support from edges where child = ?", (name,)).fetchone()
 			parent = None if row == None or row[0] == "" else row[0]
 			pSupport = 1 if row == None or row[1] == 1 else 0
 			nodeMap[name] = {
+				"id": id,
 				"children": [] if prevName == None else [prevName],
 				"parent": parent,
 				"tips": 0,
@@ -124,8 +125,10 @@ for (name, nodeObj) in nodeMap.items():
 		namesToAdd.extend(newChildNames)
 for name in namesToAdd:
 	(parent, pSupport) = dbCur.execute("SELECT node, p_support from edges WHERE child = ?", (name,)).fetchone()
+	(id,) = dbCur.execute("SELECT id FROM nodes WHERE name = ?", (name,)).fetchone()
 	parent = None if parent == "" else parent
 	nodeMap[name] = {
+		"id": id,
 		"children": [],
 		"parent": parent,
 		"tips": 0,
@@ -145,12 +148,13 @@ def setTips(nodeName):
 setTips(rootName)
 # Add new nodes to db
 print("Adding to db")
-dbCur.execute("CREATE TABLE r_nodes (name TEXT PRIMARY KEY, tips INT)")
+dbCur.execute("CREATE TABLE r_nodes (name TEXT PRIMARY KEY, id TEXT UNIQUE, tips INT)")
+dbCur.execute("CREATE INDEX r_nodes_idx_nc ON r_nodes(name COLLATE NOCASE)")
 dbCur.execute("CREATE TABLE r_edges (node TEXT, child TEXT, p_support INT, PRIMARY KEY (node, child))")
 dbCur.execute("CREATE INDEX r_edges_child_idx ON r_edges(child)")
 for (name, nodeObj) in nodeMap.items():
 	parentName = "" if nodeObj["parent"] == None else nodeObj["parent"]
-	dbCur.execute("INSERT INTO r_nodes VALUES (?, ?)", (name, nodeObj["tips"]))
+	dbCur.execute("INSERT INTO r_nodes VALUES (?, ?, ?)", (name, nodeObj["id"], nodeObj["tips"]))
 	for childName in nodeObj["children"]:
 		pSupport = 1 if nodeMap[childName]["pSupport"] else 0
 		dbCur.execute("INSERT INTO r_edges VALUES (?, ?, ?)", (name, childName, pSupport))

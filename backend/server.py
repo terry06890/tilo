@@ -35,9 +35,10 @@ def lookupNodes(names, useReducedTree):
 	nodesTable = "nodes" if not useReducedTree else "r_nodes"
 	edgesTable = "edges" if not useReducedTree else "r_edges"
 	queryParamStr = ",".join(["?"] * len(names))
-	query = f"SELECT name, tips FROM {nodesTable} WHERE name IN ({queryParamStr})"
-	for (nodeName, tips) in cur.execute(query, names):
+	query = f"SELECT name, id, tips FROM {nodesTable} WHERE name IN ({queryParamStr})"
+	for (nodeName, otolId, tips) in cur.execute(query, names):
 		nodeObjs[nodeName] = {
+			"otolId": otolId,
 			"children": [],
 			"parent": None,
 			"tips": tips,
