@@ -16,7 +16,7 @@
 /backend/data/img/
 /backend/data/enwiki/*.bz2
 /backend/data/enwiki/*.db
-/backend/data/enwiki/enwiki_content/
+/backend/data/enwiki/imgs/
 /backend/data/enwiki/.venv/
 /backend/data/dbpedia/*.bz2
 /backend/data/dbpedia/*.db
