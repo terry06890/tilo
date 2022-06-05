@@ -16,9 +16,19 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-imgDir = "eolImgsForReview/"
-outDir = "eolImgsReviewed/"
-dbFile = "data.db"
+imgDir = "imgsForReview/"
+outDir = "imgsReviewed/"
+extraInfoDbCon = sqlite3.connect("../data.db")
+extraInfoDbCur = extraInfoDbCon.cursor()
+def getExtraInfo(eolId):
+	query = "SELECT names.alt_name FROM" \
+		" names INNER JOIN eol_ids ON eol_ids.name = names.name" \
+		" WHERE id = ? and pref_alt = 1"
+	row = extraInfoDbCur.execute(query, (eolId,)).fetchone()
+	if row != None:
+		return f"Reviewing EOL ID {eolId}, aka \"row[0]\""
+	else:
+		return f"Reviewing EOL ID {eolId}"
 IMG_DISPLAY_SZ = 400
 MAX_IMGS_PER_ID = 3
 PLACEHOLDER_IMG = Image.new("RGB", (IMG_DISPLAY_SZ, IMG_DISPLAY_SZ), (88, 28, 135))
@@ -33,9 +43,6 @@ imgList.sort(key=lambda s: int(s.split(" ")[0]))
 if len(imgList) == 0:
 	print("No input images found", file=sys.stderr)
 	sys.exit(1)
-# Open db
-dbCon = sqlite3.connect(dbFile)
-dbCur = dbCon.cursor()
 
 class EolImgReviewer:
 	""" Provides the GUI for reviewing images """
@@ -59,7 +66,7 @@ class EolImgReviewer:
 			label.grid(column=0, row=0)
 			self.labels.append(label)
 		# Add padding
-		for child in mainFrame.winfo_children(): 
+		for child in mainFrame.winfo_children():
 			child.grid_configure(padx=5, pady=5)
 		# Add bindings
 		root.bind("<q>", self.quit)
@@ -129,18 +136,9 @@ class EolImgReviewer:
 		# Update title
 		firstImgIdx = self.imgListIdx - len(self.nextImgNames) + 1
 		lastImgIdx = self.imgListIdx
-		query = "SELECT eol_ids.id, names.alt_name, names.pref_alt FROM" \
-			" names INNER JOIN eol_ids ON eol_ids.name = names.name" \
-			" WHERE id = ? and pref_alt = 1"
-		row = dbCur.execute(query, (self.nextEolId,)).fetchone()
-		if row != None:
-			commonName = row[1]
-			self.root.title(
-				f"Reviewing EOL ID {self.nextEolId}, aka \"{commonName}\"" \
-				f"(imgs {firstImgIdx} to {lastImgIdx} out of {len(self.imgList)})")
-		else:
-			self.root.title(
-				f"Reviewing EOL ID {self.nextEolId} (imgs {firstImgIdx} to {lastImgIdx} out of {len(self.imgList)})")
+		title = getExtraInfo(self.nextEolId)
+		title += f" (imgs {firstImgIdx} to {lastImgIdx} out of {len(self.imgList)})"
+		self.root.title(title)
 	def accept(self, imgIdx):
 		""" React to a user selecting an image """
 		if imgIdx >= len(self.nextImgNames):
@@ -179,7 +177,7 @@ class EolImgReviewer:
 		print(f"Time elapsed: {timeElapsed:.2f} seconds")
 		if self.numReviewed > 0:
 			print(f"Avg time per review: {timeElapsed/self.numReviewed:.2f} seconds")
-		dbCon.close()
+		extraInfoDbCon.close()
 		self.root.destroy()
 	def resizeForDisplay(self, img):
 		""" Returns a copy of an image, shrunk to fit the display (keeps aspect ratio), and with a background """
@@ -199,4 +197,3 @@ class EolImgReviewer:
 root = tki.Tk()
 EolImgReviewer(root, imgList)
 root.mainloop()
-

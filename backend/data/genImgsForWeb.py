@@ -16,7 +16,7 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-imgDir = "eolImgsReviewed/"
+imgDir = "eol/imgsReviewed/"
 outDir = "img/"
 imagesListDb = "eol/imagesList.db"
 dbFile = "data.db"
@@ -78,7 +78,7 @@ for i in range(inputImgIdx, len(inputImgList)):
 	contentId = int(otherStr.split(".")[0])
 	print(f"Converting {imgName}")
 	subprocess.run(
-		['npx', 'smartcrop-cli', 
+		['npx', 'smartcrop-cli',
 			'--width', str(IMG_OUT_SZ),
 			'--height', str(IMG_OUT_SZ),
 			imgDir + imgName,

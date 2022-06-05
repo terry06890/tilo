@@ -11,8 +11,8 @@
 /backend/data/eol/*.csv
 /backend/data/eol/*.db
 /backend/data/eol/imagesList/
-/backend/data/imgsForReview/
-/backend/data/imgsReviewed/
+/backend/data/eol/imgsForReview/
+/backend/data/eol/imgsReviewed/
 /backend/data/img/
 /backend/data/enwiki/*.bz2
 /backend/data/enwiki/*.db

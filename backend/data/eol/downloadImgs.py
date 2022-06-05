@@ -8,33 +8,37 @@ from threading import Thread
 import signal
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Downloads images from URLs specified in an image-list database, using\n"
-usageInfo += "EOL IDs obtained from another database. Downloaded images get names of\n"
-usageInfo += "the form 'eolId1 contentId1.ext1'\n"
+usageInfo += "Downloads images from URLs specified in an image-list database,\n"
+usageInfo += "for a specified set of EOL IDs. Downloaded images get names of\n"
+usageInfo += "the form 'eolId1 contentId1.ext1'.\n"
 usageInfo += "\n"
 usageInfo += "SIGINT causes the program to finish ongoing downloads and exit.\n"
-usageInfo += "The program can be re-run to continue downloading, and uses\n"
-usageInfo += "existing downloaded files to decide where to continue from.\n"
+usageInfo += "The program can be re-run to continue downloading. It looks for\n"
+usageInfo += "existing downloaded files, and continues after the one with\n"
+usageInfo += "highest EOL ID.\n"
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-imagesListDb = "eol/imagesList.db"
-dbFile = "data.db"
-outDir = "eolImgsForReview/"
+imagesListDb = "imagesList.db"
+def getInputEolIds():
+	eolIds = set()
+	dbCon = sqlite3.connect("../data.db")
+	dbCur = dbCon.cursor()
+	for (id,) in dbCur.execute("SELECT id FROM eol_ids"):
+		eolIds.add(id)
+	dbCon.close()
+	return eolIds
+outDir = "imgsForReview/"
 LICENSE_REGEX = r"cc-by((-nc)?(-sa)?(-[234]\.[05])?)|cc-publicdomain|cc-0-1\.0|public domain"
 POST_DL_DELAY_MIN = 2 # Minimum delay in seconds to pause after download before starting another (for each thread)
 POST_DL_DELAY_MAX = 3
 
 # Get eol-ids from data db
-eolIds = set()
-print("Reading in EOL IDs")
-dbCon = sqlite3.connect(dbFile)
-dbCur = dbCon.cursor()
-for row in dbCur.execute("SELECT id FROM eol_ids"):
-	eolIds.add(row[0])
-dbCon.close()
+print("Getting input EOL IDs")
+eolIds = getInputEolIds()
 # Get eol-ids from images db
+print("Getting images-list-db EOL IDs")
 imgDbCon = sqlite3.connect(imagesListDb)
 imgCur = imgDbCon.cursor()
 imgListIds = set()
@@ -43,6 +47,7 @@ for row in imgCur.execute("SELECT DISTINCT page_id FROM images"):
 # Get eol-id intersection, and sort into list
 eolIds = eolIds.intersection(imgListIds)
 eolIds = sorted(eolIds)
+print(f"Resulted in {len(eolIds)} EOL IDs")
 
 MAX_IMGS_PER_ID = 3
 MAX_THREADS = 5
@@ -132,7 +137,7 @@ for idx in range(nextIdx, len(eolIds)):
 					time.sleep(1)
 				exitLoop = True
 				break
-			print("Downloading image to {outPath}")
+			print(f"Downloading image to {outPath}")
 			# Perform download
 			numThreads += 1
 			thread = Thread(target=downloadImg, args=(urls[i], outPath), daemon=True)
