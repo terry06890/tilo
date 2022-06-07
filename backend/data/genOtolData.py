@@ -31,6 +31,7 @@ dbFile = "data.db"
 nodeMap = {} # Maps node IDs to node objects
 nameToFirstId = {} # Maps node names to first found ID (names might have multiple IDs)
 dupNameToIds = {} # Maps names of nodes with multiple IDs to those node IDs
+pickedDupsFile = "genOtolDataPickedDups.txt"
 softChildLimit = 100
 keptNamesFile = "genOtolNamesToKeep.txt" # Contains names to keep when doing node trimming
 
@@ -216,18 +217,27 @@ def deleteDownward(nodeId):
 	del nodeMap[nodeId]
 	#
 	return tipsRemoved
-trimChildren(rootId)
+#trimChildren(rootId)
 # Resolve duplicate names
 print("Resolving duplicates")
+nameToPickedId = {}
+with open(pickedDupsFile) as file:
+	for line in file:
+		(name, _, otolId) = line.rstrip().partition("|")
+		nameToPickedId[name] = otolId
 for [dupName, ids] in dupNameToIds.items():
-	# Get conflicting node with most tips
-	tipNums = [nodeMap[id]["tips"] for id in ids]
-	maxIdx = tipNums.index(max(tipNums))
-	maxId = ids[maxIdx]
+	# Check for picked id
+	if dupName in nameToPickedId:
+		idToUse = nameToPickedId[dupName]
+	else:
+		# Get conflicting node with most tips
+		tipNums = [nodeMap[id]["tips"] for id in ids]
+		maxIdx = tipNums.index(max(tipNums))
+		idToUse = ids[maxIdx]
 	# Adjust name of other conflicting nodes
 	counter = 2
 	for id in ids:
-		if id != maxId:
+		if id != idToUse:
 			nodeMap[id]["name"] += " [" + str(counter)+ "]"
 			counter += 1
 # Change mrca* names
