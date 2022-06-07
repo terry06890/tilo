@@ -22,5 +22,7 @@
 /backend/data/dbpedia/*.db
 /backend/data/genOtolNamesToKeep.txt
 /backend/data/genOtolDataPickedDups.txt
+/backend/data/dbpNamesToSkip.txt
+/backend/data/dbpPickedLabels.txt
 /backend/data/genEnwikiDescNamesToSkip.txt
 /backend/data/genEnwikiDescTitlesToUse.txt
