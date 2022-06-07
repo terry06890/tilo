@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys, re
+import sys, re, os
 import sqlite3
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
@@ -29,14 +29,14 @@ if os.path.exists(namesToSkipFile):
 	with open(namesToSkipFile) as file:
 		for line in file:
 			namesToSkip.add(line.rstrip())
-	print("Read in {len(namesToSkip)} names to skip")
+	print(f"Read in {len(namesToSkip)} names to skip")
 if os.path.exists(titlesToUseFile):
 	with open(titlesToUseFile) as file:
 		for line in file:
 			title = line.rstrip()
 			name = titleToUseRegex.sub(r"\1", title) # Remove parens
 			nameToPickedTitle[name.lower()] = title
-print("Read in {len(titlesToUse)} titles to use for certain names")
+print(f"Read in {len(nameToPickedTitle)} titles to use for certain names")
 # Get node names without descriptions
 print("Getting node names")
 nodeNames = set()
