@@ -41,7 +41,7 @@ for (nodeName, wikiId) in nodeToWikiId.items():
 		" INNER JOIN redirects r1 ON p1.id = r1.id" \
 		" INNER JOIN pages p2 ON r1.target = p2.title WHERE p2.id = ?"
 	for (name,) in enwikiCur.execute(query, (wikiId,)):
-		if altNameRegex.fullmatch(name) != None:
+		if altNameRegex.fullmatch(name) != None and name.lower() != nodeName:
 			nodeToAltNames[nodeName].add(name.lower())
 			numAltNames += 1
 print(f"Found {numAltNames} alt-names")
