@@ -26,7 +26,7 @@ def getExtraInfo(eolId):
 		" WHERE id = ? and pref_alt = 1"
 	row = extraInfoDbCur.execute(query, (eolId,)).fetchone()
 	if row != None:
-		return f"Reviewing EOL ID {eolId}, aka \"row[0]\""
+		return f"Reviewing EOL ID {eolId}, aka \"{row[0]}\""
 	else:
 		return f"Reviewing EOL ID {eolId}"
 IMG_DISPLAY_SZ = 400
