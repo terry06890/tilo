@@ -91,8 +91,7 @@ def resolveWithPickedLabels():
 				del nameToVariants[name]
 			else:
 				if label not in nameToVariants[name]:
-					print(f"WARNING: Picked label \"{label}\" for name \"{name}\" not found", file=sys.stderr)
-					continue
+					print(f"INFO: Picked label \"{label}\" for name \"{name}\" outside choice set", file=sys.stderr)
 				nodeToLabel[name] = label
 				del nameToVariants[name]
 	print(f"Remaining number of conflicts: {len(nameToVariants)}")
