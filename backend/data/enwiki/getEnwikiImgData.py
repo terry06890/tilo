@@ -5,16 +5,23 @@ import bz2, html, urllib.parse
 import sqlite3
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Gets nodes with enwiki page-ids, and looks up their content in enwiki/,\n"
-usageInfo += "trying to get infobox image filenames, and prints lines like 'pageId1 filename1'\n"
+usageInfo += "For a set of page-ids, looks up their content in an enwiki dump,\n"
+usageInfo += "trying to get infobox image filenames, adding info to an sqlite db.\n"
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-dbFile = "../data.db"
-indexDb = "dumpIndex.db"
+def getInputPageIds():
+	pageIds = set()
+	dbCon = sqlite3.connect("../data.db")
+	dbCur = dbCon.cursor()
+	for (pageId,) in dbCur.execute("SELECT wiki_id from descs"):
+		pageIds.add(pageId)
+	dbCon.close()
+	return pageIds
 dumpFile = "enwiki-20220501-pages-articles-multistream.xml.bz2"
-imgDb = "enwikiImgs.db"
+indexDb = "dumpIndex.db"
+imgDb = "enwikiImgs.db" # Output db
 idLineRegex = re.compile(r"<id>(.*)</id>")
 imageLineRegex = re.compile(r".*\| *image *= *([^|]*)")
 bracketImageRegex = re.compile(r"\[\[(File:[^|]*).*]]")
@@ -22,19 +29,16 @@ imageNameRegex = re.compile(r".*\.(jpg|jpeg|png|gif|tiff|tif)", flags=re.IGNOREC
 cssImgCropRegex = re.compile(r"{{css image crop\|image *= *(.*)", flags=re.IGNORECASE)
 
 # Open dbs
-dbCon = sqlite3.connect(dbFile)
-dbCur = dbCon.cursor()
 indexDbCon = sqlite3.connect(indexDb)
 indexDbCur = indexDbCon.cursor()
 imgDbCon = sqlite3.connect(imgDb)
 imgDbCur = imgDbCon.cursor()
 # Create image-db table
-imgDbCur.execute("CREATE TABLE page_imgs (page_id INT PRIMAY KEY, img_name TEXT)")
-# Get nodes with enwiki page-ids
-print("Getting nodes with wiki-ids", file=sys.stderr)
-pageIds = set()
-for (pageId,) in dbCur.execute("SELECT wiki_id from descs"):
-	pageIds.add(pageId)
+imgDbCur.execute("CREATE TABLE page_imgs (page_id INT PRIMARY KEY, img_name TEXT)")
+imgDbCur.execute("CREATE INDEX page_imgs_idx ON page_imgs(img_name)")
+# Get input pageIds
+print("Getting input page-ids", file=sys.stderr)
+pageIds = getInputPageIds()
 # Get page-id dump-file offsets
 print("Getting dump-file offsets", file=sys.stderr)
 offsetToPageids = {}
@@ -106,8 +110,6 @@ with open(dumpFile, mode='rb') as file:
 		iterNum += 1
 		if iterNum % 100 == 0:
 			print(f"At iteration {iterNum}", file=sys.stderr)
-		if iterNum == 300:
-			break
 		#
 		pageIds = offsetToPageids[pageOffset]
 		# Jump to chunk
@@ -163,7 +165,6 @@ with open(dumpFile, mode='rb') as file:
 			if not foundText:
 				print(f"Did not find <text> for page id {pageId}", file=sys.stderr)
 # Close dbs
-dbCon.close()
 indexDbCon.close()
 imgDbCon.commit()
 imgDbCon.close()
