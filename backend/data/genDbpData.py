@@ -13,7 +13,7 @@ if len(sys.argv) > 1:
 	sys.exit(1)
 
 dbpediaDb = "dbpedia/dbpData.db"
-namesToSkipFile = "dbpNamesToSkip.txt"
+namesToSkipFile = "genDescNamesToSkip.txt"
 pickedLabelsFile = "dbpPickedLabels.txt"
 dbFile = "data.db"
 

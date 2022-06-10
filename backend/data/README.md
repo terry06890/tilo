@@ -25,12 +25,12 @@ File Generation Process
     1   Obtain data in dbpedia/, as specified in it's README.
     2   Run genDbpData.py, which adds a 'descs' table to data.db, using
         data in dbpedia/dbpData.db, the 'nodes' table, and possibly
-        dbpNamesToSkip.txt and dbpPickedLabels.txt.
+        genDescNamesToSkip.txt and dbpPickedLabels.txt.
 5   Supplementary Name/Description/Image Data
     1   Obtain data in enwiki/, as specified in it's README.
     2   Run genEnwikiDescData.py, which adds to the 'descs' table, using data in
-        enwiki/enwikiData.db, and the 'nodes' table. Also uses genEnwikiDesc*.txt
-        files for skipping/resolving some name-page associations.
+        enwiki/enwikiData.db, and the 'nodes' table. Also uses genDescNamesToSkip.txt and
+        genEnwikiDescTitlesToUse.txt for skipping/resolving some name-page associations.
     3   Optionally run genEnwikiNameData.py, which adds to the 'names' table,
         using data in enwiki/enwikiData.db, and the 'names' and 'descs' tables.
     4   In enwiki/, run getEnwikiImgData.py, which generates a list of

@@ -23,8 +23,7 @@
 /backend/data/genOtolNamesToKeep.txt
 /backend/data/genOtolDataPickedDups.txt
 /backend/data/genEolNameDataPickedIds.txt
-/backend/data/dbpNamesToSkip.txt
+/backend/data/genDescNamesToSkip.txt
 /backend/data/dbpPickedLabels.txt
-/backend/data/genEnwikiDescNamesToSkip.txt
 /backend/data/genEnwikiDescTitlesToUse.txt
 /backend/data/mergedImgList.txt

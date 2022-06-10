@@ -13,7 +13,7 @@ if len(sys.argv) > 1:
 
 enwikiDb = "enwiki/enwikiData.db"
 dbFile = "data.db"
-namesToSkipFile = "genEnwikiDescNamesToSkip.txt"
+namesToSkipFile = "genDescNamesToSkip.txt"
 titlesToUseFile = "genEnwikiDescTitlesToUse.txt"
 titleToUseRegex = re.compile(r"(.*) \(.*\)")
 
