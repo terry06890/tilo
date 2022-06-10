@@ -8,7 +8,8 @@ File Generation Process
 2   Name Data for Search
     1   Obtain data in eol/, as specified in it's README.
     2   Run genEolNameData.py, which adds 'names' and 'eol\_ids' tables to data.db,
-        using data in eol/vernacularNames.csv and the 'nodes' table.
+        using data in eol/vernacularNames.csv and the 'nodes' table, and possibly
+        genEolNameDataPickedIds.txt.
 3   Image Data
     1   In eol/, run downloadImgs.py to download EOL images into eol/imgsForReview/.
         It uses data in eol/imagesList.db, and the 'eol\_ids' table.

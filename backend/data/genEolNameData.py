@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys, re
+import sys, re, os
 import html, csv, sqlite3
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
@@ -18,6 +18,7 @@ if len(sys.argv) > 1:
 vnamesFile = "eol/vernacularNames.csv"
 dbFile = "data.db"
 NAMES_TO_SKIP = {"unknown", "unknown species", "unidentified species"}
+pickedIdsFile = "genEolNameDataPickedIds.txt"
 
 # Read in vernacular-names data
 	# Note: Canonical-names may have multiple pids
@@ -62,6 +63,15 @@ with open(vnamesFile, newline="") as csvfile:
 		updateMaps(name1, pid, True, False)
 		if lang == "eng" and name2 != "":
 			updateMaps(name2, pid, False, preferred)
+# Check for manually-picked pids
+print("Checking for manually-picked pids")
+nameToPickedPid = {}
+if os.path.exists(pickedIdsFile):
+	with open(pickedIdsFile) as file:
+		for line in file:
+			(name, _, eolId) = line.rstrip().partition("|")
+			nameToPickedPid[name] = None if eolId == "" else int(eolId)
+print(f"Found {len(nameToPickedPid)}")
 # Open db connection
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
@@ -85,11 +95,18 @@ def addToDb(nodeName, pidToUse):
 	for n in altNames:
 		isPreferred = 1 if (n == preferredName) else 0
 		dbCur.execute("INSERT INTO names VALUES (?, ?, ?)", (nodeName, n, isPreferred))
+for name in nameToPickedPid: # Add manually-picked pids
+	pickedPid = nameToPickedPid[name]
+	usedPids.add(pickedPid)
+	if pickedPid != None:
+		addToDb(name, pickedPid)
 iterationNum = 0
 for (name,) in dbCur2.execute("SELECT name FROM nodes"):
 	iterationNum += 1
 	if iterationNum % 10000 == 0:
 		print(f"Loop 1 iteration {iterationNum}")
+	if name in nameToPickedPid:
+		continue
 	# If name matches a canonical-name, add alt-name entries to 'names' table
 	if name in canonicalNameToPids:
 		pidToUse = None
