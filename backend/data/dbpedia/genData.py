@@ -24,7 +24,8 @@ dbCur = dbCon.cursor()
 # Read/store labels
 print("Reading/storing label data")
 dbCur.execute("CREATE TABLE labels (iri TEXT PRIMARY KEY, label TEXT)")
-dbCur.execute("CREATE INDEX labels_idx ON labels(label COLLATE NOCASE)")
+dbCur.execute("CREATE INDEX labels_idx ON labels(label)")
+dbCur.execute("CREATE INDEX labels_idx_nc ON labels(label COLLATE NOCASE)")
 labelLineRegex = re.compile(r'<([^>]+)> <[^>]+> "((?:[^"]|\\")+)"@en \.\n')
 lineNum = 0
 with bz2.open(labelsFile, mode='rt') as file:

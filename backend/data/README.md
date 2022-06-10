@@ -40,7 +40,10 @@ File Generation Process
         it in that db.
     6   In enwiki/, run downloadEnwikiImgs.py, which downloads 'permissively-licensed'
         images in listed in enwiki/enwikiImgs.db, storing them in enwiki/imgs/.
-    7   // ADD
+    7   // UPDATE
+        Run reviewImgsToMerge.py, which displays images from eol/ and enwiki/,
+        enables choosing, for each tol-node, which image should be used, if any,
+        and outputs choice information into mergedImgList.txt.
 5   Reduced Tree Structure Data
     1   Run genReducedTreeData.py, which adds 'r_nodes' and 'r_edges' tables to
         data.db, using reducedTol/names.txt, and the 'nodes' and 'names' tables.
