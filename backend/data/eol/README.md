@@ -12,4 +12,7 @@ Generated Files
 -   imagesList/ <br>
     Obtained by extracting imagesList.tgz.
 -   imagesList.db <br>
-    Represents data from eol/imagesList/*, and is created by genImagesListDb.sh.
+    Represents data from eol/imagesList/*, and is created by genImagesListDb.sh. <br>
+    Tables: <br>
+    -   images:
+        content_id INT PRIMARY KEY, page_id INT, source_url TEXT, copy_url TEXT, license TEXT, copyright_owner TEXT

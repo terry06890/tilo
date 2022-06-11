@@ -10,44 +10,42 @@ File Generation Process
     2   Run genEolNameData.py, which adds 'names' and 'eol\_ids' tables to data.db,
         using data in eol/vernacularNames.csv and the 'nodes' table, and possibly
         genEolNameDataPickedIds.txt.
+3   Node Description Data
+    1   Obtain data in dbpedia/ and enwiki/, as specified in their README files.
+    2   Run genDbpData.py, which adds a 'descs' table to data.db, using
+        data in dbpedia/dbpData.db, the 'nodes' table, and possibly
+        genDescNamesToSkip.txt and dbpPickedLabels.txt.
+    3   Run genEnwikiDescData.py, which adds to the 'descs' table, using data in
+        enwiki/enwikiData.db, and the 'nodes' table. Also uses genDescNamesToSkip.txt and
+        genEnwikiDescTitlesToUse.txt for skipping/resolving some name-page associations.
 3   Image Data
     1   In eol/, run downloadImgs.py to download EOL images into eol/imgsForReview/.
         It uses data in eol/imagesList.db, and the 'eol\_ids' table.
     2   In eol/, run reviewImgs.py to filter images in eol/imgsForReview/ into EOL-id-unique
         images in eol/imgsReviewed/ (uses 'names' and 'eol\_ids' to display extra info).
-    3   // UPDATE
-        Run genImgsForWeb.py to create cropped/resized images in img/, using
-        images in eol/imgsReviewed/, and also to add an 'images' table to data.db.
-    4   Run genLinkedImgs.py to add a 'linked_imgs' table to data.db,
-        which uses 'nodes', 'edges', 'eol\_ids', and 'images', to associate
-        nodes without images to child images.
-4   Node Description Data
-    1   Obtain data in dbpedia/, as specified in it's README.
-    2   Run genDbpData.py, which adds a 'descs' table to data.db, using
-        data in dbpedia/dbpData.db, the 'nodes' table, and possibly
-        genDescNamesToSkip.txt and dbpPickedLabels.txt.
-5   Supplementary Name/Description/Image Data
-    1   Obtain data in enwiki/, as specified in it's README.
-    2   Run genEnwikiDescData.py, which adds to the 'descs' table, using data in
-        enwiki/enwikiData.db, and the 'nodes' table. Also uses genDescNamesToSkip.txt and
-        genEnwikiDescTitlesToUse.txt for skipping/resolving some name-page associations.
-    3   Optionally run genEnwikiNameData.py, which adds to the 'names' table,
-        using data in enwiki/enwikiData.db, and the 'names' and 'descs' tables.
-    4   In enwiki/, run getEnwikiImgData.py, which generates a list of
+    3   In enwiki/, run getEnwikiImgData.py, which generates a list of
         tol-node images, and creates enwiki/enwikiImgs.db to store it.
         Uses the 'descs' table to get tol-node wiki-ids.
-    5   In enwiki/, run downloadImgLicenseInfo.py, which downloads licensing
+    4   In enwiki/, run downloadImgLicenseInfo.py, which downloads licensing
         information for images listed in enwiki/enwikiImgs.db, and stores
         it in that db.
-    6   In enwiki/, run downloadEnwikiImgs.py, which downloads 'permissively-licensed'
+    5   In enwiki/, run downloadEnwikiImgs.py, which downloads 'permissively-licensed'
         images in listed in enwiki/enwikiImgs.db, storing them in enwiki/imgs/.
-    7   // UPDATE
-        Run reviewImgsToMerge.py, which displays images from eol/ and enwiki/,
+    6   Run reviewImgsToMerge.py, which displays images from eol/ and enwiki/,
         enables choosing, for each tol-node, which image should be used, if any,
         and outputs choice information into mergedImgList.txt.
+    7   Run genImgsForWeb.py, which creates cropped/resized images in img/, using
+        mergedImgList.txt, and adds 'images' and 'node_imgs' tables to data.db.
+    
+    8   Run genLinkedImgs.py to add a 'linked_imgs' table to data.db,
+        which uses 'nodes', 'edges', 'eol\_ids', and 'images', to associate
+        nodes without images to child images.
 5   Reduced Tree Structure Data
     1   Run genReducedTreeData.py, which adds 'r_nodes' and 'r_edges' tables to
         data.db, using reducedTol/names.txt, and the 'nodes' and 'names' tables.
+6   Other
+    1   Can run genEnwikiNameData.py, which adds more entries to the 'names' table,
+        using data in enwiki/enwikiData.db, and the 'names' and 'descs' tables.
 
 data.db Tables
 ==============
@@ -55,7 +53,8 @@ data.db Tables
 -   edges:        node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
 -   names:        name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
 -   eol\_ids:     id INT PRIMARY KEY, name TEXT
--   images:       eol\_id INT PRIMARY KEY, source\_url TEXT, license TEXT, copyright\_owner TEXT
+-   images:       id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src)
+-   node\_imgs:   id TEXT PRIMARY KEY, img\_id INT, src TEXT
 -   linked\_imgs: name TEXT PRIMARY KEY, eol\_id INT, eol\_id2 INT
 -   descs:        name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki\_id INT, from\_dbp INT
 -   r\_nodes:     name TEXT PRIMARY KEY, tips INT
