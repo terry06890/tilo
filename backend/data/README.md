@@ -36,9 +36,8 @@ File Generation Process
         and outputs choice information into mergedImgList.txt.
     7   Run genImgsForWeb.py, which creates cropped/resized images in img/, using
         mergedImgList.txt, and adds 'images' and 'node_imgs' tables to data.db.
-    
     8   Run genLinkedImgs.py to add a 'linked_imgs' table to data.db,
-        which uses 'nodes', 'edges', 'eol\_ids', and 'images', to associate
+        which uses 'nodes', 'edges', 'eol\_ids', and 'node_imgs', to associate
         nodes without images to child images.
 5   Reduced Tree Structure Data
     1   Run genReducedTreeData.py, which adds 'r_nodes' and 'r_edges' tables to
