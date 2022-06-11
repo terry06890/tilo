@@ -9,7 +9,7 @@ import {TolNode} from '../tol';
 import {capitalizeWords} from '../lib';
 
 type DescInfo = {text: string, fromRedirect: boolean, wikiId: number, fromDbp: boolean};
-type ImgInfo = {eolId: string, sourceUrl: string, license: string, copyrightOwner: string}
+type ImgInfo = {imgId: number, imgSrc: 'eol' | 'enwiki', url: string, license: string, artist: string, credit: string}
 type TileInfoResponse = {
 	tolNode: null | TolNode,
 	descData: null | DescInfo | [DescInfo, DescInfo],
@@ -105,7 +105,6 @@ export default defineComponent({
 					} else {
 						[this.imgInfo1, this.imgInfo2] = obj.imgData;
 					}
-					
 				}
 			});
 	},
@@ -125,7 +124,7 @@ export default defineComponent({
 			<div v-if="tolNode != null">
 				({{tolNode.children.length}} children, {{tolNode.tips}} tips,
 					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId">
-						OTOL Link</a>)
+						{{tolNode.otolId}}</a>)
 			</div>
 		</h1>
 		<hr class="mb-4 border-stone-400"/>
@@ -135,23 +134,29 @@ export default defineComponent({
 				<div v-else-if="!Array.isArray(tolNode.imgName)">
 					<div :style="imgStyles"/>
 					<ul v-if="imgInfo != null">
+						<li>Obtained via: {{imgInfo.imgSrc}}</li>
 						<li>License: {{imgInfo.license}}</li>
-						<li><a :href="imgInfo.sourceUrl" class="underline">Source URL</a></li>
-						<li>Copyright Owner: {{imgInfo.copyrightOwner}}</li>
+						<li><a :href="imgInfo.url" class="underline">Source URL</a></li>
+						<li>Artist: {{imgInfo.artist}}</li>
+						<li v-if="imgInfo.credit != ''">Credit: {{imgInfo.credit}}</li>
 					</ul>
 				</div>
 				<div v-else>
 					<div v-if="tolNode.imgName[0] != null" :style="firstImgStyles"/>
 					<ul v-if="imgInfo1 != null">
+						<li>Obtained via: {{imgInfo1.imgSrc}}</li>
 						<li>License: {{imgInfo1.license}}</li>
-						<li><a :href="imgInfo1.sourceUrl" class="underline">Source URL</a></li>
-						<li>Copyright Owner: {{imgInfo1.copyrightOwner}}</li>
+						<li><a :href="imgInfo1.url" class="underline">Source URL</a></li>
+						<li>Artist: {{imgInfo1.artist}}</li>
+						<li v-if="imgInfo1.credit != ''">Credit: {{imgInfo1.credit}}</li>
 					</ul>
 					<div v-if="tolNode.imgName[1] != null" :style="secondImgStyles"/>
 					<ul v-if="imgInfo2 != null">
+						<li>Obtained via: {{imgInfo2.imgSrc}}</li>
 						<li>License: {{imgInfo2.license}}</li>
-						<li><a :href="imgInfo2.sourceUrl" class="underline">Source URL</a></li>
-						<li>Copyright Owner: {{imgInfo2.copyrightOwner}}</li>
+						<li><a :href="imgInfo2.url" class="underline">Source URL</a></li>
+						<li>Artist: {{imgInfo2.artist}}</li>
+						<li v-if="imgInfo2.credit != ''">Credit: {{imgInfo2.credit}}</li>
 					</ul>
 				</div>
 			</div>

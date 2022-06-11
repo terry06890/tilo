@@ -25,7 +25,7 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-# Connect to db, and load spellfix extension
+# Connect to db
 dbCon = sqlite3.connect(dbFile)
 # Some functions
 def lookupNodes(names, useReducedTree):
@@ -54,24 +54,22 @@ def lookupNodes(names, useReducedTree):
 		nodeObjs[childName]["parent"] = None if nodeName == "" else nodeName
 		nodeObjs[childName]["pSupport"] = (pSupport == 1)
 	# Get image names
-	query = "SELECT nodes.name, eol_id FROM" \
-		" nodes INNER JOIN eol_ids ON nodes.name = eol_ids.name" \
-			" INNER JOIN images ON eol_ids.id = images.eol_id WHERE" \
-		" nodes.name IN ({})".format(",".join(["?"] * len(nodeObjs)))
-	for (name, eolId) in cur.execute(query, list(nodeObjs.keys())):
-		nodeObjs[name]["imgName"] = str(eolId) + ".jpg"
-	# Get 'linked' images for unresolved names
-	unresolvedNames = [n for n in nodeObjs if nodeObjs[n]["imgName"] == None]
-	query = "SELECT name, eol_id, eol_id2 from linked_imgs WHERE name IN ({})"
-	query = query.format(",".join(["?"] * len(unresolvedNames)))
-	for (name, eolId, eolId2) in cur.execute(query, unresolvedNames):
-		if eolId2 == None:
-			nodeObjs[name]["imgName"] = str(eolId) + ".jpg"
-		else:
-			nodeObjs[name]["imgName"] = [
-				str(eolId) + ".jpg" if eolId != 0 else None,
-				str(eolId2) + ".jpg" if eolId2 != 0 else None,
-			]
+	idsToNames = {nodeObjs[n]["otolId"]: n for n in nodeObjs.keys()}
+	query = "SELECT id FROM node_imgs WHERE id IN ({})".format(",".join(["?"] * len(idsToNames)))
+	for (otolId,) in cur.execute(query, list(idsToNames.keys())):
+		nodeObjs[idsToNames[otolId]]["imgName"] = otolId + ".jpg"
+	## Get 'linked' images for unresolved names
+	#unresolvedNames = [n for n in nodeObjs if nodeObjs[n]["imgName"] == None]
+	#query = "SELECT name, eol_id, eol_id2 from linked_imgs WHERE name IN ({})"
+	#query = query.format(",".join(["?"] * len(unresolvedNames)))
+	#for (name, eolId, eolId2) in cur.execute(query, unresolvedNames):
+	#	if eolId2 == None:
+	#		nodeObjs[name]["imgName"] = str(eolId) + ".jpg"
+	#	else:
+	#		nodeObjs[name]["imgName"] = [
+	#			str(eolId) + ".jpg" if eolId != 0 else None,
+	#			str(eolId2) + ".jpg" if eolId2 != 0 else None,
+	#		]
 	# Get preferred-name info
 	query = f"SELECT name, alt_name FROM names WHERE pref_alt = 1 AND name IN ({queryParamStr})"
 	for (name, altName) in cur.execute(query, names):
@@ -135,22 +133,29 @@ def lookupNodeInfo(name, useReducedTree):
 	imgData = None
 	if nodeObj != None:
 		if isinstance(nodeObj["imgName"], str):
-			eolId = int(nodeObj["imgName"][:-4]) # Convert filename excluding .jpg suffix
-			query = "SELECT eol_id, source_url, license, copyright_owner FROM images WHERE eol_id = ?"
-			row = cur.execute(query, (eolId,)).fetchone()
-			imgData = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
+			otolId = nodeObj["imgName"][:-4] # Convert filename excluding .jpg suffix
+			print(otolId)
+			query = "SELECT images.id, images.src, url, license, artist, credit FROM" \
+				" node_imgs INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
+				" WHERE node_imgs.id = ?"
+			(imgId, imgSrc, url, license, artist, credit) = cur.execute(query, (otolId,)).fetchone()
+			imgData = {"imgId": imgId, "imgSrc": imgSrc,
+				"url": url, "license": license, "artist": artist, "credit": credit}
 		elif isinstance(nodeObj["imgName"], list):
 			# Get info for compound-image parts
 			imgData = [None, None]
-			idsToLookup = [int(n[:-4]) for n in nodeObj["imgName"] if n != None]
-			query = "SELECT eol_id, source_url, license, copyright_owner FROM" \
-				" images WHERE eol_id IN ({})".format(",".join(["?"] * len(idsToLookup)))
-			for row in cur.execute(query, idsToLookup):
+			idsToLookup = [n[:-4] for n in nodeObj["imgName"] if n != None]
+			query = "SELECT images.img_id, images.src, url, license, artist, credit FROM" \
+				" node_imgs INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
+				" WHERE node_imgs.id IN ({})".format(",".join(["?"] * len(idsToLookup)))
+			for (imgId, imgSrc, url, license, artist, credit) in cur.execute(query, idsToLookup):
+				imgData = {"imgId": imgId, "imgSrc": imgSrc,
+					"url": url, "license": license, "artist": artist, "credit": credit}
 				imgName1 = nodeObj["imgName"][0]
-				if imgName1 != None and str(row[0]) == imgName1[:-4]:
-					imgData[0] = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
+				if imgName1 != None and str(imgId) == imgName1[:-4]:
+					imgData[0] = imgData
 				else:
-					imgData[1] = {"eolId": row[0], "sourceUrl": row[1], "license": row[2], "copyrightOwner": row[3]}
+					imgData[1] = imgData
 	#
 	return {"descData": descData, "imgData": imgData, "nodeObj": nodeObj}
 

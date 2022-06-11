@@ -78,6 +78,9 @@ with open(imgListFile) as file:
 			if completedProcess.returncode < 0:
 				print("Exiting due to interrupted subprocess")
 				break
+			elif completedProcess.returncode > 0:
+				print(f"Exiting due to subprocess exit status {completedProcess.returncode}")
+				break
 			convertedImage = True
 		# Add entry to db
 		fromEol = imgPath.startswith("eol/")
