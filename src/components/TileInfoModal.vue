@@ -84,6 +84,36 @@ export default defineComponent({
 				height: this.uiOpts.infoModalImgSz + 'px',
 			};
 		},
+		licenseToUrl(license: string){
+			license = license.toLowerCase().replaceAll('-', ' ');
+			if (license == 'cc0'){
+				return 'https://creativecommons.org/publicdomain/zero/1.0/';
+			} else if (license == 'cc publicdomain'){
+				return 'https://creativecommons.org/licenses/publicdomain/';
+			} else {
+				const regex = /cc by( nc)?( sa)?( ([0-9.]+)( [a-z]+)?)?/;
+				let results = regex.exec(license);
+				if (results != null){
+					let url = 'https://creativecommons.org/licenses/by';
+					if (results[1] != null){
+						url += '-nc';
+					}
+					if (results[2] != null){
+						url += '-sa';
+					}
+					if (results[4] != null){
+						url += '/' + results[4];
+					} else {
+						url += '/4.0';
+					}
+					if (results[5] != null){
+						url += '/' + results[5].substring(1);
+					}
+					return url;
+				}
+				return "[INVALID LICENSE]";
+			}
+		},
 	},
 	created(){
 		let url = new URL(window.location.href);
@@ -135,7 +165,7 @@ export default defineComponent({
 					<div :style="imgStyles"/>
 					<ul v-if="imgInfo != null">
 						<li>Obtained via: {{imgInfo.imgSrc}}</li>
-						<li>License: {{imgInfo.license}}</li>
+						<li>License: <a :href="licenseToUrl(imgInfo.license)">{{imgInfo.license}}</a></li>
 						<li><a :href="imgInfo.url" class="underline">Source URL</a></li>
 						<li>Artist: {{imgInfo.artist}}</li>
 						<li v-if="imgInfo.credit != ''">Credit: {{imgInfo.credit}}</li>
@@ -145,7 +175,7 @@ export default defineComponent({
 					<div v-if="tolNode.imgName[0] != null" :style="firstImgStyles"/>
 					<ul v-if="imgInfo1 != null">
 						<li>Obtained via: {{imgInfo1.imgSrc}}</li>
-						<li>License: {{imgInfo1.license}}</li>
+						<li>License: <a :href="licenseToUrl(imgInfo1.license)">{{imgInfo1.license}}</a></li>
 						<li><a :href="imgInfo1.url" class="underline">Source URL</a></li>
 						<li>Artist: {{imgInfo1.artist}}</li>
 						<li v-if="imgInfo1.credit != ''">Credit: {{imgInfo1.credit}}</li>
@@ -153,7 +183,7 @@ export default defineComponent({
 					<div v-if="tolNode.imgName[1] != null" :style="secondImgStyles"/>
 					<ul v-if="imgInfo2 != null">
 						<li>Obtained via: {{imgInfo2.imgSrc}}</li>
-						<li>License: {{imgInfo2.license}}</li>
+						<li>License: <a :href="licenseToUrl(imgInfo2.license)">{{imgInfo2.license}}</a></li>
 						<li><a :href="imgInfo2.url" class="underline">Source URL</a></li>
 						<li>Artist: {{imgInfo2.artist}}</li>
 						<li v-if="imgInfo2.credit != ''">Credit: {{imgInfo2.credit}}</li>
