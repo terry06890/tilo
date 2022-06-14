@@ -36,26 +36,38 @@ File Generation Process
         and outputs choice information into mergedImgList.txt.
     7   Run genImgsForWeb.py, which creates cropped/resized images in img/, using
         mergedImgList.txt, and adds 'images' and 'node_imgs' tables to data.db.
+        Smartcrop's outputs might need to be manually created/adjusted: <br>
+        -   An input image might have no output produced, possibly due to
+            data incompatibilities, memory limits, etc. A few input image files
+            might actually be html files, containing a 'file not found' page.
+        -   An input x.gif might produce x-1.jpg, x-2.jpg, etc, instead of x.jpg.
+        -   An input image might produce output with unexpected dimensions.
+            This seems to happen when the image is very large, and triggers a
+            decompression bomb warning.
+        The result might have as many as 150k images, with about 2/3 of them
+        being from wikipedia.
     8   Run genLinkedImgs.py to add a 'linked_imgs' table to data.db,
         which uses 'nodes', 'edges', 'eol\_ids', and 'node_imgs', to associate
         nodes without images to child images.
+
 5   Reduced Tree Structure Data
     1   Run genReducedTreeData.py, which adds 'r_nodes' and 'r_edges' tables to
         data.db, using reducedTol/names.txt, and the 'nodes' and 'names' tables.
 6   Other
     1   Can run genEnwikiNameData.py, which adds more entries to the 'names' table,
         using data in enwiki/enwikiData.db, and the 'names' and 'descs' tables.
+    2   //node-trimming
 
 data.db Tables
 ==============
 -   nodes:        name TEXT PRIMARY KEY, id TEXT UNIQUE, tips INT
 -   edges:        node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
--   names:        name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
 -   eol\_ids:     id INT PRIMARY KEY, name TEXT
+-   names:        name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
+-   descs:        name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki\_id INT, from\_dbp INT
 -   images:       id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src)
 -   node\_imgs:   id TEXT PRIMARY KEY, img\_id INT, src TEXT
--   linked\_imgs: name TEXT PRIMARY KEY, eol\_id INT, eol\_id2 INT
--   descs:        name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki\_id INT, from\_dbp INT
+-   linked\_imgs: name TEXT PRIMARY KEY, otol\_id INT, otol\_id2 INT
 -   r\_nodes:     name TEXT PRIMARY KEY, tips INT
 -   r\_edges:     node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
 

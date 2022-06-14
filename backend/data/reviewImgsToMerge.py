@@ -26,6 +26,7 @@ dbFile = "data.db"
 outFile = "mergedImgList.txt"
 IMG_DISPLAY_SZ = 400
 PLACEHOLDER_IMG = Image.new("RGB", (IMG_DISPLAY_SZ, IMG_DISPLAY_SZ), (88, 28, 135))
+onlyReviewPairs = False
 
 # Open db
 dbCon = sqlite3.connect(dbFile)
@@ -37,28 +38,28 @@ if os.path.exists(eolImgDir):
 	for filename in os.listdir(eolImgDir):
 		(eolId, _, _) = filename.partition(" ")
 		query = "SELECT nodes.id FROM nodes INNER JOIN eol_ids ON nodes.name = eol_ids.name WHERE eol_ids.id = ?"
-		row = dbCur.execute(query, (int(eolId),)).fetchone()
-		if row == None:
+		found = False
+		for (otolId,) in dbCur.execute(query, (int(eolId),)):
+			if otolId not in nodeToImgs:
+				nodeToImgs[otolId] = []
+			nodeToImgs[otolId].append(eolImgDir + filename)
+			found = True
+		if not found:
 			print(f"No node found for {eolImgDir}{filename}", file=sys.stderr)
-			continue
-		otolId = row[0]
-		if otolId not in nodeToImgs:
-			nodeToImgs[otolId] = []
-		nodeToImgs[otolId].append(eolImgDir + filename)
 print(f"Result has {len(nodeToImgs)} node entries")
 print("Looking through enwiki images")
 if os.path.exists(enwikiImgDir):
 	for filename in os.listdir(enwikiImgDir):
 		(wikiId, _, _) = filename.partition(".")
 		query = "SELECT nodes.id FROM nodes INNER JOIN descs ON nodes.name = descs.name WHERE descs.wiki_id = ?"
-		row = dbCur.execute(query, (int(wikiId),)).fetchone()
-		if row == None:
+		found = False
+		for (otolId,) in dbCur.execute(query, (int(wikiId),)):
+			if otolId not in nodeToImgs:
+				nodeToImgs[otolId] = []
+			nodeToImgs[otolId].append(enwikiImgDir + filename)
+			found = True
+		if not found:
 			print(f"No node found for {enwikiImgDir}{filename}", file=sys.stderr)
-			continue
-		otolId = row[0]
-		if otolId not in nodeToImgs:
-			nodeToImgs[otolId] = []
-		nodeToImgs[otolId].append(enwikiImgDir + filename)
 print(f"Result has {len(nodeToImgs)} node entries")
 # Check for already-made choices
 print("Filtering out already-chosen IDs")
@@ -113,12 +114,19 @@ class ImgReviewer:
 	def getNextImgs(self):
 		""" Updates display with new images to review, or ends program """
 		# Get next image paths
-		self.listIdx += 1
-		if self.listIdx == len(self.nodeImgsList):
-			print("No more images to review. Exiting program.")
-			self.quit()
-			return
-		(self.otolId, imgPaths) = self.nodeImgsList[self.listIdx]
+		while True:
+			self.listIdx += 1
+			if self.listIdx == len(self.nodeImgsList):
+				print("No more images to review. Exiting program.")
+				self.quit()
+				return
+			(self.otolId, imgPaths) = self.nodeImgsList[self.listIdx]
+			# Potentially skip user choice
+			if onlyReviewPairs and len(imgPaths) == 1:
+				with open(outFile, 'a') as file:
+					file.write(f"{self.otolId} {imgPaths[0]}\n")
+				continue
+			break
 		# Update displayed images
 		self.eolImgPath = self.enwikiImgPath = None
 		imageOpenError = False

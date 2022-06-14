@@ -34,15 +34,19 @@ enwikiCon = sqlite3.connect(enwikiImgDb)
 enwikiCur = enwikiCon.cursor()
 # Create image tables if not present
 nodesDone = set()
-if dbCur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='images'").fetchone() == None:
+imgsDone = set()
+if dbCur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='node_imgs'").fetchone() == None:
+	dbCur.execute("CREATE TABLE node_imgs (id TEXT PRIMARY KEY, img_id INT, src TEXT)")
 	dbCur.execute("CREATE TABLE images" \
 		" (id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src))")
-	dbCur.execute("CREATE TABLE node_imgs (id TEXT PRIMARY KEY, img_id INT, src TEXT)")
 else:
 	# Get existing node-associations
-	for (otolId,) in dbCur.execute("SELECT DISTINCT id from node_imgs"):
+	for (otolId,) in dbCur.execute("SELECT id from node_imgs"):
 		nodesDone.add(otolId)
-	print(f"Found {len(nodesDone)} nodes already processed")
+	# And images
+	for (imgId, imgSrc) in dbCur.execute("SELECT id, src from images"):
+		imgsDone.add((imgId, imgSrc))
+	print(f"Found {len(nodesDone)} nodes and {len(imgsDone)} images pre-existing")
 # Detect SIGINT signals
 interrupted = False
 def onSigint(sig, frame):
@@ -65,23 +69,21 @@ with open(imgListFile) as file:
 		if otolId in nodesDone:
 			continue
 		outPath = outDir + otolId + ".jpg"
-		# Convert image if needed
-		convertedImage = False
-		if not os.path.exists(outPath):
-			print(f"{otolId}: converting {imgPath}")
+		# Convert image
+		print(f"{otolId}: converting {imgPath}")
+		if os.path.exists(outPath):
+			print(f"ERROR: Output image already exists")
+			break
+		try:
 			completedProcess = subprocess.run(
 				['npx', 'smartcrop-cli', '--width', str(IMG_OUT_SZ), '--height', str(IMG_OUT_SZ), imgPath, outPath],
-				stdout=subprocess.DEVNULL
-			)
-			# Prevent adding a db entry after an interrupted conversion
-				# Needed because the subprocess above exits on a SIGINT (not prevented by onSigint() above)
-			if completedProcess.returncode < 0:
-				print("Exiting due to interrupted subprocess")
-				break
-			elif completedProcess.returncode > 0:
-				print(f"Exiting due to subprocess exit status {completedProcess.returncode}")
-				break
-			convertedImage = True
+				stdout=subprocess.DEVNULL)
+		except Exception as e:
+			print(f"ERROR: Exception while attempting to run smartcrop: {e}")
+			break
+		if completedProcess.returncode != 0:
+			print(f"ERROR: smartcrop had exit status {completedProcess.returncode}")
+			break
 		# Add entry to db
 		fromEol = imgPath.startswith("eol/")
 		imgName = os.path.basename(os.path.normpath(imgPath)) # Get last path component
@@ -89,22 +91,32 @@ with open(imgListFile) as file:
 		if fromEol:
 			(eolId, _, contentId) = imgName.partition(" ")
 			(eolId, contentId) = (int(eolId), int(contentId))
-			if convertedImage:
+			if (eolId, "eol") not in imgsDone:
 				query = "SELECT source_url, license, copyright_owner FROM images WHERE content_id = ?"
-				(url, license, owner) = eolCur.execute(query, (contentId,)).fetchone()
+				row = eolCur.execute(query, (contentId,)).fetchone()
+				if row == None:
+					print("ERROR: No image record for EOL ID {eolId}, content ID {contentId}", file=sys.stderr)
+					break
+				(url, license, owner) = row
 				dbCur.execute("INSERT INTO images VALUES (?, ?, ?, ?, ?, ?)",
 					(eolId, "eol", url, license, owner, ""))
+				imgsDone.add((eolId, "eol"))
 			dbCur.execute("INSERT INTO node_imgs VALUES (?, ?, ?)", (otolId, eolId, "eol"))
 		else:
 			enwikiId = int(imgName)
-			if convertedImage:
+			if (enwikiId, "enwiki") not in imgsDone:
 				query = "SELECT name, license, artist, credit FROM" \
 					" page_imgs INNER JOIN imgs ON page_imgs.img_name = imgs.name" \
 					" WHERE page_imgs.page_id = ?"
-				(name, license, artist, credit) = enwikiCur.execute(query, (enwikiId,)).fetchone()
+				row = enwikiCur.execute(query, (enwikiId,)).fetchone()
+				if row == None:
+					print("ERROR: No image record for enwiki ID {enwikiId}", file=sys.stderr)
+					break
+				(name, license, artist, credit) = row
 				url = "https://en.wikipedia.org/wiki/File:" + urllib.parse.quote(name)
 				dbCur.execute("INSERT INTO images VALUES (?, ?, ?, ?, ?, ?)",
 					(enwikiId, "enwiki", url, license, artist, credit))
+				imgsDone.add((enwikiId, "enwiki"))
 			dbCur.execute("INSERT INTO node_imgs VALUES (?, ?, ?)", (otolId, enwikiId, "enwiki"))
 # Close dbs
 dbCon.commit()

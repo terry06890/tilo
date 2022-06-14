@@ -35,3 +35,4 @@ Generated Files
     Tables: <br>
     -   page\_imgs: page\_id INT PRIMAY KEY, img\_name TEXT
     -   imgs: name TEXT PRIMARY KEY, license TEXT, artist TEXT, credit TEXT, restrictions TEXT, url TEXT
+        (might lack some matches for 'img_name' in 'page_imgs', due to inability to get license info)
