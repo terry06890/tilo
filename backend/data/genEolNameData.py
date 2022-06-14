@@ -76,7 +76,7 @@ print(f"Found {len(nameToPickedPid)}")
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 # Create tables
-dbCur.execute("CREATE TABLE names(name TEXT, alt_name TEXT, pref_alt INT, PRIMARY KEY(name, alt_name))")
+dbCur.execute("CREATE TABLE names(name TEXT, alt_name TEXT, pref_alt INT, src TEXT, PRIMARY KEY(name, alt_name))")
 dbCur.execute("CREATE INDEX names_alt_idx ON names(alt_name)")
 dbCur.execute("CREATE INDEX names_alt_idx_nc ON names(alt_name COLLATE NOCASE)")
 dbCur.execute("CREATE TABLE eol_ids(id INT PRIMARY KEY, name TEXT)")
@@ -94,7 +94,7 @@ def addToDb(nodeName, pidToUse):
 			altNames.add(n)
 	for n in altNames:
 		isPreferred = 1 if (n == preferredName) else 0
-		dbCur.execute("INSERT INTO names VALUES (?, ?, ?)", (nodeName, n, isPreferred))
+		dbCur.execute("INSERT INTO names VALUES (?, ?, ?, 'eol')", (nodeName, n, isPreferred))
 for name in nameToPickedPid: # Add manually-picked pids
 	pickedPid = nameToPickedPid[name]
 	usedPids.add(pickedPid)

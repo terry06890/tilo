@@ -64,7 +64,7 @@ print(f"Left with {numAltNames} alt-names")
 print("Adding alt-names")
 for (nodeName, altNames) in nodeToAltNames.items():
 	for altName in altNames:
-		dbCur.execute("INSERT INTO names VALUES (?, ?, ?)", (nodeName, altName, 0))
+		dbCur.execute("INSERT INTO names VALUES (?, ?, ?, 'enwiki')", (nodeName, altName, 0))
 # Close dbs
 dbCon.commit()
 dbCon.close()

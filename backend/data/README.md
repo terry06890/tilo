@@ -49,21 +49,19 @@ File Generation Process
     8   Run genLinkedImgs.py to add a 'linked_imgs' table to data.db,
         which uses 'nodes', 'edges', 'eol\_ids', and 'node_imgs', to associate
         nodes without images to child images.
-
 5   Reduced Tree Structure Data
     1   Run genReducedTreeData.py, which adds 'r_nodes' and 'r_edges' tables to
         data.db, using reducedTol/names.txt, and the 'nodes' and 'names' tables.
 6   Other
-    1   Can run genEnwikiNameData.py, which adds more entries to the 'names' table,
+    -   Optionally run genEnwikiNameData.py, which adds more entries to the 'names' table,
         using data in enwiki/enwikiData.db, and the 'names' and 'descs' tables.
-    2   //node-trimming
 
 data.db Tables
 ==============
 -   nodes:        name TEXT PRIMARY KEY, id TEXT UNIQUE, tips INT
 -   edges:        node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
 -   eol\_ids:     id INT PRIMARY KEY, name TEXT
--   names:        name TEXT, alt\_name TEXT, pref\_alt INT, PRIMARY KEY(name, alt\_name)
+-   names:        name TEXT, alt\_name TEXT, pref\_alt INT, src TEXT, PRIMARY KEY(name, alt\_name)
 -   descs:        name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki\_id INT, from\_dbp INT
 -   images:       id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src)
 -   node\_imgs:   id TEXT PRIMARY KEY, img\_id INT, src TEXT
