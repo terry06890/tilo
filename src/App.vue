@@ -201,7 +201,7 @@ export default defineComponent({
 				return new Promise((resolve, reject) => resolve(doExpansion()));
 			}
 		},
-		onNonleafClick(layoutNode: LayoutNode){
+		onNonleafClick(layoutNode: LayoutNode, skipClean = false){
 			if (!this.handleActionForTutorial('collapse')){
 				return false;
 			}
@@ -218,16 +218,18 @@ export default defineComponent({
 				if (this.overflownRoot){
 					this.overflownRoot = false;
 				}
-				// Clear out excess nodes when a threshold is reached
-				let numNodes = this.tolMap.size;
-				let extraNodes = numNodes - this.layoutMap.size;
-				if (extraNodes > this.excessTolNodeThreshold){
-					for (let n of this.tolMap.keys()){
-						if (!this.layoutMap.has(n)){
-							this.tolMap.delete(n)
+				// Possibly clear out excess nodes when a threshold is reached
+				if (!skipClean){
+					let numNodes = this.tolMap.size;
+					let extraNodes = numNodes - this.layoutMap.size;
+					if (extraNodes > this.excessTolNodeThreshold){
+						for (let n of this.tolMap.keys()){
+							if (!this.layoutMap.has(n)){
+								this.tolMap.delete(n)
+							}
 						}
+						console.log(`Cleaned up tolMap (removed ${numNodes - this.tolMap.size} out of ${numNodes})`);
 					}
-					console.log(`Cleaned up tolMap (removed ${numNodes - this.tolMap.size} out of ${numNodes})`);
 				}
 			}
 			return success;
@@ -297,7 +299,7 @@ export default defineComponent({
 			this.activeRoot = layoutNode;
 			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
-		onDetachedAncestorClick(layoutNode: LayoutNode){
+		onDetachedAncestorClick(layoutNode: LayoutNode, skipRelayout = false){
 			if (!this.handleActionForTutorial('unhideAncestor')){
 				return;
 			}
@@ -305,7 +307,9 @@ export default defineComponent({
 			LayoutNode.showDownward(layoutNode);
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
-			this.updateAreaDims().then(() => this.relayoutWithCollapse());
+			if (!skipRelayout){
+				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+			}
 		},
 		// For tile-info events
 		onInfoIconClick(nodeName: string){
@@ -357,13 +361,15 @@ export default defineComponent({
 				while (!this.detachedAncestors!.includes(nodeInAncestryBar)){
 					nodeInAncestryBar = nodeInAncestryBar.parent!;
 				}
-				if (!this.uiOpts.jumpToSearchedNode || nodeInAncestryBar.name == name){
+				if (!this.uiOpts.jumpToSearchedNode){
 					this.onDetachedAncestorClick(nodeInAncestryBar!);
 					setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
-					return;
-				} else {
-					LayoutNode.showDownward(nodeInAncestryBar);
+				} else{
+					this.onDetachedAncestorClick(nodeInAncestryBar, true);
+					this.onNonleafClick(nodeInAncestryBar, true);
+					this.expandToNode(name);
 				}
+				return;
 			}
 			// Attempt tile-expand
 			if (this.uiOpts.jumpToSearchedNode){
