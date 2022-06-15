@@ -89,13 +89,13 @@ for nodeName in processedNodes.keys():
 	if match != None:
 		# Replace associated image with subname images
 		(subName1, subName2) = match.group(1,2)
-		otolIdPair = [0, 0]
+		otolIdPair = [None, None]
 		if subName1 in processedNodes:
 			otolIdPair[0] = processedNodes[subName1]
 		if subName2 in processedNodes:
 			otolIdPair[1] = processedNodes[subName2]
 		# Use no image if both subimages not found
-		if otolIdPair[0] == 0 and otolIdPair[1] == 0:
+		if otolIdPair[0] == None and otolIdPair[1] == None:
 			dbCur.execute("DELETE FROM linked_imgs WHERE name = ?", (nodeName,))
 			continue
 		# Add to db

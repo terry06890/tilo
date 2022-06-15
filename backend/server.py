@@ -68,8 +68,8 @@ def lookupNodes(names, useReducedTree):
 			nodeObjs[name]["imgName"] = otolId + ".jpg"
 		else:
 			nodeObjs[name]["imgName"] = [
-				otolId + ".jpg" if otolId != 0 else None,
-				otolId2 + ".jpg" if otolId2 != 0 else None,
+				otolId + ".jpg" if otolId != None else None,
+				otolId2 + ".jpg" if otolId2 != None else None,
 			]
 	# Get preferred-name info
 	query = f"SELECT name, alt_name FROM names WHERE pref_alt = 1 AND name IN ({queryParamStr})"
