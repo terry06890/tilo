@@ -55,7 +55,8 @@ def lookupNodes(names, useReducedTree):
 		nodeObjs[childName]["pSupport"] = (pSupport == 1)
 	# Get image names
 	idsToNames = {nodeObjs[n]["otolId"]: n for n in nodeObjs.keys()}
-	query = "SELECT id FROM node_imgs WHERE id IN ({})".format(",".join(["?"] * len(idsToNames)))
+	query = "SELECT nodes.id from nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
+		" WHERE nodes.id IN ({})".format(",".join(["?"] * len(idsToNames)))
 	for (otolId,) in cur.execute(query, list(idsToNames.keys())):
 		nodeObjs[idsToNames[otolId]]["imgName"] = otolId + ".jpg"
 	# Get 'linked' images for unresolved names
@@ -136,8 +137,9 @@ def lookupNodeInfo(name, useReducedTree):
 			otolId = nodeObj["imgName"][:-4] # Convert filename excluding .jpg suffix
 			print(otolId)
 			query = "SELECT images.id, images.src, url, license, artist, credit FROM" \
-				" node_imgs INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
-				" WHERE node_imgs.id = ?"
+				" nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
+				" INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
+				" WHERE nodes.id = ?"
 			(imgId, imgSrc, url, license, artist, credit) = cur.execute(query, (otolId,)).fetchone()
 			imgData = {"imgId": imgId, "imgSrc": imgSrc,
 				"url": url, "license": license, "artist": artist, "credit": credit}
@@ -145,9 +147,10 @@ def lookupNodeInfo(name, useReducedTree):
 			# Get info for compound-image parts
 			imgData = [None, None]
 			idsToLookup = [n[:-4] for n in nodeObj["imgName"] if n != None]
-			query = "SELECT node_imgs.id, images.id, images.src, url, license, artist, credit FROM" \
-				" node_imgs INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
-				" WHERE node_imgs.id IN ({})".format(",".join(["?"] * len(idsToLookup)))
+			query = "SELECT nodes.id, images.id, images.src, url, license, artist, credit FROM" \
+				" nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
+				" INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
+				" WHERE nodes.id IN ({})".format(",".join(["?"] * len(idsToLookup)))
 			for (imgOtolId, imgId, imgSrc, url, license, artist, credit) in cur.execute(query, idsToLookup):
 				imgDataVal = {"imgId": imgId, "imgSrc": imgSrc,
 					"url": url, "license": license, "artist": artist, "credit": credit}

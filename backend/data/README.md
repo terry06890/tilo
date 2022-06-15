@@ -66,8 +66,8 @@ data.db Tables
 -   names:        name TEXT, alt\_name TEXT, pref\_alt INT, src TEXT, PRIMARY KEY(name, alt\_name)
 -   eol\_ids:     id INT PRIMARY KEY, name TEXT
 -   descs:        name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki\_id INT, from\_dbp INT
+-   node\_imgs:   name TEXT PRIMARY KEY, img\_id INT, src TEXT
 -   images:       id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src)
--   node\_imgs:   id TEXT PRIMARY KEY, img\_id INT, src TEXT
 -   linked\_imgs: name TEXT PRIMARY KEY, otol\_id INT, otol\_id2 INT
 -   r\_nodes:     name TEXT PRIMARY KEY, tips INT
 -   r\_edges:     node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)

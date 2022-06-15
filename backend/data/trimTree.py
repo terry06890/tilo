@@ -24,7 +24,7 @@ print("\tFinding nodes with descs")
 for (name,) in dbCur.execute("SELECT name FROM descs"):
 	nodesToKeep.add(name)
 print("\tFinding nodes with images")
-for (name,) in dbCur.execute("SELECT name FROM nodes INNER JOIN node_imgs ON nodes.id = node_imgs.id"):
+for (name,) in dbCur.execute("SELECT name FROM node_imgs"):
 	nodesToKeep.add(name)
 print("\tFinding nodes in reduced-tree")
 for (name,) in dbCur.execute("SELECT name from r_nodes"):

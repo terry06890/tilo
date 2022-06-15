@@ -36,12 +36,12 @@ enwikiCur = enwikiCon.cursor()
 nodesDone = set()
 imgsDone = set()
 if dbCur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='node_imgs'").fetchone() == None:
-	dbCur.execute("CREATE TABLE node_imgs (id TEXT PRIMARY KEY, img_id INT, src TEXT)")
+	dbCur.execute("CREATE TABLE node_imgs (name TEXT PRIMARY KEY, img_id INT, src TEXT)")
 	dbCur.execute("CREATE TABLE images" \
 		" (id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src))")
 else:
 	# Get existing node-associations
-	for (otolId,) in dbCur.execute("SELECT id from node_imgs"):
+	for (otolId,) in dbCur.execute("SELECT nodes.id FROM node_imgs INNER JOIN nodes ON node_imgs.name = nodes.name"):
 		nodesDone.add(otolId)
 	# And images
 	for (imgId, imgSrc) in dbCur.execute("SELECT id, src from images"):
@@ -85,6 +85,7 @@ with open(imgListFile) as file:
 			print(f"ERROR: smartcrop had exit status {completedProcess.returncode}")
 			break
 		# Add entry to db
+		nodeName = dbCur.execute("SELECT name FROM nodes WHERE id = ?", (otolId,))
 		fromEol = imgPath.startswith("eol/")
 		imgName = os.path.basename(os.path.normpath(imgPath)) # Get last path component
 		imgName = os.path.splitext(imgName)[0] # Remove extension
@@ -101,7 +102,7 @@ with open(imgListFile) as file:
 				dbCur.execute("INSERT INTO images VALUES (?, ?, ?, ?, ?, ?)",
 					(eolId, "eol", url, license, owner, ""))
 				imgsDone.add((eolId, "eol"))
-			dbCur.execute("INSERT INTO node_imgs VALUES (?, ?, ?)", (otolId, eolId, "eol"))
+			dbCur.execute("INSERT INTO node_imgs VALUES (?, ?, ?)", (nodeName, eolId, "eol"))
 		else:
 			enwikiId = int(imgName)
 			if (enwikiId, "enwiki") not in imgsDone:
@@ -117,7 +118,7 @@ with open(imgListFile) as file:
 				dbCur.execute("INSERT INTO images VALUES (?, ?, ?, ?, ?, ?)",
 					(enwikiId, "enwiki", url, license, artist, credit))
 				imgsDone.add((enwikiId, "enwiki"))
-			dbCur.execute("INSERT INTO node_imgs VALUES (?, ?, ?)", (otolId, enwikiId, "enwiki"))
+			dbCur.execute("INSERT INTO node_imgs VALUES (?, ?, ?)", (nodeName, enwikiId, "enwiki"))
 # Close dbs
 dbCon.commit()
 dbCon.close()

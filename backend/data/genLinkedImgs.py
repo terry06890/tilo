@@ -22,7 +22,7 @@ dbCur.execute("CREATE TABLE linked_imgs (name TEXT PRIMARY KEY, otol_id TEXT, ot
 # Get nodes with images
 print("Getting nodes with images")
 resolvedNodes = {} # Will map node names to otol IDs with a usable image
-query = "SELECT name, nodes.id FROM nodes INNER JOIN node_imgs ON nodes.id = node_imgs.id"
+query = "SELECT nodes.name, nodes.id FROM nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name"
 for (name, otolId) in dbCur.execute(query):
 	resolvedNodes[name] = otolId
 print(f"Got {len(resolvedNodes)} nodes")
@@ -82,7 +82,7 @@ print("Replacing images for compound-name nodes")
 iterNum = 0
 for nodeName in processedNodes.keys():
 	iterNum += 1
-	if iterNum % 1e3 == 0:
+	if iterNum % 1e4 == 0:
 		print(f"At iteration {iterNum}")
 	#
 	match = compoundNameRegex.fullmatch(nodeName)
