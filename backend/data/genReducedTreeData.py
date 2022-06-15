@@ -119,7 +119,7 @@ for (name, nodeObj) in nodeMap.items():
 		children = [row[0] for row in dbCur.execute("SELECT child FROM edges where node = ?", (name,))]
 		newChildren = [n for n in children if
 			not (n in nodeMap or n in namesToRemove) and
-			compNameRegex.fullmatch(n) == None]
+			dbCur.execute("SELECT name from node_imgs WHERE name = ?", (n,)).fetchone() != None]
 		newChildNames = newChildren[:max(0, PREF_NUM_CHILDREN - numChildren)]
 		nodeObj["children"].extend(newChildNames)
 		namesToAdd.extend(newChildNames)
