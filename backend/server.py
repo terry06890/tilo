@@ -117,19 +117,21 @@ def lookupNodeInfo(name, useReducedTree):
 	descData = None
 	match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
 	if match == None:
-		query = "SELECT desc, redirected, wiki_id, from_dbp from descs WHERE descs.name = ?"
+		query = "SELECT wiki_id, redirected, desc, from_dbp FROM" \
+			" wiki_ids INNER JOIN descs ON wiki_ids.id = descs.wiki_id WHERE wiki_ids.name = ?"
 		row = cur.execute(query, (name,)).fetchone()
 		if row != None:
-			descData = {"text": row[0], "fromRedirect": row[1] == 1, "wikiId": row[2], "fromDbp": row[3] == 1}
+			descData = {"wikiId": row[0], "fromRedirect": row[1] == 1, "text": row[2], "fromDbp": row[3] == 1}
 	else:
 		# Get descs for compound-node element
 		descData = [None, None]
-		query = "SELECT name, desc, redirected, wiki_id, from_dbp from descs WHERE descs.name IN (?, ?)"
+		query = "SELECT name, wiki_id, redirected, desc, from_dbp FROM" \
+			" wiki_ids INNER JOIN descs ON wiki_ids.id = descs.wiki_id WHERE wiki_ids.name IN (?, ?)"
 		for row in cur.execute(query, match.group(1,2)):
 			if row[0] == match.group(1):
-				descData[0] = {"text": row[1], "fromRedirect": row[2] == 1, "wikiId": row[3], "fromDbp": row[4] == 1}
+				descData[0] = {"wikiId": row[1], "fromRedirect": row[2] == 1, "text": row[3], "fromDbp": row[4] == 1}
 			else:
-				descData[1] = {"text": row[1], "fromRedirect": row[2] == 1, "wikiId": row[3], "fromDbp": row[4] == 1}
+				descData[1] = {"wikiId": row[1], "fromRedirect": row[2] == 1, "text": row[3], "fromDbp": row[4] == 1}
 	# Get img info
 	imgData = None
 	if nodeObj != None:

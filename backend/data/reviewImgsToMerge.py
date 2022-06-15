@@ -51,7 +51,7 @@ print("Looking through enwiki images")
 if os.path.exists(enwikiImgDir):
 	for filename in os.listdir(enwikiImgDir):
 		(wikiId, _, _) = filename.partition(".")
-		query = "SELECT nodes.id FROM nodes INNER JOIN descs ON nodes.name = descs.name WHERE descs.wiki_id = ?"
+		query = "SELECT nodes.id FROM nodes INNER JOIN wiki_ids ON nodes.name = wiki_ids.name WHERE wiki_ids._id = ?"
 		found = False
 		for (otolId,) in dbCur.execute(query, (int(wikiId),)):
 			if otolId not in nodeToImgs:

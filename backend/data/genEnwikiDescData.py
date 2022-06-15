@@ -40,7 +40,7 @@ print(f"Read in {len(nameToPickedTitle)} titles to use for certain names")
 # Get node names without descriptions
 print("Getting node names")
 nodeNames = set()
-query = "SELECT nodes.name FROM nodes LEFT JOIN descs ON nodes.name = descs.name WHERE desc IS NULL"
+query = "SELECT nodes.name FROM nodes LEFT JOIN wiki_ids ON nodes.name = wiki_ids.name WHERE wiki_ids.id IS NULL"
 for row in dbCur.execute(query):
 	nodeNames.add(row[0])
 print(f"Found {len(nodeNames)} names")
@@ -90,8 +90,8 @@ for (name, pageId) in nodeToPageId.items():
 	#
 	row = enwikiCur.execute("SELECT desc FROM descs where descs.id = ?", (pageId,)).fetchone()
 	if row != None:
-		dbCur.execute("INSERT INTO descs VALUES (?, ?, ?, ?, ?)",
-			(name, row[0], 1 if name in redirectingNames else 0, pageId, 0))
+		dbCur.execute("INSERT INTO wiki_ids VALUES (?, ?, ?)", (name, pageId, 1 if name in redirectingNames else 0))
+		dbCur.execute("INSERT OR IGNORE INTO descs VALUES (?, ?, ?)", (pageId, row[0], 0))
 # Close dbs
 dbCon.commit()
 dbCon.close()

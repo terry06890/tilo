@@ -23,7 +23,7 @@ dbCur = dbCon.cursor()
 # Get nodes with wiki-ids
 print("Getting nodes with wiki IDs")
 nodeToWikiId = {}
-for row in dbCur.execute("SELECT name, wiki_id from descs"):
+for row in dbCur.execute("SELECT name, id from wiki_ids"):
 	nodeToWikiId[row[0]] = row[1]
 print(f"Found {len(nodeToWikiId)} nodes")
 # Find wiki-ids that redirect to each node

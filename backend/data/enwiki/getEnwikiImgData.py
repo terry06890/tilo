@@ -15,7 +15,7 @@ def getInputPageIds():
 	pageIds = set()
 	dbCon = sqlite3.connect("../data.db")
 	dbCur = dbCon.cursor()
-	for (pageId,) in dbCur.execute("SELECT wiki_id from descs"):
+	for (pageId,) in dbCur.execute("SELECT id from wiki_ids"):
 		pageIds.add(pageId)
 	dbCon.close()
 	return pageIds

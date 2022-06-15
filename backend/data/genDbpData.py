@@ -221,8 +221,8 @@ for (name, iri) in nodeToIri.items():
 		redirectingIriSet.add(name)
 # Find descriptions, and add to db
 print("Adding node description data")
-dbCur.execute("CREATE TABLE descs (name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki_id INT, from_dbp INT)")
-dbCur.execute("CREATE INDEX descs_id_idx ON descs(wiki_id)") # wiki_id intentionally left non-unique
+dbCur.execute("CREATE TABLE wiki_ids (name TEXT PRIMARY KEY, id INT, redirected INT)")
+dbCur.execute("CREATE TABLE descs (wiki_id INT PRIMARY KEY, desc TEXT, from_dbp INT)")
 iterNum = 0
 for (name, iri) in nodeToIri.items():
 	iterNum += 1
@@ -232,8 +232,9 @@ for (name, iri) in nodeToIri.items():
 	query = "SELECT abstract, id FROM abstracts INNER JOIN ids ON abstracts.iri = ids.iri WHERE ids.iri = ?"
 	row = dbpCur.execute(query, (iri,)).fetchone()
 	if row != None:
-		dbCur.execute("INSERT INTO descs VALUES (?, ?, ?, ?, ?)",
-			(name, row[0], 1 if name in redirectingIriSet else 0, row[1], 1))
+		(desc, wikiId) = row
+		dbCur.execute("INSERT INTO wiki_ids VALUES (?, ?, ?)", (name, wikiId, 1 if name in redirectingIriSet else 0))
+		dbCur.execute("INSERT OR IGNORE INTO descs VALUES (?, ?, ?)", (wikiId, desc, 1))
 # Close dbs
 dbCon.commit()
 dbCon.close()

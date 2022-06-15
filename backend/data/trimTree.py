@@ -21,7 +21,7 @@ dbCur = dbCon.cursor()
 print("Finding nodes to keep")
 nodesToKeep = set()
 print("\tFinding nodes with descs")
-for (name,) in dbCur.execute("SELECT name FROM descs"):
+for (name,) in dbCur.execute("SELECT name FROM wiki_ids"): # Can assume the wiki_id has a desc
 	nodesToKeep.add(name)
 print("\tFinding nodes with images")
 for (name,) in dbCur.execute("SELECT name FROM node_imgs"):
