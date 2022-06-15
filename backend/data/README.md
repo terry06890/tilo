@@ -55,13 +55,16 @@ File Generation Process
 6   Other
     -   Optionally run genEnwikiNameData.py, which adds more entries to the 'names' table,
         using data in enwiki/enwikiData.db, and the 'names' and 'descs' tables.
+    -   Optionally run trimTree.py, which tries to remove some 'low-significance' nodes,
+        for the sake of performance and result-relevance. Without this, jumping to certain
+        nodes within the fungi and moths can take over a minute to render.
 
 data.db Tables
 ==============
 -   nodes:        name TEXT PRIMARY KEY, id TEXT UNIQUE, tips INT
 -   edges:        node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
--   eol\_ids:     id INT PRIMARY KEY, name TEXT
 -   names:        name TEXT, alt\_name TEXT, pref\_alt INT, src TEXT, PRIMARY KEY(name, alt\_name)
+-   eol\_ids:     id INT PRIMARY KEY, name TEXT
 -   descs:        name TEXT PRIMARY KEY, desc TEXT, redirected INT, wiki\_id INT, from\_dbp INT
 -   images:       id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src)
 -   node\_imgs:   id TEXT PRIMARY KEY, img\_id INT, src TEXT

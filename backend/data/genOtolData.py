@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys, os, re
+import sys, re
 import json, sqlite3
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
@@ -32,8 +32,6 @@ nodeMap = {} # Maps node IDs to node objects
 nameToFirstId = {} # Maps node names to first found ID (names might have multiple IDs)
 dupNameToIds = {} # Maps names of nodes with multiple IDs to those node IDs
 pickedDupsFile = "genOtolDataPickedDups.txt"
-softChildLimit = 100
-keptNamesFile = "genOtolNamesToKeep.txt" # Contains names to keep when doing node trimming
 
 # Parse treeFile
 print("Parsing tree file")
@@ -141,83 +139,6 @@ def parseNewickName():
 			raise Exception(f"ERROR: invalid name \"{name}\"")
 		return [match.group(1).replace("_", " "), match.group(2)]
 rootId = parseNewick()
-# For nodes with *many* children, remove some of those children
-print("Getting nodes for which to avoid trimming")
-namesToKeep = set()
-if os.path.exists(keptNamesFile):
-	with open(keptNamesFile) as file: # Contains names with an image, desc, or reduced-tree-presence
-		for line in file:
-			namesToKeep.add(line.rstrip())
-else:
-	print(f"WARNING: No '{keptNamesFile}' file found")
-print(f"Read in {len(namesToKeep)} nodes")
-keptAncestors = set()
-for name in namesToKeep:
-	if name in nameToFirstId:
-		ids = [nameToFirstId[name]] if name not in dupNameToIds else dupNameToIds[name]
-		for id in ids:
-			parentId = nodeMap[id]["parent"]
-			while parentId != None:
-				parentObj = nodeMap[parentId]
-				keptAncestors.add(parentObj["name"])
-				parentId = parentObj["parent"]
-oldNamesToKeepSz = len(namesToKeep)
-namesToKeep.update(keptAncestors)
-print("Added {} ancestor nodes".format(len(namesToKeep) - oldNamesToKeepSz))
-print("Trimming nodes from tree")
-def trimChildren(nodeId):
-	""" Traverse node tree, looking for nodes with too many children """
-	nodeObj = nodeMap[nodeId]
-	tipsRemoved = 0
-	if len(nodeObj["children"]) > softChildLimit:
-		childIds = nodeObj["children"]
-		# Look for children to delete, excluding 'kept nodes'
-		idsToKeep, otherIds = [], []
-		for id in childIds:
-			if nodeMap[id]["name"] in namesToKeep:
-				idsToKeep.append(id)
-			else:
-				otherIds.append(id)
-		if len(idsToKeep) < softChildLimit:
-			# Order by decreasing number of tips, placing excess children in list
-			numMoreToKeep = softChildLimit - len(idsToKeep)
-			otherIds.sort(key = lambda id: nodeMap[id]["tips"], reverse=True)
-			idsToKeep.extend(otherIds[:numMoreToKeep])
-			otherIds = otherIds[numMoreToKeep:]
-		# Perform deletion
-		nodeObj["children"] = idsToKeep
-		for id in otherIds:
-			tipsRemoved += deleteDownward(id)
-	# Recurse on children
-	for childId in nodeObj["children"]:
-		tipsRemoved += trimChildren(childId)
-	nodeObj["tips"] -= tipsRemoved
-	return tipsRemoved
-def deleteDownward(nodeId):
-	""" Deletes a node and it's descendants from the node map, along with associated data """
-	nodeObj = nodeMap[nodeId]
-	name = nodeObj["name"]
-	# Recurse on children
-	tipsRemoved = 0
-	if len(nodeObj["children"]) == 0:
-		tipsRemoved = 1
-	else:
-		for childId in nodeObj["children"]:
-			tipsRemoved += deleteDownward(childId)
-	# Delete from name maps
-	if name not in dupNameToIds:
-		del nameToFirstId[name]
-	else:
-		dupNameToIds[name].remove(nodeId)
-		if nameToFirstId[name] == nodeId:
-			nameToFirstId[name] = dupNameToIds[name][0]
-		if len(dupNameToIds[name]) == 1:
-			del dupNameToIds[name]
-	# Delete from node map
-	del nodeMap[nodeId]
-	#
-	return tipsRemoved
-#trimChildren(rootId)
 # Resolve duplicate names
 print("Resolving duplicates")
 nameToPickedId = {}
