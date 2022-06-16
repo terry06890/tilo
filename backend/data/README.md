@@ -7,26 +7,26 @@ File Generation Process
         genOtolNamesToKeep.txt, if present.
 2   Name Data for Search
     1   Obtain data in eol/, as specified in it's README.
-    2   Run genEolNameData.py, which adds 'names' and 'eol\_ids' tables to data.db,
+    2   Run genEolNameData.py, which adds 'names' and 'eol_ids' tables to data.db,
         using data in eol/vernacularNames.csv and the 'nodes' table, and possibly
         genEolNameDataPickedIds.txt.
 3   Node Description Data
     1   Obtain data in dbpedia/ and enwiki/, as specified in their README files.
-    2   Run genDbpData.py, which adds 'wiki\_ids' and 'descs' tables to data.db,
+    2   Run genDbpData.py, which adds 'wiki_ids' and 'descs' tables to data.db,
         using data in dbpedia/dbpData.db, the 'nodes' table, and possibly
         genDescNamesToSkip.txt and dbpPickedLabels.txt.
-    3   Run genEnwikiDescData.py, which adds to the 'wiki\_ids' and 'descs' tables,
+    3   Run genEnwikiDescData.py, which adds to the 'wiki_ids' and 'descs' tables,
         using data in enwiki/enwikiData.db, and the 'nodes' table.
         Also uses genDescNamesToSkip.txt and genEnwikiDescTitlesToUse.txt for
         skipping/resolving some name-page associations.
 3   Image Data
     1   In eol/, run downloadImgs.py to download EOL images into eol/imgsForReview/.
-        It uses data in eol/imagesList.db, and the 'eol\_ids' table.
+        It uses data in eol/imagesList.db, and the 'eol_ids' table.
     2   In eol/, run reviewImgs.py to filter images in eol/imgsForReview/ into EOL-id-unique
-        images in eol/imgsReviewed/ (uses 'names' and 'eol\_ids' to display extra info).
+        images in eol/imgsReviewed/ (uses 'names' and 'eol_ids' to display extra info).
     3   In enwiki/, run getEnwikiImgData.py, which generates a list of
         tol-node images, and creates enwiki/enwikiImgs.db to store it.
-        Uses the 'wiki\_ids' table to get tol-node wiki-ids.
+        Uses the 'wiki_ids' table to get tol-node wiki-ids.
     4   In enwiki/, run downloadImgLicenseInfo.py, which downloads licensing
         information for images listed in enwiki/enwikiImgs.db, and stores
         it in that db.
@@ -35,7 +35,7 @@ File Generation Process
     6   Run reviewImgsToMerge.py, which displays images from eol/ and enwiki/,
         and enables choosing, for each tol-node, which image should be used, if any,
         and outputs choice information into mergedImgList.txt. Uses the 'nodes',
-        'eol\_ids', and 'wiki\_ids' tables (as well as 'names' for info-display).
+        'eol_ids', and 'wiki_ids' tables (as well as 'names' for info-display).
     7   Run genImgsForWeb.py, which creates cropped/resized images in img/, using
         mergedImgList.txt, and adds 'images' and 'node_imgs' tables to data.db.
         Smartcrop's outputs might need to be manually created/adjusted: <br>
@@ -49,14 +49,14 @@ File Generation Process
         The result might have as many as 150k images, with about 2/3 of them
         being from wikipedia.
     8   Run genLinkedImgs.py to add a 'linked_imgs' table to data.db,
-        which uses 'nodes', 'edges', 'eol\_ids', and 'node\_imgs', to associate
+        which uses 'nodes', 'edges', 'eol_ids', and 'node_imgs', to associate
         nodes without images to child images.
 5   Reduced Tree Structure Data
     1   Run genReducedTreeData.py, which adds 'r_nodes' and 'r_edges' tables to
         data.db, using reducedTol/names.txt, and the 'nodes' and 'names' tables.
 6   Other
     -   Optionally run genEnwikiNameData.py, which adds more entries to the 'names' table,
-        using data in enwiki/enwikiData.db, and the 'names' and 'wiki\_ids' tables.
+        using data in enwiki/enwikiData.db, and the 'names' and 'wiki_ids' tables.
     -   Optionally run trimTree.py, which tries to remove some 'low-significance' nodes,
         for the sake of performance and result-relevance. Without this, jumping to certain
         nodes within the fungi and moths can take over a minute to render.
@@ -71,7 +71,7 @@ data.db Tables
 -   descs:        wiki\_id INT PRIMARY KEY, desc TEXT, from\_dbp INT
 -   node\_imgs:   name TEXT PRIMARY KEY, img\_id INT, src TEXT
 -   images:       id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src)
--   linked\_imgs: name TEXT PRIMARY KEY, otol\_id INT, otol\_id2 INT
+-   linked\_imgs: name TEXT PRIMARY KEY, otol\_id TEXT, otol\_id2 TEXT
 -   r\_nodes:     name TEXT PRIMARY KEY, tips INT
 -   r\_edges:     node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
 
