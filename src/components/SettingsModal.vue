@@ -110,16 +110,16 @@ export default defineComponent({
 			Sweep to parent
 			<ul>
 				<li>
-					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="never"
-						@change="onLytOptChg"/> Never </label>
+					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="none"
+						@change="onLytOptChg"/> None </label>
 				</li>
 				<li>
-					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="always"
-						@change="onLytOptChg"/> Always </label>
+					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="prefer"
+						@change="onLytOptChg"/> Prefer </label>
 				</li>
 				<li>
-					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="auto"
-						@change="onLytOptChg"/> Auto </label>
+					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="fallback"
+						@change="onLytOptChg"/> Fallback </label>
 				</li>
 			</ul>
 		</div>

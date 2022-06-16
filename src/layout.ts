@@ -174,7 +174,7 @@ export type LayoutOptions = {
 		// Rect-layout in 1 row, 1 column, 1 row or column, or multiple rows (optionally with first-row-heuristic)
 	sweepMode: 'left' | 'top' | 'shorter' | 'auto'; // Sweep to left, top, shorter-side, or to minimise empty space
 	sweptNodesPrio: 'linear' | 'sqrt' | 'pow-2/3'; // Specifies allocation of space to swept-vs-remaining nodes
-	sweepToParent: 'never' | 'always' | 'auto'; // Allow placing swept nodes in a parent swept-leaves area
+	sweepToParent: 'none' | 'prefer' | 'fallback'; // Allow placing swept nodes in a parent swept-leaves area
 };
 // Represents a change to a LayoutNode tree
 export type LayoutTreeChg = {
@@ -605,217 +605,230 @@ let sweepLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse
 	// Some variables
 	let headerSz = showHeader ? opts.headerSz : 0;
 	let leavesLyt: LayoutNode | null = null, nonLeavesLyt: LayoutNode | null = null, sweptLeft = false;
-	let sepArea: SepSweptArea | null = null, sepAreaUsed = false; // Represents leaf-section area provided for a child
-	// Try laying-out normally
-	if (ownOpts == null || ownOpts.sepArea == null || opts.sweepToParent != 'always'){
-		// Choose proportion of area to use for leaves
-		let ratio: number; // area-for-leaves / area-for-non-leaves
-		let nonLeavesTiles = arraySum(nonLeaves.map(n => n.dCount));
-		switch (opts.sweptNodesPrio){
-			case 'linear':
-				ratio = leaves.length / (leaves.length + nonLeavesTiles);
-				break;
-			case 'sqrt':
-				ratio = Math.sqrt(leaves.length) / (Math.sqrt(leaves.length) + Math.sqrt(nonLeavesTiles));
-				break;
-			case 'pow-2/3':
-				ratio = Math.pow(leaves.length, 2/3) /
-					(Math.pow(leaves.length, 2/3) + Math.pow(nonLeavesTiles, 2/3));
-				break;
-		}
-		// Attempt leaves layout
-		let newPos = [0, headerSz];
-		let newDims: [number,number] = [dims[0], dims[1] - headerSz];
-		leavesLyt = new LayoutNode('SWEEP_' + node.name, leaves);
-		let minSz = opts.minTileSz + opts.tileSpacing*2;
-		let sweptW = Math.max(minSz, newDims[0] * ratio), sweptH = Math.max(minSz, newDims[1] * ratio);
-		let leavesSuccess: boolean;
-		switch (opts.sweepMode){
-			case 'left':
-				leavesSuccess = sqrLayout(leavesLyt, [0,0], [sweptW, newDims[1]], false, false, opts);
-				sweptLeft = true;
-				break;
-			case 'top':
-				leavesSuccess = sqrLayout(leavesLyt, [0,0], [newDims[0], sweptH], false, false, opts);
-				sweptLeft = false;
-				break;
-			case 'shorter':
-				let documentAR = document.documentElement.clientWidth / document.documentElement.clientHeight;
-				if (documentAR >= 1){
+	let sepArea: SepSweptArea | null = null; // Represents leaf-section area provided for a child
+	let haveParentArea = ownOpts != null && ownOpts.sepArea != null;
+	let trySweepToParent = haveParentArea && opts.sweepToParent == 'prefer';
+	while (true){
+		if (!trySweepToParent){ // Try laying-out normally
+			// Choose proportion of area to use for leaves
+			let ratio: number; // area-for-leaves / area-for-non-leaves
+			let nonLeavesTiles = arraySum(nonLeaves.map(n => n.dCount));
+			switch (opts.sweptNodesPrio){
+				case 'linear':
+					ratio = leaves.length / (leaves.length + nonLeavesTiles);
+					break;
+				case 'sqrt':
+					ratio = Math.sqrt(leaves.length) / (Math.sqrt(leaves.length) + Math.sqrt(nonLeavesTiles));
+					break;
+				case 'pow-2/3':
+					ratio = Math.pow(leaves.length, 2/3) /
+						(Math.pow(leaves.length, 2/3) + Math.pow(nonLeavesTiles, 2/3));
+					break;
+			}
+			// Attempt leaves layout
+			let newPos = [0, headerSz];
+			let newDims: [number,number] = [dims[0], dims[1] - headerSz];
+			leavesLyt = new LayoutNode('SWEEP_' + node.name, leaves);
+			let minSz = opts.minTileSz + opts.tileSpacing*2;
+			let sweptW = Math.max(minSz, newDims[0] * ratio), sweptH = Math.max(minSz, newDims[1] * ratio);
+			let leavesSuccess: boolean;
+			switch (opts.sweepMode){
+				case 'left':
 					leavesSuccess = sqrLayout(leavesLyt, [0,0], [sweptW, newDims[1]], false, false, opts);
 					sweptLeft = true;
-				} else {
+					break;
+				case 'top':
 					leavesSuccess = sqrLayout(leavesLyt, [0,0], [newDims[0], sweptH], false, false, opts);
 					sweptLeft = false;
-				}
-				break;
-			case 'auto':
-				// Attempt left-sweep, then top-sweep on a copy, and copy over if better
-				leavesSuccess = sqrLayout(leavesLyt, [0,0], [sweptW, newDims[1]], false, false, opts);
-				sweptLeft = true;
-				let tempTree = leavesLyt.cloneNodeTree();
-				let sweptTopSuccess = sqrLayout(tempTree, [0,0], [newDims[0], sweptH], false, false, opts);;
-				if (sweptTopSuccess && (!leavesSuccess || tempTree.empSpc < leavesLyt.empSpc)){
-					tempTree.copyTreeForRender(leavesLyt);
-					sweptLeft = false;
-					leavesSuccess = true;
-				}
-				break;
-		}
-		if (leavesSuccess){
-			leavesLyt.children.forEach(lyt => {lyt.pos[1] += headerSz});
-			// Attempt non-leaves layout
-			if (sweptLeft){
-				newPos[0] += leavesLyt.dims[0] - opts.tileSpacing;
-				newDims[0] += -leavesLyt.dims[0] + opts.tileSpacing;
-			} else {
-				newPos[1] += leavesLyt.dims[1] - opts.tileSpacing;
-				newDims[1] += -leavesLyt.dims[1] + opts.tileSpacing
+					break;
+				case 'shorter':
+					let documentAR = document.documentElement.clientWidth / document.documentElement.clientHeight;
+					if (documentAR >= 1){
+						leavesSuccess = sqrLayout(leavesLyt, [0,0], [sweptW, newDims[1]], false, false, opts);
+						sweptLeft = true;
+					} else {
+						leavesSuccess = sqrLayout(leavesLyt, [0,0], [newDims[0], sweptH], false, false, opts);
+						sweptLeft = false;
+					}
+					break;
+				case 'auto':
+					// Attempt left-sweep, then top-sweep on a copy, and copy over if better
+					leavesSuccess = sqrLayout(leavesLyt, [0,0], [sweptW, newDims[1]], false, false, opts);
+					sweptLeft = true;
+					let tempTree = leavesLyt.cloneNodeTree();
+					let sweptTopSuccess = sqrLayout(tempTree, [0,0], [newDims[0], sweptH], false, false, opts);;
+					if (sweptTopSuccess && (!leavesSuccess || tempTree.empSpc < leavesLyt.empSpc)){
+						tempTree.copyTreeForRender(leavesLyt);
+						sweptLeft = false;
+						leavesSuccess = true;
+					}
+					break;
 			}
-			nonLeavesLyt = new LayoutNode('SWEEP_REM_' + node.name, nonLeaves);
-			let nonLeavesSuccess: boolean;
-			if (nonLeaves.length > 1){
-				nonLeavesSuccess = rectLayout(nonLeavesLyt, [0,0], newDims, false, false, opts, {subLayoutFn:
-					((n,p,d,h,a,o) => sweepLayout(n,p,d,h,allowCollapse,o,{sepArea:sepArea})) as LayoutFn});
-			} else {
-				if (opts.sweepToParent){
+			if (leavesSuccess){
+				leavesLyt.children.forEach(lyt => {lyt.pos[1] += headerSz});
+				// Attempt non-leaves layout
+				if (sweptLeft){
+					newPos[0] += leavesLyt.dims[0] - opts.tileSpacing;
+					newDims[0] += -leavesLyt.dims[0] + opts.tileSpacing;
+				} else {
+					newPos[1] += leavesLyt.dims[1] - opts.tileSpacing;
+					newDims[1] += -leavesLyt.dims[1] + opts.tileSpacing
+				}
+				nonLeavesLyt = new LayoutNode('SWEEP_REM_' + node.name, nonLeaves);
+				let nonLeavesSuccess: boolean;
+				if (nonLeaves.length > 1){
+					nonLeavesSuccess = rectLayout(nonLeavesLyt, [0,0], newDims, false, false, opts, {subLayoutFn:
+						((n,p,d,h,a,o) => sweepLayout(n,p,d,h,allowCollapse,o,{sepArea:sepArea})) as LayoutFn});
+				} else {
+					if (opts.sweepToParent){
+						// Get leftover area usable by non-leaf child
+						if (sweptLeft){
+							sepArea = new SepSweptArea(
+								[-leavesLyt.dims[0] + opts.tileSpacing,
+									leavesLyt.dims[1] - opts.tileSpacing], // Relative to child
+								[leavesLyt.dims[0], newDims[1] - leavesLyt.dims[1] - opts.tileSpacing],
+								sweptLeft, false
+							);
+						} else {
+							sepArea = new SepSweptArea(
+								[leavesLyt.dims[0] - opts.tileSpacing, -leavesLyt.dims[1] + opts.tileSpacing],
+								[newDims[0] - leavesLyt.dims[0] - opts.tileSpacing, leavesLyt.dims[1]],
+								sweptLeft, false
+							);
+						}
+					}
+					// Attempt layout
+					nonLeavesSuccess = rectLayout(nonLeavesLyt, [0,0], newDims, false, false, opts, {subLayoutFn:
+						((n,p,d,h,a,o) => sweepLayout(n,p,d,h,allowCollapse,o,{sepArea:sepArea})) as LayoutFn});
+				}
+				if (nonLeavesSuccess){
+					nonLeavesLyt.children.forEach(lyt => {
+						lyt.pos[0] += newPos[0];
+						lyt.pos[1] += newPos[1];
+					});
+					// Create combined layout
+					let usedDims: [number, number];
+					if (sweptLeft){
+						usedDims = [
+							leavesLyt.dims[0] + nonLeavesLyt.dims[0] - opts.tileSpacing,
+							Math.max(leavesLyt.dims[1] + (sepArea != null && sepArea.used ? sepArea.dims[1] : 0),
+								nonLeavesLyt.dims[1]) + headerSz
+						];
+					} else {
+						usedDims = [
+							Math.max(leavesLyt.dims[0] + (sepArea != null && sepArea.used ? sepArea.dims[0] : 0),
+								nonLeavesLyt.dims[0]),
+							leavesLyt.dims[1] + nonLeavesLyt.dims[1] - opts.tileSpacing + headerSz
+						];
+					}
+					let empSpc = leavesLyt.empSpc + nonLeavesLyt.empSpc;
+					node.assignLayoutData(pos, usedDims, {showHeader, empSpc, sepSweptArea: null});
+					return true;
+				}
+			}
+			if (haveParentArea && opts.sweepToParent == 'fallback'){
+				trySweepToParent = true;
+				continue;
+			}
+			break;
+		} else { // Try using parent-provided area
+			let parentArea = ownOpts!.sepArea!;
+			// Attempt leaves layout
+			sweptLeft = parentArea.sweptLeft;
+			leavesLyt = new LayoutNode('SWEEP_' + node.name, leaves);
+				// Note: Intentionally neglecting to update child nodes' 'parent' or 'depth' fields here
+			let leavesSuccess = sqrLayout(leavesLyt, [0,0], parentArea.dims, !sweptLeft, false, opts);
+			let nonLeavesSuccess = true;
+			if (leavesSuccess){
+				// Attempt non-leaves layout
+				let newDims: [number,number] = [dims[0], dims[1] - (sweptLeft ? headerSz : 0)];
+				nonLeavesLyt = new LayoutNode('SWEEP_REM_' + node.name, nonLeaves);
+				if (nonLeaves.length > 1){
+					nonLeavesSuccess = rectLayout(nonLeavesLyt, [0,0], newDims, false, false, opts, {subLayoutFn:
+						((n,p,d,h,a,o) => sweepLayout(n,p,d,h,allowCollapse,o,{sepArea:sepArea})) as LayoutFn});
+				} else {
 					// Get leftover area usable by non-leaf child
 					if (sweptLeft){
 						sepArea = new SepSweptArea(
-							[-leavesLyt.dims[0] + opts.tileSpacing, leavesLyt.dims[1] - opts.tileSpacing], // Relative to child
-							[leavesLyt.dims[0], newDims[1] - leavesLyt.dims[1] - opts.tileSpacing],
+							[parentArea.pos[0], parentArea.pos[1] + leavesLyt.dims[1] - (opts.tileSpacing + headerSz)],
+								// The y-coord subtraction is to make the position relative to a direct non-leaf child
+							[parentArea.dims[0], parentArea.dims[1] - leavesLyt.dims[1] - opts.tileSpacing*2],
 							sweptLeft, false
 						);
 					} else {
 						sepArea = new SepSweptArea(
-							[leavesLyt.dims[0] - opts.tileSpacing, -leavesLyt.dims[1] + opts.tileSpacing],
-							[newDims[0] - leavesLyt.dims[0] - opts.tileSpacing, leavesLyt.dims[1]],
+							[parentArea.pos[0] + leavesLyt.dims[0] - opts.tileSpacing, parentArea.pos[1] + headerSz],
+							[parentArea.dims[0] - leavesLyt.dims[0] - opts.tileSpacing*2, parentArea.dims[1] - headerSz],
 							sweptLeft, false
 						);
 					}
+					// Attempt layout
+					nonLeavesSuccess = rectLayout(nonLeavesLyt, [0,0], newDims, false, false, opts, {subLayoutFn:
+						((n,p,d,h,a,o) => sweepLayout(n,p,d,h,allowCollapse,o,{sepArea:sepArea})) as LayoutFn});
 				}
-				// Attempt layout
-				nonLeavesSuccess = rectLayout(nonLeavesLyt, [0,0], newDims, false, false, opts, {subLayoutFn:
-					((n,p,d,h,a,o) => sweepLayout(n,p,d,h,allowCollapse,o,{sepArea:sepArea})) as LayoutFn});
-			}
-			if (nonLeavesSuccess){
-				nonLeavesLyt.children.forEach(lyt => {
-					lyt.pos[0] += newPos[0];
-					lyt.pos[1] += newPos[1];
-				});
-				// Create combined layout
-				let usedDims: [number, number];
-				if (sweptLeft){
-					usedDims = [
-						leavesLyt.dims[0] + nonLeavesLyt.dims[0] - opts.tileSpacing,
-						Math.max(leavesLyt.dims[1] + (sepArea != null && sepArea.used ? sepArea.dims[1] : 0), nonLeavesLyt.dims[1])
-							+ headerSz
-					];
-				} else {
-					usedDims = [
-						Math.max(leavesLyt.dims[0] + (sepArea != null && sepArea.used ? sepArea.dims[0] : 0), nonLeavesLyt.dims[0]),
-						leavesLyt.dims[1] + nonLeavesLyt.dims[1] - opts.tileSpacing + headerSz
-					];
-				}
-				let empSpc = leavesLyt.empSpc + nonLeavesLyt.empSpc;
-				node.assignLayoutData(pos, usedDims, {showHeader, empSpc, sepSweptArea: null});
-				return true;
-			}
-		}
-	}
-	// Try using parent-provided area
-	if (ownOpts != null && ownOpts.sepArea != null && opts.sweepToParent != 'never'){
-		let parentArea = ownOpts.sepArea;
-		// Attempt leaves layout
-		sweptLeft = parentArea.sweptLeft;
-		leavesLyt = new LayoutNode('SWEEP_' + node.name, leaves);
-			// Note: Intentionally neglecting to update child nodes' 'parent' or 'depth' fields here
-		let leavesSuccess = sqrLayout(leavesLyt, [0,0], parentArea.dims, !sweptLeft, false, opts);
-		if (leavesSuccess){
-			// Attempt non-leaves layout
-			let newDims: [number,number] = [dims[0], dims[1] - (sweptLeft ? headerSz : 0)];
-			nonLeavesLyt = new LayoutNode('SWEEP_REM_' + node.name, nonLeaves);
-			let nonLeavesSuccess: boolean;
-			if (nonLeaves.length > 1){
-				nonLeavesSuccess = rectLayout(nonLeavesLyt, [0,0], newDims, false, false, opts, {subLayoutFn:
-					((n,p,d,h,a,o) => sweepLayout(n,p,d,h,allowCollapse,o,{sepArea:sepArea})) as LayoutFn});
-			} else {
-				// Get leftover area usable by non-leaf child
-				if (sweptLeft){
-					sepArea = new SepSweptArea(
-						[parentArea.pos[0], parentArea.pos[1] + leavesLyt.dims[1] - (opts.tileSpacing + headerSz)],
-							// The y-coord subtraction is to make the position relative to a direct non-leaf child
-						[parentArea.dims[0], parentArea.dims[1] - leavesLyt.dims[1] - opts.tileSpacing*2],
-						sweptLeft, false
-					);
-				} else {
-					sepArea = new SepSweptArea(
-						[parentArea.pos[0] + leavesLyt.dims[0] - opts.tileSpacing, parentArea.pos[1] + headerSz],
-						[parentArea.dims[0] - leavesLyt.dims[0] - opts.tileSpacing*2, parentArea.dims[1] - headerSz],
-						sweptLeft, false
-					);
-				}
-				// Attempt layout
-				nonLeavesSuccess = rectLayout(nonLeavesLyt, [0,0], newDims, false, false, opts, {subLayoutFn:
-					((n,p,d,h,a,o) => sweepLayout(n,p,d,h,allowCollapse,o,{sepArea:sepArea})) as LayoutFn});
-			}
-			if (nonLeavesSuccess){
-				// Adjust non-leaf child positions
-				if (sweptLeft){
-					nonLeavesLyt.children.forEach(lyt => {lyt.pos[1] += headerSz});
-				}
-				// Update parentArea to represent space used
-				parentArea.used = true;
-				if (sweptLeft){
-					parentArea.dims[1] = leavesLyt.dims[1];
-					let newX = parentArea.pos[0] + (parentArea.dims[0] - leavesLyt.dims[0]);
-					let newW = leavesLyt.dims[0];
-					if (sepArea != null && sepArea.used){
-						parentArea.dims[1] += sepArea.dims[1] + opts.tileSpacing;
-						if (sepArea.dims[0] + opts.tileSpacing > leavesLyt.dims[0]){
-							newX = parentArea.pos[0] + (parentArea.dims[0] - sepArea.dims[0] - opts.tileSpacing);
-							newW = sepArea.dims[0] + opts.tileSpacing;
+				if (nonLeavesSuccess){
+					// Adjust non-leaf child positions
+					if (sweptLeft){
+						nonLeavesLyt.children.forEach(lyt => {lyt.pos[1] += headerSz});
+					}
+					// Update parentArea to represent space used
+					parentArea.used = true;
+					if (sweptLeft){
+						parentArea.dims[1] = leavesLyt.dims[1];
+						let newX = parentArea.pos[0] + (parentArea.dims[0] - leavesLyt.dims[0]);
+						let newW = leavesLyt.dims[0];
+						if (sepArea != null && sepArea.used){
+							parentArea.dims[1] += sepArea.dims[1] + opts.tileSpacing;
+							if (sepArea.dims[0] + opts.tileSpacing > leavesLyt.dims[0]){
+								newX = parentArea.pos[0] + (parentArea.dims[0] - sepArea.dims[0] - opts.tileSpacing);
+								newW = sepArea.dims[0] + opts.tileSpacing;
+							}
+						}
+						// Shrink to avoid excess space between leaves and non-leaves
+						parentArea.pos[0] = newX;
+						parentArea.dims[0] = newW;
+					} else {
+						parentArea.dims[0] = leavesLyt.dims[0];
+						if (sepArea != null && sepArea.used){
+							parentArea.dims[0] += sepArea.dims[0] + opts.tileSpacing;
 						}
 					}
-					// Shrink to avoid excess space between leaves and non-leaves
-					parentArea.pos[0] = newX;
-					parentArea.dims[0] = newW;
-				} else {
-					parentArea.dims[0] = leavesLyt.dims[0];
-					if (sepArea != null && sepArea.used){
-						parentArea.dims[0] += sepArea.dims[0] + opts.tileSpacing;
-					}
-				}
-				// Align parentArea size with non-leaves area
-				if (sweptLeft){
-					if (parentArea.pos[1] + parentArea.dims[1] > nonLeavesLyt.dims[1] + headerSz){
-						nonLeavesLyt.dims[1] = parentArea.pos[1] + parentArea.dims[1] - headerSz;
+					// Align parentArea size with non-leaves area
+					if (sweptLeft){
+						if (parentArea.pos[1] + parentArea.dims[1] > nonLeavesLyt.dims[1] + headerSz){
+							nonLeavesLyt.dims[1] = parentArea.pos[1] + parentArea.dims[1] - headerSz;
+						} else {
+							parentArea.dims[1] = nonLeavesLyt.dims[1] + headerSz - parentArea.pos[1];
+						}
 					} else {
-						parentArea.dims[1] = nonLeavesLyt.dims[1] + headerSz - parentArea.pos[1];
+						if (parentArea.pos[0] + parentArea.dims[0] > nonLeavesLyt.dims[0]){
+							nonLeavesLyt.dims[0] = parentArea.pos[0] + parentArea.dims[0];
+						} else {
+							parentArea.dims[0] = nonLeavesLyt.dims[0] - parentArea.pos[0];
+						}
 					}
-				} else {
-					if (parentArea.pos[0] + parentArea.dims[0] > nonLeavesLyt.dims[0]){
-						nonLeavesLyt.dims[0] = parentArea.pos[0] + parentArea.dims[0];
+					// Adjust area to avoid overlap with non-leaves
+					if (sweptLeft){
+						parentArea.dims[0] -= opts.tileSpacing;
 					} else {
-						parentArea.dims[0] = nonLeavesLyt.dims[0] - parentArea.pos[0];
+						parentArea.dims[1] -= opts.tileSpacing;
 					}
+					// Move leaves to parent area
+					leavesLyt.children.map(lyt => {
+						lyt.pos[0] += parentArea!.pos[0];
+						lyt.pos[1] += parentArea!.pos[1];
+					});
+					// Return with updated layout
+					let usedDims: [number,number] = [nonLeavesLyt.dims[0], nonLeavesLyt.dims[1] + (sweptLeft ? headerSz : 0)];
+					node.assignLayoutData(pos, usedDims, {showHeader, empSpc: nonLeavesLyt.empSpc, sepSweptArea: parentArea});
+					return true;
 				}
-				// Adjust area to avoid overlap with non-leaves
-				if (sweptLeft){
-					parentArea.dims[0] -= opts.tileSpacing;
-				} else {
-					parentArea.dims[1] -= opts.tileSpacing;
-				}
-				// Move leaves to parent area
-				leavesLyt.children.map(lyt => {
-					lyt.pos[0] += parentArea!.pos[0];
-					lyt.pos[1] += parentArea!.pos[1];
-				});
-				// Return with updated layout
-				let usedDims: [number,number] = [nonLeavesLyt.dims[0], nonLeavesLyt.dims[1] + (sweptLeft ? headerSz : 0)];
-				node.assignLayoutData(pos, usedDims, {showHeader, empSpc: nonLeavesLyt.empSpc, sepSweptArea: parentArea});
-				return true;
 			}
+			if (nonLeavesSuccess == true && opts.sweepToParent == 'prefer'){
+				trySweepToParent = false;
+				continue;
+			}
+			break;
 		}
 	}
 	// Handle layout-failure
