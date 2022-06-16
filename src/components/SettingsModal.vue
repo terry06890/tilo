@@ -107,8 +107,21 @@ export default defineComponent({
 		</div>
 		<hr class="border-stone-400"/>
 		<div>
-			<label> <input type="checkbox" v-model="lytOpts.sweepToParent"
-				@change="onLytOptChg"/> Sweep to parent</label>
+			Sweep to parent
+			<ul>
+				<li>
+					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="never"
+						@change="onLytOptChg"/> Never </label>
+				</li>
+				<li>
+					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="always"
+						@change="onLytOptChg"/> Always </label>
+				</li>
+				<li>
+					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="auto"
+						@change="onLytOptChg"/> Auto </label>
+				</li>
+			</ul>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>

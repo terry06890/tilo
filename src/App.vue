@@ -55,7 +55,7 @@ const defaultLytOpts: LayoutOptions = {
 	rectMode: 'auto first-row', //'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
 	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
 	sweptNodesPrio: 'linear', //'linear' | 'sqrt' | 'pow-2/3'
-	sweepToParent: true,
+	sweepToParent: 'auto', //'never' | 'always' | 'auto'
 };
 const defaultUiOpts = {
 	// For tiles
