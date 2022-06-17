@@ -19,6 +19,7 @@ vnamesFile = "eol/vernacularNames.csv"
 dbFile = "data.db"
 NAMES_TO_SKIP = {"unknown", "unknown species", "unidentified species"}
 pickedIdsFile = "genEolNameDataPickedIds.txt"
+badAltsFile = "genEolNameDataBadAlts.txt"
 
 # Read in vernacular-names data
 	# Note: Canonical-names may have multiple pids
@@ -72,6 +73,18 @@ if os.path.exists(pickedIdsFile):
 			(name, _, eolId) = line.rstrip().partition("|")
 			nameToPickedPid[name] = None if eolId == "" else int(eolId)
 print(f"Found {len(nameToPickedPid)}")
+# Read in node-alt_names to avoid
+print("Checking for bad-alt-names")
+nameToBadAlts = {}
+if os.path.exists(badAltsFile):
+	with open(badAltsFile) as file:
+		for line in file:
+			(name, _, altName) = line.rstrip().partition("|")
+			if name not in nameToBadAlts:
+				nameToBadAlts[name] = [altName]
+			else:
+				nameToBadAlts[name].append(altName)
+print(f"Found bad-alts for {len(nameToBadAlts)} nodes")
 # Open db connection
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
@@ -91,8 +104,12 @@ def addToDb(nodeName, pidToUse):
 	preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
 	dbCur.execute("INSERT INTO eol_ids VALUES (?, ?)", (pidToUse, nodeName))
 	for n in pidToNames[pidToUse]:
-		if dbCur.execute("SELECT name FROM nodes WHERE name = ?", (n,)).fetchone() == None:
-			altNames.add(n)
+		if dbCur.execute("SELECT name FROM nodes WHERE name = ?", (n,)).fetchone() != None:
+			continue
+		if nodeName in nameToBadAlts and n in nameToBadAlts[nodeName]:
+			print(f"Excluding bad-alt {n} for node {nodeName}")
+			continue
+		altNames.add(n)
 	for n in altNames:
 		isPreferred = 1 if (n == preferredName) else 0
 		dbCur.execute("INSERT INTO names VALUES (?, ?, ?, 'eol')", (nodeName, n, isPreferred))
