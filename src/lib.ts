@@ -108,8 +108,9 @@ export function randWeightedChoice(weights: number[]): number | null {
 }
 // Returns a string with words first-letter capitalised
 export function capitalizeWords(str: string){
-	return str.replace(/\b\w/g, x => x.toUpperCase());
-		// '\b' matches word boundary, '\w' is like [a-zA-Z0-9_],
+	str = str.replace(/\b\w/g, x => x.toUpperCase()); // '\b' matches word boundary, '\w' is like [a-zA-Z0-9_]
+	str = str.replace(/(\w)'S/, '$1\'s'); // Avoid cases like "traveler's tree" -> "Traveler'S Tree"
+	return str;
 }
 // Dynamically obtains scroll bar width
 // From stackoverflow.com/questions/13382516/getting-scroll-bar-width-using-javascript
