@@ -21,6 +21,7 @@ eolImgDb = "eol/imagesList.db"
 enwikiImgDb = "enwiki/enwikiImgs.db"
 dbFile = "data.db"
 IMG_OUT_SZ = 200
+genImgFiles = True
 
 # Create output directory if not present
 if not os.path.exists(outDir):
@@ -54,8 +55,10 @@ def onSigint(sig, frame):
 	interrupted = True
 signal.signal(signal.SIGINT, onSigint)
 # Iterate though images to process
+iterNum = 0
 with open(imgListFile) as file:
 	for line in file:
+		iterNum += 1
 		# Check for SIGINT event
 		if interrupted:
 			print("Exiting")
@@ -68,24 +71,28 @@ with open(imgListFile) as file:
 		# Skip if already processed
 		if otolId in nodesDone:
 			continue
-		outPath = outDir + otolId + ".jpg"
 		# Convert image
-		print(f"{otolId}: converting {imgPath}")
-		if os.path.exists(outPath):
-			print(f"ERROR: Output image already exists")
-			break
-		try:
-			completedProcess = subprocess.run(
-				['npx', 'smartcrop-cli', '--width', str(IMG_OUT_SZ), '--height', str(IMG_OUT_SZ), imgPath, outPath],
-				stdout=subprocess.DEVNULL)
-		except Exception as e:
-			print(f"ERROR: Exception while attempting to run smartcrop: {e}")
-			break
-		if completedProcess.returncode != 0:
-			print(f"ERROR: smartcrop had exit status {completedProcess.returncode}")
-			break
+		if genImgFiles:
+			print(f"Processing {otolId}: converting {imgPath}")
+			outPath = outDir + otolId + ".jpg"
+			if os.path.exists(outPath):
+				print(f"ERROR: Output image already exists")
+				break
+			try:
+				completedProcess = subprocess.run(
+					['npx', 'smartcrop-cli', '--width', str(IMG_OUT_SZ), '--height', str(IMG_OUT_SZ), imgPath, outPath],
+					stdout=subprocess.DEVNULL)
+			except Exception as e:
+				print(f"ERROR: Exception while attempting to run smartcrop: {e}")
+				break
+			if completedProcess.returncode != 0:
+				print(f"ERROR: smartcrop had exit status {completedProcess.returncode}")
+				break
+		else:
+			if iterNum % 1e4 == 0:
+				print(f"At iteration {iterNum}")
 		# Add entry to db
-		nodeName = dbCur.execute("SELECT name FROM nodes WHERE id = ?", (otolId,))
+		(nodeName,) = dbCur.execute("SELECT name FROM nodes WHERE id = ?", (otolId,)).fetchone()
 		fromEol = imgPath.startswith("eol/")
 		imgName = os.path.basename(os.path.normpath(imgPath)) # Get last path component
 		imgName = os.path.splitext(imgName)[0] # Remove extension
