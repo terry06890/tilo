@@ -69,27 +69,9 @@ for name in minimalNames:
 	if name == None:
 		rootName = prevName
 print(f"New node set has {len(nodeMap)} nodes")
-# Remove certain 'chain collapsible' nodes
-print("Removing 'chain collapsible' nodes")
-namesToRemove = set()
-for (name, nodeObj) in nodeMap.items():
-	if name not in minimalNames and len(nodeObj["children"]) == 1:
-		parentName = nodeObj["parent"]
-		childName = nodeObj["children"][0]
-		# Connect parent and child
-		nodeMap[parentName]["children"].remove(name)
-		nodeMap[parentName]["children"].append(childName)
-		nodeMap[childName]["parent"] = parentName
-		# Adjust child pSupport
-		nodeMap[childName]["pSupport"] &= nodeObj["pSupport"]
-		# Remember for removal
-		namesToRemove.add(name)
-for name in namesToRemove:
-	del nodeMap[name]
-print(f"New node set has {len(nodeMap)} nodes")
 # Merge-upward compsite-named nodes
 print("Merging-upward composite-named nodes")
-namesToRemove2 = set()
+namesToRemove = set()
 for (name, nodeObj) in nodeMap.items():
 	parent = nodeObj["parent"]
 	if parent != None and compNameRegex.fullmatch(name) != None:
@@ -98,6 +80,27 @@ for (name, nodeObj) in nodeMap.items():
 		nodeMap[parent]["children"].extend(nodeObj["children"])
 		for n in nodeObj["children"]:
 			nodeMap[n]["parent"] = parent
+			nodeMap[n]["pSupport"] &= nodeObj["pSupport"]
+		# Remember for removal
+		namesToRemove.add(name)
+for name in namesToRemove:
+	del nodeMap[name]
+print(f"New node set has {len(nodeMap)} nodes")
+# Remove certain 'chain collapsible' nodes
+print("Removing 'chain collapsible' nodes")
+namesToRemove2 = set()
+for (name, nodeObj) in nodeMap.items():
+	hasOneChild = len(nodeObj["children"]) == 1
+	isOnlyChild = nodeObj["parent"] != None and len(nodeMap[nodeObj["parent"]]["children"]) == 1
+	if name not in minimalNames and (hasOneChild or isOnlyChild):
+		parentName = nodeObj["parent"]
+		children = nodeObj["children"]
+		# Connect parent and children
+		nodeMap[parentName]["children"].remove(name)
+		nodeMap[parentName]["children"].extend(children)
+		for n in children:
+			nodeMap[n]["parent"] = parentName
+			# Adjust child pSupport
 			nodeMap[n]["pSupport"] &= nodeObj["pSupport"]
 		# Remember for removal
 		namesToRemove2.add(name)
@@ -119,7 +122,8 @@ for (name, nodeObj) in nodeMap.items():
 		children = [row[0] for row in dbCur.execute("SELECT child FROM edges where node = ?", (name,))]
 		newChildren = [n for n in children if
 			not (n in nodeMap or n in namesToRemove) and
-			dbCur.execute("SELECT name from node_imgs WHERE name = ?", (n,)).fetchone() != None]
+			(dbCur.execute("SELECT name from node_imgs WHERE name = ?", (n,)).fetchone() != None or
+				dbCur.execute("SELECT name from linked_imgs WHERE name = ? AND otol_id2 IS NULL", (n,)).fetchone() != None)]
 		newChildNames = newChildren[:max(0, PREF_NUM_CHILDREN - numChildren)]
 		nodeObj["children"].extend(newChildNames)
 		namesToAdd.extend(newChildNames)

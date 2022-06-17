@@ -43,6 +43,7 @@ for name in nodesToKeep:
 			parent = row[0]
 			if parent not in nodesToKeep and parent not in ancestors:
 				ancestors.add(parent)
+				name = parent
 				continue
 		break
 nodesToKeep.update(ancestors)
@@ -50,7 +51,7 @@ print(f"Total of {len(nodesToKeep)} nodes to keep")
 # Find root node
 query = "SELECT name FROM nodes LEFT JOIN edges ON nodes.name = edges.child WHERE edges.node IS NULL LIMIT 1"
 (rootName,) = dbCur.execute(query).fetchone()
-print(f"Found root node \"{rootName\"}")
+print(f"Found root node '{rootName}'")
 # Traverse tree, looking for trimmable nodes
 print("Looking for trimmable nodes")
 nodeToTipsChg = {}

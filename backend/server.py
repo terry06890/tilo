@@ -137,7 +137,6 @@ def lookupNodeInfo(name, useReducedTree):
 	if nodeObj != None:
 		if isinstance(nodeObj["imgName"], str):
 			otolId = nodeObj["imgName"][:-4] # Convert filename excluding .jpg suffix
-			print(otolId)
 			query = "SELECT images.id, images.src, url, license, artist, credit FROM" \
 				" nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
 				" INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
