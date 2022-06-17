@@ -54,7 +54,7 @@ const defaultLytOpts: LayoutOptions = {
 	layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
 	rectMode: 'auto first-row', //'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
 	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
-	sweptNodesPrio: 'linear', //'linear' | 'sqrt' | 'pow-2/3'
+	sweptNodesPrio: 'sqrt', //'linear' | 'sqrt' | 'pow-2/3'
 	sweepToParent: 'prefer', //'none' | 'prefer' | 'fallback'
 };
 const defaultUiOpts = {
@@ -789,7 +789,7 @@ export default defineComponent({
 		<help-modal v-if="helpOpen" :uiOpts="uiOpts"
 			@help-modal-close="helpOpen = false" @start-tutorial="onStartTutorial"/>
 	</transition>
-	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts"
+	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
 		@settings-close="settingsOpen = false" @reset-settings="onResetSettings"
 		@layout-option-change="relayoutWithCollapse" @tree-change="onTreeChange"/>
 	<!-- Overlay used to prevent interaction and capture clicks -->
