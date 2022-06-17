@@ -104,6 +104,8 @@ def addToDb(nodeName, pidToUse):
 	preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
 	dbCur.execute("INSERT INTO eol_ids VALUES (?, ?)", (pidToUse, nodeName))
 	for n in pidToNames[pidToUse]:
+		if len(n.split(" ")) > 3:
+			continue
 		if dbCur.execute("SELECT name FROM nodes WHERE name = ?", (n,)).fetchone() != None:
 			continue
 		if nodeName in nameToBadAlts and n in nameToBadAlts[nodeName]:
