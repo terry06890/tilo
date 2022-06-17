@@ -120,10 +120,17 @@ for (name, nodeObj) in nodeMap.items():
 	numChildren = len(nodeObj["children"])
 	if numChildren < PREF_NUM_CHILDREN:
 		children = [row[0] for row in dbCur.execute("SELECT child FROM edges where node = ?", (name,))]
-		newChildren = [n for n in children if
-			not (n in nodeMap or n in namesToRemove) and
-			(dbCur.execute("SELECT name from node_imgs WHERE name = ?", (n,)).fetchone() != None or
-				dbCur.execute("SELECT name from linked_imgs WHERE name = ? AND otol_id2 IS NULL", (n,)).fetchone() != None)]
+		newChildren = []
+		for n in children:
+			if n in nodeMap or n in namesToRemove:
+				continue
+			if compNameRegex.fullmatch(name) != None:
+				continue
+			if dbCur.execute("SELECT name from node_imgs WHERE name = ?", (n,)).fetchone() == None:
+				continue
+			if dbCur.execute("SELECT name from linked_imgs WHERE name = ?", (n,)).fetchone() == None:
+				continue
+			newChildren.append(n)
 		newChildNames = newChildren[:max(0, PREF_NUM_CHILDREN - numChildren)]
 		nodeObj["children"].extend(newChildNames)
 		namesToAdd.extend(newChildNames)
