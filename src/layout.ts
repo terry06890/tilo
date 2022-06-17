@@ -629,8 +629,9 @@ let sweepLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse
 			let newPos = [0, headerSz];
 			let newDims: [number,number] = [dims[0], dims[1] - headerSz];
 			leavesLyt = new LayoutNode('SWEEP_' + node.name, leaves);
-			let minSz = opts.minTileSz + opts.tileSpacing*2;
-			let sweptW = Math.max(minSz, newDims[0] * ratio), sweptH = Math.max(minSz, newDims[1] * ratio);
+			let minSz = opts.minTileSz + opts.tileSpacing*4;
+			let sweptW = Math.min(Math.max(minSz, newDims[0] * ratio), newDims[0] - minSz);
+			let sweptH = Math.min(Math.max(minSz, newDims[1] * ratio), newDims[0] - minSz);
 			let leavesSuccess: boolean;
 			switch (opts.sweepMode){
 				case 'left':

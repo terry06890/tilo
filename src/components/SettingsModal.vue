@@ -39,7 +39,7 @@ export default defineComponent({
 			this.$emit('tree-change');
 		},
 		onSave(){
-			const savedLytOpts = ['tileSpacing', 'minTileSz', 'maxTileSz', 'layoutType', 'sweepMode', ];
+			const savedLytOpts = ['tileSpacing', 'minTileSz', 'maxTileSz', 'layoutType', 'sweepMode', 'sweepToParent', ];
 			for (let prop of savedLytOpts){
 				localStorage.setItem('lyt ' + prop, String(this.lytOpts[prop as keyof LayoutOptions]));
 			}
