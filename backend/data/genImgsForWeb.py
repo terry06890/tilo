@@ -19,6 +19,8 @@ imgListFile = "mergedImgList.txt"
 outDir = "img/"
 eolImgDb = "eol/imagesList.db"
 enwikiImgDb = "enwiki/enwikiImgs.db"
+pickedImgsDir = "pickedImgs/"
+pickedImgsFile = "metadata.txt"
 dbFile = "data.db"
 IMG_OUT_SZ = 200
 genImgFiles = True
@@ -33,6 +35,20 @@ eolCon = sqlite3.connect(eolImgDb)
 eolCur = eolCon.cursor()
 enwikiCon = sqlite3.connect(enwikiImgDb)
 enwikiCur = enwikiCon.cursor()
+# Get 'picked images' info
+nodeToPickedImg = {}
+if os.path.exists(pickedImgsDir + pickedImgsFile):
+	lineNum = 0
+	with open(pickedImgsDir + pickedImgsFile) as file:
+		for line in file:
+			lineNum += 1
+			(filename, url, license, artist, credit) = line.rstrip().split("|")
+			nodeName = os.path.splitext(filename)[0] # Remove extension
+			(otolId,) = dbCur.execute("SELECT id FROM nodes WHERE name = ?", (nodeName,)).fetchone()
+			nodeToPickedImg[otolId] = {
+				"nodeName": nodeName, "id": lineNum,
+				"filename": filename, "url": url, "license": license, "artist": artist, "credit": credit,
+			}
 # Create image tables if not present
 nodesDone = set()
 imgsDone = set()
@@ -55,6 +71,52 @@ def onSigint(sig, frame):
 	interrupted = True
 signal.signal(signal.SIGINT, onSigint)
 # Iterate though images to process
+def quit():
+	dbCon.commit()
+	dbCon.close()
+	eolCon.close()
+	enwikiCon.close()
+	sys.exit(0)
+def convertImage(imgPath, outPath):
+	print(f"Converting {imgPath} to {outPath}")
+	if os.path.exists(outPath):
+		print(f"ERROR: Output image already exists")
+		return False
+	try:
+		completedProcess = subprocess.run(
+			['npx', 'smartcrop-cli', '--width', str(IMG_OUT_SZ), '--height', str(IMG_OUT_SZ), imgPath, outPath],
+			stdout=subprocess.DEVNULL
+		)
+	except Exception as e:
+		print(f"ERROR: Exception while attempting to run smartcrop: {e}")
+		return False
+	if completedProcess.returncode != 0:
+		print(f"ERROR: smartcrop had exit status {completedProcess.returncode}")
+		return False
+	return True
+print("Processing picked images")
+for (otolId, imgData) in nodeToPickedImg.items():
+	# Check for SIGINT event
+	if interrupted:
+		print("Exiting")
+		quit()
+	# Skip if already processed
+	if otolId in nodesDone:
+		continue
+	# Convert image
+	if genImgFiles:
+		if not convertImage(pickedImgsDir + imgData["filename"], outDir + otolId + ".jpg"):
+			quit()
+	else:
+		print(f"Processing {imgData['nodeName']}: {otolId}.jpg")
+	# Add entry to db
+	if (imgData["id"], "picked") not in imgsDone:
+		dbCur.execute("INSERT INTO images VALUES (?, ?, ?, ?, ?, ?)",
+			(imgData["id"], "picked", imgData["url"], imgData["license"], imgData["artist"], imgData["credit"]))
+		imgsDone.add((imgData["id"], "picked"))
+	dbCur.execute("INSERT INTO node_imgs VALUES (?, ?, ?)", (imgData["nodeName"], imgData["id"], "picked"))
+	nodesDone.add(otolId)
+print("Processing images from eol and enwiki")
 iterNum = 0
 with open(imgListFile) as file:
 	for line in file:
@@ -73,20 +135,7 @@ with open(imgListFile) as file:
 			continue
 		# Convert image
 		if genImgFiles:
-			print(f"Processing {otolId}: converting {imgPath}")
-			outPath = outDir + otolId + ".jpg"
-			if os.path.exists(outPath):
-				print(f"ERROR: Output image already exists")
-				break
-			try:
-				completedProcess = subprocess.run(
-					['npx', 'smartcrop-cli', '--width', str(IMG_OUT_SZ), '--height', str(IMG_OUT_SZ), imgPath, outPath],
-					stdout=subprocess.DEVNULL)
-			except Exception as e:
-				print(f"ERROR: Exception while attempting to run smartcrop: {e}")
-				break
-			if completedProcess.returncode != 0:
-				print(f"ERROR: smartcrop had exit status {completedProcess.returncode}")
+			if not convertImage(imgPath, outDir + otolId + ".jpg"):
 				break
 		else:
 			if iterNum % 1e4 == 0:
@@ -103,7 +152,7 @@ with open(imgListFile) as file:
 				query = "SELECT source_url, license, copyright_owner FROM images WHERE content_id = ?"
 				row = eolCur.execute(query, (contentId,)).fetchone()
 				if row == None:
-					print("ERROR: No image record for EOL ID {eolId}, content ID {contentId}", file=sys.stderr)
+					print(f"ERROR: No image record for EOL ID {eolId}, content ID {contentId}", file=sys.stderr)
 					break
 				(url, license, owner) = row
 				dbCur.execute("INSERT INTO images VALUES (?, ?, ?, ?, ?, ?)",
@@ -118,7 +167,7 @@ with open(imgListFile) as file:
 					" WHERE page_imgs.page_id = ?"
 				row = enwikiCur.execute(query, (enwikiId,)).fetchone()
 				if row == None:
-					print("ERROR: No image record for enwiki ID {enwikiId}", file=sys.stderr)
+					print(f"ERROR: No image record for enwiki ID {enwikiId}", file=sys.stderr)
 					break
 				(name, license, artist, credit) = row
 				url = "https://en.wikipedia.org/wiki/File:" + urllib.parse.quote(name)
@@ -127,7 +176,4 @@ with open(imgListFile) as file:
 				imgsDone.add((enwikiId, "enwiki"))
 			dbCur.execute("INSERT INTO node_imgs VALUES (?, ?, ?)", (nodeName, enwikiId, "enwiki"))
 # Close dbs
-dbCon.commit()
-dbCon.close()
-eolCon.close()
-enwikiCon.close()
+quit()

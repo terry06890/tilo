@@ -19,7 +19,7 @@ File Generation Process
         using data in enwiki/enwikiData.db, and the 'nodes' table.
         Also uses genDescNamesToSkip.txt and genEnwikiDescTitlesToUse.txt for
         skipping/resolving some name-page associations.
-3   Image Data
+4   Image Data
     1   In eol/, run downloadImgs.py to download EOL images into eol/imgsForReview/.
         It uses data in eol/imagesList.db, and the 'eol_ids' table.
     2   In eol/, run reviewImgs.py to filter images in eol/imgsForReview/ into EOL-id-unique
@@ -36,8 +36,9 @@ File Generation Process
         and enables choosing, for each tol-node, which image should be used, if any,
         and outputs choice information into mergedImgList.txt. Uses the 'nodes',
         'eol_ids', and 'wiki_ids' tables (as well as 'names' for info-display).
-    7   Run genImgsForWeb.py, which creates cropped/resized images in img/, using
-        mergedImgList.txt, and adds 'images' and 'node_imgs' tables to data.db.
+    7   Run genImgsForWeb.py, which creates cropped/resized images in img/,
+        using mergedImgList.txt, and possibly pickedImgs/, and adds 'images' and
+        'node_imgs' tables to data.db. <br>
         Smartcrop's outputs might need to be manually created/adjusted: <br>
         -   An input image might have no output produced, possibly due to
             data incompatibilities, memory limits, etc. A few input image files

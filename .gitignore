@@ -28,4 +28,5 @@
 /backend/data/dbpPickedLabels.txt
 /backend/data/genEnwikiDescTitlesToUse.txt
 /backend/data/mergedImgList.txt
+/backend/data/pickedImgs/
 /backend/data/reducedTol/names.txt
