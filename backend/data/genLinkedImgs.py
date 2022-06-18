@@ -17,8 +17,9 @@ upPropagateCompoundImgs = False
 # Open db
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
-dbCur.execute("CREATE TABLE linked_imgs (name TEXT PRIMARY KEY, otol_id TEXT, otol_id2 TEXT)")
-	# Associates a node with one (or two) otol-ids with usable images
+dbCur.execute("CREATE TABLE linked_imgs (name TEXT PRIMARY KEY, otol_ids TEXT)")
+	# Associates a node with one (or two) otol-ids with usable images,
+	# encoded as 'otolId1' or 'otolId1,otolId2'
 # Get nodes with images
 print("Getting nodes with images")
 resolvedNodes = {} # Will map node names to otol IDs with a usable image
@@ -58,7 +59,7 @@ while len(resolvedNodes) > 0:
 		# Check if highest-tips child
 		if (childObjs[0]["name"] == nodeName):
 			# Resolve parent, and continue from it
-			dbCur.execute("INSERT INTO linked_imgs VALUES (?, ?, ?)", (parent, otolId, None))
+			dbCur.execute("INSERT INTO linked_imgs VALUES (?, ?)", (parent, otolId))
 			del nodesToResolve[parent]
 			processedNodes[parent] = otolId
 			parentToChosenTips[parent] = childObjs[0]["tips"]
@@ -75,7 +76,7 @@ while len(resolvedNodes) > 0:
 			childObj = next(c for c in childObjs if c["otolId"] != None)
 			resolvedNodes[name] = childObj["otolId"]
 			parentToChosenTips[name] = childObj["tips"]
-			dbCur.execute("INSERT INTO linked_imgs VALUES (?, ?, ?)", (name, childObj["otolId"], None))
+			dbCur.execute("INSERT INTO linked_imgs VALUES (?, ?)", (name, childObj["otolId"]))
 		nodesToResolve.clear()
 # Iterate through processed nodes with compound names
 print("Replacing images for compound-name nodes")
@@ -89,18 +90,18 @@ for nodeName in processedNodes.keys():
 	if match != None:
 		# Replace associated image with subname images
 		(subName1, subName2) = match.group(1,2)
-		otolIdPair = [None, None]
+		otolIdPair = ["", ""]
 		if subName1 in processedNodes:
 			otolIdPair[0] = processedNodes[subName1]
 		if subName2 in processedNodes:
 			otolIdPair[1] = processedNodes[subName2]
 		# Use no image if both subimages not found
-		if otolIdPair[0] == None and otolIdPair[1] == None:
+		if otolIdPair[0] == "" and otolIdPair[1] == "":
 			dbCur.execute("DELETE FROM linked_imgs WHERE name = ?", (nodeName,))
 			continue
 		# Add to db
-		dbCur.execute("UPDATE linked_imgs SET otol_id = ?, otol_id2 = ? WHERE name = ?",
-			(otolIdPair[0], otolIdPair[1], nodeName))
+		dbCur.execute("UPDATE linked_imgs SET otol_ids = ? WHERE name = ?",
+			(otolIdPair[0] + "," + otolIdPair[1], nodeName))
 		# Possibly repeat operation upon parent/ancestors
 		if upPropagateCompoundImgs:
 			while True:
@@ -112,8 +113,8 @@ for nodeName in processedNodes.keys():
 					(numTips,) = dbCur.execute("SELECT tips from nodes WHERE name = ?", (nodeName,)).fetchone()
 					if parent in parentToChosenTips and parentToChosenTips[parent] <= numTips:
 						# Replace associated image
-						dbCur.execute("UPDATE linked_imgs SET otol_id = ?, otol_id2 = ? WHERE name = ?",
-							(otolIdPair[0], otolIdPair[1], parent))
+						dbCur.execute("UPDATE linked_imgs SET otol_ids = ? WHERE name = ?",
+							(otolIdPair[0] + "," + otolIdPair[1], parent))
 						nodeName = parent
 						continue
 				break

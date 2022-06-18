@@ -61,15 +61,16 @@ def lookupNodes(names, useReducedTree):
 		nodeObjs[idsToNames[otolId]]["imgName"] = otolId + ".jpg"
 	# Get 'linked' images for unresolved names
 	unresolvedNames = [n for n in nodeObjs if nodeObjs[n]["imgName"] == None]
-	query = "SELECT name, otol_id, otol_id2 from linked_imgs WHERE name IN ({})"
+	query = "SELECT name, otol_ids from linked_imgs WHERE name IN ({})"
 	query = query.format(",".join(["?"] * len(unresolvedNames)))
-	for (name, otolId, otolId2) in cur.execute(query, unresolvedNames):
-		if otolId2 == None:
-			nodeObjs[name]["imgName"] = otolId + ".jpg"
+	for (name, otolIds) in cur.execute(query, unresolvedNames):
+		if "," not in otolIds:
+			nodeObjs[name]["imgName"] = otolIds + ".jpg"
 		else:
+			id1, id2 = otolIds.split(",")
 			nodeObjs[name]["imgName"] = [
-				otolId + ".jpg" if otolId != None else None,
-				otolId2 + ".jpg" if otolId2 != None else None,
+				id1 + ".jpg" if id1 != "" else None,
+				id2 + ".jpg" if id2 != "" else None,
 			]
 	# Get preferred-name info
 	query = f"SELECT name, alt_name FROM names WHERE pref_alt = 1 AND name IN ({queryParamStr})"
