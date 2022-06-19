@@ -102,12 +102,21 @@ def lookupName(name, useReducedTree):
 		temp.append({"name": row[0], "canonicalName": None})
 	for row in cur.execute(query2, (name + "%", SEARCH_SUGG_LIMIT + 1)):
 		temp.append({"name": row[0], "canonicalName": row[1]})
+	# If insufficient results, try substring-search
+	if len(temp) < SEARCH_SUGG_LIMIT:
+		newLim = SEARCH_SUGG_LIMIT + 1 - len(temp)
+		for row in cur.execute(query1, ("%" + name + "%", newLim)):
+			temp.append({"name": row[0], "canonicalName": None})
+	if len(temp) < SEARCH_SUGG_LIMIT:
+		newLim = SEARCH_SUGG_LIMIT + 1 - len(temp)
+		for row in cur.execute(query2, ("%" + name + "%", SEARCH_SUGG_LIMIT + 1)):
+			temp.append({"name": row[0], "canonicalName": row[1]})
+	#
 	temp.sort(key=lambda x: x["name"])
 	temp.sort(key=lambda x: len(x["name"]))
 	results = temp[:SEARCH_SUGG_LIMIT]
 	if len(temp) > SEARCH_SUGG_LIMIT:
 		hasMore = True
-	#
 	return [results, hasMore]
 def lookupNodeInfo(name, useReducedTree):
 	cur = dbCon.cursor()
