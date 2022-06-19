@@ -389,7 +389,12 @@ let rectLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse,
 	let headerSz = showHeader ? opts.headerSz : 0;
 	let newPos = [opts.tileSpacing, opts.tileSpacing + headerSz];
 	let newDims = [dims[0] - opts.tileSpacing, dims[1] - opts.tileSpacing - headerSz];
-	if (newDims[0] * newDims[1] <= 0){
+	if (newDims[0] * newDims[1] < node.dCount * (opts.minTileSz + opts.tileSpacing)**2){
+		if (allowCollapse){
+			node.children = [];
+			LayoutNode.updateDCounts(node, 1 - node.dCount);
+			return oneSqrLayout(node, pos, dims, false, false, opts);
+		}
 		return false;
 	}
 	// Try finding arrangement with low empty space
