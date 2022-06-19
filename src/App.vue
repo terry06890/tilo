@@ -55,7 +55,7 @@ const defaultLytOpts: LayoutOptions = {
 	rectMode: 'auto first-row', //'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
 	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
 	sweptNodesPrio: 'sqrt', //'linear' | 'sqrt' | 'pow-2/3'
-	sweepToParent: 'prefer', //'none' | 'prefer' | 'fallback'
+	sweepToParent: 'fallback', //'none' | 'prefer' | 'fallback'
 };
 const defaultUiOpts = {
 	// For tiles
@@ -131,6 +131,7 @@ export default defineComponent({
 			pendingResizeHdlr: 0, // Set via setTimeout() for a non-initial resize event
 			// Other
 			justInitialised: false,
+			changedSweepToParent: false, // Set during search animation for efficiency
 			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries are removed (done on tile collapse)
 		};
 	},
@@ -336,6 +337,10 @@ export default defineComponent({
 			}
 			this.searchOpen = false;
 			this.modeRunning = true;
+			if (this.lytOpts.sweepToParent == 'fallback'){
+				this.lytOpts.sweepToParent = 'prefer';
+				this.changedSweepToParent = true;
+			}
 			this.expandToNode(name);
 		},
 		expandToNode(name: string){
@@ -347,6 +352,10 @@ export default defineComponent({
 			if (targetNode != null && !targetNode.hidden){
 				this.setLastFocused(targetNode);
 				this.modeRunning = false;
+				if (this.changedSweepToParent){
+					this.lytOpts.sweepToParent = 'fallback';
+					this.changedSweepToParent = false;
+				}
 				return;
 			}
 			// Get nearest in-layout-tree ancestor
@@ -693,6 +702,10 @@ export default defineComponent({
 			this.settingsOpen = false;
 			this.modeRunning = false;
 			this.setLastFocused(null);
+			if (this.changedSweepToParent){
+				this.lytOpts.sweepToParent = 'fallback';
+				this.changedSweepToParent = false;
+			}
 		},
 		setLastFocused(node: LayoutNode | null){
 			if (this.lastFocused != null){
