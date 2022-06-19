@@ -26,6 +26,7 @@ export class LayoutNode {
 	empSpc: number; // Amount of unused layout space (in pixels)
 	// Other
 	hidden: boolean; // Used to hide nodes upon an expand-to-view
+	hiddenWithVisibleChild: boolean;
 	hasFocus: boolean; // Used by search and auto-mode to highlight a tile
 	failFlag: boolean; // Used to trigger failure animations
 	// Constructor ('parent' are 'depth' are generally initialised later, 'dCount' is computed)
@@ -43,6 +44,7 @@ export class LayoutNode {
 		this.empSpc = 0;
 		//
 		this.hidden = false;
+		this.hiddenWithVisibleChild = false;
 		this.hasFocus = false;
 		this.failFlag = false;
 	}
@@ -144,6 +146,7 @@ export class LayoutNode {
 	static hideUpward(node: LayoutNode, map: LayoutMap): void {
 		if (node.parent != null){
 			node.parent.hidden = true;
+			node.parent.hiddenWithVisibleChild = true;
 			node.parent.children.filter(child => child != node).forEach(sibling => {
 				sibling.hidden = true;
 				// Remove sibling children from layout tree
@@ -158,6 +161,7 @@ export class LayoutNode {
 	static showDownward(node: LayoutNode): void {
 		if (node.hidden){
 			node.hidden = false;
+			node.hiddenWithVisibleChild = false;
 			node.children.forEach(n => LayoutNode.showDownward(n));
 		}
 	}

@@ -43,7 +43,7 @@ export default defineComponent({
 			// If not displaying with overflow, return layout node children
 			let children = this.layoutNode.children;
 			if (!this.isOverflownRoot){
-				return children;
+				return children.filter(n => !n.hidden || n.hiddenWithVisibleChild);
 			}
 			// Return visible children
 			let firstIdx = children.length - 1;
