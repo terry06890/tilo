@@ -29,7 +29,8 @@ with open(pickedNamesFile) as file:
 		if prefAlt == 1:
 			query = "SELECT name, alt_name FROM names WHERE name = ? AND pref_alt = 1"
 			row = dbCur.execute(query, (nodeName,)).fetchone()
-			if row != None:
+			if row != None and row[1] != altName:
+				print(f"Removing pref-alt status from alt-name {row[1]} for {nodeName}")
 				dbCur.execute("UPDATE names SET pref_alt = 0 WHERE name = ? AND alt_name = ?", row)
 		# Check for an existing record
 		if nodeName == altName:
@@ -37,10 +38,12 @@ with open(pickedNamesFile) as file:
 		query = "SELECT name, alt_name, pref_alt FROM names WHERE name = ? AND alt_name = ?"
 		row = dbCur.execute(query, (nodeName, altName)).fetchone()
 		if row == None:
+			print(f"Adding record for alt-name {altName} for {nodeName}")
 			dbCur.execute("INSERT INTO names VALUES (?, ?, ?, 'picked')", (nodeName, altName, prefAlt))
 		else:
 			# Update existing record
 			if row[2] != prefAlt:
+				print(f"Updating record for alt-name {altName} for {nodeName}")
 				dbCur.execute("UPDATE names SET pref_alt = ?, src = 'picked' WHERE name = ? AND alt_name = ?",
 					(prefAlt, nodeName, altName))
 # Close db
