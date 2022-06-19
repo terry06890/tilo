@@ -4,6 +4,7 @@ import sys, re, sqlite3, json
 import os.path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
+import gzip
 
 hostname = "localhost"
 port = 8000
@@ -237,13 +238,17 @@ class DbServer(BaseHTTPRequestHandler):
 				self.respondJson(lookupNodeInfo(name, useReducedTree))
 				return
 		self.send_response(404)
-		self.end_headers()
-		self.end_headers()
 	def respondJson(self, val):
+		content = json.dumps(val).encode("utf-8")
 		self.send_response(200)
 		self.send_header("Content-type", "application/json")
+		if "accept-encoding" in self.headers and "gzip" in self.headers["accept-encoding"]:
+			if len(content) > 100:
+				content = gzip.compress(content, compresslevel=5)
+				self.send_header("Content-length", str(len(content)))
+				self.send_header("Content-encoding", "gzip")
 		self.end_headers()
-		self.wfile.write(json.dumps(val).encode("utf-8"))
+		self.wfile.write(content)
 
 server = HTTPServer((hostname, port), DbServer)
 print(f"Server started at http://{hostname}:{port}")
