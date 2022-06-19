@@ -13,6 +13,7 @@ export default defineComponent({
 	methods: {
 		onCloseClick(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
+				this.saveSettings();
 				this.$emit('settings-close');
 			}
 		},
@@ -38,7 +39,7 @@ export default defineComponent({
 		onTreeChg(){
 			this.$emit('tree-change');
 		},
-		onSave(){
+		saveSettings(){
 			const savedLytOpts = ['tileSpacing', 'minTileSz', 'maxTileSz', 'layoutType', 'sweepMode', 'sweepToParent', ];
 			for (let prop of savedLytOpts){
 				localStorage.setItem('lyt ' + prop, String(this.lytOpts[prop as keyof LayoutOptions]));
@@ -170,9 +171,6 @@ export default defineComponent({
 		</div>
 		<hr class="border-stone-400"/>
 		<div class="flex justify-around mt-2">
-			<r-button class="bg-stone-800 text-white" @click="onSave">
-				Save
-			</r-button>
 			<r-button class="bg-stone-800 text-white" @click="onReset">
 				Reset
 			</r-button>
