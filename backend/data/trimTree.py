@@ -13,7 +13,7 @@ if len(sys.argv) > 1:
 	sys.exit(1)
 
 dbFile = "data.db"
-softChildLimit = 100
+softChildLimit = 0
 
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
