@@ -300,17 +300,20 @@ export default defineComponent({
 			this.activeRoot = layoutNode;
 			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
-		onDetachedAncestorClick(layoutNode: LayoutNode, skipRelayout = false){
+		onDetachedAncestorClick(layoutNode: LayoutNode, alsoCollapse = false){
 			if (!this.handleActionForTutorial('unhideAncestor')){
 				return;
 			}
 			this.setLastFocused(null);
-			LayoutNode.showDownward(layoutNode);
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
-			if (!skipRelayout){
-				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+			if (alsoCollapse){
+				this.onNonleafClick(layoutNode, true);
 			}
+			return this.updateAreaDims().then(() => {
+				this.relayoutWithCollapse();
+				LayoutNode.showDownward(layoutNode);
+			});
 		},
 		// For tile-info events
 		onInfoIconClick(nodeName: string){
@@ -374,9 +377,8 @@ export default defineComponent({
 					this.onDetachedAncestorClick(nodeInAncestryBar!);
 					setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
 				} else{
-					this.onDetachedAncestorClick(nodeInAncestryBar, true);
-					this.onNonleafClick(nodeInAncestryBar, true);
-					this.expandToNode(name);
+					this.onDetachedAncestorClick(nodeInAncestryBar, true)
+						.then(() => this.expandToNode(name));
 				}
 				return;
 			}
