@@ -34,5 +34,6 @@ Generated Files
     file and dumpIndex.db. <br>
     Tables: <br>
     -   page\_imgs: page\_id INT PRIMAY KEY, img\_name TEXT
+        (img\_name may be null, which is used to avoid re-processing the page-id on a second pass)
     -   imgs: name TEXT PRIMARY KEY, license TEXT, artist TEXT, credit TEXT, restrictions TEXT, url TEXT
         (might lack some matches for 'img_name' in 'page_imgs', due to inability to get license info)

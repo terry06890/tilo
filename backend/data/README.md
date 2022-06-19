@@ -58,6 +58,8 @@ File Generation Process
 6   Other
     -   Optionally run genEnwikiNameData.py, which adds more entries to the 'names' table,
         using data in enwiki/enwikiData.db, and the 'names' and 'wiki_ids' tables.
+    -   Optionally run addPickedNames.py, which adds manually-picked names to
+        the 'names' table, as specified in pickedNames.txt.
     -   Optionally run trimTree.py, which tries to remove some 'low-significance' nodes,
         for the sake of performance and result-relevance. Without this, jumping to certain
         nodes within the fungi and moths can take over a minute to render.
@@ -72,7 +74,7 @@ data.db Tables
 -   descs:        wiki\_id INT PRIMARY KEY, desc TEXT, from\_dbp INT
 -   node\_imgs:   name TEXT PRIMARY KEY, img\_id INT, src TEXT
 -   images:       id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src)
--   linked\_imgs: name TEXT PRIMARY KEY, otol\_id TEXT, otol\_id2 TEXT
+-   linked\_imgs: name TEXT PRIMARY KEY, otol\_ids TEXT
 -   r\_nodes:     name TEXT PRIMARY KEY, tips INT
 -   r\_edges:     node TEXT, child TEXT, p\_support INT, PRIMARY KEY (node, child)
 
