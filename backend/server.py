@@ -103,14 +103,19 @@ def lookupName(name, useReducedTree):
 	for row in cur.execute(query2, (name + "%", SEARCH_SUGG_LIMIT + 1)):
 		temp.append({"name": row[0], "canonicalName": row[1]})
 	# If insufficient results, try substring-search
+	foundNames = {n["name"] for n in temp}
 	if len(temp) < SEARCH_SUGG_LIMIT:
 		newLim = SEARCH_SUGG_LIMIT + 1 - len(temp)
-		for row in cur.execute(query1, ("%" + name + "%", newLim)):
-			temp.append({"name": row[0], "canonicalName": None})
+		for (altName,) in cur.execute(query1, ("%" + name + "%", newLim)):
+			if altName not in foundNames:
+				temp.append({"name": altName, "canonicalName": None})
+				foundNames.add(altName)
 	if len(temp) < SEARCH_SUGG_LIMIT:
 		newLim = SEARCH_SUGG_LIMIT + 1 - len(temp)
-		for row in cur.execute(query2, ("%" + name + "%", SEARCH_SUGG_LIMIT + 1)):
-			temp.append({"name": row[0], "canonicalName": row[1]})
+		for (altName, cName) in cur.execute(query2, ("%" + name + "%", SEARCH_SUGG_LIMIT + 1)):
+			if altName not in foundNames:
+				temp.append({"name": altName, "canonicalName": cName})
+				foundNames.add(altName)
 	#
 	temp.sort(key=lambda x: x["name"])
 	temp.sort(key=lambda x: len(x["name"]))
