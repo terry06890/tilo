@@ -14,8 +14,7 @@ if len(sys.argv) > 1:
 enwikiDb = "enwiki/enwikiData.db"
 dbFile = "data.db"
 namesToSkipFile = "genDescNamesToSkip.txt"
-titlesToUseFile = "genEnwikiDescTitlesToUse.txt"
-titleToUseRegex = re.compile(r"(.*) \(.*\)")
+pickedLabelsFile = "enwikiPickedLabels.txt"
 
 # Open dbs
 enwikiCon = sqlite3.connect(enwikiDb)
@@ -30,11 +29,10 @@ if os.path.exists(namesToSkipFile):
 		for line in file:
 			namesToSkip.add(line.rstrip())
 	print(f"Read in {len(namesToSkip)} names to skip")
-if os.path.exists(titlesToUseFile):
-	with open(titlesToUseFile) as file:
+if os.path.exists(pickedLabelsFile):
+	with open(pickedLabelsFile) as file:
 		for line in file:
-			title = line.rstrip()
-			name = titleToUseRegex.sub(r"\1", title) # Remove parens
+			(name, _, title) = line.rstrip().partition("|")
 			nameToPickedTitle[name.lower()] = title
 print(f"Read in {len(nameToPickedTitle)} titles to use for certain names")
 # Get node names without descriptions

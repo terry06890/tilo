@@ -26,7 +26,7 @@
 /backend/data/genEolNameDataBadAlts.txt
 /backend/data/genDescNamesToSkip.txt
 /backend/data/dbpPickedLabels.txt
-/backend/data/genEnwikiDescTitlesToUse.txt
+/backend/data/enwikiPickedLabels.txt
 /backend/data/mergedImgList.txt
 /backend/data/pickedImgs/
 /backend/data/reducedTol/names.txt

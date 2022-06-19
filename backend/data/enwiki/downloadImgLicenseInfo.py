@@ -33,7 +33,7 @@ if dbCur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='im
 # Get image names
 print("Reading image names")
 imgNames = set()
-for (imgName,) in dbCur.execute("SELECT DISTINCT img_name FROM page_imgs"):
+for (imgName,) in dbCur.execute("SELECT DISTINCT img_name FROM page_imgs WHERE img_name NOT NULL"):
 	imgNames.add(imgName)
 print(f"Found {len(imgNames)} images")
 oldSz = len(imgNames)

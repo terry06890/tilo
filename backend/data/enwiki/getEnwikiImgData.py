@@ -34,11 +34,20 @@ indexDbCur = indexDbCon.cursor()
 imgDbCon = sqlite3.connect(imgDb)
 imgDbCur = imgDbCon.cursor()
 # Create image-db table
-imgDbCur.execute("CREATE TABLE page_imgs (page_id INT PRIMARY KEY, img_name TEXT)")
-imgDbCur.execute("CREATE INDEX page_imgs_idx ON page_imgs(img_name)")
+pidsDone = set()
+if imgDbCur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='page_imgs'").fetchone() == None:
+	imgDbCur.execute("CREATE TABLE page_imgs (page_id INT PRIMARY KEY, img_name TEXT)") # img_name may be NULL
+	imgDbCur.execute("CREATE INDEX page_imgs_idx ON page_imgs(img_name)")
+else:
+	for (pid,) in imgDbCur.execute("SELECT page_id FROM page_imgs"):
+		pidsDone.add(pid)
+	print(f"Will skip {len(pidsDone)} already-processed page-ids")
 # Get input pageIds
 print("Getting input page-ids", file=sys.stderr)
 pageIds = getInputPageIds()
+for pid in pidsDone:
+	pageIds.remove(pid)
+print(f"Found {len(pageIds)} page-ids to process")
 # Get page-id dump-file offsets
 print("Getting dump-file offsets", file=sys.stderr)
 offsetToPageids = {}
@@ -156,8 +165,7 @@ with open(dumpFile, mode='rb') as file:
 					content.append(line[:line.rfind("</text>")])
 					# Look for image-filename
 					imageName = getImageName(content)
-					if imageName != None:
-						imgDbCur.execute("INSERT into page_imgs VALUES (?, ?)", (pageId, imageName))
+					imgDbCur.execute("INSERT into page_imgs VALUES (?, ?)", (pageId, imageName))
 					break
 				if not foundTextEnd:
 					print(f"Did not find </text> for page id {pageId}", file=sys.stderr)
