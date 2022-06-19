@@ -65,7 +65,7 @@ const defaultUiOpts = {
 	shadowFocused: '0 0 1px 2px orange',
 	infoIconSz: 18, //px
 	infoIconMargin: 2, //px
-	tipThresholds: [[1, 'greenyellow'], [100, 'orange'], [1000, 'red']],
+	tipThresholds: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
 	headerColor: '#fafaf9',
 	// For leaf tiles
 	leafTilePadding: 4, //px
