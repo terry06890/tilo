@@ -47,9 +47,19 @@ def lookupNodes(names, useReducedTree):
 			"commonName": None,
 			"imgName": None,
 		}
+	# Get child info
 	query = f"SELECT node, child FROM {edgesTable} WHERE node IN ({queryParamStr})"
 	for (nodeName, childName) in cur.execute(query, names):
 		nodeObjs[nodeName]["children"].append(childName)
+	# Order children by tips
+	for (nodeName, nodeObj) in nodeObjs.items():
+		childList = nodeObj["children"]
+		childToTips = {}
+		query = "SELECT name, tips FROM {} WHERE name IN ({})".format(nodesTable, ",".join(["?"] * len(childList)))
+		for (n, tips) in cur.execute(query, childList):
+			childToTips[n] = tips
+		childList.sort(key=lambda n: childToTips[n], reverse=True)
+	# Get parent info
 	query = f"SELECT node, child, p_support FROM {edgesTable} WHERE child IN ({queryParamStr})"
 	for (nodeName, childName, pSupport) in cur.execute(query, names):
 		nodeObjs[childName]["parent"] = None if nodeName == "" else nodeName
