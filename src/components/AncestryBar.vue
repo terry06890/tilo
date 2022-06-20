@@ -25,9 +25,8 @@ export default defineComponent({
 		},
 		styles(): Record<string,string> {
 			return {
-				overflowX: this.vert ? 'hidden' : 'auto',
-				overflowY: this.vert ? 'auto' : 'hidden',
-				maxHeight: '100vh',
+				overflowX: this.vert ? 'hidden' : 'scroll',
+				overflowY: this.vert ? 'scroll' : 'hidden',
 				// For child layout
 				display: 'flex',
 				flexDirection: this.vert ? 'column' : 'row',
@@ -57,7 +56,7 @@ export default defineComponent({
 		onWheelEvt(evt: WheelEvent){
 			// Possibly convert vertical scroll to horizontal
 			if (!this.vert && Math.abs(evt.deltaX) < Math.abs(evt.deltaY)){
-				this.$el.scrollLeft -= (evt.deltaY > 0 ? 30 : -30);
+				this.$el.scrollLeft -= (evt.deltaY > 0 ? -30 : 30);
 			}
 		},
 		scrollToEnd(){
