@@ -67,8 +67,7 @@ export default defineComponent({
 				boxShadow: this.uiOpts.shadowNormal,
 				borderRadius: this.uiOpts.borderRadius + 'px',
 				backgroundImage: imgName != null ?
-					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
-						'url(\'/img/' + imgName.replaceAll('\'', '\\\'') + '\')' :
+					'url(\'/img/' + imgName.replaceAll('\'', '\\\'') + '\')' :
 					'none',
 				backgroundColor: '#1c1917',
 				backgroundSize: 'cover',
