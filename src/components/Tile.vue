@@ -3,8 +3,8 @@ import {defineComponent, PropType} from 'vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode} from '../layout';
 import type {LayoutOptions} from '../layout';
-import type {TolMap} from '../tol';
-import {TolNode} from '../tol';
+import type {TolMap} from '../lib';
+import {TolNode} from '../lib';
 import {capitalizeWords} from '../lib';
 
 // Displays one, or a hierarchy of, tree-of-life nodes, as a 'tile'

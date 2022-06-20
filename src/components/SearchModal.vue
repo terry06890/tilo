@@ -3,10 +3,7 @@ import {defineComponent, PropType} from 'vue';
 import SearchIcon from './icon/SearchIcon.vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode} from '../layout';
-import type {TolMap} from '../tol';
-
-type SearchSugg = {name: string, canonicalName: string | null}; // Represents a search string suggestion
-type SearchSuggResponse = [SearchSugg[], boolean]; // Holds search suggestions and an indication of if there was more
+import type {TolMap, SearchSugg, SearchSuggResponse} from '../lib';
 
 // Displays a search box, and sends search requests
 export default defineComponent({
@@ -107,8 +104,8 @@ export default defineComponent({
 						return response.json()
 					})
 					.then((results: SearchSuggResponse) => {
-						this.searchSuggs = results[0];
-						this.searchHasMoreSuggs = results[1];
+						this.searchSuggs = results.suggs;
+						this.searchHasMoreSuggs = results.hasMore;
 						this.focusedSuggIdx = null;
 					})
 					.catch(error => {

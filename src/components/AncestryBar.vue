@@ -3,7 +3,7 @@ import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue'
 import {LayoutNode} from '../layout';
 import type {LayoutOptions} from '../layout';
-import type {TolMap} from '../tol';
+import type {TolMap} from '../lib';
 
 // Displays a sequence of nodes, representing ancestors from a tree-of-life root to a currently-active root
 export default defineComponent({

@@ -14,8 +14,8 @@ import SearchIcon from './components/icon/SearchIcon.vue';
 import PlayIcon from './components/icon/PlayIcon.vue';
 import SettingsIcon from './components/icon/SettingsIcon.vue';
 // Other
-import type {TolMap} from './tol';
-import {TolNode} from './tol';
+import type {TolMap} from './lib';
+import {TolNode} from './lib';
 import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import type {LayoutOptions, LayoutTreeChg} from './layout';
 import {arraySum, randWeightedChoice, getScrollBarWidth} from './lib';
@@ -302,7 +302,7 @@ export default defineComponent({
 		},
 		onDetachedAncestorClick(layoutNode: LayoutNode, alsoCollapse = false){
 			if (!this.handleActionForTutorial('unhideAncestor')){
-				return;
+				return Promise.resolve(false);
 			}
 			this.setLastFocused(null);
 			this.activeRoot = layoutNode;

@@ -4,17 +4,9 @@ import CloseIcon from './icon/CloseIcon.vue';
 import Tile from './Tile.vue'
 import {LayoutNode} from '../layout';
 import type {LayoutOptions} from '../layout';
-import type {TolMap} from '../tol';
-import {TolNode} from '../tol';
+import type {TolMap} from '../lib';
+import {TolNode, DescInfo, ImgInfo, TileInfoResponse} from '../lib';
 import {capitalizeWords} from '../lib';
-
-type DescInfo = {text: string, fromRedirect: boolean, wikiId: number, fromDbp: boolean};
-type ImgInfo = {imgId: number, imgSrc: 'eol' | 'enwiki', url: string, license: string, artist: string, credit: string}
-type TileInfoResponse = {
-	tolNode: null | TolNode,
-	descData: null | DescInfo | [DescInfo, DescInfo],
-	imgData: null | ImgInfo | [ImgInfo, ImgInfo],
-};
 
 // Displays information about a tree-of-life node
 export default defineComponent({
@@ -123,18 +115,16 @@ export default defineComponent({
 		fetch(url.toString())
 			.then(response => response.json())
 			.then(obj => {
-				if (obj != null){
-					this.tolNode = obj.nodeObj;
-					if (!Array.isArray(obj.descData)){
-						this.descInfo = obj.descData;
-					} else {
-						[this.descInfo1, this.descInfo2] = obj.descData;
-					}
-					if (!Array.isArray(obj.imgData)){
-						this.imgInfo = obj.imgData;
-					} else {
-						[this.imgInfo1, this.imgInfo2] = obj.imgData;
-					}
+				this.tolNode = obj.tolNode;
+				if (!Array.isArray(obj.descData)){
+					this.descInfo = obj.descData;
+				} else {
+					[this.descInfo1, this.descInfo2] = obj.descData;
+				}
+				if (!Array.isArray(obj.imgData)){
+					this.imgInfo = obj.imgData;
+				} else {
+					[this.imgInfo1, this.imgInfo2] = obj.imgData;
 				}
 			});
 	},
@@ -164,7 +154,7 @@ export default defineComponent({
 				<div v-else-if="!Array.isArray(tolNode.imgName)">
 					<div :style="imgStyles"/>
 					<ul v-if="imgInfo != null">
-						<li>Obtained via: {{imgInfo.imgSrc}}</li>
+						<li>Obtained via: {{imgInfo.src}}</li>
 						<li>License: <a :href="licenseToUrl(imgInfo.license)">{{imgInfo.license}}</a></li>
 						<li><a :href="imgInfo.url" class="underline">Source URL</a></li>
 						<li>Artist: {{imgInfo.artist}}</li>
@@ -174,7 +164,7 @@ export default defineComponent({
 				<div v-else>
 					<div v-if="tolNode.imgName[0] != null" :style="firstImgStyles"/>
 					<ul v-if="imgInfo1 != null">
-						<li>Obtained via: {{imgInfo1.imgSrc}}</li>
+						<li>Obtained via: {{imgInfo1.src}}</li>
 						<li>License: <a :href="licenseToUrl(imgInfo1.license)">{{imgInfo1.license}}</a></li>
 						<li><a :href="imgInfo1.url" class="underline">Source URL</a></li>
 						<li>Artist: {{imgInfo1.artist}}</li>
@@ -182,7 +172,7 @@ export default defineComponent({
 					</ul>
 					<div v-if="tolNode.imgName[1] != null" :style="secondImgStyles"/>
 					<ul v-if="imgInfo2 != null">
-						<li>Obtained via: {{imgInfo2.imgSrc}}</li>
+						<li>Obtained via: {{imgInfo2.src}}</li>
 						<li>License: <a :href="licenseToUrl(imgInfo2.license)">{{imgInfo2.license}}</a></li>
 						<li><a :href="imgInfo2.url" class="underline">Source URL</a></li>
 						<li>Artist: {{imgInfo2.artist}}</li>
