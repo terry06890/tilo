@@ -302,6 +302,15 @@ export default defineComponent({
 				};
 			}
 		},
+		sepSweptAreaHideEdgeClass(): string {
+			if (this.layoutNode.sepSweptArea == null){
+				return '';
+			} else if (this.layoutNode.sepSweptArea.sweptLeft){
+				return 'hide-right-edge';
+			} else {
+				return 'hide-top-edge';
+			}
+		},
 		// For watching layoutNode data
 		pos(){
 			return this.layoutNode.pos;
@@ -490,8 +499,7 @@ export default defineComponent({
 			<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</div>
-		<div :style="sepSweptAreaStyles" ref="sepSweptArea"
-			:class="layoutNode?.sepSweptArea?.sweptLeft ? 'hide-right-edge' : 'hide-top-edge'">
+		<div :style="sepSweptAreaStyles" ref="sepSweptArea" :class="sepSweptAreaHideEdgeClass">
 			<div v-if="layoutNode?.sepSweptArea?.sweptLeft === false"
 				:style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
