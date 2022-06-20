@@ -660,7 +660,7 @@ export default defineComponent({
 					this.updateAreaDims().then(() => {
 						this.relayoutWithCollapse(false);
 						this.justInitialised = true;
-						setTimeout(() => {this.justInitialised = false;}, this.uiOpts.tileChgDuration);
+						setTimeout(() => {this.justInitialised = false;}, 300);
 					});
 				})
 				.catch(error => {
