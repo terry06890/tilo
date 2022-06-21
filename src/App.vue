@@ -149,6 +149,14 @@ export default defineComponent({
 			}
 			return ancestors.reverse();
 		},
+		tutPaneContainerStyles(): Record<string,string> {
+			return {
+				maxHeight: (this.tutorialOpen ? this.uiOpts.tutorialPaneSz : 0) + 'px',
+				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
+				transitionProperty: 'max-height',
+				overflow: 'hidden',
+			};
+		},
 	},
 	methods: {
 		// For tile expand/collapse events
@@ -578,14 +586,26 @@ export default defineComponent({
 		onStartTutorial(){
 			if (this.tutorialOpen == false){
 				this.tutorialOpen = true;
-				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+				// Repeatedly relayout tiles during tutorial-pane transition
+				let timerId = setInterval(() => {
+					this.updateAreaDims().then(() => this.relayoutWithCollapse());
+				}, 100);
+				setTimeout(() => {
+					clearTimeout(timerId)
+				}, this.uiOpts.tileChgDuration);
 			}
 		},
 		onTutorialClose(){
 			this.tutorialOpen = false;
 			this.welcomeOpen = false;
 			this.disabledActions.clear();
-			this.updateAreaDims().then(() => this.relayoutWithCollapse());
+			// Repeatedly relayout tiles during tutorial-pane transition
+			let timerId = setInterval(() => {
+				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+			}, 100);
+			setTimeout(() => {
+				clearTimeout(timerId)
+			}, this.uiOpts.tileChgDuration);
 		},
 		onTutStageChg(disabledActions: Set<Action>, triggerAction: Action | null){
 			this.welcomeOpen = false;
@@ -774,9 +794,13 @@ export default defineComponent({
 		<help-icon @click="onHelpIconClick"
 			class="mr-[6px] my-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
 	</div>
-	<tutorial-pane v-if="tutorialOpen" :height="uiOpts.tutorialPaneSz + 'px'" class="grow-0 shrink-0"
-		:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!welcomeOpen"
-		@tutorial-close="onTutorialClose" @tutorial-stage-chg="onTutStageChg"/>
+	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
+		<transition name="fade">
+			<tutorial-pane v-if="tutorialOpen" :height="uiOpts.tutorialPaneSz + 'px'"
+				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!welcomeOpen"
+				@tutorial-close="onTutorialClose" @tutorial-stage-chg="onTutStageChg"/>
+		</transition>
+	</div>
 	<div :class="['flex', mainAreaDims[0] > mainAreaDims[1] ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">
 		<ancestry-bar v-if="detachedAncestors != null"
 			:nodes="detachedAncestors" :vert="mainAreaDims[0] > mainAreaDims[1]"
