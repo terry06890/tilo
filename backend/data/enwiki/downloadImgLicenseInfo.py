@@ -16,7 +16,7 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-imgDb = "enwikiImgs.db" # About 130k image names
+imgDb = "imgData.db" # About 130k image names
 apiUrl = "https://en.wikipedia.org/w/api.php"
 batchSz = 50 # Max 50
 tagRegex = re.compile(r"<[^<]+>")

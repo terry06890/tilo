@@ -18,8 +18,8 @@ if len(sys.argv) > 1:
 vnamesFile = "eol/vernacularNames.csv"
 dbFile = "data.db"
 NAMES_TO_SKIP = {"unknown", "unknown species", "unidentified species"}
-pickedIdsFile = "genEolNameDataPickedIds.txt"
-badAltsFile = "genEolNameDataBadAlts.txt"
+pickedIdsFile = "pickedEolIds.txt"
+badAltsFile = "pickedEolAltsToSkip.txt"
 
 # Read in vernacular-names data
 	# Note: Canonical-names may have multiple pids

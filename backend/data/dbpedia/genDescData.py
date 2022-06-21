@@ -16,7 +16,7 @@ redirectsFile = "redirects_lang=en_transitive.ttl.bz2"
 disambigFile = "disambiguations_lang=en.ttl.bz2"
 typesFile = "instance-types_lang=en_specific.ttl.bz2"
 abstractsFile = "short-abstracts_lang=en.ttl.bz2"
-dbFile = "dbpData.db"
+dbFile = "descData.db"
 
 # Open db
 dbCon = sqlite3.connect(dbFile)

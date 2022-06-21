@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys, re
+import sys, re, os
 import json, sqlite3
 
 usageInfo =  f"usage: {sys.argv[0]}\n"
@@ -30,8 +30,8 @@ annFile = "otol/annotations.json"
 dbFile = "data.db"
 nodeMap = {} # Maps node IDs to node objects
 nameToFirstId = {} # Maps node names to first found ID (names might have multiple IDs)
-dupNameToIds = {} # Maps names of nodes with multiple IDs to those node IDs
-pickedDupsFile = "genOtolDataPickedDups.txt"
+dupNameToIds = {} # Maps names of nodes with multiple IDs to those IDs
+pickedNamesFile = "pickedOtolNames.txt"
 
 # Parse treeFile
 print("Parsing tree file")
@@ -142,10 +142,11 @@ rootId = parseNewick()
 # Resolve duplicate names
 print("Resolving duplicates")
 nameToPickedId = {}
-with open(pickedDupsFile) as file:
-	for line in file:
-		(name, _, otolId) = line.rstrip().partition("|")
-		nameToPickedId[name] = otolId
+if os.path.exists(pickedNamesFile):
+	with open(pickedNamesFile) as file:
+		for line in file:
+			(name, _, otolId) = line.rstrip().partition("|")
+			nameToPickedId[name] = otolId
 for [dupName, ids] in dupNameToIds.items():
 	# Check for picked id
 	if dupName in nameToPickedId:

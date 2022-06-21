@@ -15,12 +15,12 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-imgListFile = "mergedImgList.txt"
+imgListFile = "imgList.txt"
 outDir = "img/"
 eolImgDb = "eol/imagesList.db"
-enwikiImgDb = "enwiki/enwikiImgs.db"
+enwikiImgDb = "enwiki/imgData.db"
 pickedImgsDir = "pickedImgs/"
-pickedImgsFile = "metadata.txt"
+pickedImgsFilename = "imgData.txt"
 dbFile = "data.db"
 IMG_OUT_SZ = 200
 genImgFiles = True
@@ -37,9 +37,9 @@ enwikiCon = sqlite3.connect(enwikiImgDb)
 enwikiCur = enwikiCon.cursor()
 # Get 'picked images' info
 nodeToPickedImg = {}
-if os.path.exists(pickedImgsDir + pickedImgsFile):
+if os.path.exists(pickedImgsDir + pickedImgsFilename):
 	lineNum = 0
-	with open(pickedImgsDir + pickedImgsFile) as file:
+	with open(pickedImgsDir + pickedImgsFilename) as file:
 		for line in file:
 			lineNum += 1
 			(filename, url, license, artist, credit) = line.rstrip().split("|")

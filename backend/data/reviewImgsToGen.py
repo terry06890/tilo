@@ -20,13 +20,13 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-eolImgDir = "eol/imgsReviewed/"
+eolImgDir = "eol/imgs/"
 enwikiImgDir = "enwiki/imgs/"
 dbFile = "data.db"
-outFile = "mergedImgList.txt"
+outFile = "imgList.txt"
 IMG_DISPLAY_SZ = 400
 PLACEHOLDER_IMG = Image.new("RGB", (IMG_DISPLAY_SZ, IMG_DISPLAY_SZ), (88, 28, 135))
-onlyReviewPairs = False
+onlyReviewPairs = True
 
 # Open db
 dbCon = sqlite3.connect(dbFile)

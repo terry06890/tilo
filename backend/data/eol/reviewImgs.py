@@ -17,7 +17,7 @@ if len(sys.argv) > 1:
 	sys.exit(1)
 
 imgDir = "imgsForReview/"
-outDir = "imgsReviewed/"
+outDir = "imgs/"
 extraInfoDbCon = sqlite3.connect("../data.db")
 extraInfoDbCur = extraInfoDbCon.cursor()
 def getExtraInfo(eolId):

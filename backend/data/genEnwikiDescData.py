@@ -11,10 +11,10 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-enwikiDb = "enwiki/enwikiData.db"
+enwikiDb = "enwiki/descData.db"
 dbFile = "data.db"
-namesToSkipFile = "genDescNamesToSkip.txt"
-pickedLabelsFile = "enwikiPickedLabels.txt"
+namesToSkipFile = "pickedEnwikiNamesToSkip.txt"
+pickedLabelsFile = "pickedEnwikiLabels.txt"
 
 # Open dbs
 enwikiCon = sqlite3.connect(enwikiDb)

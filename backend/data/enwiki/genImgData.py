@@ -21,7 +21,7 @@ def getInputPageIds():
 	return pageIds
 dumpFile = "enwiki-20220501-pages-articles-multistream.xml.bz2"
 indexDb = "dumpIndex.db"
-imgDb = "enwikiImgs.db" # Output db
+imgDb = "imgData.db" # Output db
 idLineRegex = re.compile(r"<id>(.*)</id>")
 imageLineRegex = re.compile(r".*\| *image *= *([^|]*)")
 bracketImageRegex = re.compile(r"\[\[(File:[^|]*).*]]")

@@ -10,7 +10,7 @@ if len(sys.argv) > 1:
 	sys.exit(1)
 
 dbFile = "data.db"
-nodeNamesFile = "reducedTol/names.txt"
+nodeNamesFile = "reducedTreeNodes.txt"
 minimalNames = set()
 nodeMap = {} # Maps node names to node objects
 PREF_NUM_CHILDREN = 3 # Attempt inclusion of children up to this limit

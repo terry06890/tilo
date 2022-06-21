@@ -12,9 +12,9 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-dbpediaDb = "dbpedia/dbpData.db"
-namesToSkipFile = "genDescNamesToSkip.txt"
-pickedLabelsFile = "dbpPickedLabels.txt"
+dbpediaDb = "dbpedia/descData.db"
+namesToSkipFile = "pickedEnwikiNamesToSkip.txt"
+pickedLabelsFile = "pickedDbpLabels.txt"
 dbFile = "data.db"
 
 # Open dbs

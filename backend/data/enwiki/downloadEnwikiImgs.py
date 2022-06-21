@@ -16,7 +16,7 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-imgDb = "enwikiImgs.db" # About 130k image names
+imgDb = "imgData.db" # About 130k image names
 outDir = "imgs"
 licenseRegex = re.compile(r"cc0|cc([ -]by)?([ -]sa)?([ -][1234]\.[05])?( \w\w\w?)?", flags=re.IGNORECASE)
 

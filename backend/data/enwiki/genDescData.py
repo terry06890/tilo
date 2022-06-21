@@ -13,7 +13,7 @@ if len(sys.argv) > 1:
 	sys.exit(1)
 
 dumpFile = "enwiki-20220501-pages-articles-multistream.xml.bz2" # 22,034,540 pages
-enwikiDb = "enwikiData.db"
+enwikiDb = "descData.db"
 
 # Some regexps and functions for parsing wikitext
 descLineRegex = re.compile("^ *[A-Z'\"]")

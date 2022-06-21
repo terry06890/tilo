@@ -10,7 +10,7 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-enwikiDb = "enwiki/enwikiData.db"
+enwikiDb = "enwiki/descData.db"
 dbFile = "data.db"
 altNameRegex = re.compile(r"[a-zA-Z]+")
 	# Avoids names like 'Evolution of Elephants', 'Banana fiber', 'Fish (zoology)',
