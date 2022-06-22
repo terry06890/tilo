@@ -3,9 +3,12 @@
 import sys, re
 import sqlite3
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Adds a table to data.db, associating nodes without images to\n"
-usageInfo += "usable child images.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Look for nodes without images in the database, and tries to
+associate them with images from their children.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -14,24 +17,22 @@ dbFile = "data.db"
 compoundNameRegex = re.compile(r"\[(.+) \+ (.+)]")
 upPropagateCompoundImgs = False
 
-# Open db
+print("Opening databases")
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 dbCur.execute("CREATE TABLE linked_imgs (name TEXT PRIMARY KEY, otol_ids TEXT)")
-	# Associates a node with one (or two) otol-ids with usable images,
-	# encoded as 'otolId1' or 'otolId1,otolId2'
-# Get nodes with images
+
 print("Getting nodes with images")
 resolvedNodes = {} # Will map node names to otol IDs with a usable image
 query = "SELECT nodes.name, nodes.id FROM nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name"
 for (name, otolId) in dbCur.execute(query):
 	resolvedNodes[name] = otolId
-print(f"Got {len(resolvedNodes)} nodes")
-# Iterate through resolved nodes, resolving ancestors where able
-print("Resolving ancestor nodes")
-nodesToResolve = {}
-processedNodes = {}
-parentToChosenTips = {}
+print(f"Found {len(resolvedNodes)}")
+
+print("Iterating through nodes, trying to resolve images for ancestors")
+nodesToResolve = {} # Maps a node name to a list of objects that represent possible child images
+processedNodes = {} # Map a node name to an OTOL ID, representing a child node whose image is to be used
+parentToChosenTips = {} # used to prefer images from children with more tips
 iterNum = 0
 while len(resolvedNodes) > 0:
 	iterNum += 1
@@ -43,13 +44,13 @@ while len(resolvedNodes) > 0:
 	# Traverse upwards, resolving ancestors if able
 	while True:
 		# Get parent
-		row = dbCur.execute("SELECT node FROM edges WHERE child = ?", (nodeName,)).fetchone()
+		row = dbCur.execute("SELECT parent FROM edges WHERE child = ?", (nodeName,)).fetchone()
 		if row == None or row[0] in processedNodes or row[0] in resolvedNodes:
 			break
 		parent = row[0]
 		# Get parent data
 		if parent not in nodesToResolve:
-			childNames = [row[0] for row in dbCur.execute("SELECT child FROM edges WHERE node = ?", (parent,))]
+			childNames = [row[0] for row in dbCur.execute("SELECT child FROM edges WHERE parent = ?", (parent,))]
 			query = "SELECT name, tips FROM nodes WHERE name IN ({})".format(",".join(["?"] * len(childNames)))
 			childObjs = [{"name": row[0], "tips": row[1], "otolId": None} for row in dbCur.execute(query, childNames)]
 			childObjs.sort(key=lambda x: x["tips"], reverse=True)
@@ -66,7 +67,7 @@ while len(resolvedNodes) > 0:
 			nodeName = parent
 			continue
 		else:
-			# Add potential otol-id
+			# Mark child as a potential choice
 			childObj = next(c for c in childObjs if c["name"] == nodeName)
 			childObj["otolId"] = otolId
 			break
@@ -78,8 +79,8 @@ while len(resolvedNodes) > 0:
 			parentToChosenTips[name] = childObj["tips"]
 			dbCur.execute("INSERT INTO linked_imgs VALUES (?, ?)", (name, childObj["otolId"]))
 		nodesToResolve.clear()
-# Iterate through processed nodes with compound names
-print("Replacing images for compound-name nodes")
+
+print("Replacing linked-images for compound nodes")
 iterNum = 0
 for nodeName in processedNodes.keys():
 	iterNum += 1
@@ -106,7 +107,7 @@ for nodeName in processedNodes.keys():
 		if upPropagateCompoundImgs:
 			while True:
 				# Get parent
-				row = dbCur.execute("SELECT node FROM edges WHERE child = ?", (nodeName,)).fetchone()
+				row = dbCur.execute("SELECT parent FROM edges WHERE child = ?", (nodeName,)).fetchone()
 				if row != None:
 					parent = row[0]
 					# Check num tips
@@ -118,6 +119,7 @@ for nodeName in processedNodes.keys():
 						nodeName = parent
 						continue
 				break
-# Close db
+
+print("Closing databases")
 dbCon.commit()
 dbCon.close()

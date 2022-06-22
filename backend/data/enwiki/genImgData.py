@@ -4,9 +4,15 @@ import sys, re
 import bz2, html, urllib.parse
 import sqlite3
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "For a set of page-ids, looks up their content in an enwiki dump,\n"
-usageInfo += "trying to get infobox image filenames, adding info to an sqlite db.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+For some set of page IDs, looks up their content in the wiki dump,
+and tries to parse infobox image names, storing them into a database.
+
+The program can be re-run with an updated set of page IDs, and
+will skip already-processed page IDs.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -21,58 +27,64 @@ def getInputPageIds():
 	return pageIds
 dumpFile = "enwiki-20220501-pages-articles-multistream.xml.bz2"
 indexDb = "dumpIndex.db"
-imgDb = "imgData.db" # Output db
+imgDb = "imgData.db" # The database to create
 idLineRegex = re.compile(r"<id>(.*)</id>")
 imageLineRegex = re.compile(r".*\| *image *= *([^|]*)")
 bracketImageRegex = re.compile(r"\[\[(File:[^|]*).*]]")
 imageNameRegex = re.compile(r".*\.(jpg|jpeg|png|gif|tiff|tif)", flags=re.IGNORECASE)
 cssImgCropRegex = re.compile(r"{{css image crop\|image *= *(.*)", flags=re.IGNORECASE)
+# In testing, got about 360k image names
 
-# Open dbs
+print("Getting input page-ids")
+pageIds = getInputPageIds()
+print(f"Found {len(pageIds)}")
+
+print("Opening databases")
 indexDbCon = sqlite3.connect(indexDb)
 indexDbCur = indexDbCon.cursor()
 imgDbCon = sqlite3.connect(imgDb)
 imgDbCur = imgDbCon.cursor()
-# Create image-db table
-pidsDone = set()
+print("Checking tables")
 if imgDbCur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='page_imgs'").fetchone() == None:
+	# Create tables if not present
 	imgDbCur.execute("CREATE TABLE page_imgs (page_id INT PRIMARY KEY, img_name TEXT)") # img_name may be NULL
 	imgDbCur.execute("CREATE INDEX page_imgs_idx ON page_imgs(img_name)")
 else:
+	# Check for already-processed page IDs
+	numSkipped = 0
 	for (pid,) in imgDbCur.execute("SELECT page_id FROM page_imgs"):
-		pidsDone.add(pid)
-	print(f"Will skip {len(pidsDone)} already-processed page-ids")
-# Get input pageIds
-print("Getting input page-ids", file=sys.stderr)
-pageIds = getInputPageIds()
-for pid in pidsDone:
-	pageIds.remove(pid)
-print(f"Found {len(pageIds)} page-ids to process")
-# Get page-id dump-file offsets
-print("Getting dump-file offsets", file=sys.stderr)
+		if pid in pageIds:
+			pageIds.remove(pid)
+			numSkipped += 1
+		else:
+			print(f"WARNING: Found already-processed page ID {pid} which was not in input set")
+	print(f"Will skip {numSkipped} already-processed page IDs")
+
+print("Getting dump-file offsets")
 offsetToPageids = {}
-offsetToEnd = {}
+offsetToEnd = {} # Maps chunk-start offsets to their chunk-end offsets
 iterNum = 0
 for pageId in pageIds:
 	iterNum += 1
 	if iterNum % 1e4 == 0:
-		print(f"At iteration {iterNum}", file=sys.stderr)
+		print(f"At iteration {iterNum}")
 	#
 	query = "SELECT offset, next_offset FROM offsets WHERE id = ?"
 	row = indexDbCur.execute(query, (pageId,)).fetchone()
 	if row == None:
-		print(f"WARNING: Page id {pageId} not found", file=sys.stderr)
+		print(f"WARNING: Page ID {pageId} not found")
 		continue
 	(chunkOffset, endOffset) = row
 	offsetToEnd[chunkOffset] = endOffset
 	if chunkOffset not in offsetToPageids:
 		offsetToPageids[chunkOffset] = []
 	offsetToPageids[chunkOffset].append(pageId)
-print(f"Found {len(offsetToEnd)} chunks to check", file=sys.stderr)
-# Look through dump file, jumping to chunks containing relevant pages
-print("Reading through dump file", file=sys.stderr)
+print(f"Found {len(offsetToEnd)} chunks to check")
+
+print("Iterating through chunks in dump file")
 def getImageName(content):
-	""" Given an array of text-content lines, returns an image-filename, or None """
+	" Given an array of text-content lines, tries to return an infoxbox image name, or None "
+	# Doesn't try and find images in outside-infobox [[File:...]] and <imagemap> sections
 	for line in content:
 		match = imageLineRegex.match(line)
 		if match != None:
@@ -109,16 +121,15 @@ def getImageName(content):
 				imageName = html.unescape(imageName) # Intentionally unescaping again (handles some odd cases)
 				imageName = imageName.replace("_", " ")
 				return imageName
-			# Skip lines like: | image = &lt;imagemap&gt;
+			# Exclude lines like: | image = &lt;imagemap&gt;
 			return None
-	# Doesn't try and find images in outside-infobox [[File:...]] and <imagemap> sections
 	return None
 with open(dumpFile, mode='rb') as file:
 	iterNum = 0
 	for (pageOffset, endOffset) in offsetToEnd.items():
 		iterNum += 1
 		if iterNum % 100 == 0:
-			print(f"At iteration {iterNum}", file=sys.stderr)
+			print(f"At iteration {iterNum}")
 		#
 		pageIds = offsetToPageids[pageOffset]
 		# Jump to chunk
@@ -168,11 +179,12 @@ with open(dumpFile, mode='rb') as file:
 					imgDbCur.execute("INSERT into page_imgs VALUES (?, ?)", (pageId, imageName))
 					break
 				if not foundTextEnd:
-					print(f"Did not find </text> for page id {pageId}", file=sys.stderr)
+					print(f"WARNING: Did not find </text> for page id {pageId}")
 				break
 			if not foundText:
-				print(f"Did not find <text> for page id {pageId}", file=sys.stderr)
-# Close dbs
+				print(f"WARNING: Did not find <text> for page id {pageId}")
+
+print("Closing databases")
 indexDbCon.close()
 imgDbCon.commit()
 imgDbCon.close()

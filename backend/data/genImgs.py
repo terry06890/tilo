@@ -4,13 +4,18 @@ import sys, os, subprocess
 import sqlite3, urllib.parse
 import signal
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Reads a list of eol/enwiki images from a file, and generates web-usable versions.\n"
-usageInfo += "Uses smartcrop, and places resulting images in a directory, with name 'otolId1.jpg'.\n"
-usageInfo += "Also adds image metadata to an sqlite database.\n"
-usageInfo += "\n"
-usageInfo += "SIGINT can be used to stop conversion, and the program can be re-run to\n"
-usageInfo += "continue processing. It uses existing output files to decide where to continue from.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Reads node IDs and image paths from a file, and possibly from a directory,
+and generates cropped/resized versions of those images into a directory,
+with names of the form 'nodeId1.jpg'. Also adds image metadata to the
+database.
+
+SIGINT can be used to stop, and the program can be re-run to continue
+processing. It uses already-existing database entries to decide what
+to skip.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -23,19 +28,19 @@ pickedImgsDir = "pickedImgs/"
 pickedImgsFilename = "imgData.txt"
 dbFile = "data.db"
 IMG_OUT_SZ = 200
-genImgFiles = True
+genImgFiles = True # Usable for debugging
 
-# Create output directory if not present
 if not os.path.exists(outDir):
 	os.mkdir(outDir)
-# Open dbs
+
+print("Opening databases")
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 eolCon = sqlite3.connect(eolImgDb)
 eolCur = eolCon.cursor()
 enwikiCon = sqlite3.connect(enwikiImgDb)
 enwikiCur = enwikiCon.cursor()
-# Get 'picked images' info
+print("Checking for picked-images")
 nodeToPickedImg = {}
 if os.path.exists(pickedImgsDir + pickedImgsFilename):
 	lineNum = 0
@@ -49,29 +54,34 @@ if os.path.exists(pickedImgsDir + pickedImgsFilename):
 				"nodeName": nodeName, "id": lineNum,
 				"filename": filename, "url": url, "license": license, "artist": artist, "credit": credit,
 			}
-# Create image tables if not present
+
+print("Checking for image tables")
 nodesDone = set()
 imgsDone = set()
 if dbCur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='node_imgs'").fetchone() == None:
+	# Add image tables if not present
 	dbCur.execute("CREATE TABLE node_imgs (name TEXT PRIMARY KEY, img_id INT, src TEXT)")
 	dbCur.execute("CREATE TABLE images" \
 		" (id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src))")
 else:
-	# Get existing node-associations
+	# Get existing image-associated nodes
 	for (otolId,) in dbCur.execute("SELECT nodes.id FROM node_imgs INNER JOIN nodes ON node_imgs.name = nodes.name"):
 		nodesDone.add(otolId)
-	# And images
+	# Get existing node-associated images
 	for (imgId, imgSrc) in dbCur.execute("SELECT id, src from images"):
 		imgsDone.add((imgId, imgSrc))
-	print(f"Found {len(nodesDone)} nodes and {len(imgsDone)} images pre-existing")
-# Detect SIGINT signals
+	print(f"Found {len(nodesDone)} nodes and {len(imgsDone)} images to skip")
+
+# Set SIGINT handler
 interrupted = False
 def onSigint(sig, frame):
 	global interrupted
 	interrupted = True
 signal.signal(signal.SIGINT, onSigint)
-# Iterate though images to process
+
+print("Iterating through input images")
 def quit():
+	print("Closing databases")
 	dbCon.commit()
 	dbCon.close()
 	eolCon.close()
@@ -94,7 +104,7 @@ def convertImage(imgPath, outPath):
 		print(f"ERROR: smartcrop had exit status {completedProcess.returncode}")
 		return False
 	return True
-print("Processing picked images")
+print("Processing picked-images")
 for (otolId, imgData) in nodeToPickedImg.items():
 	# Check for SIGINT event
 	if interrupted:
@@ -105,7 +115,8 @@ for (otolId, imgData) in nodeToPickedImg.items():
 		continue
 	# Convert image
 	if genImgFiles:
-		if not convertImage(pickedImgsDir + imgData["filename"], outDir + otolId + ".jpg"):
+		success = convertImage(pickedImgsDir + imgData["filename"], outDir + otolId + ".jpg")
+		if not success:
 			quit()
 	else:
 		print(f"Processing {imgData['nodeName']}: {otolId}.jpg")
@@ -135,7 +146,8 @@ with open(imgListFile) as file:
 			continue
 		# Convert image
 		if genImgFiles:
-			if not convertImage(imgPath, outDir + otolId + ".jpg"):
+			success = convertImage(imgPath, outDir + otolId + ".jpg")
+			if not success:
 				break
 		else:
 			if iterNum % 1e4 == 0:
@@ -146,13 +158,13 @@ with open(imgListFile) as file:
 		imgName = os.path.basename(os.path.normpath(imgPath)) # Get last path component
 		imgName = os.path.splitext(imgName)[0] # Remove extension
 		if fromEol:
-			(eolId, _, contentId) = imgName.partition(" ")
-			(eolId, contentId) = (int(eolId), int(contentId))
+			eolId, _, contentId = imgName.partition(" ")
+			eolId, contentId = (int(eolId), int(contentId))
 			if (eolId, "eol") not in imgsDone:
 				query = "SELECT source_url, license, copyright_owner FROM images WHERE content_id = ?"
 				row = eolCur.execute(query, (contentId,)).fetchone()
 				if row == None:
-					print(f"ERROR: No image record for EOL ID {eolId}, content ID {contentId}", file=sys.stderr)
+					print(f"ERROR: No image record for EOL ID {eolId}, content ID {contentId}")
 					break
 				(url, license, owner) = row
 				dbCur.execute("INSERT INTO images VALUES (?, ?, ?, ?, ?, ?)",
@@ -167,7 +179,7 @@ with open(imgListFile) as file:
 					" WHERE page_imgs.page_id = ?"
 				row = enwikiCur.execute(query, (enwikiId,)).fetchone()
 				if row == None:
-					print(f"ERROR: No image record for enwiki ID {enwikiId}", file=sys.stderr)
+					print(f"ERROR: No image record for enwiki ID {enwikiId}")
 					break
 				(name, license, artist, credit) = row
 				url = "https://en.wikipedia.org/wiki/File:" + urllib.parse.quote(name)

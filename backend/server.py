@@ -28,7 +28,7 @@ if len(sys.argv) > 1:
 
 # Classes for objects sent as responses (matches lib.ts types in client-side code)
 class TolNode:
-	""" Used when responding to 'node' and 'chain' requests """
+	" Used when responding to 'node' and 'chain' requests "
 	def __init__(self, otolId, children, parent=None, tips=0, pSupport=False, commonName=None, imgName=None):
 		self.otolId = otolId         # string | null
 		self.children = children     # string[]
@@ -38,24 +38,24 @@ class TolNode:
 		self.commonName = commonName # null | string
 		self.imgName = imgName       # null | string | [string,string] | [null, string] | [string, null]
 class SearchSugg:
-	""" Represents a search suggestion """
+	" Represents a search suggestion "
 	def __init__(self, name, canonicalName=None):
 		self.name = name                   # string
 		self.canonicalName = canonicalName # string | null
 class SearchSuggResponse:
-	""" Sent as responses to 'search' requests """
+	" Sent as responses to 'search' requests "
 	def __init__(self, searchSuggs, hasMore):
 		self.suggs = searchSuggs # SearchSugg[]
 		self.hasMore = hasMore   # boolean
 class DescInfo:
-	""" Represents a tol-node's associated description """
+	" Represents a tol-node's associated description "
 	def __init__(self, text, wikiId, fromRedirect, fromDbp):
 		self.text = text                 # string
 		self.wikiId = wikiId             # number
 		self.fromRedirect = fromRedirect # boolean
 		self.fromDbp = fromDbp           # boolean
 class ImgInfo:
-	""" Represents a tol-node's associated image """
+	" Represents a tol-node's associated image "
 	def __init__(self, id, src, url, license, artist, credit):
 		self.id = id           # number
 		self.src = src         # string
@@ -64,7 +64,7 @@ class ImgInfo:
 		self.artist = artist   # string
 		self.credit = credit   # string
 class InfoResponse:
-	""" Sent as responses to 'info' requests """
+	" Sent as responses to 'info' requests "
 	def __init__(self, tolNode, descData, imgData):
 		self.tolNode = tolNode   # null | TolNode
 		self.descData = descData # null | DescInfo | [DescInfo, DescInfo]
@@ -84,7 +84,7 @@ def lookupNodes(names, useReducedTree):
 	for (nodeName, otolId, tips) in cur.execute(query, names):
 		nameToNodes[nodeName] = TolNode(otolId, [], tips=tips)
 	# Get child info
-	query = f"SELECT node, child FROM {edgesTable} WHERE node IN ({queryParamStr})"
+	query = f"SELECT parent, child FROM {edgesTable} WHERE parent IN ({queryParamStr})"
 	for (nodeName, childName) in cur.execute(query, names):
 		nameToNodes[nodeName].children.append(childName)
 	# Order children by tips
@@ -96,7 +96,7 @@ def lookupNodes(names, useReducedTree):
 			childToTips[n] = tips
 		node.children.sort(key=lambda n: childToTips[n], reverse=True)
 	# Get parent info
-	query = f"SELECT node, child, p_support FROM {edgesTable} WHERE child IN ({queryParamStr})"
+	query = f"SELECT parent, child, p_support FROM {edgesTable} WHERE child IN ({queryParamStr})"
 	for (nodeName, childName, pSupport) in cur.execute(query, names):
 		nameToNodes[childName].parent = nodeName
 		nameToNodes[childName].pSupport = (pSupport == 1)

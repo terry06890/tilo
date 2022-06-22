@@ -7,11 +7,14 @@ from tkinter import ttk
 import PIL
 from PIL import ImageTk, Image, ImageOps
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Provides a GUI for reviewing images. Looks in a for-review directory for\n"
-usageInfo += "images named 'eolId1 contentId1.ext1', and, for each EOL ID, enables the user to\n"
-usageInfo += "choose an image to keep, or reject all. Also provides image rotation.\n"
-usageInfo += "Chosen images are placed in another directory, and rejected ones are deleted.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Provides a GUI for reviewing images. Looks in a for-review directory for
+images named 'eolId1 contentId1.ext1', and, for each EOL ID, enables the user to
+choose an image to keep, or reject all. Also provides image rotation.
+Chosen images are placed in another directory, and rejected ones are deleted.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -21,6 +24,7 @@ outDir = "imgs/"
 extraInfoDbCon = sqlite3.connect("../data.db")
 extraInfoDbCur = extraInfoDbCon.cursor()
 def getExtraInfo(eolId):
+	global extraInfoDbCur
 	query = "SELECT names.alt_name FROM" \
 		" names INNER JOIN eol_ids ON eol_ids.name = names.name" \
 		" WHERE id = ? and pref_alt = 1"
@@ -31,21 +35,21 @@ def getExtraInfo(eolId):
 		return f"Reviewing EOL ID {eolId}"
 IMG_DISPLAY_SZ = 400
 MAX_IMGS_PER_ID = 3
-PLACEHOLDER_IMG = Image.new("RGB", (IMG_DISPLAY_SZ, IMG_DISPLAY_SZ), (88, 28, 135))
+IMG_BG_COLOR = (88, 28, 135)
+PLACEHOLDER_IMG = Image.new("RGB", (IMG_DISPLAY_SZ, IMG_DISPLAY_SZ), IMG_BG_COLOR)
 
-# Create output directory if not present
+print("Checking output directory")
 if not os.path.exists(outDir):
 	os.mkdir(outDir)
-# Get images for review
-print("Reading input image list")
+print("Getting input image list")
 imgList = os.listdir(imgDir)
 imgList.sort(key=lambda s: int(s.split(" ")[0]))
 if len(imgList) == 0:
-	print("No input images found", file=sys.stderr)
-	sys.exit(1)
+	print("No input images found")
+	sys.exit(0)
 
 class EolImgReviewer:
-	""" Provides the GUI for reviewing images """
+	" Provides the GUI for reviewing images "
 	def __init__(self, root, imgList):
 		self.root = root
 		root.title("EOL Image Reviewer")
@@ -68,7 +72,7 @@ class EolImgReviewer:
 		# Add padding
 		for child in mainFrame.winfo_children():
 			child.grid_configure(padx=5, pady=5)
-		# Add bindings
+		# Add keyboard bindings
 		root.bind("<q>", self.quit)
 		root.bind("<Key-j>", lambda evt: self.accept(0))
 		root.bind("<Key-k>", lambda evt: self.accept(1))
@@ -87,11 +91,11 @@ class EolImgReviewer:
 		self.nextImgNames = []
 		self.rotations = []
 		self.getNextImgs()
-		# For more info
+		# For displaying extra info
 		self.numReviewed = 0
 		self.startTime = time.time()
 	def getNextImgs(self):
-		""" Updates display with new images to review, or ends program """
+		" Updates display with new images to review, or ends program "
 		# Gather names of next images to review
 		for i in range(MAX_IMGS_PER_ID):
 			if self.imgListIdx == len(self.imgList):
@@ -123,7 +127,7 @@ class EolImgReviewer:
 					del self.nextImgNames[idx]
 					del self.rotations[idx]
 					continue
-				self.imgs[idx] = self.resizeForDisplay(img)
+				self.imgs[idx] = self.resizeImgForDisplay(img)
 			else:
 				self.imgs[idx] = PLACEHOLDER_IMG
 			self.photoImgs[idx] = ImageTk.PhotoImage(self.imgs[idx])
@@ -140,7 +144,7 @@ class EolImgReviewer:
 		title += f" (imgs {firstImgIdx} to {lastImgIdx} out of {len(self.imgList)})"
 		self.root.title(title)
 	def accept(self, imgIdx):
-		""" React to a user selecting an image """
+		" React to a user selecting an image "
 		if imgIdx >= len(self.nextImgNames):
 			print("Invalid selection")
 			return
@@ -159,19 +163,20 @@ class EolImgReviewer:
 		self.numReviewed += 1
 		self.getNextImgs()
 	def reject(self):
-		""" React to a user rejecting all images of a set """
+		" React to a user rejecting all images of a set "
 		for i in range(len(self.nextImgNames)):
 			os.remove(imgDir + self.nextImgNames[i])
 		self.numReviewed += 1
 		self.getNextImgs()
 	def rotate(self, imgIdx, anticlockwise = False):
-		""" Respond to a user rotating an image """
+		" Respond to a user rotating an image "
 		deg = -90 if not anticlockwise else 90
 		self.imgs[imgIdx] = self.imgs[imgIdx].rotate(deg)
 		self.photoImgs[imgIdx] = ImageTk.PhotoImage(self.imgs[imgIdx])
 		self.labels[imgIdx].config(image=self.photoImgs[imgIdx])
 		self.rotations[imgIdx] = (self.rotations[imgIdx] + deg) % 360
 	def quit(self, e = None):
+		global extraInfoDbCon
 		print(f"Number reviewed: {self.numReviewed}")
 		timeElapsed = time.time() - self.startTime
 		print(f"Time elapsed: {timeElapsed:.2f} seconds")
@@ -179,8 +184,8 @@ class EolImgReviewer:
 			print(f"Avg time per review: {timeElapsed/self.numReviewed:.2f} seconds")
 		extraInfoDbCon.close()
 		self.root.destroy()
-	def resizeForDisplay(self, img):
-		""" Returns a copy of an image, shrunk to fit the display (keeps aspect ratio), and with a background """
+	def resizeImgForDisplay(self, img):
+		" Returns a copy of an image, shrunk to fit in it's frame (keeps aspect ratio), and with a background "
 		if max(img.width, img.height) > IMG_DISPLAY_SZ:
 			if (img.width > img.height):
 				newHeight = int(img.height * IMG_DISPLAY_SZ/img.width)
@@ -194,6 +199,7 @@ class EolImgReviewer:
 			int((IMG_DISPLAY_SZ - img.height) / 2)))
 		return bgImg
 # Create GUI and defer control
+print("Starting GUI")
 root = tki.Tk()
 EolImgReviewer(root, imgList)
 root.mainloop()

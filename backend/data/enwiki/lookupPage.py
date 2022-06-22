@@ -4,9 +4,12 @@ import sys, re
 import bz2
 import sqlite3
 
-usageInfo =  f"usage: {sys.argv[0]} title1\n"
-usageInfo += "Looks up a page with title title1 in a wikipedia dump,\n"
-usageInfo += "using a dump index db, and prints the corresponding <page>.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]} title1
+
+Looks up a page with title title1 in the wiki dump, using
+the dump-index db, and prints the corresponding <page>.
+"""
 if len(sys.argv) != 2:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -15,20 +18,19 @@ dumpFile = "enwiki-20220501-pages-articles-multistream.xml.bz2"
 indexDb = "dumpIndex.db"
 pageTitle = sys.argv[1].replace("_", " ")
 
-# Searching index file
-print("Lookup offset in index db")
+print("Looking up offset in index db")
 dbCon = sqlite3.connect(indexDb)
 dbCur = dbCon.cursor()
 query = "SELECT title, offset, next_offset FROM offsets WHERE title = ?"
 row = dbCur.execute(query, (pageTitle,)).fetchone()
 if row == None:
 	print("Title not found")
-	sys.exit(1)
-(_, pageOffset, endOffset) = row
+	sys.exit(0)
+_, pageOffset, endOffset = row
 dbCon.close()
 print(f"Found chunk at offset {pageOffset}")
-# Read dump file
-print("Reading dump file")
+
+print("Reading from wiki dump")
 content = []
 with open(dumpFile, mode='rb') as file:
 	# Get uncompressed chunk
@@ -61,6 +63,6 @@ with open(dumpFile, mode='rb') as file:
 					if line.lstrip() == "</page>":
 						break
 		lineIdx += 1
-# Print content
+
 print("Content: ")
 print("\n".join(content))

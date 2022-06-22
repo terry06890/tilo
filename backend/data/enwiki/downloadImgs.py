@@ -5,13 +5,16 @@ import sqlite3
 import urllib.parse, requests
 import time, signal
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Downloads images from URLs specified in an sqlite db,\n"
-usageInfo += "into a specified directory.'\n"
-usageInfo += "\n"
-usageInfo += "SIGINT causes the program to finish an ongoing download and exit.\n"
-usageInfo += "The program can be re-run to continue downloading, and looks\n"
-usageInfo += "in the output directory do decide what to skip.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Downloads images from URLs in an image database, into an output directory,
+with names of the form 'pageId1.ext1'.
+
+SIGINT causes the program to finish an ongoing download and exit.
+The program can be re-run to continue downloading, and looks
+in the output directory do decide what to skip.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -19,18 +22,18 @@ if len(sys.argv) > 1:
 imgDb = "imgData.db" # About 130k image names
 outDir = "imgs"
 licenseRegex = re.compile(r"cc0|cc([ -]by)?([ -]sa)?([ -][1234]\.[05])?( \w\w\w?)?", flags=re.IGNORECASE)
+# In testing, this downloaded about 100k images, over several days
 
-# Create output directory if not present
 if not os.path.exists(outDir):
 	os.mkdir(outDir)
-# Get existing image names
-print("Gettings already-downloaded images")
+print("Checking for already-downloaded images")
 fileList = os.listdir(outDir)
 pageIdsDone = set()
 for filename in fileList:
 	(basename, extension) = os.path.splitext(filename)
 	pageIdsDone.add(int(basename))
-print(f"Found {len(pageIdsDone)} already-downloaded images")
+print(f"Found {len(pageIdsDone)}")
+
 # Set SIGINT handler
 interrupted = False
 oldHandler = None
@@ -39,10 +42,10 @@ def onSigint(sig, frame):
 	interrupted = True
 	signal.signal(signal.SIGINT, oldHandler)
 oldHandler = signal.signal(signal.SIGINT, onSigint)
-# Open db
+
+print("Opening database")
 dbCon = sqlite3.connect(imgDb)
 dbCur = dbCon.cursor()
-# Start downloads
 print("Starting downloads")
 iterNum = 0
 query = "SELECT page_id, license, artist, credit, restrictions, url FROM" \
@@ -68,7 +71,7 @@ for (pageId, license, artist, credit, restrictions, url) in dbCur.execute(query)
 	urlParts = urllib.parse.urlparse(url)
 	extension = os.path.splitext(urlParts.path)[1]
 	if len(extension) <= 1:
-		print(f"WARNING: No filename extension found in URL {url}", file=sys.stderr)
+		print(f"WARNING: No filename extension found in URL {url}")
 		sys.exit(1)
 	outFile = f"{outDir}/{pageId}{extension}"
 	headers = {
@@ -81,8 +84,8 @@ for (pageId, license, artist, credit, restrictions, url) in dbCur.execute(query)
 			file.write(response.content)
 		time.sleep(1)
 			# https://en.wikipedia.org/wiki/Wikipedia:Database_download says to "throttle self to 1 cache miss per sec"
-			# It's unclear how to properly check for cache misses, so just do about <=1 per sec
+			# It's unclear how to properly check for cache misses, so this just aims for 1 per sec
 	except Exception as e:
-		print(f"Error while downloading to {outFile}: {e}", file=sys.stderr)
-# Close db
+		print(f"Error while downloading to {outFile}: {e}")
+print("Closing database")
 dbCon.close()

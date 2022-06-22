@@ -3,9 +3,13 @@
 import sys, re
 import sqlite3
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Reads Wikimedia enwiki redirect data from enwiki/, and node and wiki-id\n"
-usageInfo += "data from a sqlite database, and adds supplmenentary alt-name data.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Reads from a database containing data from Wikipdia, along with
+node and wiki-id information from the database, and use wikipedia
+page-redirect information to add additional alt-name data.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -15,19 +19,19 @@ dbFile = "data.db"
 altNameRegex = re.compile(r"[a-zA-Z]+")
 	# Avoids names like 'Evolution of Elephants', 'Banana fiber', 'Fish (zoology)',
 
-# Open dbs
+print("Opening databases")
 enwikiCon = sqlite3.connect(enwikiDb)
 enwikiCur = enwikiCon.cursor()
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
-# Get nodes with wiki-ids
+
 print("Getting nodes with wiki IDs")
 nodeToWikiId = {}
-for row in dbCur.execute("SELECT name, id from wiki_ids"):
-	nodeToWikiId[row[0]] = row[1]
-print(f"Found {len(nodeToWikiId)} nodes")
-# Find wiki-ids that redirect to each node
-print("Finding redirecter names")
+for (nodeName, wikiId) in dbCur.execute("SELECT name, id from wiki_ids"):
+	nodeToWikiId[nodeName] = wikiId
+print(f"Found {len(nodeToWikiId)}")
+
+print("Iterating through nodes, finding names that redirect to them")
 nodeToAltNames = {}
 numAltNames = 0
 iterNum = 0
@@ -45,8 +49,8 @@ for (nodeName, wikiId) in nodeToWikiId.items():
 			nodeToAltNames[nodeName].add(name.lower())
 			numAltNames += 1
 print(f"Found {numAltNames} alt-names")
-# Remove existing alt-names
-print("Removing existing alt-names")
+
+print("Excluding existing alt-names from the set")
 query = "SELECT alt_name FROM names WHERE alt_name IN ({})"
 iterNum = 0
 for (nodeName, altNames) in nodeToAltNames.items():
@@ -60,12 +64,13 @@ for (nodeName, altNames) in nodeToAltNames.items():
 	numAltNames -= len(existingNames)
 	altNames.difference_update(existingNames)
 print(f"Left with {numAltNames} alt-names")
-# Add alt-names
-print("Adding alt-names")
+
+print("Adding alt-names to database")
 for (nodeName, altNames) in nodeToAltNames.items():
 	for altName in altNames:
 		dbCur.execute("INSERT INTO names VALUES (?, ?, ?, 'enwiki')", (nodeName, altName, 0))
-# Close dbs
+
+print("Closing databases")
 dbCon.commit()
 dbCon.close()
 enwikiCon.close()

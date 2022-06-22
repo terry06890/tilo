@@ -5,31 +5,36 @@ import bz2
 import html, mwxml, mwparserfromhell
 import sqlite3
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Reads a Wikimedia enwiki dump, and adds page, redirect,\n"
-usageInfo += "and short-description info to an sqlite db.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Reads through the wiki dump, and attempts to
+parse short-descriptions, and add them to a database.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-dumpFile = "enwiki-20220501-pages-articles-multistream.xml.bz2" # 22,034,540 pages
+dumpFile = "enwiki-20220501-pages-articles-multistream.xml.bz2" # Had about 22e6 pages
 enwikiDb = "descData.db"
+# In testing, this script took over 10 hours to run, and generated about 5GB
 
-# Some regexps and functions for parsing wikitext
 descLineRegex = re.compile("^ *[A-Z'\"]")
 embeddedHtmlRegex = re.compile(r"<[^<]+/>|<!--[^<]+-->|<[^</]+>([^<]*|[^<]*<[^<]+>[^<]*)</[^<]+>|<[^<]+$")
 	# Recognises a self-closing HTML tag, a tag with 0 children, tag with 1 child with 0 children, or unclosed tag
 convertTemplateRegex = re.compile(r"{{convert\|(\d[^|]*)\|(?:(to|-)\|(\d[^|]*)\|)?([a-z][^|}]*)[^}]*}}")
-parensGrpRegex = re.compile(r" \([^()]*\)")
-leftoverBraceRegex = re.compile(r"(?:{\||{{).*")
 def convertTemplateReplace(match):
 	if match.group(2) == None:
 		return f"{match.group(1)} {match.group(4)}"
 	else:
 		return f"{match.group(1)} {match.group(2)} {match.group(3)} {match.group(4)}"
+parensGroupRegex = re.compile(r" \([^()]*\)")
+leftoverBraceRegex = re.compile(r"(?:{\||{{).*")
+
 def parseDesc(text):
-	# Find first matching line outside a {{...}} and [[...]] block-html-comments, then accumulate lines until a blank
-	# Some cases not accounted for: disambiguation pages, abstracts with sentences split-across-lines, 
+	# Find first matching line outside {{...}}, [[...]], and block-html-comment constructs,
+		# and then accumulate lines until a blank one.
+	# Some cases not accounted for include: disambiguation pages, abstracts with sentences split-across-lines, 
 		# nested embedded html, 'content significant' embedded-html, markup not removable with mwparsefromhell, 
 	lines = []
 	openBraceCount = 0
@@ -74,18 +79,15 @@ def removeMarkup(content):
 	content = embeddedHtmlRegex.sub("", content)
 	content = convertTemplateRegex.sub(convertTemplateReplace, content)
 	content = mwparserfromhell.parse(content).strip_code() # Remove wikitext markup
-	content = parensGrpRegex.sub("", content)
+	content = parensGroupRegex.sub("", content)
 	content = leftoverBraceRegex.sub("", content)
 	return content
-# Other helper functions
 def convertTitle(title):
 	return html.unescape(title).replace("_", " ")
 
-# Check for existing db
+print("Creating database")
 if os.path.exists(enwikiDb):
-	print(f"ERROR: Existing {enwikiDb}", file=sys.stderr)
-	sys.exit(1)
-# Create db
+	raise Exception(f"ERROR: Existing {enwikiDb}")
 dbCon = sqlite3.connect(enwikiDb)
 dbCur = dbCon.cursor()
 dbCur.execute("CREATE TABLE pages (id INT PRIMARY KEY, title TEXT UNIQUE)")
@@ -93,8 +95,8 @@ dbCur.execute("CREATE INDEX pages_title_idx ON pages(title COLLATE NOCASE)")
 dbCur.execute("CREATE TABLE redirects (id INT PRIMARY KEY, target TEXT)")
 dbCur.execute("CREATE INDEX redirects_idx ON redirects(target)")
 dbCur.execute("CREATE TABLE descs (id INT PRIMARY KEY, desc TEXT)")
-# Read through dump file
-print("Reading dump file")
+
+print("Iterating through dump file")
 with bz2.open(dumpFile, mode='rt') as file:
 	dump = mwxml.Dump.from_file(file)
 	pageNum = 0
@@ -102,13 +104,15 @@ with bz2.open(dumpFile, mode='rt') as file:
 		pageNum += 1
 		if pageNum % 1e4 == 0:
 			print(f"At page {pageNum}")
+		if pageNum > 3e4:
+			break
 		# Parse page
 		if page.namespace == 0:
 			try:
 				dbCur.execute("INSERT INTO pages VALUES (?, ?)", (page.id, convertTitle(page.title)))
 			except sqlite3.IntegrityError as e:
 				# Accounts for certain pages that have the same title
-				print(f"Failed to add page with title \"{page.title}\": {e}")
+				print(f"Failed to add page with title \"{page.title}\": {e}", file=sys.stderr)
 				continue
 			if page.redirect != None:
 				dbCur.execute("INSERT INTO redirects VALUES (?, ?)", (page.id, convertTitle(page.redirect)))
@@ -117,6 +121,7 @@ with bz2.open(dumpFile, mode='rt') as file:
 				desc = parseDesc(revision.text)
 				if desc != None:
 					dbCur.execute("INSERT INTO descs VALUES (?, ?)", (page.id, desc))
-# Close db
+
+print("Closing database")
 dbCon.commit()
 dbCon.close()

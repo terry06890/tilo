@@ -3,34 +3,39 @@
 import sys, re, os
 import html, csv, sqlite3
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Reads vernacular-names CSV data (from the Encyclopedia of Life site),\n"
-usageInfo += "makes associations with node data in a sqlite database, and writes\n"
-usageInfo += "name data to that database.\n"
-usageInfo += "\n"
-usageInfo += "Expects a CSV header describing lines with format:\n"
-usageInfo += "    page_id, canonical_form, vernacular_string, language_code,\n"
-usageInfo += "    resource_name, is_preferred_by_resource, is_preferred_by_eol\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Reads files describing name data from the 'Encyclopedia of Life' site,
+tries to associate names with nodes in the database, and adds tables
+to represent associated names.
+
+Reads a vernacularNames.csv file:
+	Starts with a header line containing:
+		page_id, canonical_form, vernacular_string, language_code,
+		resource_name, is_preferred_by_resource, is_preferred_by_eol
+	The canonical_form and vernacular_string fields contain names
+		associated with the page ID. Names are not always unique to
+		particular page IDs.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-vnamesFile = "eol/vernacularNames.csv"
+vnamesFile = "eol/vernacularNames.csv" # Had about 2.8e6 entries
 dbFile = "data.db"
-NAMES_TO_SKIP = {"unknown", "unknown species", "unidentified species"}
+namesToSkip = {"unknown", "unknown species", "unidentified species"}
 pickedIdsFile = "pickedEolIds.txt"
-badAltsFile = "pickedEolAltsToSkip.txt"
+altsToSkipFile = "pickedEolAltsToSkip.txt"
 
-# Read in vernacular-names data
-	# Note: Canonical-names may have multiple pids
-	# Note: A canonical-name's associated pids might all have other associated names
 print("Reading in vernacular-names data")
-nameToPids = {}
+nameToPids = {} # 'pid' means 'Page ID'
 canonicalNameToPids = {}
 pidToNames = {}
-pidToPreferred = {}
+pidToPreferred = {} # Maps pids to 'preferred' names
 def updateMaps(name, pid, canonical, preferredAlt):
-	if name in NAMES_TO_SKIP:
+	global namesToSkip, nameToPids, canonicalNameToPids, pidToNames, pidToPreferred
+	if name in namesToSkip:
 		return
 	if name not in nameToPids:
 		nameToPids[name] = {pid}
@@ -52,6 +57,9 @@ with open(vnamesFile, newline="") as csvfile:
 	lineNum = 0
 	for row in reader:
 		lineNum += 1
+		if lineNum % 1e5 == 0:
+			print(f"At line {lineNum}")
+		# Skip header line
 		if lineNum == 1:
 			continue
 		# Parse line
@@ -64,7 +72,7 @@ with open(vnamesFile, newline="") as csvfile:
 		updateMaps(name1, pid, True, False)
 		if lang == "eng" and name2 != "":
 			updateMaps(name2, pid, False, preferred)
-# Check for manually-picked pids
+
 print("Checking for manually-picked pids")
 nameToPickedPid = {}
 if os.path.exists(pickedIdsFile):
@@ -73,64 +81,77 @@ if os.path.exists(pickedIdsFile):
 			(name, _, eolId) = line.rstrip().partition("|")
 			nameToPickedPid[name] = None if eolId == "" else int(eolId)
 print(f"Found {len(nameToPickedPid)}")
-# Read in node-alt_names to avoid
-print("Checking for bad-alt-names")
-nameToBadAlts = {}
-if os.path.exists(badAltsFile):
-	with open(badAltsFile) as file:
+
+print("Checking for alt-names to skip")
+nameToAltsToSkip = {}
+numToSkip = 0
+if os.path.exists(altsToSkipFile):
+	with open(altsToSkipFile) as file:
 		for line in file:
 			(name, _, altName) = line.rstrip().partition("|")
-			if name not in nameToBadAlts:
-				nameToBadAlts[name] = [altName]
+			if name not in nameToAltsToSkip:
+				nameToAltsToSkip[name] = [altName]
 			else:
-				nameToBadAlts[name].append(altName)
-print(f"Found bad-alts for {len(nameToBadAlts)} nodes")
-# Open db connection
+				nameToAltsToSkip[name].append(altName)
+			numToSkip += 1
+print(f"Found {numToSkip} alt-names to skip")
+
+print("Creating database tables")
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
-# Create tables
 dbCur.execute("CREATE TABLE names(name TEXT, alt_name TEXT, pref_alt INT, src TEXT, PRIMARY KEY(name, alt_name))")
 dbCur.execute("CREATE INDEX names_idx ON names(name)")
 dbCur.execute("CREATE INDEX names_alt_idx ON names(alt_name)")
 dbCur.execute("CREATE INDEX names_alt_idx_nc ON names(alt_name COLLATE NOCASE)")
 dbCur.execute("CREATE TABLE eol_ids(id INT PRIMARY KEY, name TEXT)")
 dbCur.execute("CREATE INDEX eol_name_idx ON eol_ids(name)")
-# Iterate through 'nodes' table, resolving to canonical-names
+
+print("Associating nodes with names")
 usedPids = set()
 unresolvedNodeNames = set()
 dbCur2 = dbCon.cursor()
 def addToDb(nodeName, pidToUse):
-	altNames = set()
-	preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
+	" Adds page-ID-associated name data to a node in the database "
+	global dbCur, pidToPreferred
 	dbCur.execute("INSERT INTO eol_ids VALUES (?, ?)", (pidToUse, nodeName))
+	# Get alt-names
+	altNames = set()
 	for n in pidToNames[pidToUse]:
+		# Avoid alt-names with >3 words
 		if len(n.split(" ")) > 3:
 			continue
+		# Avoid alt-names that already name a node in the database
 		if dbCur.execute("SELECT name FROM nodes WHERE name = ?", (n,)).fetchone() != None:
 			continue
-		if nodeName in nameToBadAlts and n in nameToBadAlts[nodeName]:
-			print(f"Excluding bad-alt {n} for node {nodeName}")
+		# Check for picked alt-name-to-skip
+		if nodeName in nameToAltsToSkip and n in nameToAltsToSkip[nodeName]:
+			print(f"Excluding alt-name {n} for node {nodeName}")
 			continue
+		#
 		altNames.add(n)
+	# Add alt-names to db
+	preferredName = pidToPreferred[pidToUse] if (pidToUse in pidToPreferred) else None
 	for n in altNames:
 		isPreferred = 1 if (n == preferredName) else 0
 		dbCur.execute("INSERT INTO names VALUES (?, ?, ?, 'eol')", (nodeName, n, isPreferred))
-for name in nameToPickedPid: # Add manually-picked pids
-	pickedPid = nameToPickedPid[name]
-	usedPids.add(pickedPid)
-	if pickedPid != None:
-		addToDb(name, pickedPid)
-iterationNum = 0
-for (name,) in dbCur2.execute("SELECT name FROM nodes"):
-	iterationNum += 1
-	if iterationNum % 10000 == 0:
-		print(f"Loop 1 iteration {iterationNum}")
-	if name in nameToPickedPid:
+print("Adding picked IDs")
+for (name, pid) in nameToPickedPid.items():
+	if pid != None:
+		addToDb(name, pid)
+		usedPids.add(pid)
+print("Associating nodes with canonical names")
+iterNum = 0
+for (nodeName,) in dbCur2.execute("SELECT name FROM nodes"):
+	iterNum += 1
+	if iterNum % 1e5 == 0:
+		print(f"At iteration {iterNum}")
+	if nodeName in nameToPickedPid:
 		continue
-	# If name matches a canonical-name, add alt-name entries to 'names' table
-	if name in canonicalNameToPids:
+	# Check for matching canonical name
+	if nodeName in canonicalNameToPids:
 		pidToUse = None
-		for pid in canonicalNameToPids[name]:
+		# Pick an associated page ID
+		for pid in canonicalNameToPids[nodeName]:
 			hasLowerPrio = pid not in pidToPreferred and pidToUse in pidToPreferred
 			hasHigherPrio = pid in pidToPreferred and pidToUse not in pidToPreferred
 			if hasLowerPrio:
@@ -138,24 +159,26 @@ for (name,) in dbCur2.execute("SELECT name FROM nodes"):
 			if pid not in usedPids and (pidToUse == None or pid < pidToUse or hasHigherPrio):
 				pidToUse = pid
 		if pidToUse != None:
+			addToDb(nodeName, pidToUse)
 			usedPids.add(pidToUse)
-			addToDb(name, pidToUse)
-	elif name in nameToPids:
-		unresolvedNodeNames.add(name)
-# Iterate through unresolved nodes, resolving to vernacular-names
-iterationNum = 0
-for name in unresolvedNodeNames:
-	iterationNum += 1
-	if iterationNum % 100 == 0:
-		print(f"Loop 2 iteration {iterationNum}")
-	# Add alt-name entries to 'names' table for first corresponding pid
+	elif nodeName in nameToPids:
+		unresolvedNodeNames.add(nodeName)
+print("Associating leftover nodes with other names")
+iterNum = 0
+for nodeName in unresolvedNodeNames:
+	iterNum += 1
+	if iterNum % 100 == 0:
+		print(f"At iteration {iterNum}")
+	# Check for matching name
 	pidToUse = None
-	for pid in nameToPids[name]:
+	for pid in nameToPids[nodeName]:
+		# Pick an associated page ID
 		if pid not in usedPids and (pidToUse == None or pid < pidToUse):
 			pidToUse = pid
 	if pidToUse != None:
+		addToDb(nodeName, pidToUse)
 		usedPids.add(pidToUse)
-		addToDb(name, pidToUse)
-# Close db
+
+print("Closing database")
 dbCon.commit()
 dbCon.close()

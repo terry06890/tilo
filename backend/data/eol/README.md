@@ -11,9 +11,10 @@ This directory holds files obtained from/using the [Encyclopedia of Life](https:
     Contains metadata for images from EOL.
 -   imagesList/ <br>
     Extracted from imagesList.tgz.
+-   genImagesListDb.sh <br>
+    Creates a database, and imports imagesList/*.csv files into it.
 -   imagesList.db <br>
-    Contains data from imagesList/.
-    Created by running genImagesListDb.sh, which simply imports csv files into a database. <br>
+    Created by running genImagesListDb.sh <br>
     Tables: <br>
     -   `images`:
         `content_id INT PRIMARY KEY, page_id INT, source_url TEXT, copy_url TEXT, license TEXT, copyright_owner TEXT`

@@ -1,17 +1,50 @@
 This directory holds files used to generate data.db, which contains tree-of-life data.
 
 # Tables:
--   `nodes`:       `name TEXT PRIMARY KEY, id TEXT UNIQUE, tips INT`
--   `edges`:       `node TEXT, child TEXT, p_support INT, PRIMARY KEY (node, child)`
--   `eol_ids`:     `id INT PRIMARY KEY, name TEXT`
--   `names`:       `name TEXT, alt_name TEXT, pref_alt INT, src TEXT, PRIMARY KEY(name, alt_name)`
--   `wiki_ids`:    `name TEXT PRIMARY KEY, id INT, redirected INT`
--   `descs`:       `wiki_id INT PRIMARY KEY, desc TEXT, from_dbp INT`
--   `node_imgs`:   `name TEXT PRIMARY KEY, img_id INT, src TEXT`
--   `images`:      `id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src)`
--   `linked_imgs`: `name TEXT PRIMARY KEY, otol_ids TEXT`
--   `r_nodes`:     `name TEXT PRIMARY KEY, tips INT`
--   `r_edges`:     `node TEXT, child TEXT, p_support INT, PRIMARY KEY (node, child)`
+## Tree Structure data
+-   `nodes` <br>
+    Format : `name TEXT PRIMARY KEY, id TEXT UNIQUE, tips INT` <br>
+    Represents a tree-of-life node. `tips` represents the number of no-child descendants.
+-   `edges` <br>
+    Format: `parent TEXT, child TEXT, p_support INT, PRIMARY KEY (parent, child)` <br>
+    `p_support` is 1 if the edge has 'phylogenetic support', and 0 otherwise
+## Node name data
+-   `eol_ids` <br>
+    Format: `id INT PRIMARY KEY, name TEXT` <br>
+    Associates an EOL ID with a node's name.
+-   `names` <br>
+    Format: `name TEXT, alt_name TEXT, pref_alt INT, src TEXT, PRIMARY KEY(name, alt_name)` <br>
+    Associates a node with alternative names.
+    `pref_alt` is 1 if the alt-name is the most 'preferred' one.
+    `src` indicates the dataset the alt-name was obtained from (can be 'eol', 'enwiki', or 'picked').
+## Node description data
+-   `wiki_ids` <br>
+    Format: `name TEXT PRIMARY KEY, id INT, redirected INT` <br>
+    Associates a node with a wikipedia page ID.
+    `redirected` is 1 if the node was associated with a different page that redirected to this one.
+-   `descs` <br>
+    Format: `wiki_id INT PRIMARY KEY, desc TEXT, from_dbp INT` <br>
+    Associates a wikipedia page ID with a short-description.
+    `from_dbp` is 1 if the description was obtained from DBpedia, and 0 otherwise.
+## Node image data
+-   `node_imgs` <br>
+    Format: `name TEXT PRIMARY KEY, img_id INT, src TEXT` <br>
+    Associates a node with an image.
+-   `images` <br>
+    Format: `id INT, src TEXT, url TEXT, license TEXT, artist TEXT, credit TEXT, PRIMARY KEY (id, src)` <br>
+    Represents an image, identified by a source ('eol', 'enwiki', or 'picked'), and a source-specific ID.
+-   `linked_imgs` <br>
+    Format: `name TEXT PRIMARY KEY, otol_ids TEXT` <br>
+    Associates a node with an image from another node.
+    `otol_ids` can be an otol ID, or two comma-separated otol IDs or empty strings.
+        The latter is used for compound nodes.
+## Reduced-tree data
+-   `r_nodes` <br>
+    Format: `name TEXT PRIMARY KEY, tips INT` <br>
+    Like `nodes`, but for a reduced tree.
+-   `r_edges` <br>
+    Format: `node TEXT, child TEXT, p_support INT, PRIMARY KEY (node, child)` <br>
+    Like `edges` but for a reduced tree.
 
 # Generating the Database
 
@@ -68,7 +101,7 @@ Some of the python scripts require third-party packages:
     -   pickedEnwikiNamesToSkip.txt: Same as with genDbpData.py.
     -   pickedEnwikiLabels.txt: Similar to pickedDbpLabels.txt.
 
-## Generate image data
+## Generate node image data
 ### Get images from EOL
 1.  Obtain 'image metadata files' in eol/, as specified in it's README.
 2.  In eol/, run downloadImgs.py, which downloads images (possibly multiple per node),
@@ -81,7 +114,7 @@ Some of the python scripts require third-party packages:
     using the `wiki_ids` table, and stores them in a database.
 2.  In enwiki/, run downloadImgLicenseInfo.py, which downloads licensing information for
     those images, using wikipedia's online API.
-3.  In enwiki/, run downloadEnwikiImgs.py, which downloads 'permissively-licensed'
+3.  In enwiki/, run downloadImgs.py, which downloads 'permissively-licensed'
     images into enwiki/imgs/.
 ### Merge the image sets
 1.  Run reviewImgsToGen.py, which displays images from eol/imgs/ and enwiki/imgs/,
@@ -107,15 +140,16 @@ Some of the python scripts require third-party packages:
     `nodes`, `edges`, and `node_imgs` tables.
 
 ## Do some post-processing
-1.  Run genReducedTreeData.py, which generates a second, reduced version of the tree,
+1.  Run genEnwikiNameData.py, which adds more entries to the `names` table,
+    using data in enwiki/, and the `names` and `wiki_ids` tables.
+2.  Optionally run addPickedNames.py, which allows adding manually-selected name data to
+    the `names` table, as specified in pickedNames.txt.
+    -   pickedNames.txt: Has lines of the form `nodeName1|altName1|prefAlt1`.
+        These correspond to entries in the `names` table. `prefAlt` should be 1 or 0.
+        A line like `name1|name1|1` causes a node to have no preferred alt-name.
+3.  Run genReducedTreeData.py, which generates a second, reduced version of the tree,
     adding the `r_nodes` and `r_edges` tables, using `nodes` and `names`. Reads from
     pickedReducedNodes.txt, which lists names of nodes that must be included (1 per line).
-2.  Optionally run trimTree.py, which tries to remove some 'low-significance' nodes,
-    for the sake of performance and result-relevance. Otherwise, some nodes may have
-    over 10k children, which can take a while to render (over a minute in my testing).
-    You might want to backup the untrimmed tree first, as this operation is not easily
-    reversible.
-3.  Optionally run genEnwikiNameData.py, which adds more entries to the `names` table,
-    using data in enwiki/, and the `names` and `wiki_ids` tables.
-4.  Optionally run addPickedNames.py, which allows adding manually-selected name data to
-    the `names` table, as specified in pickedNames.txt.
+4.  Optionally run trimTree.py, which tries to remove some 'low significance' nodes,
+    for the sake of performance and content-relevance. Otherwise, some nodes may have
+    over 10k children, which can take a while to render (took over a minute in testing).

@@ -4,25 +4,26 @@ import sys, os, re
 import bz2
 import sqlite3
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Reads a Wikimedia enwiki dump index file,\n"
-usageInfo += "and stores it's offset and title data to an sqlite db.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Adds data from the wiki dump index-file into a database.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-indexFile = "enwiki-20220501-pages-articles-multistream-index.txt.bz2" # 22,034,540 lines
+indexFile = "enwiki-20220501-pages-articles-multistream-index.txt.bz2" # Had about 22e6 lines
 indexDb = "dumpIndex.db"
 
-# Check for existing db
 if os.path.exists(indexDb):
-	print(f"ERROR: Existing {indexDb}", file=sys.stderr)
-	sys.exit(1)
-# Create db
+	raise Exception(f"ERROR: Existing {indexDb}")
+print("Creating database")
 dbCon = sqlite3.connect(indexDb)
 dbCur = dbCon.cursor()
 dbCur.execute("CREATE TABLE offsets (title TEXT PRIMARY KEY, id INT UNIQUE, offset INT, next_offset INT)")
-# Reading index file
+
+print("Iterating through index file")
 lineRegex = re.compile(r"([^:]+):([^:]+):(.*)")
 lastOffset = 0
 lineNum = 0
@@ -42,7 +43,7 @@ with bz2.open(indexFile, mode='rt') as file:
 					dbCur.execute("INSERT INTO offsets VALUES (?, ?, ?, ?)", (t, p, lastOffset, offset))
 				except sqlite3.IntegrityError as e:
 					# Accounts for certain entries in the file that have the same title
-					print(f"Failed on title \"{t}\": {e}")
+					print(f"Failed on title \"{t}\": {e}", file=sys.stderr)
 			entriesToAdd = []
 			lastOffset = offset
 		entriesToAdd.append([title, pageId])
@@ -50,7 +51,8 @@ for (title, pageId) in entriesToAdd:
 	try:
 		dbCur.execute("INSERT INTO offsets VALUES (?, ?, ?, ?)", (title, pageId, lastOffset, -1))
 	except sqlite3.IntegrityError as e:
-		print(f"Failed on title \"{t}\": {e}")
-# Close db
+		print(f"Failed on title \"{t}\": {e}", file=sys.stderr)
+
+print("Closing database")
 dbCon.commit()
 dbCon.close()

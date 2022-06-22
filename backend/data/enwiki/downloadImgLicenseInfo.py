@@ -5,41 +5,48 @@ import sqlite3, urllib.parse, html
 import requests
 import time, signal
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Reads image names from a file, and uses enwiki's API to obtain\n"
-usageInfo += "licensing information for them, adding the info to a sqlite db.\n"
-usageInfo += "\n"
-usageInfo += "SIGINT causes the program to finish an ongoing download and exit.\n"
-usageInfo += "The program can be re-run to continue downloading, and looks\n"
-usageInfo += "at names added to the db to decide what to skip.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Reads image names from a database, and uses enwiki's online API to obtain
+licensing information for them, adding the info to the database.
+
+SIGINT causes the program to finish an ongoing download and exit.
+The program can be re-run to continue downloading, and looks
+at already-processed names to decide what to skip.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
-imgDb = "imgData.db" # About 130k image names
+imgDb = "imgData.db"
 apiUrl = "https://en.wikipedia.org/w/api.php"
+userAgent = "terryt.dev (terry06890@gmail.com)"
 batchSz = 50 # Max 50
 tagRegex = re.compile(r"<[^<]+>")
 whitespaceRegex = re.compile(r"\s+")
 
-# Open db
+print("Opening database")
 dbCon = sqlite3.connect(imgDb)
 dbCur = dbCon.cursor()
 dbCur2 = dbCon.cursor()
-# Create table if it doesn't exist
+print("Checking for table")
 if dbCur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='imgs'").fetchone() == None:
 	dbCur.execute("CREATE TABLE imgs(" \
 		"name TEXT PRIMARY KEY, license TEXT, artist TEXT, credit TEXT, restrictions TEXT, url TEXT)")
-# Get image names
+
 print("Reading image names")
 imgNames = set()
 for (imgName,) in dbCur.execute("SELECT DISTINCT img_name FROM page_imgs WHERE img_name NOT NULL"):
 	imgNames.add(imgName)
-print(f"Found {len(imgNames)} images")
+print(f"Found {len(imgNames)}")
+
+print("Checking for already-processed images")
 oldSz = len(imgNames)
 for (imgName,) in dbCur.execute("SELECT name FROM imgs"):
 	imgNames.discard(imgName)
-print(f"Skipping {oldSz - len(imgNames)} already-done images")
+print(f"Found {oldSz - len(imgNames)}")
+
 # Set SIGINT handler
 interrupted = False
 oldHandler = None
@@ -48,7 +55,8 @@ def onSigint(sig, frame):
 	interrupted = True
 	signal.signal(signal.SIGINT, oldHandler)
 oldHandler = signal.signal(signal.SIGINT, onSigint)
-# Iterate through image names, making API requests
+
+print("Iterating through image names")
 imgNames = list(imgNames)
 iterNum = 0
 for i in range(0, len(imgNames), batchSz):
@@ -63,7 +71,7 @@ for i in range(0, len(imgNames), batchSz):
 	imgBatch = ["File:" + x for x in imgBatch]
 	# Make request
 	headers = {
-		"user-agent": "terryt.dev (terry06890@gmail.com)",
+		"user-agent": userAgent,
 		"accept-encoding": "gzip",
 	}
 	params = {
@@ -80,16 +88,16 @@ for i in range(0, len(imgNames), batchSz):
 		response = requests.get(apiUrl, params=params, headers=headers)
 		responseObj = response.json()
 	except Exception as e:
-		print(f"Error while downloading info: {e}", file=sys.stderr)
-		print(f"\tImage batch: " + "|".join(imgBatch), file=sys.stderr)
+		print(f"ERROR: Exception while downloading info: {e}")
+		print(f"\tImage batch: " + "|".join(imgBatch))
 		continue
 	# Parse response-object
 	if "query" not in responseObj or "pages" not in responseObj["query"]:
-		print("WARNING: Response object for doesn't have page data", file=sys.stderr)
-		print("\tImage batch: " + "|".join(imgBatch), file=sys.stderr)
+		print("WARNING: Response object for doesn't have page data")
+		print("\tImage batch: " + "|".join(imgBatch))
 		if "error" in responseObj:
 			errorCode = responseObj["error"]["code"]
-			print(f"\tError code: {errorCode}", file=sys.stderr)
+			print(f"\tError code: {errorCode}")
 			if errorCode == "maxlag":
 				time.sleep(5)
 		continue
@@ -111,10 +119,10 @@ for i in range(0, len(imgNames), batchSz):
 			title = normalisedToInput[title]
 		title = title[5:] # Remove 'File:'
 		if title not in imgNames:
-			print(f"WARNING: Got title \"{title}\" not in image-name list", file=sys.stderr)
+			print(f"WARNING: Got title \"{title}\" not in image-name list")
 			continue
 		if "imageinfo" not in page:
-			print(f"WARNING: No imageinfo section for page \"{title}\"", file=sys.stderr)
+			print(f"WARNING: No imageinfo section for page \"{title}\"")
 			continue
 		metadata = page["imageinfo"][0]["extmetadata"]
 		url = page["imageinfo"][0]["url"]
@@ -122,7 +130,7 @@ for i in range(0, len(imgNames), batchSz):
 		artist = metadata['Artist']['value'] if 'Artist' in metadata else None
 		credit = metadata['Credit']['value'] if 'Credit' in metadata else None
 		restrictions = metadata['Restrictions']['value'] if 'Restrictions' in metadata else None
-		# Remove newlines
+		# Remove markup
 		if artist != None:
 			artist = tagRegex.sub(" ", artist)
 			artist = whitespaceRegex.sub(" ", artist)
@@ -134,7 +142,9 @@ for i in range(0, len(imgNames), batchSz):
 			credit = html.unescape(credit)
 			credit = urllib.parse.unquote(credit)
 		# Add to db
-		dbCur2.execute("INSERT INTO imgs VALUES (?, ?, ?, ?, ?, ?)", (title, license, artist, credit, restrictions, url))
-# Close db
+		dbCur2.execute("INSERT INTO imgs VALUES (?, ?, ?, ?, ?, ?)",
+			(title, license, artist, credit, restrictions, url))
+
+print("Closing database")
 dbCon.commit()
 dbCon.close()

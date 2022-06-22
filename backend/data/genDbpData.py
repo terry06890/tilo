@@ -3,11 +3,12 @@
 import sys, os, re
 import sqlite3
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Reads DBpedia data from dbpedia/*, along with tree-of-life\n"
-usageInfo += "node and name data from a sqlite database, associates nodes with\n"
-usageInfo += "DBpedia IRIs, and adds alt-name and description information for\n"
-usageInfo += "those nodes.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Reads a database containing data from DBpedia, and tries to associate
+DBpedia IRIs with nodes in a database, adding short-descriptions for them.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -16,18 +17,21 @@ dbpediaDb = "dbpedia/descData.db"
 namesToSkipFile = "pickedEnwikiNamesToSkip.txt"
 pickedLabelsFile = "pickedDbpLabels.txt"
 dbFile = "data.db"
+rootNodeName = "cellular organisms"
+rootLabel = "organism" # Will be associated with root node
+# Got about 400k descriptions when testing
 
-# Open dbs
+print("Opening databases")
 dbpCon = sqlite3.connect(dbpediaDb)
 dbpCur = dbpCon.cursor()
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
-# Get node names
-print("Reading node names")
+
+print("Getting node names")
 nodeNames = set()
 for (name,) in dbCur.execute("SELECT name from nodes"):
 	nodeNames.add(name)
-# Skipping certain names
+
 print("Checking for names to skip")
 oldSz = len(nodeNames)
 if os.path.exists(namesToSkipFile):
@@ -35,22 +39,22 @@ if os.path.exists(namesToSkipFile):
 		for line in file:
 			nodeNames.remove(line.rstrip())
 print(f"Skipping {oldSz - len(nodeNames)} nodes")
-# Get disambiguation page labels
+
 print("Reading disambiguation-page labels")
 disambigLabels = set()
 query = "SELECT labels.iri from labels INNER JOIN disambiguations ON labels.iri = disambiguations.iri"
 for (label,) in dbpCur.execute(query):
 	disambigLabels.add(label)
-# Try associating nodes with IRIs, accounting for disambiguation labels
-print("Trying to associate nodes with labels")
+
+print("Trying to associate nodes with DBpedia labels")
 nodeToLabel = {}
-nameVariantRegex = re.compile(r"(.*) \(([^)]+)\)")
-nameToVariants = {}
+nameVariantRegex = re.compile(r"(.*) \(([^)]+)\)") # Used to recognise labels like 'Thor (shrimp)'
+nameToVariants = {} # Maps node names to lists of matching labels
 iterNum = 0
 for (label,) in dbpCur.execute("SELECT label from labels"):
 	iterNum += 1
 	if iterNum % 1e5 == 0:
-		print(f"Processing line {iterNum}")
+		print(f"At iteration {iterNum}")
 	#
 	if label in disambigLabels:
 		continue
@@ -69,18 +73,20 @@ for (label,) in dbpCur.execute("SELECT label from labels"):
 					nameToVariants[subName] = [label]
 				elif name not in nameToVariants[subName]:
 					nameToVariants[subName].append(label)
+# Associate labels without conflicts
 for (name, variants) in nameToVariants.items():
 	if len(variants) == 1:
 		nodeToLabel[name] = variants[0]
 for name in nodeToLabel:
 	del nameToVariants[name]
-nodeToLabel["cellular organisms"] = "organism" # Special case for root node
-print(f"Number of conflicts: {len(nameToVariants)}")
-# Try resolving conflicts
+# Special case for root node
+nodeToLabel[rootNodeName] = rootLabel
+if rootNodeName in nameToVariants:
+	del nameToVariants["cellular organisms"]
+
+print("Trying to resolve {len(nameToVariants)} conflicts")
 def resolveWithPickedLabels():
-	# Attempts conflict resolution using a file with lines of the form 'name1|label1',
-		# where label1 may be absent, indicating that no label should be associated with the name
-	print("Resolving conflicts using picked-labels")
+	" Attempts to resolve conflicts using a picked-names file "
 	with open(pickedLabelsFile) as file:
 		for line in file:
 			(name, _, label) = line.rstrip().partition("|")
@@ -94,11 +100,13 @@ def resolveWithPickedLabels():
 					print(f"INFO: Picked label \"{label}\" for name \"{name}\" outside choice set", file=sys.stderr)
 				nodeToLabel[name] = label
 				del nameToVariants[name]
-	print(f"Remaining number of conflicts: {len(nameToVariants)}")
 def resolveWithCategoryList():
-	# Attempts conflict resolution using category-text in labels of the form 'name1 (category1)'
-	# Does a generic-category pass first (avoid stuff like Pan being classified as a horse instead of an ape)
-	print("Resolving conflicts using category-list")
+	"""
+	Attempts to resolve conflicts by looking for labels like 'name1 (category1)',
+	and choosing those with a category1 that seems 'biological'.
+	Does two passes, using more generic categories first. This helps avoid stuff like
+	Pan being classified as a horse instead of an ape.
+	"""
 	generalCategories = {
 		"species", "genus",
 		"plant", "fungus", "animal",
@@ -107,7 +115,7 @@ def resolveWithCategoryList():
 	}
 	specificCategories = {
 		"protist", "alveolate", "dinoflagellates",
-		"orchid", "Poaceae", "fern", "moss", "alga",
+		"orchid", "poaceae", "fern", "moss", "alga",
 		"bryozoan", "hydrozoan",
 		"sponge", "cnidarian", "coral", "polychaete", "echinoderm",
 		"bivalve", "gastropod", "chiton",
@@ -139,10 +147,8 @@ def resolveWithCategoryList():
 					break
 	for name in namesToRemove:
 		del nameToVariants[name]
-	print(f"Remaining number of conflicts: {len(nameToVariants)}")
 def resolveWithTypeData():
-	# Attempts conflict-resolution using dbpedia's instance-type data
-	print("Resolving conflicts using instance-type data")
+	" Attempts to resolve conflicts using DBpedia's type data "
 	taxonTypes = { # Obtained from the DBpedia ontology
 		"http://dbpedia.org/ontology/Species",
 		"http://dbpedia.org/ontology/Archaea",
@@ -179,7 +185,7 @@ def resolveWithTypeData():
 	for (label, type) in dbpCur.execute("SELECT label, type from labels INNER JOIN types on labels.iri = types.iri"):
 		iterNum += 1
 		if iterNum % 1e5 == 0:
-			print(f"Processing line {iterNum}")
+			print(f"At iteration {iterNum}")
 		#
 		if type in taxonTypes:
 			name = label.lower()
@@ -193,20 +199,17 @@ def resolveWithTypeData():
 					if name in nameToVariants:
 						nodeToLabel[name] = label
 						del nameToVariants[name]
-	print(f"Remaining number of conflicts: {len(nameToVariants)}")
+#resolveWithTypeData()
+#resolveWithCategoryList()
 resolveWithPickedLabels()
-# Associate nodes with IRIs
+print(f"Remaining number of conflicts: {len(nameToVariants)}")
+
 print("Getting node IRIs")
 nodeToIri = {}
-iterNum = 0
 for (name, label) in nodeToLabel.items():
-	row = dbpCur.execute("SELECT iri FROM labels where label = ? COLLATE NOCASE", (label,)).fetchone()
-	if row == None:
-		print(f"ERROR: Couldn't find label {label}", file=sys.stderr)
-		sys.exit(1)
-	else:
-		nodeToIri[name] = row[0]
-# Resolve redirects
+	(iri,) = dbpCur.execute("SELECT iri FROM labels where label = ? COLLATE NOCASE", (label,)).fetchone()
+	nodeToIri[name] = iri
+
 print("Resolving redirects")
 redirectingIriSet = set()
 iterNum = 0
@@ -219,9 +222,10 @@ for (name, iri) in nodeToIri.items():
 	if row != None:
 		nodeToIri[name] = row[0]
 		redirectingIriSet.add(name)
-# Find descriptions, and add to db
-print("Adding node description data")
+
+print("Adding description tables")
 dbCur.execute("CREATE TABLE wiki_ids (name TEXT PRIMARY KEY, id INT, redirected INT)")
+dbCur.execute("CREATE INDEX wiki_id_idx ON wiki_ids(id)")
 dbCur.execute("CREATE TABLE descs (wiki_id INT PRIMARY KEY, desc TEXT, from_dbp INT)")
 iterNum = 0
 for (name, iri) in nodeToIri.items():
@@ -232,10 +236,11 @@ for (name, iri) in nodeToIri.items():
 	query = "SELECT abstract, id FROM abstracts INNER JOIN ids ON abstracts.iri = ids.iri WHERE ids.iri = ?"
 	row = dbpCur.execute(query, (iri,)).fetchone()
 	if row != None:
-		(desc, wikiId) = row
+		desc, wikiId = row
 		dbCur.execute("INSERT INTO wiki_ids VALUES (?, ?, ?)", (name, wikiId, 1 if name in redirectingIriSet else 0))
 		dbCur.execute("INSERT OR IGNORE INTO descs VALUES (?, ?, ?)", (wikiId, desc, 1))
-# Close dbs
+
+print("Closing databases")
 dbCon.commit()
 dbCon.close()
 dbpCon.commit()

@@ -7,15 +7,18 @@ from tkinter import ttk
 import PIL
 from PIL import ImageTk, Image, ImageOps
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Provides a GUI that displays, for each tol-node, an associated image from\n"
-usageInfo += "eol/* and enwiki/*, and enables the user to choose which to use. Writes\n"
-usageInfo += "choice data to a text file with lines of the form 'otolId1 imgPath1', or\n"
-usageInfo += "'otolId1', where no path indicates a choice of no image.\n"
-usageInfo += "\n"
-usageInfo += "The program can be closed, and run again to continue from the last choice.\n"
-usageInfo += "The program looks for an existing output file to determine what choices\n"
-usageInfo += "have already been made.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Provides a GUI that displays, for each node in the database, associated
+images from EOL and Wikipedia, and allows choosing which to use. Writes
+choice data to a text file with lines of the form 'otolId1 imgPath1', or
+'otolId1', where no path indicates a choice of no image.
+
+The program can be closed, and run again to continue from the last choice.
+The program looks for an existing output file to determine what choices
+have already been made.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -28,16 +31,18 @@ IMG_DISPLAY_SZ = 400
 PLACEHOLDER_IMG = Image.new("RGB", (IMG_DISPLAY_SZ, IMG_DISPLAY_SZ), (88, 28, 135))
 onlyReviewPairs = True
 
-# Open db
+print("Opening database")
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
-# Associate nodes with images
-nodeToImgs = {} # Maps otol-ids to img-path arrays
-print("Looking through EOL images")
+
+nodeToImgs = {} # Maps otol-ids to arrays of image paths
+print("Iterating through images from EOL")
 if os.path.exists(eolImgDir):
 	for filename in os.listdir(eolImgDir):
-		(eolId, _, _) = filename.partition(" ")
+		# Get associated EOL ID
+		eolId, _, _ = filename.partition(" ")
 		query = "SELECT nodes.id FROM nodes INNER JOIN eol_ids ON nodes.name = eol_ids.name WHERE eol_ids.id = ?"
+		# Get associated node IDs
 		found = False
 		for (otolId,) in dbCur.execute(query, (int(eolId),)):
 			if otolId not in nodeToImgs:
@@ -45,13 +50,15 @@ if os.path.exists(eolImgDir):
 			nodeToImgs[otolId].append(eolImgDir + filename)
 			found = True
 		if not found:
-			print(f"No node found for {eolImgDir}{filename}", file=sys.stderr)
-print(f"Result has {len(nodeToImgs)} node entries")
-print("Looking through enwiki images")
+			print(f"WARNING: No node found for {eolImgDir}{filename}")
+print(f"Result: {len(nodeToImgs)} nodes with images")
+print("Iterating through images from Wikipedia")
 if os.path.exists(enwikiImgDir):
 	for filename in os.listdir(enwikiImgDir):
+		# Get associated page ID
 		(wikiId, _, _) = filename.partition(".")
-		query = "SELECT nodes.id FROM nodes INNER JOIN wiki_ids ON nodes.name = wiki_ids.name WHERE wiki_ids._id = ?"
+		# Get associated node IDs
+		query = "SELECT nodes.id FROM nodes INNER JOIN wiki_ids ON nodes.name = wiki_ids.name WHERE wiki_ids.id = ?"
 		found = False
 		for (otolId,) in dbCur.execute(query, (int(wikiId),)):
 			if otolId not in nodeToImgs:
@@ -59,10 +66,9 @@ if os.path.exists(enwikiImgDir):
 			nodeToImgs[otolId].append(enwikiImgDir + filename)
 			found = True
 		if not found:
-			print(f"No node found for {enwikiImgDir}{filename}", file=sys.stderr)
-print(f"Result has {len(nodeToImgs)} node entries")
-# Check for already-made choices
-print("Filtering out already-chosen IDs")
+			print(f"WARNING: No node found for {enwikiImgDir}{filename}")
+print(f"Result: {len(nodeToImgs)} nodes with images")
+print("Filtering out already-made image choices")
 oldSz = len(nodeToImgs)
 if os.path.exists(outFile):
 	with open(outFile) as file:
@@ -74,7 +80,7 @@ if os.path.exists(outFile):
 print(f"Filtered out {oldSz - len(nodeToImgs)} entries")
 
 class ImgReviewer:
-	""" Provides the GUI for reviewing images """
+	" Provides the GUI for reviewing images "
 	def __init__(self, root, nodeToImgs):
 		self.root = root
 		root.title("Image Reviewer")
@@ -96,7 +102,7 @@ class ImgReviewer:
 		# Add padding
 		for child in mainFrame.winfo_children():
 			child.grid_configure(padx=5, pady=5)
-		# Add bindings
+		# Add keyboard bindings
 		root.bind("<q>", self.quit)
 		root.bind("<Key-j>", lambda evt: self.accept(0))
 		root.bind("<Key-k>", lambda evt: self.accept(1))
@@ -112,7 +118,7 @@ class ImgReviewer:
 		# Initialise images to review
 		self.getNextImgs()
 	def getNextImgs(self):
-		""" Updates display with new images to review, or ends program """
+		" Updates display with new images to review, or ends program "
 		# Get next image paths
 		while True:
 			self.listIdx += 1
@@ -120,7 +126,7 @@ class ImgReviewer:
 				print("No more images to review. Exiting program.")
 				self.quit()
 				return
-			(self.otolId, imgPaths) = self.nodeImgsList[self.listIdx]
+			self.otolId, imgPaths = self.nodeImgsList[self.listIdx]
 			# Potentially skip user choice
 			if onlyReviewPairs and len(imgPaths) == 1:
 				with open(outFile, 'a') as file:
@@ -141,12 +147,12 @@ class ImgReviewer:
 				continue
 			if imgPath.startswith("eol/"):
 				self.eolImgPath = imgPath
-				self.eolImg = ImageTk.PhotoImage(self.resizeForDisplay(img))
+				self.eolImg = ImageTk.PhotoImage(self.resizeImgForDisplay(img))
 			elif imgPath.startswith("enwiki/"):
 				self.enwikiImgPath = imgPath
-				self.enwikiImg = ImageTk.PhotoImage(self.resizeForDisplay(img))
+				self.enwikiImg = ImageTk.PhotoImage(self.resizeImgForDisplay(img))
 			else:
-				print(f"Unexpected image path {imgPath}", file=sys.stderr)
+				print(f"Unexpected image path {imgPath}")
 				self.quit()
 				return
 		# Re-iterate if all image paths invalid
@@ -157,14 +163,14 @@ class ImgReviewer:
 			return
 		# Add placeholder images
 		if self.eolImgPath == None:
-			self.eolImg = ImageTk.PhotoImage(self.resizeForDisplay(PLACEHOLDER_IMG))
+			self.eolImg = ImageTk.PhotoImage(self.resizeImgForDisplay(PLACEHOLDER_IMG))
 		elif self.enwikiImgPath == None:
-			self.enwikiImg = ImageTk.PhotoImage(self.resizeForDisplay(PLACEHOLDER_IMG))
+			self.enwikiImg = ImageTk.PhotoImage(self.resizeImgForDisplay(PLACEHOLDER_IMG))
 		# Update image-frames
 		self.labels[0].config(image=self.eolImg)
 		self.labels[1].config(image=self.enwikiImg)
 		# Update title
-		title = f"Imgs for otol ID {self.otolId}"
+		title = f"Images for otol ID {self.otolId}"
 		query = "SELECT names.alt_name FROM" \
 			" nodes INNER JOIN names ON nodes.name = names.name" \
 			" WHERE nodes.id = ? and pref_alt = 1"
@@ -174,7 +180,7 @@ class ImgReviewer:
 		title += f" ({self.listIdx + 1} out of {len(self.nodeImgsList)})"
 		self.root.title(title)
 	def accept(self, imgIdx):
-		""" React to a user selecting an image """
+		" React to a user selecting an image "
 		imgPath = self.eolImgPath if imgIdx == 0 else self.enwikiImgPath
 		if imgPath == None:
 			print("Invalid selection")
@@ -184,12 +190,13 @@ class ImgReviewer:
 		self.numReviewed += 1
 		self.getNextImgs()
 	def reject(self):
-		""" React to a user rejecting all images of a set """
+		" React to a user rejecting all images of a set "
 		with open(outFile, 'a') as file:
 			file.write(f"{self.otolId}\n")
 		self.numReviewed += 1
 		self.getNextImgs()
 	def quit(self, e = None):
+		global dbCon
 		print(f"Number reviewed: {self.numReviewed}")
 		timeElapsed = time.time() - self.startTime
 		print(f"Time elapsed: {timeElapsed:.2f} seconds")
@@ -197,8 +204,8 @@ class ImgReviewer:
 			print(f"Avg time per review: {timeElapsed/self.numReviewed:.2f} seconds")
 		dbCon.close()
 		self.root.destroy()
-	def resizeForDisplay(self, img):
-		""" Returns a copy of an image, shrunk to fit the display (keeps aspect ratio), and with a background """
+	def resizeImgForDisplay(self, img):
+		" Returns a copy of an image, shrunk to fit it's frame (keeps aspect ratio), and with a background "
 		if max(img.width, img.height) > IMG_DISPLAY_SZ:
 			if (img.width > img.height):
 				newHeight = int(img.height * IMG_DISPLAY_SZ/img.width)
@@ -212,6 +219,7 @@ class ImgReviewer:
 			int((IMG_DISPLAY_SZ - img.height) / 2)))
 		return bgImg
 # Create GUI and defer control
+print("Starting GUI")
 root = tki.Tk()
 ImgReviewer(root, nodeToImgs)
 root.mainloop()

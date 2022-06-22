@@ -42,7 +42,7 @@ This directory holds files obtained from/using [English Wikipedia](https://en.wi
         `img_name` may be null, which means 'none found', and is used to avoid re-processing page-ids.
     -   `imgs`: `name TEXT PRIMARY KEY, license TEXT, artist TEXT, credit TEXT, restrictions TEXT, url TEXT` <br>
         Might lack some matches for `img_name` in `page_imgs`, due to licensing info unavailability.
--   downloadEnwikiImgs.py <br>
+-   downloadImgs.py <br>
     Used to download image files into imgs/.
 
 # Other Files
