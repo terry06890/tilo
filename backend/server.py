@@ -15,7 +15,8 @@ SEARCH_SUGG_LIMIT = 5
 usageInfo =  f"usage: {sys.argv[0]}\n"
 usageInfo += "Starts a server that listens for GET requests to http://" + hostname + ":" + str(port) + ".\n"
 usageInfo += "Responds to path+query /data/type1?name=name1 with JSON data.\n"
-usageInfo += "An additional query parameter tree=reduced is usable to get reduced-tree data\n"
+usageInfo += "The parameter 'name' can be omitted in order to specify the root node.\n"
+usageInfo += "An additional query parameter tree=reduced is usable to get reduced-tree data.\n"
 usageInfo += "\n"
 usageInfo += "If type1 is 'node': Responds with map from names to TolNode objects for node name1 and it's children.\n"
 usageInfo += "If type1 is 'chain': Like 'node', but gets nodes from name1 up to the root, and their direct children.\n"
@@ -72,8 +73,14 @@ class InfoResponse:
 
 # Connect to db
 dbCon = sqlite3.connect(dbFile)
+# Get root node
+dbCur = dbCon.cursor()
+query = "SELECT name FROM nodes LEFT JOIN edges ON nodes.name = edges.child WHERE edges.parent IS NULL LIMIT 1"
+(rootName,) = dbCur.execute(query).fetchone()
+
 # Some functions
 def lookupNodes(names, useReducedTree):
+	global dbCon
 	# Get node info
 	nameToNodes = {}
 	cur = dbCon.cursor()
@@ -127,6 +134,7 @@ def lookupNodes(names, useReducedTree):
 	#
 	return nameToNodes
 def lookupName(name, useReducedTree):
+	global dbCon
 	cur = dbCon.cursor()
 	results = []
 	hasMore = False
@@ -171,6 +179,7 @@ def lookupName(name, useReducedTree):
 		hasMore = True
 	return SearchSuggResponse(results, hasMore)
 def lookupNodeInfo(name, useReducedTree):
+	global dbCon
 	cur = dbCon.cursor()
 	# Get node-object info
 	nameToNodes = lookupNodes([name], useReducedTree)
@@ -221,16 +230,17 @@ def lookupNodeInfo(name, useReducedTree):
 
 class DbServer(BaseHTTPRequestHandler):
 	def do_GET(self):
+		global rootName
 		# Parse URL
 		urlParts = urllib.parse.urlparse(self.path)
 		path = urllib.parse.unquote(urlParts.path)
 		queryDict = urllib.parse.parse_qs(urlParts.query)
 		# Check first element of path
 		match = re.match(r"/([^/]+)/(.+)", path)
-		if match != None and match.group(1) == "data" and "name" in queryDict and \
+		if match != None and match.group(1) == "data" and \
 			("tree" not in queryDict or queryDict["tree"][0] == "reduced"):
 			reqType = match.group(2)
-			name = queryDict["name"][0]
+			name = queryDict["name"][0] if "name" in queryDict else rootName
 			useReducedTree = "tree" in queryDict
 			# Check query string
 			if reqType == "node":

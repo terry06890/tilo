@@ -42,9 +42,8 @@ function getReverseAction(action: AutoAction): AutoAction | null {
 }
 
 // Initialise tree-of-life data
-const ROOT_NAME = "cellular organisms";
 const initialTolMap: TolMap = new Map();
-initialTolMap.set(ROOT_NAME, new TolNode());
+initialTolMap.set("", new TolNode());
 
 // Configurable options
 const defaultLytOpts: LayoutOptions = {
@@ -99,7 +98,7 @@ const defaultUiOpts = {
 
 export default defineComponent({
 	data(){
-		let layoutTree = initLayoutTree(initialTolMap, ROOT_NAME, 0);
+		let layoutTree = initLayoutTree(initialTolMap, "", 0);
 		layoutTree.hidden = true;
 		return {
 			tolMap: initialTolMap,
@@ -670,14 +669,27 @@ export default defineComponent({
 		},
 		// Helper methods
 		initTreeFromServer(){
-			let urlPath = '/data/node?name=' + encodeURIComponent(ROOT_NAME);
+			let urlPath = '/data/node';
 			urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
 			fetch(urlPath)
 				.then(response => response.json())
 				.then(obj => {
+					// Get root node name
+					let rootName = null;
+					let nodeNames = Object.getOwnPropertyNames(obj);
+					for (let n of nodeNames){
+						if (obj[n].parent == null){
+							rootName = n;
+							break;
+						}
+					}
+					if (rootName == null){
+						throw new Error('Server response has no root node');
+					}
+					// Initialise tree
 					this.tolMap.clear();
-					Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
-					this.layoutTree = initLayoutTree(this.tolMap, this.layoutTree.name, 0);
+					nodeNames.forEach(n => {this.tolMap.set(n, obj[n])});
+					this.layoutTree = initLayoutTree(this.tolMap, rootName, 0);
 					this.activeRoot = this.layoutTree;
 					this.layoutMap = initLayoutMap(this.layoutTree);
 					this.updateAreaDims().then(() => {
