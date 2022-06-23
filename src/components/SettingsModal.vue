@@ -12,61 +12,43 @@ export default defineComponent({
 	},
 	data(){
 		return {
-			optChgd: false,
+			changedLytOpts: new Set(),
+			changedUiOpts: new Set(),
 		};
 	},
 	methods: {
 		onCloseClick(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
-				if (this.optChgd){
-					this.saveSettings();
+				this.$emit('close', this.changedLytOpts, this.changedUiOpts);
+			}
+		},
+		onLytOptChg(opt: string){
+			if (opt == 'minTileSz'){
+				let minInput = this.$refs.minTileSzInput as HTMLInputElement;
+				let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
+				if (Number(minInput.value) > Number(maxInput.value)){
+					this.lytOpts.maxTileSz = this.lytOpts.minTileSz;
+					this.changedLytOpts.add('maxTileSz');
 				}
-				this.$emit('close');
+			} else if (opt == 'maxTileSz'){
+				let minInput = this.$refs.minTileSzInput as HTMLInputElement;
+				let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
+				if (Number(maxInput.value) < Number(minInput.value)){
+					this.lytOpts.minTileSz = this.lytOpts.maxTileSz;
+					this.changedLytOpts.add('minTileSz');
+				}
 			}
-		},
-		onOptChg(){
-			this.optChgd = true;
-		},
-		onLytOptChg(){
 			this.$emit('layout-setting-chg');
-			this.onOptChg();
+			this.changedLytOpts.add(opt);
 		},
-		onMinTileSzChg(){
-			let minInput = this.$refs.minTileSzInput as HTMLInputElement;
-			let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
-			if (Number(minInput.value) > Number(maxInput.value)){
-				this.lytOpts.maxTileSz = this.lytOpts.minTileSz;
+		onUiOptChg(opt: string){
+			if (opt == 'useReducedTree'){
+				this.$emit('tree-chg');
 			}
-			this.onLytOptChg();
-		},
-		onMaxTileSzChg(){
-			let minInput = this.$refs.minTileSzInput as HTMLInputElement;
-			let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
-			if (Number(maxInput.value) < Number(minInput.value)){
-				this.lytOpts.minTileSz = this.lytOpts.maxTileSz;
-			}
-			this.onLytOptChg();
-		},
-		onTreeChg(){
-			this.$emit('tree-chg');
-			this.onOptChg();
-		},
-		saveSettings(){
-			const savedLytOpts = ['tileSpacing', 'minTileSz', 'maxTileSz', 'layoutType', 'sweepMode', 'sweepToParent', ];
-			for (let prop of savedLytOpts){
-				localStorage.setItem('lyt ' + prop, String(this.lytOpts[prop as keyof LayoutOptions]));
-			}
-			const savedUiOpts = ['tileChgDuration', 'jumpToSearchedNode', 'useReducedTree', ];
-			for (let prop of savedUiOpts){
-				localStorage.setItem('ui ' + prop, String(this.uiOpts[prop]));
-			}
-			console.log('Settings saved');
+			this.changedUiOpts.add(opt);
 		},
 		onReset(){
-			localStorage.clear();
-			this.optChgd = false;
 			this.$emit('reset');
-			console.log('Settings reset');
 		},
 	},
 	components: {CloseIcon, RButton, },
@@ -84,21 +66,21 @@ export default defineComponent({
 		<hr class="border-stone-400"/>
 		<div>
 			<label>Tile Spacing <input type="range" min="0" max="20" class="mx-2 w-[3cm]"
-				v-model.number="lytOpts.tileSpacing" @change="onLytOptChg"/></label>
+				v-model.number="lytOpts.tileSpacing" @input="onLytOptChg('tileSpacing')"/></label>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>
 			<label>
 				<span class="inline-block w-[3cm]">Min Tile Size</span>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz" class="w-[3cm]"
-					@change="onMinTileSzChg" ref="minTileSzInput"/>
+					@input="onLytOptChg('minTileSz')" ref="minTileSzInput"/>
 			</label>
 		</div>
 		<div>
 			<label>
 				<span class="inline-block w-[3cm]">Max Tile Size</span>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz" class="w-[3cm]"
-					@change="onMaxTileSzChg" ref="maxTileSzInput"/>
+					@input="onLytOptChg('maxTileSz')" ref="maxTileSzInput"/>
 			</label>
 		</div>
 		<hr class="border-stone-400"/>
@@ -107,15 +89,15 @@ export default defineComponent({
 			<ul>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.layoutType" value="sqr"
-						@change="onLytOptChg"/> Squares </label>
+						@change="onLytOptChg('layoutType')"/> Squares </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.layoutType" value="rect"
-						@change="onLytOptChg"/> Rectangles </label>
+						@change="onLytOptChg('layoutType')"/> Rectangles </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.layoutType" value="sweep"
-						@change="onLytOptChg"/> Sweep to side </label>
+						@change="onLytOptChg('layoutType')"/> Sweep to side </label>
 				</li>
 			</ul>
 		</div>
@@ -125,15 +107,15 @@ export default defineComponent({
 			<ul>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="none"
-						@change="onLytOptChg"/> None </label>
+						@change="onLytOptChg('sweepToParent')"/> None </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="prefer"
-						@change="onLytOptChg"/> Prefer </label>
+						@change="onLytOptChg('sweepToParent')"/> Prefer </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="fallback"
-						@change="onLytOptChg"/> Fallback </label>
+						@change="onLytOptChg('sweepToParent')"/> Fallback </label>
 				</li>
 			</ul>
 		</div>
@@ -143,31 +125,33 @@ export default defineComponent({
 			<ul>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepMode" value="left"
-						@change="onLytOptChg"/> To left </label>
+						@change="onLytOptChg('sweepMode')"/> To left </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepMode" value="top"
-						@change="onLytOptChg"/> To top </label>
+						@change="onLytOptChg('sweepMode')"/> To top </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepMode" value="shorter"
-						@change="onLytOptChg"/> To shorter </label>
+						@change="onLytOptChg('sweepMode')"/> To shorter </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepMode" value="auto"
-						@change="onLytOptChg"/> Auto </label>
+						@change="onLytOptChg('sweepMode')"/> Auto </label>
 				</li>
 			</ul>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>
 			<label>Animation Duration <input type="range" min="0" max="3000" class="mx-2 w-[3cm]"
-				v-model.number="uiOpts.tileChgDuration" @change="onOptChg"/></label>
+				v-model.number="uiOpts.tileChgDuration" @change="onUiOptChg('tileChgDuration')"/></label>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>
-			<label> <input type="checkbox" v-model="uiOpts.jumpToSearchedNode" @change="onOptChg"/>
-				Jump to search result</label>
+			<label>
+				<input type="checkbox" v-model="uiOpts.jumpToSearchedNode" @change="onUiOptChg('jumpToSearchedNode')"/>
+				Jump to search result
+			</label>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>
@@ -175,11 +159,11 @@ export default defineComponent({
 			<ul>
 				<li>
 					<label> <input type="radio" v-model="uiOpts.useReducedTree" :value="false"
-						@change="onTreeChg"/> Default </label>
+						@change="onUiOptChg('useReducedTree')"/> Default </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="uiOpts.useReducedTree" :value="true"
-						@change="onTreeChg"/> Reduced </label>
+						@change="onUiOptChg('useReducedTree')"/> Reduced </label>
 				</li>
 			</ul>
 		</div>

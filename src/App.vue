@@ -58,7 +58,7 @@ function getDefaultLytOpts(): LayoutOptions {
 		rectMode: 'auto first-row', //'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
 		sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
 		sweptNodesPrio: 'sqrt', //'linear' | 'sqrt' | 'pow-2/3'
-		sweepToParent: 'fallback', //'none' | 'prefer' | 'fallback'
+		sweepToParent: 'prefer', //'none' | 'prefer' | 'fallback'
 	};
 }
 function getDefaultUiOpts(){
@@ -575,7 +575,19 @@ export default defineComponent({
 			// Re-initialise tree
 			this.initTreeFromServer();
 		},
+		onSettingsClose(changedLytOpts: Set<string>, changedUiOpts: Set<string>){
+			this.settingsOpen = false;
+			// Save changed settings
+			for (let opt of changedLytOpts){
+				localStorage.setItem('lyt ' + opt, String(this.lytOpts[opt as keyof LayoutOptions]));
+			}
+			for (let opt of changedUiOpts){
+				localStorage.setItem('ui ' + opt, String(this.uiOpts[opt]));
+			}
+			console.log('Settings saved');
+		},
 		onResetSettings(){
+			localStorage.clear();
 			let defaultLytOpts = getDefaultLytOpts();
 			let defaultUiOpts = getDefaultUiOpts();
 			if (this.uiOpts.useReducedTree != defaultUiOpts.useReducedTree){
@@ -583,6 +595,7 @@ export default defineComponent({
 			}
 			Object.assign(this.lytOpts, defaultLytOpts);
 			Object.assign(this.uiOpts, defaultUiOpts);
+			console.log('Settings reset');
 			this.relayoutWithCollapse();
 		},
 		// For help events
@@ -644,9 +657,32 @@ export default defineComponent({
 			if (this.pendingResizeHdlr == 0){
 				const resizeDelay = 100;
 				let handleResize = () => {
-					this.uiOpts.scrollGap = getScrollBarWidth();
+					// Update unmodified layout/ui options with defaults
+					let lytOpts = getDefaultLytOpts();
+					let uiOpts = getDefaultUiOpts();
+					let changedTree = false;
+					for (let prop of Object.getOwnPropertyNames(lytOpts)){
+						let item = localStorage.getItem('lyt ' + prop);
+						if (item == null && this.lytOpts[prop] != lytOpts[prop as keyof LayoutOptions]){
+							this.lytOpts[prop] = lytOpts[prop as keyof LayoutOptions];
+						}
+					}
+					for (let prop of Object.getOwnPropertyNames(uiOpts)){
+						let item = localStorage.getItem('lyt ' + prop);
+						if (item == null && this.uiOpts[prop] != uiOpts[prop as keyof typeof uiOpts]){
+							this.uiOpts[prop] = uiOpts[prop as keyof typeof uiOpts];
+							if (prop == 'useReducedTree'){
+								changedTree = true;
+							}
+						}
+					}
+					//
 					this.overflownRoot = false;
-					return this.updateAreaDims().then(() => this.relayoutWithCollapse());
+					if (!changedTree){
+						return this.updateAreaDims().then(() => this.relayoutWithCollapse());
+					} else {
+						return Promise.resolve(this.onTreeChange());
+					}
 				};
 				let currentTime = new Date().getTime();
 				if (currentTime - this.lastResizeHdlrTime > resizeDelay){
@@ -853,7 +889,7 @@ export default defineComponent({
 			@close="helpOpen = false" @start-tutorial="onStartTutorial"/>
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
-		@close="settingsOpen = false" @reset="onResetSettings"
+		@close="onSettingsClose" @reset="onResetSettings"
 		@layout-setting-chg="relayoutWithCollapse" @tree-chg="onTreeChange"/>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"
