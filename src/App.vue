@@ -153,9 +153,10 @@ export default defineComponent({
 		},
 		tutPaneContainerStyles(): Record<string,string> {
 			return {
+				minHeight: (this.tutorialOpen ? this.uiOpts.tutorialPaneSz : 0) + 'px',
 				maxHeight: (this.tutorialOpen ? this.uiOpts.tutorialPaneSz : 0) + 'px',
 				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
-				transitionProperty: 'max-height',
+				transitionProperty: 'max-height, min-height',
 				overflow: 'hidden',
 			};
 		},
