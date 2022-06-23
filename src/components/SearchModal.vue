@@ -1,6 +1,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import SearchIcon from './icon/SearchIcon.vue';
+import LogInIcon from './icon/LogInIcon.vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode} from '../layout';
 import type {TolMap, SearchSugg, SearchSuggResponse} from '../lib';
@@ -61,13 +62,16 @@ export default defineComponent({
 				this.$emit('close');
 			}
 		},
-		onEnter(){
+		onSearch(){
 			if (this.focusedSuggIdx == null){
 				this.resolveSearch((this.$refs.searchInput as HTMLInputElement).value.toLowerCase())
 			} else {
 				let sugg = this.searchSuggs[this.focusedSuggIdx]
 				this.resolveSearch(sugg.canonicalName || sugg.name);
 			}
+		},
+		onSearchModeChg(){
+			this.uiOpts.jumpToSearchedNode = !this.uiOpts.jumpToSearchedNode;
 		},
 		resolveSearch(tolNodeName: string){
 			if (tolNodeName == ''){
@@ -185,18 +189,18 @@ export default defineComponent({
 	mounted(){
 		(this.$refs.searchInput as HTMLInputElement).focus();
 	},
-	components: {SearchIcon, InfoIcon, },
+	components: {SearchIcon, InfoIcon, LogInIcon, },
 	emits: ['search', 'close', 'info-click'],
 });
 </script>
 
 <template>
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onCloseClick">
-	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 p-2
-		bg-stone-50 rounded-md shadow shadow-black flex gap-1">
+	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
+		bg-stone-50 rounded-md shadow shadow-black flex">
 		<div class="relative">
-			<input type="text" class="block border p-1" ref="searchInput"
-				@keyup.enter="onEnter" @keyup.esc="onCloseClick"
+			<input type="text" class="block border p-1 m-2" ref="searchInput"
+				@keyup.enter="onSearch" @keyup.esc="onCloseClick"
 				@input="onInput" @keydown.down.prevent="onDownKey" @keydown.up.prevent="onUpKey"/>
 			<div class="absolute top-[100%] w-full">
 				<div v-for="(sugg, idx) of searchSuggs"
@@ -213,8 +217,13 @@ export default defineComponent({
 				<div v-if="searchHasMoreSuggs" class="bg-white px-1 text-center border">...</div>
 			</div>
 		</div>
-		<search-icon @click.stop="onEnter"
-			class="block w-8 h-8 ml-1 hover:cursor-pointer hover:bg-stone-200" />
+		<div class="my-auto hover:cursor-pointer hover:brightness-75 rounded border shadow">
+			<search-icon @click.stop="onSearch" class="block w-8 h-8"/>
+		</div>
+		<div class="my-auto mx-2 hover:cursor-pointer hover:brightness-75 rounded">
+			<log-in-icon @click.stop="onSearchModeChg" class="block w-8 h-8"
+				:class="uiOpts.jumpToSearchedNode ? 'text-stone-500' : 'text-stone-300'"/>
+		</div>
 	</div>
 </div>
 </template>
