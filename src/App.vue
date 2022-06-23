@@ -84,6 +84,7 @@ const defaultUiOpts = {
 	ancestryBarBgColor: '#44403c',
 	ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
 	infoModalImgSz: 200,
+	searchSuggLimit: 5,
 	autoWaitTime: 500, //ms (time to wait between actions (with their transitions))
 	tutorialPaneSz: 200,
 	tutorialPaneBgColor: '#1c1917',

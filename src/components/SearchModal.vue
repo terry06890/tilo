@@ -92,7 +92,8 @@ export default defineComponent({
 			let url = new URL(window.location.href);
 			url.pathname = '/data/search';
 			url.search = '?name=' + encodeURIComponent(input.value);
-			url.search += (this.uiOpts.useReducedTree ? '&tree=reduced' : '');
+			url.search += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+			url.search += '&limit=' + this.uiOpts.searchSuggLimit;
 			// Query server, delaying/ignoring if a request was recently sent
 			this.pendingSuggReqUrl = url.toString();
 			let doReq = () => {

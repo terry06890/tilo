@@ -10,18 +10,23 @@ hostname = "localhost"
 port = 8000
 dbFile = "data/data.db"
 imgDir = "../public/img/"
-SEARCH_SUGG_LIMIT = 5
+DEFAULT_SUGG_LIM = 5
+MAX_SUGG_LIM = 50
 
-usageInfo =  f"usage: {sys.argv[0]}\n"
-usageInfo += "Starts a server that listens for GET requests to http://" + hostname + ":" + str(port) + ".\n"
-usageInfo += "Responds to path+query /data/type1?name=name1 with JSON data.\n"
-usageInfo += "The 'name' parameter can be omitted, which specifies the root node.\n"
-usageInfo += "An additional query parameter tree=reduced is usable to get reduced-tree data.\n"
-usageInfo += "\n"
-usageInfo += "If type1 is 'node': Responds with a name-to-TolNode map, describing the node and it's children.\n"
-usageInfo += "If type1 is 'chain': Like 'node', but also gets nodes upward to the root, and their direct children.\n"
-usageInfo += "If type1 is 'search': Responds with a SearchSuggResponse.\n"
-usageInfo += "If type1 is 'info': Responds with an InfoResponse.\n"
+usageInfo = f"""
+Usage: {sys.argv[0]}
+
+Starts a server that listens for GET requests to http://" + hostname + ":" + str(port) + ".
+Responds to path+query /data/type1?name=name1 with JSON data.
+The 'name' parameter can be omitted, which specifies the root node.
+An additional query parameter tree=reduced is usable to get reduced-tree data.
+
+If type1 is 'node': Responds with a name-to-TolNode map, describing the node and it's children.
+If type1 is 'chain': Like 'node', but also gets nodes upward to the root, and their direct children.
+If type1 is 'search': Responds with a SearchSuggResponse.
+    A query parameter 'limit=n1' specifies the max number of suggestions (default 5).
+If type1 is 'info': Responds with an InfoResponse.
+"""
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -132,7 +137,7 @@ def lookupNodes(names, useReducedTree):
 		nameToNodes[name].commonName = altName
 	#
 	return nameToNodes
-def lookupName(searchStr, useReducedTree):
+def lookupName(searchStr, suggLimit, useReducedTree):
 	" For a search string, returns a SearchSuggResponse describing search suggestions "
 	global dbCon
 	cur = dbCon.cursor()
@@ -153,21 +158,21 @@ def lookupName(searchStr, useReducedTree):
 			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
 	# Join results, and get shortest
 	suggs = []
-	for (nodeName,) in cur.execute(query1, (searchStr + "%", SEARCH_SUGG_LIMIT + 1)):
+	for (nodeName,) in cur.execute(query1, (searchStr + "%", suggLimit + 1)):
 		suggs.append(SearchSugg(nodeName))
-	for (altName, nodeName) in cur.execute(query2, (searchStr + "%", SEARCH_SUGG_LIMIT + 1)):
+	for (altName, nodeName) in cur.execute(query2, (searchStr + "%", suggLimit + 1)):
 		suggs.append(SearchSugg(altName, nodeName))
 	# If insufficient results, try substring-search
 	foundNames = {n.name for n in suggs}
-	if len(suggs) < SEARCH_SUGG_LIMIT:
-		newLim = SEARCH_SUGG_LIMIT + 1 - len(suggs)
+	if len(suggs) < suggLimit:
+		newLim = suggLimit + 1 - len(suggs)
 		for (nodeName,) in cur.execute(query1, ("%" + searchStr + "%", newLim)):
 			if nodeName not in foundNames:
 				suggs.append(SearchSugg(nodeName))
 				foundNames.add(nodeName)
-	if len(suggs) < SEARCH_SUGG_LIMIT:
-		newLim = SEARCH_SUGG_LIMIT + 1 - len(suggs)
-		for (altName, nodeName) in cur.execute(query2, ("%" + searchStr + "%", SEARCH_SUGG_LIMIT + 1)):
+	if len(suggs) < suggLimit:
+		newLim = suggLimit + 1 - len(suggs)
+		for (altName, nodeName) in cur.execute(query2, ("%" + searchStr + "%", suggLimit + 1)):
 			if altName not in foundNames:
 				suggs.append(SearchSugg(altName, nodeName))
 				foundNames.add(altName)
@@ -175,8 +180,8 @@ def lookupName(searchStr, useReducedTree):
 	suggs.sort(key=lambda x: x.name)
 	suggs.sort(key=lambda x: len(x.name))
 	# Apply suggestion-quantity limit
-	results = suggs[:SEARCH_SUGG_LIMIT]
-	if len(suggs) > SEARCH_SUGG_LIMIT:
+	results = suggs[:suggLimit]
+	if len(suggs) > suggLimit:
 		hasMore = True
 	#
 	return SearchSuggResponse(results, hasMore)
@@ -287,8 +292,20 @@ class DbServer(BaseHTTPRequestHandler):
 					else:
 						name = tolNode.parent
 			elif reqType == "search":
-				self.respondJson(lookupName(name, useReducedTree))
-				return
+				# Check for suggestion-limit
+				suggLimit = None
+				invalidLimit = False
+				try:
+					suggLimit = int(queryDict["limit"][0]) if "limit" in queryDict else DEFAULT_SUGG_LIM
+					if suggLimit <= 0 or suggLimit > MAX_SUGG_LIM:
+						invalidLimit = True
+				except ValueError:
+					invalidLimit = True
+				print(f"Invalid limit {suggLimit}")
+				# Get search suggestions
+				if not invalidLimit:
+					self.respondJson(lookupName(name, suggLimit, useReducedTree))
+					return
 			elif reqType == "info":
 				infoResponse = lookupNodeInfo(name, useReducedTree)
 				if infoResponse != None:
