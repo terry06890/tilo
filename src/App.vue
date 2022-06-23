@@ -842,17 +842,25 @@ export default defineComponent({
 <template>
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
 	:style="{backgroundColor: uiOpts.appBgColor}">
-	<div class="flex bg-black">
-		<h1 class="text-white text-bold px-2">Title</h1>
+	<div class="flex bg-black shadow">
+		<h1 class="text-white px-4 my-auto text-2xl">Tree of Life</h1>
 		<!-- Icons -->
-		<search-icon @click="onSearchIconClick"
-			class="ml-auto mr-[6px] my-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
-		<play-icon @click="onPlayIconClick"
-			class="mr-[6px] my-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
-		<settings-icon @click="onSettingsIconClick"
-			class="mr-[6px] my-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
-		<help-icon @click="onHelpIconClick"
-			class="mr-[6px] my-[6px] w-[18px] h-[18px] text-white/40 hover:text-white hover:cursor-pointer"/>
+		<div class="ml-auto mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
+			hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onSearchIconClick">
+			<search-icon/>
+		</div>
+		<div class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
+			hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onPlayIconClick">
+			<play-icon/>
+		</div>
+		<div class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
+			hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onSettingsIconClick">
+			<settings-icon/>
+		</div>
+		<div class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
+			hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onHelpIconClick">
+			<help-icon/>
+		</div>
 	</div>
 	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
 		<transition name="fade">
