@@ -242,6 +242,7 @@ export default defineComponent({
 				fontSize: this.uiOpts.nonleafHeaderFontSz + 'px',
 				textAlign: 'center',
 				color: this.uiOpts.nonleafHeaderColor,
+				paddingLeft: '5px',
 				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',

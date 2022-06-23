@@ -10,15 +10,26 @@ export default defineComponent({
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object, required: true},
 	},
+	data(){
+		return {
+			optChgd: false,
+		};
+	},
 	methods: {
 		onCloseClick(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
-				this.saveSettings();
+				if (this.optChgd){
+					this.saveSettings();
+				}
 				this.$emit('close');
 			}
 		},
+		onOptChg(){
+			this.optChgd = true;
+		},
 		onLytOptChg(){
 			this.$emit('layout-setting-chg');
+			this.onOptChg();
 		},
 		onMinTileSzChg(){
 			let minInput = this.$refs.minTileSzInput as HTMLInputElement;
@@ -38,6 +49,7 @@ export default defineComponent({
 		},
 		onTreeChg(){
 			this.$emit('tree-chg');
+			this.onOptChg();
 		},
 		saveSettings(){
 			const savedLytOpts = ['tileSpacing', 'minTileSz', 'maxTileSz', 'layoutType', 'sweepMode', 'sweepToParent', ];
@@ -52,6 +64,7 @@ export default defineComponent({
 		},
 		onReset(){
 			localStorage.clear();
+			this.optChgd = false;
 			this.$emit('reset');
 			console.log('Settings reset');
 		},
@@ -71,21 +84,21 @@ export default defineComponent({
 		<hr class="border-stone-400"/>
 		<div>
 			<label>Tile Spacing <input type="range" min="0" max="20" class="mx-2 w-[3cm]"
-				v-model.number="lytOpts.tileSpacing" @input="onLytOptChg"/></label>
+				v-model.number="lytOpts.tileSpacing" @change="onLytOptChg"/></label>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>
 			<label>
 				<span class="inline-block w-[3cm]">Min Tile Size</span>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz" class="w-[3cm]"
-					@input="onMinTileSzChg" ref="minTileSzInput"/>
+					@change="onMinTileSzChg" ref="minTileSzInput"/>
 			</label>
 		</div>
 		<div>
 			<label>
 				<span class="inline-block w-[3cm]">Max Tile Size</span>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz" class="w-[3cm]"
-					@input="onMaxTileSzChg" ref="maxTileSzInput"/>
+					@change="onMaxTileSzChg" ref="maxTileSzInput"/>
 			</label>
 		</div>
 		<hr class="border-stone-400"/>
@@ -149,11 +162,12 @@ export default defineComponent({
 		<hr class="border-stone-400"/>
 		<div>
 			<label>Animation Duration <input type="range" min="0" max="3000" class="mx-2 w-[3cm]"
-				v-model.number="uiOpts.tileChgDuration"/></label>
+				v-model.number="uiOpts.tileChgDuration" @change="onOptChg"/></label>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>
-			<label> <input type="checkbox" v-model="uiOpts.jumpToSearchedNode"/> Jump to search result</label>
+			<label> <input type="checkbox" v-model="uiOpts.jumpToSearchedNode" @change="onOptChg"/>
+				Jump to search result</label>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>

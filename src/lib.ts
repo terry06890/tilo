@@ -47,6 +47,18 @@ export type Action =
  * General utility functions
  */
 
+export type Breakpoint = 'sm' | 'md' | 'lg'; // These represent screen sizes
+export function getBreakpoint(): Breakpoint {
+	let w = window.innerWidth;
+	if (w < 768){
+		return 'sm';
+	} else if (w < 1024){
+		return 'md';
+	} else {
+		return 'lg';
+	}
+}
+
 // Returns [0 ... len]
 export function range(len: number): number[] {
 	return [...Array(len).keys()];

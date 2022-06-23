@@ -21,7 +21,7 @@ import type {TolMap, Action} from './lib';
 import {LayoutNode} from './layout';
 import type {LayoutOptions, LayoutTreeChg} from './layout';
 // Functions
-import {arraySum, randWeightedChoice, getScrollBarWidth} from './lib';
+import {arraySum, randWeightedChoice, getScrollBarWidth, getBreakpoint} from './lib';
 import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
 
 // Type representing auto-mode actions
@@ -46,56 +46,62 @@ const initialTolMap: TolMap = new Map();
 initialTolMap.set("", new TolNode());
 
 // Configurable options
-const defaultLytOpts: LayoutOptions = {
-	tileSpacing: 8, //px
-	headerSz: 22, //px
-	minTileSz: 50, //px
-	maxTileSz: 200, //px
-	// Layout-algorithm related
-	layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
-	rectMode: 'auto first-row', //'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
-	sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
-	sweptNodesPrio: 'sqrt', //'linear' | 'sqrt' | 'pow-2/3'
-	sweepToParent: 'fallback', //'none' | 'prefer' | 'fallback'
-};
-const defaultUiOpts = {
-	// For tiles
-	borderRadius: 5, //px
-	shadowNormal: '0 0 2px black',
-	shadowHighlight: '0 0 1px 2px greenyellow',
-	shadowFocused: '0 0 1px 2px orange',
-	infoIconSz: 18, //px
-	infoIconMargin: 2, //px
-	childThresholds: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
-	headerColor: '#fafaf9',
-	// For leaf tiles
-	leafTilePadding: 4, //px
-	leafHeaderFontSz: 15, //px
-	// For non-leaf tiles
-	nonleafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
-	nonleafHeaderFontSz: 15, //px
-	nonleafHeaderColor: '#fafaf9',
-	nonleafHeaderBgColor: '#1c1917',
-	// For other components
-	appBgColor: '#292524',
-	tileAreaOffset: 5, //px (space between root tile and display boundary)
-	scrollGap: getScrollBarWidth(),
-	ancestryBarImgSz: defaultLytOpts.minTileSz * 2, //px
-	ancestryBarBgColor: '#44403c',
-	ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
-	infoModalImgSz: 200,
-	searchSuggLimit: 5,
-	autoWaitTime: 500, //ms (time to wait between actions (with their transitions))
-	tutorialPaneSz: 200,
-	tutorialPaneBgColor: '#1c1917',
-	tutorialPaneTextColor: 'white',
-	// Timing related
-	tileChgDuration: 300, //ms (for tile move/expand/collapse)
-	clickHoldDuration: 400, //ms (duration after mousedown when a click-and-hold is recognised)
-	// Other
-	useReducedTree: false,
-	jumpToSearchedNode: false,
-};
+function getDefaultLytOpts(): LayoutOptions {
+	let screenSz = getBreakpoint();
+	return {
+		tileSpacing: screenSz == 'sm' ? 6 : 10, //px
+		headerSz: 22, //px
+		minTileSz: 50, //px
+		maxTileSz: 200, //px
+		// Layout-algorithm related
+		layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
+		rectMode: 'auto first-row', //'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
+		sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
+		sweptNodesPrio: 'sqrt', //'linear' | 'sqrt' | 'pow-2/3'
+		sweepToParent: 'fallback', //'none' | 'prefer' | 'fallback'
+	};
+}
+function getDefaultUiOpts(){
+	let screenSz = getBreakpoint();
+	return {
+		// For tiles
+		borderRadius: 5, //px
+		shadowNormal: '0 0 2px black',
+		shadowHighlight: '0 0 1px 2px greenyellow',
+		shadowFocused: '0 0 1px 2px orange',
+		infoIconSz: 18, //px
+		infoIconMargin: 2, //px
+		childThresholds: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
+		headerColor: '#fafaf9',
+		// For leaf tiles
+		leafTilePadding: 4, //px
+		leafHeaderFontSz: 15, //px
+		// For non-leaf tiles
+		nonleafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
+		nonleafHeaderFontSz: 15, //px
+		nonleafHeaderColor: '#fafaf9',
+		nonleafHeaderBgColor: '#1c1917',
+		// For other components
+		appBgColor: '#292524',
+		tileAreaOffset: 5, //px (space between root tile and display boundary)
+		scrollGap: getScrollBarWidth(),
+		ancestryBarImgSz: 100, //px
+		ancestryBarBgColor: '#44403c',
+		ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
+		infoModalImgSz: 200,
+		searchSuggLimit: 5,
+		autoWaitTime: 500, //ms (time to wait between actions (with their transitions))
+		tutorialPaneSz: 200,
+		tutorialPaneBgColor: '#1c1917',
+		tutorialPaneTextColor: 'white',
+		// Timing related
+		tileChgDuration: 300, //ms (for tile move/expand/collapse)
+		clickHoldDuration: 400, //ms (duration after mousedown when a click-and-hold is recognised)
+		// Other
+		useReducedTree: false,
+		jumpToSearchedNode: false,
+	};
+}
 
 export default defineComponent({
 	data(){
@@ -570,6 +576,8 @@ export default defineComponent({
 			this.initTreeFromServer();
 		},
 		onResetSettings(){
+			let defaultLytOpts = getDefaultLytOpts();
+			let defaultUiOpts = getDefaultUiOpts();
 			if (this.uiOpts.useReducedTree != defaultUiOpts.useReducedTree){
 				this.onTreeChange();
 			}
@@ -671,7 +679,7 @@ export default defineComponent({
 		// Helper methods
 		initTreeFromServer(){
 			let urlPath = '/data/node';
-			urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+			urlPath += this.uiOpts.useReducedTree ? '?tree=reduced' : '';
 			fetch(urlPath)
 				.then(response => response.json())
 				.then(obj => {
@@ -704,7 +712,7 @@ export default defineComponent({
 				});
 		},
 		getLytOpts(){
-			let opts: {[x: string]: boolean|number|string} = {...defaultLytOpts};
+			let opts: {[x: string]: boolean|number|string} = getDefaultLytOpts();
 			for (let prop of Object.getOwnPropertyNames(opts)){
 				let item = localStorage.getItem('lyt ' + prop);
 				if (item != null){
@@ -719,7 +727,7 @@ export default defineComponent({
 			return opts;
 		},
 		getUiOpts(){
-			let opts: {[x: string]: boolean|number|string|string[]|(string|number)[][]} = {...defaultUiOpts};
+			let opts: {[x: string]: boolean|number|string|string[]|(string|number)[][]} = getDefaultUiOpts();
 			for (let prop of Object.getOwnPropertyNames(opts)){
 				let item = localStorage.getItem('ui ' + prop);
 				if (item != null){
