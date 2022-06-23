@@ -1,32 +1,34 @@
 <script lang="ts">
+
 import {defineComponent, PropType} from 'vue';
 // Components
 import Tile from './components/Tile.vue';
 import AncestryBar from './components/AncestryBar.vue';
-import TileInfoModal from './components/TileInfoModal.vue';
-import HelpModal from './components/HelpModal.vue';
-import SettingsModal from './components/SettingsModal.vue';
-import SearchModal from './components/SearchModal.vue';
 import TutorialPane from './components/TutorialPane.vue';
+import TileInfoModal from './components/TileInfoModal.vue';
+import SearchModal from './components/SearchModal.vue';
+import SettingsModal from './components/SettingsModal.vue';
+import HelpModal from './components/HelpModal.vue';
 // Icons
-import HelpIcon from './components/icon/HelpIcon.vue';
 import SearchIcon from './components/icon/SearchIcon.vue';
 import PlayIcon from './components/icon/PlayIcon.vue';
 import SettingsIcon from './components/icon/SettingsIcon.vue';
-// Other
-import type {TolMap} from './lib';
+import HelpIcon from './components/icon/HelpIcon.vue';
+// Classes and types
+	// Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 import {TolNode} from './lib';
-import {LayoutNode, initLayoutTree, initLayoutMap, tryLayout} from './layout';
+import type {TolMap, Action} from './lib';
+import {LayoutNode} from './layout';
 import type {LayoutOptions, LayoutTreeChg} from './layout';
+// Functions
 import {arraySum, randWeightedChoice, getScrollBarWidth} from './lib';
-import type {Action} from './lib';
-// Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
+import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
 
 // Type representing auto-mode actions
 type AutoAction = 'move across' | 'move down' | 'move up' | Action;
-// Used in auto-mode to help avoid action cycles
+// Function used in auto-mode to help avoid action cycles
 function getReverseAction(action: AutoAction): AutoAction | null {
-	let reversePairs: AutoAction[][] = [
+	const reversePairs: AutoAction[][] = [
 		['move down', 'move up'],
 		['expand', 'collapse'],
 		['expandToView', 'unhideAncestor'],
@@ -65,7 +67,7 @@ const defaultUiOpts = {
 	shadowFocused: '0 0 1px 2px orange',
 	infoIconSz: 18, //px
 	infoIconMargin: 2, //px
-	tipThresholds: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
+	childThresholds: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
 	headerColor: '#fafaf9',
 	// For leaf tiles
 	leafTilePadding: 4, //px
@@ -324,7 +326,7 @@ export default defineComponent({
 			});
 		},
 		// For tile-info events
-		onInfoIconClick(nodeName: string){
+		onInfoClick(nodeName: string){
 			if (!this.handleActionForTutorial('tileInfo')){
 				return;
 			}
@@ -341,7 +343,7 @@ export default defineComponent({
 			this.resetMode();
 			this.searchOpen = true;
 		},
-		onSearchNode(name: string){
+		onSearch(name: string){
 			if (this.modeRunning){
 				console.log("WARNING: Unexpected search event while search/auto mode is running")
 				return;
@@ -798,39 +800,39 @@ export default defineComponent({
 		<transition name="fade">
 			<tutorial-pane v-if="tutorialOpen" :height="uiOpts.tutorialPaneSz + 'px'"
 				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!welcomeOpen"
-				@tutorial-close="onTutorialClose" @tutorial-stage-chg="onTutStageChg"/>
+				@close="onTutorialClose" @stage-chg="onTutStageChg"/>
 		</transition>
 	</div>
 	<div :class="['flex', mainAreaDims[0] > mainAreaDims[1] ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">
 		<ancestry-bar v-if="detachedAncestors != null"
 			:nodes="detachedAncestors" :vert="mainAreaDims[0] > mainAreaDims[1]"
 			:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-			@detached-ancestor-click="onDetachedAncestorClick" @info-icon-click="onInfoIconClick"/>
+			@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
 		<div class="relative m-[5px] grow" ref="tileArea">
 			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 				:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
 				@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
 				@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
-				@info-icon-click="onInfoIconClick"/>
+				@info-click="onInfoClick"/>
 		</div>
 	</div>
 	<!-- Modals -->
 	<transition name="fade">
 		<search-modal v-if="searchOpen" :tolMap="tolMap" :uiOpts="uiOpts" ref="searchModal"
-			@search-close="searchOpen = false" @search-node="onSearchNode" @info-icon-click="onInfoIconClick"/>
+			@close="searchOpen = false" @search="onSearch" @info-click="onInfoClick"/>
 	</transition>
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null"
 			:nodeName="infoModalNodeName" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-			@info-modal-close="infoModalNodeName = null"/>
+			@close="infoModalNodeName = null"/>
 	</transition>
 	<transition name="fade">
 		<help-modal v-if="helpOpen" :uiOpts="uiOpts"
-			@help-modal-close="helpOpen = false" @start-tutorial="onStartTutorial"/>
+			@close="helpOpen = false" @start-tutorial="onStartTutorial"/>
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
-		@settings-close="settingsOpen = false" @reset-settings="onResetSettings"
-		@layout-option-change="relayoutWithCollapse" @tree-change="onTreeChange"/>
+		@close="settingsOpen = false" @reset="onResetSettings"
+		@layout-setting-chg="relayoutWithCollapse" @tree-chg="onTreeChange"/>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = false"></div>

@@ -36,7 +36,7 @@ export default defineComponent({
 	methods: {
 		onCloseClick(evt: Event){
 			if (evt.target == this.$el || (this.$refs.searchIcon as typeof SearchIcon).$el.contains(evt.target)){
-				this.$emit('search-close');
+				this.$emit('close');
 			}
 		},
 		onEnter(){
@@ -63,7 +63,7 @@ export default defineComponent({
 								this.tolMap.set(key, obj[key])
 							}
 						});
-						this.$emit('search-node', tolNodeName);
+						this.$emit('search', tolNodeName);
 					} else {
 						// Trigger failure animation
 						let input = this.$refs.searchInput as HTMLInputElement;
@@ -153,14 +153,14 @@ export default defineComponent({
 			}
 		},
 		onInfoIconClick(nodeName: string){
-			this.$emit('info-icon-click', nodeName);
+			this.$emit('info-click', nodeName);
 		},
 	},
 	mounted(){
 		(this.$refs.searchInput as HTMLInputElement).focus();
 	},
 	components: {SearchIcon, InfoIcon, },
-	emits: ['search-node', 'search-close', 'info-icon-click'],
+	emits: ['search', 'close', 'info-click'],
 });
 </script>
 

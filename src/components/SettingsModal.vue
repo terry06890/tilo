@@ -14,11 +14,11 @@ export default defineComponent({
 		onCloseClick(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
 				this.saveSettings();
-				this.$emit('settings-close');
+				this.$emit('close');
 			}
 		},
 		onLytOptChg(){
-			this.$emit('layout-option-change');
+			this.$emit('layout-setting-chg');
 		},
 		onMinTileSzChg(){
 			let minInput = this.$refs.minTileSzInput as HTMLInputElement;
@@ -37,7 +37,7 @@ export default defineComponent({
 			this.onLytOptChg();
 		},
 		onTreeChg(){
-			this.$emit('tree-change');
+			this.$emit('tree-chg');
 		},
 		saveSettings(){
 			const savedLytOpts = ['tileSpacing', 'minTileSz', 'maxTileSz', 'layoutType', 'sweepMode', 'sweepToParent', ];
@@ -52,12 +52,12 @@ export default defineComponent({
 		},
 		onReset(){
 			localStorage.clear();
-			this.$emit('reset-settings');
+			this.$emit('reset');
 			console.log('Settings reset');
 		},
 	},
 	components: {CloseIcon, RButton, },
-	emits: ['settings-close', 'layout-option-change', 'tree-change', 'reset-settings', ],
+	emits: ['close', 'layout-setting-chg', 'tree-chg', 'reset', ],
 });
 </script>
 

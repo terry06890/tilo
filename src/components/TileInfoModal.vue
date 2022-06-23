@@ -59,7 +59,7 @@ export default defineComponent({
 	methods: {
 		onCloseClick(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
-				this.$emit('info-modal-close');
+				this.$emit('close');
 			}
 		},
 		getImgStyles(imgName: string | null){
@@ -128,7 +128,7 @@ export default defineComponent({
 			});
 	},
 	components: {CloseIcon, Tile, },
-	emits: ['info-modal-close', ],
+	emits: ['close', ],
 });
 </script>
 

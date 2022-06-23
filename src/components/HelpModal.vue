@@ -11,16 +11,16 @@ export default defineComponent({
 	methods: {
 		onCloseClick(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
-				this.$emit('help-modal-close');
+				this.$emit('close');
 			}
 		},
 		onStartTutorial(){
 			this.$emit('start-tutorial');
-			this.$emit('help-modal-close');
+			this.$emit('close');
 		},
 	},
 	components: {CloseIcon, RButton, },
-	emits: ['help-modal-close', 'start-tutorial', ],
+	emits: ['close', 'start-tutorial', ],
 });
 </script>
 

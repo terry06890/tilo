@@ -181,7 +181,7 @@ export default defineComponent({
 		leafHeaderStyles(): Record<string,string> {
 			let numChildren = this.tolNode.children.length;
 			let headerColor = this.uiOpts.headerColor;
-			for (let [threshold, color] of this.uiOpts.tipThresholds){
+			for (let [threshold, color] of this.uiOpts.childThresholds){
 				if (numChildren >= threshold){
 					headerColor = color;
 				} else {
@@ -399,7 +399,7 @@ export default defineComponent({
 			this.$emit(this.isLeaf ? 'leaf-click-held' : 'nonleaf-click-held', this.layoutNode);
 		},
 		onInfoIconClick(evt: Event){
-			this.$emit('info-icon-click', this.layoutNode.name);
+			this.$emit('info-click', this.layoutNode.name);
 		},
 		// Mouse hover handling
 		onMouseEnter(evt: Event){
@@ -426,7 +426,7 @@ export default defineComponent({
 			this.$emit('nonleaf-click-held', node);
 		},
 		onInnerInfoIconClick(nodeName: string){
-			this.$emit('info-icon-click', nodeName);
+			this.$emit('info-click', nodeName);
 		},
 		onScroll(evt: Event){
 			if (this.pendingScrollHdlr == 0){
@@ -469,7 +469,7 @@ export default defineComponent({
 	},
 	name: 'tile', // Note: Need this to use self in template
 	components: {InfoIcon, },
-	emits: ['leaf-click', 'nonleaf-click', 'leaf-click-held', 'nonleaf-click-held', 'info-icon-click', ],
+	emits: ['leaf-click', 'nonleaf-click', 'leaf-click-held', 'nonleaf-click-held', 'info-click', ],
 });
 </script>
 
@@ -512,7 +512,7 @@ export default defineComponent({
 			:layoutNode="child" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" :overflownDim="overflownDim"
 			@leaf-click="onInnerLeafClick" @nonleaf-click="onInnerNonleafClick"
 			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
-			@info-icon-click="onInnerInfoIconClick"/>
+			@info-click="onInnerInfoIconClick"/>
 	</div>
 </div>
 </template>

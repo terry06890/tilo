@@ -48,10 +48,10 @@ export default defineComponent({
 	},
 	methods: {
 		onTileClick(node: LayoutNode){
-			this.$emit('detached-ancestor-click', node);
+			this.$emit('ancestor-click', node);
 		},
 		onInfoIconClick(data: string){
-			this.$emit('info-icon-click', data);
+			this.$emit('info-click', data);
 		},
 		onWheelEvt(evt: WheelEvent){
 			// Possibly convert vertical scroll to horizontal
@@ -71,7 +71,7 @@ export default defineComponent({
 		this.scrollToEnd();
 	},
 	components: {Tile, },
-	emits: ['detached-ancestor-click', 'info-icon-click', ],
+	emits: ['ancestor-click', 'info-click', ],
 });
 </script>
 
@@ -79,6 +79,6 @@ export default defineComponent({
 <div :style="styles" @wheel.stop="onWheelEvt">
 	<tile v-for="(node, idx) in usedNodes" :key="node.name" class="shrink-0"
 		:layoutNode="node" :tolMap="tolMap" :nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
-		@leaf-click="onTileClick(nodes[idx])" @info-icon-click="onInfoIconClick"/>
+		@leaf-click="onTileClick(nodes[idx])" @info-click="onInfoIconClick"/>
 </div>
 </template>

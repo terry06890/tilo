@@ -58,7 +58,7 @@ export default defineComponent({
 			this.sendEnabledFeatures();
 		},
 		onClose(){
-			this.$emit('tutorial-close');
+			this.$emit('close');
 		},
 		sendEnabledFeatures(){
 			const stageActions = [
@@ -72,7 +72,7 @@ export default defineComponent({
 			}
 			disabledActions.delete(stageActions[this.stage] as Action);
 			let triggerAction = stageActions[this.stage] as Action;
-			this.$emit('tutorial-stage-chg', disabledActions, triggerAction);
+			this.$emit('stage-chg', disabledActions, triggerAction);
 		},
 	},
 	created(){
@@ -81,7 +81,7 @@ export default defineComponent({
 		}
 	},
 	components: {CloseIcon, RButton, },
-	emits: ['tutorial-close', 'tutorial-stage-chg', ],
+	emits: ['close', 'stage-chg', ],
 });
 </script>
 
