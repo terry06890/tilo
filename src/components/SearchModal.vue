@@ -32,6 +32,28 @@ export default defineComponent({
 				margin: this.uiOpts.infoIconMargin + 'px',
 			};
 		},
+		suggDisplayStrings(): [string, string, string][] {
+			let result = [];
+			let input = this.$refs.searchInput.value;
+			// For each SearchSugg
+			for (let sugg of this.searchSuggs){
+				let idx = sugg.name.indexOf(input);
+				// Split suggestion text into parts before/within/after an input match
+				let strings;
+				if (idx != -1){
+					strings = [sugg.name.substring(0, idx), input, sugg.name.substring(idx + input.length)];
+				} else {
+					strings = [input, '', ''];
+				}
+				// Indicate a distinct canonical-name
+				if (sugg.canonicalName != null){
+					strings[2] += ` (aka ${sugg.canonicalName})`;
+				}
+				//
+				result.push(strings);
+			}
+			return result;
+		},
 	},
 	methods: {
 		onCloseClick(evt: Event){
@@ -178,10 +200,12 @@ export default defineComponent({
 					:style="{backgroundColor: idx == focusedSuggIdx ? '#a3a3a3' : 'white'}"
 					class="border p-1 hover:underline hover:cursor-pointer"
 					@click="resolveSearch(sugg.canonicalName || sugg.name)">
+					<span>{{suggDisplayStrings[idx][0]}}</span>
+					<span class="font-bold">{{suggDisplayStrings[idx][1]}}</span>
+					<span>{{suggDisplayStrings[idx][2]}}</span>
 					<info-icon :style="infoIconStyles"
 						class="float-right text-stone-500 hover:text-stone-900 hover:cursor-pointer"
 						@click.stop="onInfoIconClick(sugg.canonicalName || sugg.name)"/>
-					{{sugg.canonicalName == null ? sugg.name : `${sugg.name} (aka ${sugg.canonicalName})`}}
 				</div>
 				<div v-if="searchHasMoreSuggs" class="bg-white px-1 text-center border">...</div>
 			</div>
