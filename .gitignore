@@ -1,4 +1,3 @@
-/rem.not
 /package-lock.json
 /node_modules/
 /dist/
@@ -20,7 +19,6 @@
 /backend/data/enwiki/*.bz2
 /backend/data/enwiki/*.db
 /backend/data/enwiki/imgs/
-/backend/data/enwiki/.venv/
 /backend/data/imgList.txt
 /backend/data/pickedImgs/
 /backend/data/img/

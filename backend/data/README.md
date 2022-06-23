@@ -1,6 +1,6 @@
 This directory holds files used to generate data.db, which contains tree-of-life data.
 
-# Tables:
+# Tables
 ## Tree Structure data
 -   `nodes` <br>
     Format : `name TEXT PRIMARY KEY, id TEXT UNIQUE, tips INT` <br>
