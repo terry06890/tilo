@@ -193,7 +193,7 @@ export default defineComponent({
 				padding: this.uiOpts.leafTilePadding + 'px',
 				lineHeight: this.uiOpts.leafHeaderFontSz + 'px',
 				fontSize: this.uiOpts.leafHeaderFontSz + 'px',
-				fontStyle: this.tolNode.pSupport ? 'normal' : 'italic',
+				fontStyle: (this.tolNode.pSupport || this.tolNode.parent == null) ? 'normal' : 'italic',
 				color: headerColor,
 				// For ellipsis
 				overflow: 'hidden',
@@ -228,7 +228,7 @@ export default defineComponent({
 				borderTopLeftRadius: 'inherit',
 				borderTopRightRadius: 'inherit',
 				backgroundColor: this.uiOpts.nonleafHeaderBgColor,
-				fontStyle: this.tolNode.pSupport ? 'normal' : 'italic',
+				fontStyle: (this.tolNode.pSupport || this.tolNode.parent == null) ? 'normal' : 'italic',
 			};
 			if (this.isOverflownRoot){
 				styles = {

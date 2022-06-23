@@ -231,9 +231,6 @@ for (id, node) in nodeMap.items():
 		supportQty = len(nodeAnns["supported_by"]) if "supported_by" in nodeAnns else 0
 		conflictQty = len(nodeAnns["conflicts_with"]) if "conflicts_with" in nodeAnns else 0
 		node.pSupport = supportQty > 0 and conflictQty == 0
-	# Root node gets support
-	if node.parentId == None:
-		node.pSupport = True
 
 print("Creating nodes and edges tables")
 dbCon = sqlite3.connect(dbFile)
