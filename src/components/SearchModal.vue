@@ -57,7 +57,7 @@ export default defineComponent({
 	},
 	methods: {
 		onCloseClick(evt: Event){
-			if (evt.target == this.$el || (this.$refs.searchIcon as typeof SearchIcon).$el.contains(evt.target)){
+			if (evt.target == this.$el){
 				this.$emit('close');
 			}
 		},
@@ -70,6 +70,9 @@ export default defineComponent({
 			}
 		},
 		resolveSearch(tolNodeName: string){
+			if (tolNodeName == ''){
+				return;
+			}
 			// Asks server for nodes in parent-chain, updates tolMap, then emits search event
 			let url = new URL(window.location.href);
 			url.pathname = '/data/chain';
@@ -210,7 +213,7 @@ export default defineComponent({
 				<div v-if="searchHasMoreSuggs" class="bg-white px-1 text-center border">...</div>
 			</div>
 		</div>
-		<search-icon @click.stop="onEnter" ref="searchIcon"
+		<search-icon @click.stop="onEnter"
 			class="block w-8 h-8 ml-1 hover:cursor-pointer hover:bg-stone-200" />
 	</div>
 </div>
