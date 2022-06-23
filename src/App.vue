@@ -83,7 +83,7 @@ function getDefaultUiOpts(){
 		nonleafHeaderBgColor: '#1c1917',
 		// For other components
 		appBgColor: '#292524',
-		tileAreaOffset: 5, //px (space between root tile and display boundary)
+		tileAreaOffset: screenSz == 'sm' ? 6 : 10, //px (space between root tile and display boundary)
 		scrollGap: getScrollBarWidth(),
 		ancestryBarImgSz: 100, //px
 		ancestryBarBgColor: '#44403c',
@@ -889,7 +889,7 @@ export default defineComponent({
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
 	:style="{backgroundColor: uiOpts.appBgColor}">
 	<div class="flex bg-black shadow">
-		<h1 class="text-white px-4 my-auto text-2xl">Tree of Life</h1>
+		<h1 class="text-lime-500 px-4 my-auto text-2xl">Tree of Life</h1>
 		<!-- Icons -->
 		<div class="ml-auto mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
 			hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onSearchIconClick">
@@ -924,7 +924,7 @@ export default defineComponent({
 					@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
 			</transition>
 		</div>
-		<div class="relative m-[5px] grow" ref="tileArea">
+		<div class="relative grow" :style="{margin: uiOpts.tileAreaOffset + 'px'}" ref="tileArea">
 			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 				:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
 				@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
