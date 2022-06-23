@@ -77,16 +77,11 @@ export default defineComponent({
 				(this.layoutNode.sepSweptArea != null && this.layoutNode.sepSweptArea.sweptLeft);
 		},
 		displayName(): string {
-			if (this.tolNode.commonName != null){
-				let newName = capitalizeWords(this.tolNode.commonName)
-				if (/^['"].*['"]$/.test(newName) == false){
-					newName = "'" + newName + "'";
-				}
-				return newName;
-			} else {
-				return capitalizeWords(this.layoutNode.name);
+			let newName = capitalizeWords(this.tolNode.commonName || this.layoutNode.name);
+			if (!this.tolNode.pSupport && this.tolNode.parent != null){
+				newName += '*';
 			}
-			return capitalizeWords(this.tolNode.commonName || this.layoutNode.name);
+			return newName;
 		},
 		hasCompoundImage(): boolean {
 			return Array.isArray(this.tolNode.imgName);
@@ -193,7 +188,6 @@ export default defineComponent({
 				padding: this.uiOpts.leafTilePadding + 'px',
 				lineHeight: this.uiOpts.leafHeaderFontSz + 'px',
 				fontSize: this.uiOpts.leafHeaderFontSz + 'px',
-				fontStyle: (this.tolNode.pSupport || this.tolNode.parent == null) ? 'normal' : 'italic',
 				color: headerColor,
 				// For ellipsis
 				overflow: 'hidden',
@@ -228,7 +222,6 @@ export default defineComponent({
 				borderTopLeftRadius: 'inherit',
 				borderTopRightRadius: 'inherit',
 				backgroundColor: this.uiOpts.nonleafHeaderBgColor,
-				fontStyle: (this.tolNode.pSupport || this.tolNode.parent == null) ? 'normal' : 'italic',
 			};
 			if (this.isOverflownRoot){
 				styles = {
