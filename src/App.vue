@@ -166,6 +166,28 @@ export default defineComponent({
 				overflow: 'hidden',
 			};
 		},
+		ancestryBarContainerStyles(): Record<string,string> {
+			let ancestryBarBreadth = this.detachedAncestors == null ? 0 :
+				this.uiOpts.ancestryBarImgSz + this.uiOpts.ancestryTileMargin*2 + this.uiOpts.scrollGap;
+			let styles = {
+				minWidth: 'auto',
+				maxWidth: 'none',
+				minHeight: 'auto',
+				maxHeight: 'none',
+				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
+				overflow: 'hidden'
+			};
+			if (this.mainAreaDims[0] > this.mainAreaDims[1]){
+				styles.minWidth = ancestryBarBreadth + 'px';
+				styles.maxWidth = ancestryBarBreadth + 'px';
+				styles.transitionProperty = 'min-width, max-width';
+			} else {
+				styles.minHeight = ancestryBarBreadth + 'px';
+				styles.maxHeight = ancestryBarBreadth + 'px';
+				styles.transitionProperty = 'min-height, max-height';
+			}
+			return styles;
+		},
 	},
 	methods: {
 		// For tile expand/collapse events
@@ -266,6 +288,14 @@ export default defineComponent({
 			let doExpansion = () => {
 				LayoutNode.hideUpward(layoutNode, this.layoutMap);
 				this.activeRoot = layoutNode;
+				// Repeatedly relayout tiles during ancestry-bar transition
+				let timerId = setInterval(() => {
+					this.updateAreaDims().then(() => this.relayoutWithCollapse());
+				}, 100);
+				setTimeout(() => {
+					clearTimeout(timerId)
+				}, this.uiOpts.tileChgDuration + 100);
+				//
 				return this.updateAreaDims().then(() => {
 					this.overflownRoot = false;
 					let lytFnOpts = {
@@ -315,6 +345,14 @@ export default defineComponent({
 			}
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			this.activeRoot = layoutNode;
+			// Repeatedly relayout tiles during ancestry-bar transition
+			let timerId = setInterval(() => {
+				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+			}, 100);
+			setTimeout(() => {
+				clearTimeout(timerId)
+			}, this.uiOpts.tileChgDuration + 100);
+			//
 			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
 		onDetachedAncestorClick(layoutNode: LayoutNode, alsoCollapse = false){
@@ -324,6 +362,14 @@ export default defineComponent({
 			this.setLastFocused(null);
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
+			// Repeatedly relayout tiles during ancestry-bar transition
+			let timerId = setInterval(() => {
+				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+			}, 100);
+			setTimeout(() => {
+				clearTimeout(timerId)
+			}, this.uiOpts.tileChgDuration + 100);
+			//
 			if (alsoCollapse){
 				this.onNonleafClick(layoutNode, true);
 			}
@@ -616,7 +662,7 @@ export default defineComponent({
 				}, 100);
 				setTimeout(() => {
 					clearTimeout(timerId)
-				}, this.uiOpts.tileChgDuration);
+				}, this.uiOpts.tileChgDuration + 100);
 			}
 		},
 		onTutorialClose(){
@@ -629,7 +675,7 @@ export default defineComponent({
 			}, 100);
 			setTimeout(() => {
 				clearTimeout(timerId)
-			}, this.uiOpts.tileChgDuration);
+			}, this.uiOpts.tileChgDuration + 100);
 		},
 		onTutStageChg(disabledActions: Set<Action>, triggerAction: Action | null){
 			this.welcomeOpen = false;
@@ -870,10 +916,14 @@ export default defineComponent({
 		</transition>
 	</div>
 	<div :class="['flex', mainAreaDims[0] > mainAreaDims[1] ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">
-		<ancestry-bar v-if="detachedAncestors != null"
-			:nodes="detachedAncestors" :vert="mainAreaDims[0] > mainAreaDims[1]"
-			:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-			@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
+		<div :style="ancestryBarContainerStyles">
+			<transition name="fade">
+				<ancestry-bar v-if="detachedAncestors != null" class="w-full h-full"
+					:nodes="detachedAncestors" :vert="mainAreaDims[0] > mainAreaDims[1]"
+					:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+					@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
+			</transition>
+		</div>
 		<div class="relative m-[5px] grow" ref="tileArea">
 			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 				:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
