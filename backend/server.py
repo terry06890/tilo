@@ -15,14 +15,13 @@ SEARCH_SUGG_LIMIT = 5
 usageInfo =  f"usage: {sys.argv[0]}\n"
 usageInfo += "Starts a server that listens for GET requests to http://" + hostname + ":" + str(port) + ".\n"
 usageInfo += "Responds to path+query /data/type1?name=name1 with JSON data.\n"
-usageInfo += "The parameter 'name' can be omitted in order to specify the root node.\n"
+usageInfo += "The 'name' parameter can be omitted, which specifies the root node.\n"
 usageInfo += "An additional query parameter tree=reduced is usable to get reduced-tree data.\n"
 usageInfo += "\n"
-usageInfo += "If type1 is 'node': Responds with map from names to TolNode objects for node name1 and it's children.\n"
-usageInfo += "If type1 is 'chain': Like 'node', but gets nodes from name1 up to the root, and their direct children.\n"
-usageInfo += "If type1 is 'search': Responds with a SearchSuggResponse object.\n"
-usageInfo += "If type1 is 'info': Responds with a TileInfoResponse object.\n"
-usageInfo += "(Object type information can be found in src/)\n"
+usageInfo += "If type1 is 'node': Responds with a name-to-TolNode map, describing the node and it's children.\n"
+usageInfo += "If type1 is 'chain': Like 'node', but also gets nodes upward to the root, and their direct children.\n"
+usageInfo += "If type1 is 'search': Responds with a SearchSuggResponse.\n"
+usageInfo += "If type1 is 'info': Responds with an InfoResponse.\n"
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
@@ -49,14 +48,14 @@ class SearchSuggResponse:
 		self.suggs = searchSuggs # SearchSugg[]
 		self.hasMore = hasMore   # boolean
 class DescInfo:
-	" Represents a tol-node's associated description "
+	" Represents a node's associated description "
 	def __init__(self, text, wikiId, fromRedirect, fromDbp):
 		self.text = text                 # string
 		self.wikiId = wikiId             # number
 		self.fromRedirect = fromRedirect # boolean
 		self.fromDbp = fromDbp           # boolean
 class ImgInfo:
-	" Represents a tol-node's associated image "
+	" Represents a node's associated image "
 	def __init__(self, id, src, url, license, artist, credit):
 		self.id = id           # number
 		self.src = src         # string
@@ -78,12 +77,13 @@ dbCur = dbCon.cursor()
 query = "SELECT name FROM nodes LEFT JOIN edges ON nodes.name = edges.child WHERE edges.parent IS NULL LIMIT 1"
 (rootName,) = dbCur.execute(query).fetchone()
 
-# Some functions
+# Some helper functions
 def lookupNodes(names, useReducedTree):
+	" For a set of node names, returns a name-to-TolNode map that describes those nodes "
 	global dbCon
+	cur = dbCon.cursor()
 	# Get node info
 	nameToNodes = {}
-	cur = dbCon.cursor()
 	nodesTable = "nodes" if not useReducedTree else "r_nodes"
 	edgesTable = "edges" if not useReducedTree else "r_edges"
 	queryParamStr = ",".join(["?"] * len(names))
@@ -129,17 +129,17 @@ def lookupNodes(names, useReducedTree):
 	# Get preferred-name info
 	query = f"SELECT name, alt_name FROM names WHERE pref_alt = 1 AND name IN ({queryParamStr})"
 	for (name, altName) in cur.execute(query, names):
-		if altName != name:
-			nameToNodes[name].commonName = altName
+		nameToNodes[name].commonName = altName
 	#
 	return nameToNodes
-def lookupName(name, useReducedTree):
+def lookupName(searchStr, useReducedTree):
+	" For a search string, returns a SearchSuggResponse describing search suggestions "
 	global dbCon
 	cur = dbCon.cursor()
 	results = []
 	hasMore = False
 	# Get node names and alt-names
-	(query1, query2) = (None, None)
+	query1, query2 = (None, None)
 	if not useReducedTree:
 		query1 = "SELECT DISTINCT name FROM nodes" \
 			" WHERE name LIKE ? ORDER BY length(name) LIMIT ?"
@@ -153,37 +153,42 @@ def lookupName(name, useReducedTree):
 			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
 	# Join results, and get shortest
 	suggs = []
-	for (nodeName,) in cur.execute(query1, (name + "%", SEARCH_SUGG_LIMIT + 1)):
+	for (nodeName,) in cur.execute(query1, (searchStr + "%", SEARCH_SUGG_LIMIT + 1)):
 		suggs.append(SearchSugg(nodeName))
-	for (altName, nodeName) in cur.execute(query2, (name + "%", SEARCH_SUGG_LIMIT + 1)):
+	for (altName, nodeName) in cur.execute(query2, (searchStr + "%", SEARCH_SUGG_LIMIT + 1)):
 		suggs.append(SearchSugg(altName, nodeName))
 	# If insufficient results, try substring-search
 	foundNames = {n.name for n in suggs}
 	if len(suggs) < SEARCH_SUGG_LIMIT:
 		newLim = SEARCH_SUGG_LIMIT + 1 - len(suggs)
-		for (nodeName,) in cur.execute(query1, ("%" + name + "%", newLim)):
+		for (nodeName,) in cur.execute(query1, ("%" + searchStr + "%", newLim)):
 			if nodeName not in foundNames:
 				suggs.append(SearchSugg(nodeName))
 				foundNames.add(nodeName)
 	if len(suggs) < SEARCH_SUGG_LIMIT:
 		newLim = SEARCH_SUGG_LIMIT + 1 - len(suggs)
-		for (altName, nodeName) in cur.execute(query2, ("%" + name + "%", SEARCH_SUGG_LIMIT + 1)):
+		for (altName, nodeName) in cur.execute(query2, ("%" + searchStr + "%", SEARCH_SUGG_LIMIT + 1)):
 			if altName not in foundNames:
 				suggs.append(SearchSugg(altName, nodeName))
 				foundNames.add(altName)
-	#
+	# Sort results
 	suggs.sort(key=lambda x: x.name)
 	suggs.sort(key=lambda x: len(x.name))
+	# Apply suggestion-quantity limit
 	results = suggs[:SEARCH_SUGG_LIMIT]
 	if len(suggs) > SEARCH_SUGG_LIMIT:
 		hasMore = True
+	#
 	return SearchSuggResponse(results, hasMore)
 def lookupNodeInfo(name, useReducedTree):
+	" For a node name, returns an InfoResponse, or None "
 	global dbCon
 	cur = dbCon.cursor()
-	# Get node-object info
+	# Get node info
 	nameToNodes = lookupNodes([name], useReducedTree)
 	tolNode = nameToNodes[name] if name in nameToNodes else None
+	if tolNode == None:
+		return None
 	# Get node desc
 	descData = None
 	match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
@@ -202,33 +207,33 @@ def lookupNodeInfo(name, useReducedTree):
 		for (nodeName, desc, wikiId, redirected, fromDbp) in cur.execute(query, match.group(1,2)):
 			idx = 0 if nodeName == match.group(1) else 1
 			descData[idx] = DescInfo(desc, wikiId, redirected == 1, fromDbp == 1)
-	# Get img info
+	# Get image info
 	imgData = None
-	if tolNode != None:
-		if isinstance(tolNode.imgName, str):
-			otolId = tolNode.imgName[:-4] # Convert filename excluding .jpg suffix
-			query = "SELECT images.id, images.src, url, license, artist, credit FROM" \
-				" nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
-				" INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
-				" WHERE nodes.id = ?"
-			(imgId, imgSrc, url, license, artist, credit) = cur.execute(query, (otolId,)).fetchone()
-			imgData = ImgInfo(imgId, imgSrc, url, license, artist, credit)
-		elif isinstance(tolNode.imgName, list):
-			# Get info for compound-image parts
-			imgData = [None, None]
-			idsToLookup = [n[:-4] for n in tolNode.imgName if n != None]
-			query = "SELECT nodes.id, images.id, images.src, url, license, artist, credit FROM" \
-				" nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
-				" INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
-				" WHERE nodes.id IN ({})".format(",".join(["?"] * len(idsToLookup)))
-			for (imgOtolId, imgId, imgSrc, url, license, artist, credit) in cur.execute(query, idsToLookup):
-				imgName1 = tolNode.imgName[0]
-				idx = 0 if (imgName1 != None and imgOtolId == imgName1[:-4]) else 1
-				imgData[idx] = ImgInfo(imgId, imgSrc, url, license, artist, credit)
+	if isinstance(tolNode.imgName, str):
+		otolId = tolNode.imgName[:-4] # Convert filename excluding .jpg suffix
+		query = "SELECT images.id, images.src, url, license, artist, credit FROM" \
+			" nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
+			" INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
+			" WHERE nodes.id = ?"
+		(imgId, imgSrc, url, license, artist, credit) = cur.execute(query, (otolId,)).fetchone()
+		imgData = ImgInfo(imgId, imgSrc, url, license, artist, credit)
+	elif isinstance(tolNode.imgName, list):
+		# Get info for compound-image parts
+		imgData = [None, None]
+		idsToLookup = [n[:-4] for n in tolNode.imgName if n != None]
+		query = "SELECT nodes.id, images.id, images.src, url, license, artist, credit FROM" \
+			" nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
+			" INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
+			" WHERE nodes.id IN ({})".format(",".join(["?"] * len(idsToLookup)))
+		for (imgOtolId, imgId, imgSrc, url, license, artist, credit) in cur.execute(query, idsToLookup):
+			imgName1 = tolNode.imgName[0]
+			idx = 0 if (imgName1 != None and imgOtolId == imgName1[:-4]) else 1
+			imgData[idx] = ImgInfo(imgId, imgSrc, url, license, artist, credit)
 	#
 	return InfoResponse(tolNode, descData, imgData)
 
 class DbServer(BaseHTTPRequestHandler):
+	" Provides handlers for requests to the server "
 	def do_GET(self):
 		global rootName
 		# Parse URL
@@ -265,7 +270,7 @@ class DbServer(BaseHTTPRequestHandler):
 						break
 					tolNode = tolNodes[name]
 					results[name] = tolNode
-					# Conditionally add children
+					# Potentially add children
 					if not ranOnce:
 						ranOnce = True
 					else:
@@ -285,8 +290,10 @@ class DbServer(BaseHTTPRequestHandler):
 				self.respondJson(lookupName(name, useReducedTree))
 				return
 			elif reqType == "info":
-				self.respondJson(lookupNodeInfo(name, useReducedTree))
-				return
+				infoResponse = lookupNodeInfo(name, useReducedTree)
+				if infoResponse != None:
+					self.respondJson(infoResponse)
+					return
 		self.send_response(404)
 	def respondJson(self, val):
 		content = jsonpickle.encode(val, unpicklable=False).encode("utf-8")
