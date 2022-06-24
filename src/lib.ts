@@ -42,6 +42,51 @@ export type TileInfoResponse = {
 export type Action =
 	'expand' | 'collapse' | 'expandToView' | 'unhideAncestor' |
 	'tileInfo' | 'search' | 'autoMode' | 'settings' | 'help';
+//
+export type UiOptions = {
+	// Shared styling
+	borderRadius: number, // CSS border-radius value, in px
+	shadowNormal: string, // CSS box-shadow value
+	shadowHighlight: string,
+	shadowFocused: string,
+	// Styling for App
+	appBgColor: string, // CSS color
+	tileAreaOffset: number, // Space between root tile and display boundary, in px
+	// Styling for tiles
+	headerColor: string, // CSS color
+	childThresholds: [number, string][],
+		// Specifies, for an increasing sequence of minimum-child-quantity values, CSS color to use
+		//eg: [[1, 'green'], [10, 'orange'], [100, 'red']]
+	infoIconSz: number, // px
+	infoIconMargin: number, // px
+	leafTilePadding: number, // px
+	leafHeaderFontSz: number, // px
+	nonleafBgColors: string[],
+		// Specifies CSS colors to use at various tree depths
+		// With N strings, tiles at depth M use the color at index M % N
+	nonleafHeaderFontSz: number, // px
+	nonleafHeaderColor: string, // CSS color
+	nonleafHeaderBgColor: string, // CSS color
+	// Styling for other components
+	infoModalImgSz: number, // px
+	ancestryBarBgColor: string, // CSS color
+	ancestryBarImgSz: number, // px
+	ancestryTileMargin: number, // px (gap between detached-ancestor tiles)
+	tutorialPaneSz: number, // px
+	tutorialPaneBgColor: string, // CSS color
+	tutorialPaneTextColor: string, // CSS color
+	// Timing related
+	clickHoldDuration: number, // Time after mousedown when a click-and-hold is recognised, in ms
+	tileChgDuration: number, // Transition time for tile_move/etc, in ms
+	autoWaitTime: number, // Time between actions, in ms
+	// Other
+	useReducedTree: boolean,
+	searchSuggLimit: number, // Max number of search suggestions
+	jumpToSearchedNode: boolean,
+	tutorialSkip: boolean,
+	disabledActions: Set<Action>,
+	scrollGap: number, // Size of scroll bar, in px
+};
 
 /*
  * General utility functions

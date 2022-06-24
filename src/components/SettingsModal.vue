@@ -2,13 +2,14 @@
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import RButton from './RButton.vue';
-import type {LayoutOptions} from '../layout';
+import {LayoutOptions} from '../layout';
+import {UiOptions} from '../lib';
 
 // Displays configurable options, and sends option-change requests
 export default defineComponent({
 	props: {
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
-		uiOpts: {type: Object, required: true},
+		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
 	data(){
 		return {

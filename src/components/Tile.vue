@@ -1,10 +1,8 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import InfoIcon from './icon/InfoIcon.vue';
-import {LayoutNode} from '../layout';
-import type {LayoutOptions} from '../layout';
-import type {TolMap} from '../lib';
-import {TolNode} from '../lib';
+import {LayoutNode, LayoutOptions} from '../layout';
+import {TolNode, TolMap, UiOptions} from '../lib';
 import {capitalizeWords} from '../lib';
 
 // Displays one, or a hierarchy of, tree-of-life nodes, as a 'tile'
@@ -14,7 +12,7 @@ export default defineComponent({
 		tolMap: {type: Object as PropType<TolMap>, required: true},
 		// Options
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
-		uiOpts: {type: Object, required: true},
+		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 		// Other
 		skipTransition: {type: Boolean, default: false},
 		nonAbsPos: {type: Boolean, default: false},

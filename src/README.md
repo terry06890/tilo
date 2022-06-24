@@ -3,12 +3,12 @@
 -   App.vue: The main Vue component.
 -   components:
     -   Tile.vue:          Displays a tree-of-life node, and can include child nodes.
-    -   AncestryBar.vue:   Displays ancestors of the top-level Tile.
-    -   TutorialPane.vue:  Displays tutorial content.
     -   TileInfoModal.vue: Modal displaying info about a Tile's node.
     -   SearchModal.vue:   Modal with a search bar.
     -   SettingsModal:     Modal displaying configurable settings.
     -   HelpModal.vue:     Modal displaying help info.
+    -   AncestryBar.vue:   Displays ancestors of the top-level Tile.
+    -   TutorialPane.vue:  Displays tutorial content.
     -   RButton.vue:       Basic button component.
     -   icon:              Contains components that display SVG icons.
 -   layout.ts: Contains code for laying out Tiles.

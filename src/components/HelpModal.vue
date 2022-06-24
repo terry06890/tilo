@@ -2,11 +2,12 @@
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import RButton from './RButton.vue';
+import {UiOptions} from '../lib';
 
 // Displays help information
 export default defineComponent({
 	props: {
-		uiOpts: {type: Object, required: true},
+		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
 	methods: {
 		onCloseClick(evt: Event){

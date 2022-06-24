@@ -6,7 +6,7 @@
  * find a tile-based layout, filling in node fields to represent placement.
  */
 
-import type {TolMap} from './lib';
+import {TolMap} from './lib';
 import {range, arraySum, linspace, limitVals, updateAscSeq} from './lib';
 
 // Represents a node/tree that holds layout data for a TolNode node/tree

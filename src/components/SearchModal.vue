@@ -4,7 +4,7 @@ import SearchIcon from './icon/SearchIcon.vue';
 import LogInIcon from './icon/LogInIcon.vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode} from '../layout';
-import type {TolMap, SearchSugg, SearchSuggResponse} from '../lib';
+import {TolMap, SearchSugg, SearchSuggResponse, UiOptions} from '../lib';
 
 // Displays a search box, and sends search requests
 export default defineComponent({
@@ -20,7 +20,7 @@ export default defineComponent({
 	},
 	props: {
 		tolMap: {type: Object as PropType<TolMap>, required: true},
-		uiOpts: {type: Object, required: true},
+		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
 	computed: {
 		infoIconStyles(): Record<string,string> {

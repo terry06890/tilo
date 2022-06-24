@@ -2,10 +2,8 @@
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import Tile from './Tile.vue'
-import {LayoutNode} from '../layout';
-import type {LayoutOptions} from '../layout';
-import type {TolMap} from '../lib';
-import {TolNode, DescInfo, ImgInfo, TileInfoResponse} from '../lib';
+import {LayoutNode, LayoutOptions} from '../layout';
+import {TolNode, TolMap, UiOptions, DescInfo, ImgInfo, TileInfoResponse} from '../lib';
 import {capitalizeWords} from '../lib';
 
 // Displays information about a tree-of-life node
@@ -25,7 +23,7 @@ export default defineComponent({
 		nodeName: {type: String, required: true},
 		tolMap: {type: Object as PropType<TolMap>, required: true},
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
-		uiOpts: {type: Object, required: true},
+		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
 	computed: {
 		displayName(): string {

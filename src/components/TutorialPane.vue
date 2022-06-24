@@ -2,11 +2,11 @@
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import RButton from './RButton.vue';
-import {Action} from '../lib';
+import {Action, UiOptions} from '../lib';
 
 export default defineComponent({
 	props: {
-		uiOpts: {type: Object, required: true},
+		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 		triggerFlag: {type: Boolean, required: true},
 		skipWelcome: {type: Boolean, default: false},
 		height: {type: String, default: 'auto'},
@@ -73,7 +73,7 @@ export default defineComponent({
 			let disabledActions = this.uiOpts.disabledActions;
 			let currentAction = stageActions[this.stage];
 			for (let i = 1; i <= this.maxStage; i++){
-				let action = stageActions[i];
+				let action = stageActions[i] as Action;
 				if (i <= this.stage){
 					if (disabledActions.has(action)){
 						disabledActions.delete(action);

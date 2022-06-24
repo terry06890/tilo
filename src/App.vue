@@ -16,10 +16,8 @@ import SettingsIcon from './components/icon/SettingsIcon.vue';
 import HelpIcon from './components/icon/HelpIcon.vue';
 // Classes and types
 	// Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
-import {TolNode} from './lib';
-import type {TolMap, Action} from './lib';
-import {LayoutNode} from './layout';
-import type {LayoutOptions, LayoutTreeChg} from './layout';
+import {TolNode, TolMap, UiOptions, Action} from './lib';
+import {LayoutNode, LayoutOptions, LayoutTreeChg} from './layout';
 // Functions
 import {arraySum, randWeightedChoice, getScrollBarWidth, getBreakpoint} from './lib';
 import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
@@ -65,44 +63,44 @@ function getDefaultLytOpts(): LayoutOptions {
 function getDefaultUiOpts(){
 	let screenSz = getBreakpoint();
 	return {
-		// For tiles
+		// Shared styling
 		borderRadius: 5, //px
 		shadowNormal: '0 0 2px black',
 		shadowHighlight: '0 0 1px 2px greenyellow',
 		shadowFocused: '0 0 1px 2px orange',
+		// Styling for App
+		appBgColor: '#292524',
+		tileAreaOffset: screenSz == 'sm' ? 6 : 10, //px (space between root tile and display boundary)
+		// Styling for tiles
+		headerColor: '#fafaf9',
+		childThresholds: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
 		infoIconSz: 18, //px
 		infoIconMargin: 2, //px
-		childThresholds: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
-		headerColor: '#fafaf9',
-		// For leaf tiles
 		leafTilePadding: 4, //px
 		leafHeaderFontSz: 15, //px
-		// For non-leaf tiles
 		nonleafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
 		nonleafHeaderFontSz: 15, //px
 		nonleafHeaderColor: '#fafaf9',
 		nonleafHeaderBgColor: '#1c1917',
-		// For other components
-		appBgColor: '#292524',
-		tileAreaOffset: screenSz == 'sm' ? 6 : 10, //px (space between root tile and display boundary)
-		scrollGap: getScrollBarWidth(),
-		ancestryBarImgSz: 100, //px
-		ancestryBarBgColor: '#44403c',
-		ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
+		// Styling for other components
 		infoModalImgSz: 200,
-		searchSuggLimit: 5,
-		autoWaitTime: 500, //ms (time to wait between actions (with their transitions))
+		ancestryBarBgColor: '#44403c',
+		ancestryBarImgSz: 100, //px
+		ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
 		tutorialPaneSz: 200,
 		tutorialPaneBgColor: '#1c1917',
 		tutorialPaneTextColor: 'white',
-		tutorialSkip: false,
 		// Timing related
-		tileChgDuration: 300, //ms (for tile move/expand/collapse)
 		clickHoldDuration: 400, //ms (duration after mousedown when a click-and-hold is recognised)
+		tileChgDuration: 300, //ms (for tile move/expand/collapse)
+		autoWaitTime: 500, //ms (time to wait between actions (with their transitions))
 		// Other
 		useReducedTree: false,
+		searchSuggLimit: 5,
 		jumpToSearchedNode: false,
+		tutorialSkip: false,
 		disabledActions: new Set() as Set<Action>,
+		scrollGap: getScrollBarWidth(),
 	};
 }
 
