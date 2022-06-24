@@ -95,6 +95,7 @@ function getDefaultUiOpts(){
 		tutorialPaneSz: 200,
 		tutorialPaneBgColor: '#1c1917',
 		tutorialPaneTextColor: 'white',
+		tutorialSkip: false,
 		// Timing related
 		tileChgDuration: 300, //ms (for tile move/expand/collapse)
 		clickHoldDuration: 400, //ms (duration after mousedown when a click-and-hold is recognised)
@@ -109,6 +110,8 @@ export default defineComponent({
 	data(){
 		let layoutTree = initLayoutTree(initialTolMap, "", 0);
 		layoutTree.hidden = true;
+		let lytOpts = this.getLytOpts();
+		let uiOpts = this.getUiOpts();
 		return {
 			tolMap: initialTolMap,
 			layoutTree: layoutTree,
@@ -120,8 +123,8 @@ export default defineComponent({
 			helpOpen: false,
 			searchOpen: false,
 			settingsOpen: false,
-			tutorialOpen: true,
-			welcomeOpen: true,
+			tutorialOpen: !uiOpts.tutorialSkip,
+			welcomeOpen: !uiOpts.tutorialSkip,
 			ancestryBarInTransition: false,
 			tutTriggerAction: null as Action | null,
 			tutTriggerFlag: false,
@@ -133,8 +136,8 @@ export default defineComponent({
 			autoPrevAction: null as AutoAction | null, // Used to help prevent action cycles
 			autoPrevActionFail: false, // Used to avoid re-trying a failed expand/collapse
 			// Options
-			lytOpts: this.getLytOpts(),
-			uiOpts: this.getUiOpts(),
+			lytOpts: lytOpts,
+			uiOpts: uiOpts,
 			// For layout and resize-handling
 			mainAreaDims: [0, 0] as [number, number],
 			tileAreaDims: [0, 0] as [number, number],
@@ -684,6 +687,9 @@ export default defineComponent({
 				}
 			}, 100);
 		},
+		onTutorialSkip(){
+			localStorage.setItem('ui tutorialSkip', String(true));
+		},
 		onTutStageChg(triggerAction: Action | null){
 			this.welcomeOpen = false;
 			this.tutTriggerAction = triggerAction;
@@ -926,7 +932,7 @@ export default defineComponent({
 		<transition name="fade" @after-enter="tutPaneTransitionEnd" @after-leave="tutPaneTransitionEnd">
 			<tutorial-pane v-if="tutorialOpen" :height="uiOpts.tutorialPaneSz + 'px'"
 				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!welcomeOpen"
-				@close="onTutorialClose" @stage-chg="onTutStageChg"/>
+				@close="onTutorialClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
 		</transition>
 	</div>
 	<div :class="['flex', mainAreaDims[0] > mainAreaDims[1] ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">

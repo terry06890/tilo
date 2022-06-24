@@ -49,6 +49,10 @@ export default defineComponent({
 			this.stage = 1;
 			this.setEnabledFeatures();
 		},
+		onSkipTutorial(){
+			this.$emit('skip');
+			this.$emit('close');
+		},
 		onPrevClick(){
 			this.stage = Math.max(1, this.stage - 1);
 			this.setEnabledFeatures();
@@ -90,7 +94,7 @@ export default defineComponent({
 		}
 	},
 	components: {CloseIcon, RButton, },
-	emits: ['close', 'stage-chg', ],
+	emits: ['close', 'stage-chg', 'skip', ],
 });
 </script>
 
@@ -112,8 +116,8 @@ export default defineComponent({
 			<r-button class="bg-stone-800 text-white" @click="onStartTutorial">
 				Start Tutorial
 			</r-button>
-			<r-button class="bg-stone-800 text-white" @click="onClose">
-				Close
+			<r-button class="bg-stone-800 text-white" @click="onSkipTutorial">
+				Skip
 			</r-button>
 		</div>
 	</template>
