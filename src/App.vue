@@ -122,8 +122,10 @@ export default defineComponent({
 			tutorialOpen: true,
 			welcomeOpen: true,
 			disabledActions: new Set(),
+			ancestryBarInTransition: false,
 			tutTriggerAction: null as Action | null,
 			tutTriggerFlag: false,
+			tutPaneInTransition: false,
 			// For search and auto-mode
 			modeRunning: false,
 			lastFocused: null as LayoutNode | null,
@@ -291,12 +293,13 @@ export default defineComponent({
 				LayoutNode.hideUpward(layoutNode, this.layoutMap);
 				this.activeRoot = layoutNode;
 				// Repeatedly relayout tiles during ancestry-bar transition
+				this.ancestryBarInTransition = true;
 				let timerId = setInterval(() => {
 					this.updateAreaDims().then(() => this.relayoutWithCollapse());
+					if (!this.ancestryBarInTransition){
+						clearTimeout(timerId);
+					}
 				}, 100);
-				setTimeout(() => {
-					clearTimeout(timerId)
-				}, this.uiOpts.tileChgDuration + 100);
 				//
 				return this.updateAreaDims().then(() => {
 					this.overflownRoot = false;
@@ -348,12 +351,13 @@ export default defineComponent({
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			this.activeRoot = layoutNode;
 			// Repeatedly relayout tiles during ancestry-bar transition
+			this.ancestryBarInTransition = true;
 			let timerId = setInterval(() => {
 				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+				if (!this.ancestryBarInTransition){
+					clearTimeout(timerId);
+				}
 			}, 100);
-			setTimeout(() => {
-				clearTimeout(timerId)
-			}, this.uiOpts.tileChgDuration + 100);
 			//
 			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
@@ -365,12 +369,13 @@ export default defineComponent({
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
 			// Repeatedly relayout tiles during ancestry-bar transition
+			this.ancestryBarInTransition = true;
 			let timerId = setInterval(() => {
 				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+				if (!this.ancestryBarInTransition){
+					clearTimeout(timerId);
+				}
 			}, 100);
-			setTimeout(() => {
-				clearTimeout(timerId)
-			}, this.uiOpts.tileChgDuration + 100);
 			//
 			if (alsoCollapse){
 				this.onNonleafClick(layoutNode, true);
@@ -657,12 +662,13 @@ export default defineComponent({
 			if (this.tutorialOpen == false){
 				this.tutorialOpen = true;
 				// Repeatedly relayout tiles during tutorial-pane transition
+				this.tutPaneInTransition = true;
 				let timerId = setInterval(() => {
 					this.updateAreaDims().then(() => this.relayoutWithCollapse());
+					if (!this.tutPaneInTransition){
+						clearTimeout(timerId);
+					}
 				}, 100);
-				setTimeout(() => {
-					clearTimeout(timerId)
-				}, this.uiOpts.tileChgDuration + 100);
 			}
 		},
 		onTutorialClose(){
@@ -670,12 +676,13 @@ export default defineComponent({
 			this.welcomeOpen = false;
 			this.disabledActions.clear();
 			// Repeatedly relayout tiles during tutorial-pane transition
+			this.tutPaneInTransition = true;
 			let timerId = setInterval(() => {
 				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+				if (!this.tutPaneInTransition){
+					clearTimeout(timerId);
+				}
 			}, 100);
-			setTimeout(() => {
-				clearTimeout(timerId)
-			}, this.uiOpts.tileChgDuration + 100);
 		},
 		onTutStageChg(disabledActions: Set<Action>, triggerAction: Action | null){
 			this.welcomeOpen = false;
@@ -867,6 +874,12 @@ export default defineComponent({
 				this.tileAreaDims = [tileAreaEl.offsetWidth, tileAreaEl.offsetHeight];
 			});
 		},
+		ancestryBarTransitionEnd(){
+			this.ancestryBarInTransition = false;
+		},
+		tutPaneTransitionEnd(){
+			this.tutPaneInTransition = false;
+		},
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
@@ -909,7 +922,7 @@ export default defineComponent({
 		</div>
 	</div>
 	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
-		<transition name="fade">
+		<transition name="fade" @after-enter="tutPaneTransitionEnd" @after-leave="tutPaneTransitionEnd">
 			<tutorial-pane v-if="tutorialOpen" :height="uiOpts.tutorialPaneSz + 'px'"
 				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!welcomeOpen"
 				@close="onTutorialClose" @stage-chg="onTutStageChg"/>
@@ -917,7 +930,7 @@ export default defineComponent({
 	</div>
 	<div :class="['flex', mainAreaDims[0] > mainAreaDims[1] ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">
 		<div :style="ancestryBarContainerStyles">
-			<transition name="fade">
+			<transition name="fade" @after-enter="ancestryBarTransitionEnd" @after-leave="ancestryBarTransitionEnd">
 				<ancestry-bar v-if="detachedAncestors != null" class="w-full h-full"
 					:nodes="detachedAncestors" :vert="mainAreaDims[0] > mainAreaDims[1]"
 					:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
