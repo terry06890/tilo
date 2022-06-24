@@ -295,9 +295,11 @@ export default defineComponent({
 			let doExpansion = () => {
 				LayoutNode.hideUpward(layoutNode, this.layoutMap);
 				this.activeRoot = layoutNode;
-				// Repeatedly relayout tiles during ancestry-bar transition
-				this.ancestryBarInTransition = true;
-				this.relayoutDuringAncestryBarTransition();
+				if (this.detachedAncestors.length == 0){
+					// Repeatedly relayout tiles during ancestry-bar transition
+					this.ancestryBarInTransition = true;
+					this.relayoutDuringAncestryBarTransition();
+				}
 				//
 				return this.updateAreaDims().then(() => {
 					this.overflownRoot = false;
@@ -350,8 +352,10 @@ export default defineComponent({
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			this.activeRoot = layoutNode;
 			// Repeatedly relayout tiles during ancestry-bar transition
-			this.ancestryBarInTransition = true;
-			this.relayoutDuringAncestryBarTransition();
+			if (this.detachedAncestors.length == 0){
+				this.ancestryBarInTransition = true;
+				this.relayoutDuringAncestryBarTransition();
+			}
 			//
 			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
@@ -364,8 +368,10 @@ export default defineComponent({
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
 			// Repeatedly relayout tiles during ancestry-bar transition
-			this.ancestryBarInTransition = true;
-			this.relayoutDuringAncestryBarTransition();
+			if (layoutNode.parent == null){
+				this.ancestryBarInTransition = true;
+				this.relayoutDuringAncestryBarTransition();
+			}
 			//
 			if (alsoCollapse){
 				this.onNonleafClick(layoutNode, true);
@@ -870,8 +876,11 @@ export default defineComponent({
 				}
 			}, 100);
 			setTimeout(() => {
-				clearTimeout(timerId);
-				console.log('Reached timeout waiting for transition-end event');
+				if (this.ancestryBarInTransition){
+					this.ancestryBarInTransition = false;
+					clearTimeout(timerId);
+					console.log('Reached timeout waiting for ancestry-bar transition-end event');
+				}
 			}, this.uiOpts.tileChgDuration * 3);
 		},
 		tutPaneTransitionEnd(){
@@ -885,8 +894,11 @@ export default defineComponent({
 				}
 			}, 100);
 			setTimeout(() => {
-				clearTimeout(timerId);
-				console.log('Reached timeout waiting for transition-end event');
+				if (this.tutPaneInTransition){
+					this.tutPaneInTransition = false;
+					clearTimeout(timerId);
+					console.log('Reached timeout waiting for tutorial-pane transition-end event');
+				}
 			}, this.uiOpts.tileChgDuration * 3);
 		},
 	},
