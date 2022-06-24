@@ -483,7 +483,7 @@ export default defineComponent({
 		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
 		<template v-if="!hasCompoundImage">
 			<h1 :style="leafHeaderStyles">{{displayName}}</h1>
-			<info-icon :style="infoIconStyles"
+			<info-icon v-if="!uiOpts.disabledActions.has('tileInfo')" :style="infoIconStyles"
 				class="text-white/10 hover:text-white hover:cursor-pointer"
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</template>
@@ -491,7 +491,7 @@ export default defineComponent({
 			<div :style="leafFirstImgStyles" class="col-start-1 row-start-1"></div>
 			<div :style="leafSecondImgStyles" class="col-start-1 row-start-1"></div>
 			<h1 :style="leafHeaderStyles" class="col-start-1 row-start-1 z-10">{{displayName}}</h1>
-			<info-icon :style="infoIconStyles"
+			<info-icon v-if="!uiOpts.disabledActions.has('tileInfo')" :style="infoIconStyles"
 				class="col-start-1 row-start-1 z-10 text-white/10 hover:text-white hover:cursor-pointer"
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</template>
@@ -500,7 +500,8 @@ export default defineComponent({
 		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
 			<h1 :style="nonleafHeaderTextStyles" class="grow">{{displayName}}</h1>
-			<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
+			<info-icon v-if="!uiOpts.disabledActions.has('tileInfo')"
+				:style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</div>
 		<div :style="sepSweptAreaStyles" ref="sepSweptArea" :class="sepSweptAreaHideEdgeClass">
@@ -508,7 +509,8 @@ export default defineComponent({
 				:style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
 				<h1 :style="nonleafHeaderTextStyles" class="grow">{{displayName}}</h1>
-				<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
+				<info-icon v-if="!uiOpts.disabledActions.has('tileInfo')"
+					:style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
 					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 			</div>
 			<transition name="fadein">

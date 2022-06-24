@@ -47,37 +47,46 @@ export default defineComponent({
 	methods: {
 		onStartTutorial(){
 			this.stage = 1;
-			this.sendEnabledFeatures();
+			this.setEnabledFeatures();
 		},
 		onPrevClick(){
 			this.stage = Math.max(1, this.stage - 1);
-			this.sendEnabledFeatures();
+			this.setEnabledFeatures();
 		},
 		onNextClick(){
 			this.stage = Math.min(this.maxStage, this.stage + 1);
-			this.sendEnabledFeatures();
+			this.setEnabledFeatures();
 		},
 		onClose(){
 			this.$emit('close');
 		},
-		sendEnabledFeatures(){
+		setEnabledFeatures(){
 			const stageActions = [
 				null,
 				'expand', 'expand', 'collapse', 'expandToView', 'unhideAncestor',
-				'tileInfo', 'search', 'autoMode', 'settings', 'help'
+				'tileInfo', 'search', 'autoMode', 'settings', 'help',
 			] as (Action | null)[];
-			let disabledActions = new Set() as Set<Action>;
-			for (let i = this.stage + 1; i < this.maxStage; i++){
-				disabledActions.add(stageActions[i] as Action);
+			let disabledActions = this.uiOpts.disabledActions;
+			let currentAction = stageActions[this.stage];
+			for (let i = 1; i <= this.maxStage; i++){
+				let action = stageActions[i];
+				if (i <= this.stage){
+					if (disabledActions.has(action)){
+						disabledActions.delete(action);
+					}
+				} else {
+					if (!disabledActions.has(action) && action != currentAction){
+						disabledActions.add(action);
+					}
+				}
 			}
-			disabledActions.delete(stageActions[this.stage] as Action);
-			let triggerAction = stageActions[this.stage] as Action;
-			this.$emit('stage-chg', disabledActions, triggerAction);
+			let triggerAction = currentAction;
+			this.$emit('stage-chg', triggerAction);
 		},
 	},
 	created(){
 		if (this.skipWelcome){
-			this.sendEnabledFeatures();
+			this.setEnabledFeatures();
 		}
 	},
 	components: {CloseIcon, RButton, },

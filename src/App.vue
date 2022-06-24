@@ -101,6 +101,7 @@ function getDefaultUiOpts(){
 		// Other
 		useReducedTree: false,
 		jumpToSearchedNode: false,
+		disabledActions: new Set() as Set<Action>,
 	};
 }
 
@@ -121,7 +122,6 @@ export default defineComponent({
 			settingsOpen: false,
 			tutorialOpen: true,
 			welcomeOpen: true,
-			disabledActions: new Set(),
 			ancestryBarInTransition: false,
 			tutTriggerAction: null as Action | null,
 			tutTriggerFlag: false,
@@ -196,9 +196,10 @@ export default defineComponent({
 	methods: {
 		// For tile expand/collapse events
 		onLeafClick(layoutNode: LayoutNode){
-			if (!this.handleActionForTutorial('expand')){
+			if (this.uiOpts.disabledActions.has('expand')){
 				return Promise.resolve(false);
 			}
+			this.handleActionForTutorial('expand');
 			this.setLastFocused(null);
 			// If clicking child of overflowing active-root
 			if (this.overflownRoot){
@@ -246,9 +247,10 @@ export default defineComponent({
 			}
 		},
 		onNonleafClick(layoutNode: LayoutNode, skipClean = false){
-			if (!this.handleActionForTutorial('collapse')){
+			if (this.uiOpts.disabledActions.has('collapse')){
 				return false;
 			}
+			this.handleActionForTutorial('collapse');
 			this.setLastFocused(null);
 			let success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts, {
 				allowCollapse: false,
@@ -280,9 +282,10 @@ export default defineComponent({
 		},
 		// For expand-to-view and ancestry-bar events
 		onLeafClickHeld(layoutNode: LayoutNode){
-			if (!this.handleActionForTutorial('expandToView')){
+			if (this.uiOpts.disabledActions.has('expandToView')){
 				return;
 			}
+			this.handleActionForTutorial('expandToView');
 			this.setLastFocused(null);
 			if (layoutNode == this.activeRoot){
 				this.onLeafClick(layoutNode);
@@ -340,9 +343,10 @@ export default defineComponent({
 			}
 		},
 		onNonleafClickHeld(layoutNode: LayoutNode){
-			if (!this.handleActionForTutorial('expandToView')){
+			if (this.uiOpts.disabledActions.has('expandToView')){
 				return;
 			}
+			this.handleActionForTutorial('expandToView');
 			this.setLastFocused(null);
 			if (layoutNode == this.activeRoot){
 				console.log('Ignored expand-to-view on active-root node');
@@ -362,9 +366,10 @@ export default defineComponent({
 			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
 		onDetachedAncestorClick(layoutNode: LayoutNode, alsoCollapse = false){
-			if (!this.handleActionForTutorial('unhideAncestor')){
+			if (this.uiOpts.disabledActions.has('unhideAncestor')){
 				return Promise.resolve(false);
 			}
+			this.handleActionForTutorial('unhideAncestor');
 			this.setLastFocused(null);
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
@@ -387,9 +392,7 @@ export default defineComponent({
 		},
 		// For tile-info events
 		onInfoClick(nodeName: string){
-			if (!this.handleActionForTutorial('tileInfo')){
-				return;
-			}
+			this.handleActionForTutorial('tileInfo');
 			if (!this.searchOpen){
 				this.resetMode();
 			}
@@ -397,9 +400,7 @@ export default defineComponent({
 		},
 		// For search events
 		onSearchIconClick(){
-			if (!this.handleActionForTutorial('search')){
-				return;
-			}
+			this.handleActionForTutorial('search');
 			this.resetMode();
 			this.searchOpen = true;
 		},
@@ -499,9 +500,7 @@ export default defineComponent({
 		},
 		// For auto-mode events
 		onPlayIconClick(){
-			if (!this.handleActionForTutorial('autoMode')){
-				return;
-			}
+			this.handleActionForTutorial('autoMode');
 			this.resetMode();
 			this.modeRunning = true;
 			this.autoAction();
@@ -613,9 +612,7 @@ export default defineComponent({
 		},
 		// For settings events
 		onSettingsIconClick(){
-			if (!this.handleActionForTutorial('settings')){
-				return;
-			}
+			this.handleActionForTutorial('settings');
 			this.resetMode();
 			this.settingsOpen = true;
 		},
@@ -629,13 +626,18 @@ export default defineComponent({
 			this.initTreeFromServer();
 		},
 		onSettingsChg(changedLytOpts: Iterable<string>, changedUiOpts: Iterable<string>){
+			let changed = false;
 			for (let opt of changedLytOpts){
 				localStorage.setItem('lyt ' + opt, String(this.lytOpts[opt as keyof LayoutOptions]));
+				changed = true;
 			}
 			for (let opt of changedUiOpts){
 				localStorage.setItem('ui ' + opt, String(this.uiOpts[opt]));
+				changed = true;
 			}
-			console.log('Settings saved');
+			if (changed){
+				console.log('Settings saved');
+			}
 		},
 		onResetSettings(){
 			localStorage.clear();
@@ -651,9 +653,7 @@ export default defineComponent({
 		},
 		// For help events
 		onHelpIconClick(){
-			if (!this.handleActionForTutorial('help')){
-				return;
-			}
+			this.handleActionForTutorial('help');
 			this.resetMode();
 			this.helpOpen = true;
 		},
@@ -674,7 +674,7 @@ export default defineComponent({
 		onTutorialClose(){
 			this.tutorialOpen = false;
 			this.welcomeOpen = false;
-			this.disabledActions.clear();
+			this.uiOpts.disabledActions.clear();
 			// Repeatedly relayout tiles during tutorial-pane transition
 			this.tutPaneInTransition = true;
 			let timerId = setInterval(() => {
@@ -684,14 +684,13 @@ export default defineComponent({
 				}
 			}, 100);
 		},
-		onTutStageChg(disabledActions: Set<Action>, triggerAction: Action | null){
+		onTutStageChg(triggerAction: Action | null){
 			this.welcomeOpen = false;
-			this.disabledActions = disabledActions;
 			this.tutTriggerAction = triggerAction;
 		},
-		handleActionForTutorial(action: Action): boolean {
+		handleActionForTutorial(action: Action){
 			if (!this.tutorialOpen){
-				return true;
+				return;
 			}
 			// Close welcome message on first action
 			if (this.welcomeOpen){
@@ -701,8 +700,6 @@ export default defineComponent({
 			if (this.tutTriggerAction == action){
 				this.tutTriggerFlag = !this.tutTriggerFlag;
 			}
-			// Indicate whether the action is allowed
-			return !this.disabledActions.has(action);
 		},
 		// For other events
 		onResize(){
@@ -816,7 +813,7 @@ export default defineComponent({
 			return opts;
 		},
 		getUiOpts(){
-			let opts: {[x: string]: boolean|number|string|string[]|(string|number)[][]} = getDefaultUiOpts();
+			let opts: {[x: string]: boolean|number|string|string[]|(string|number)[][]|Set<Action>} = getDefaultUiOpts();
 			for (let prop of Object.getOwnPropertyNames(opts)){
 				let item = localStorage.getItem('ui ' + prop);
 				if (item != null){
@@ -904,20 +901,24 @@ export default defineComponent({
 	<div class="flex bg-black shadow">
 		<h1 class="text-lime-500 px-4 my-auto text-2xl">Tree of Life</h1>
 		<!-- Icons -->
-		<div class="ml-auto mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
-			hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onSearchIconClick">
+		<div v-if="!uiOpts.disabledActions.has('search')"
+			class="ml-auto mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
+				hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onSearchIconClick">
 			<search-icon/>
 		</div>
-		<div class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
-			hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onPlayIconClick">
+		<div v-if="!uiOpts.disabledActions.has('autoMode')"
+			class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
+				hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onPlayIconClick">
 			<play-icon/>
 		</div>
-		<div class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
-			hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onSettingsIconClick">
+		<div v-if="!uiOpts.disabledActions.has('settings')"
+			class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
+				hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onSettingsIconClick">
 			<settings-icon/>
 		</div>
-		<div class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
-			hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onHelpIconClick">
+		<div v-if="!uiOpts.disabledActions.has('help')"
+			class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
+				hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onHelpIconClick">
 			<help-icon/>
 		</div>
 	</div>
