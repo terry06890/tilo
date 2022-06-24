@@ -1,8 +1,8 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue'
-import {LayoutNode, LayoutOptions} from '../layout';
 import {TolMap, UiOptions} from '../lib';
+import {LayoutNode, LayoutOptions} from '../layout';
 
 // Displays a sequence of nodes, representing ancestors from a tree-of-life root to a currently-active root
 export default defineComponent({

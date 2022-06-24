@@ -3,7 +3,7 @@ import {defineComponent, PropType} from 'vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {LayoutNode, LayoutOptions} from '../layout';
 import {TolNode, TolMap, UiOptions} from '../lib';
-import {capitalizeWords} from '../lib';
+import {capitalizeWords} from '../util';
 
 // Displays one, or a hierarchy of, tree-of-life nodes, as a 'tile'
 export default defineComponent({

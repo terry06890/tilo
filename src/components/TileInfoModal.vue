@@ -4,7 +4,7 @@ import CloseIcon from './icon/CloseIcon.vue';
 import Tile from './Tile.vue'
 import {LayoutNode, LayoutOptions} from '../layout';
 import {TolNode, TolMap, UiOptions, DescInfo, ImgInfo, TileInfoResponse} from '../lib';
-import {capitalizeWords} from '../lib';
+import {capitalizeWords} from '../util';
 
 // Displays information about a tree-of-life node
 export default defineComponent({

@@ -2,8 +2,8 @@
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import RButton from './RButton.vue';
-import {LayoutOptions} from '../layout';
 import {UiOptions} from '../lib';
+import {LayoutOptions} from '../layout';
 
 // Displays configurable options, and sends option-change requests
 export default defineComponent({

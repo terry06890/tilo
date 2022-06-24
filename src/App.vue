@@ -14,13 +14,12 @@ import SearchIcon from './components/icon/SearchIcon.vue';
 import PlayIcon from './components/icon/PlayIcon.vue';
 import SettingsIcon from './components/icon/SettingsIcon.vue';
 import HelpIcon from './components/icon/HelpIcon.vue';
-// Classes and types
+// Other
 	// Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
 import {TolNode, TolMap, UiOptions, Action} from './lib';
 import {LayoutNode, LayoutOptions, LayoutTreeChg} from './layout';
-// Functions
-import {arraySum, randWeightedChoice, getScrollBarWidth, getBreakpoint} from './lib';
 import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
+import {arraySum, randWeightedChoice, getScrollBarWidth, getBreakpoint} from './util';
 
 // Type representing auto-mode actions
 type AutoAction = 'move across' | 'move down' | 'move up' | Action;

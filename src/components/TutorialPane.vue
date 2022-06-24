@@ -1,8 +1,8 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
-import RButton from './RButton.vue';
 import {Action, UiOptions} from '../lib';
+import RButton from './RButton.vue';
 
 export default defineComponent({
 	props: {

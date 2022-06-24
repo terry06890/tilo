@@ -3,8 +3,8 @@ import {defineComponent, PropType} from 'vue';
 import SearchIcon from './icon/SearchIcon.vue';
 import LogInIcon from './icon/LogInIcon.vue';
 import InfoIcon from './icon/InfoIcon.vue';
-import {LayoutNode} from '../layout';
 import {TolMap, SearchSugg, SearchSuggResponse, UiOptions} from '../lib';
+import {LayoutNode} from '../layout';
 
 // Displays a search box, and sends search requests
 export default defineComponent({
