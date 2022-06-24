@@ -176,6 +176,7 @@ export type LayoutOptions = {
 	layoutType: 'sqr' | 'rect' | 'sweep' | 'flex-sqr'; // The LayoutFn function to use
 	rectMode: 'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row';
 		// Rect-layout in 1 row, 1 column, 1 row or column, or multiple rows (optionally with first-row-heuristic)
+	rectSensitivity: number; // A value between 0 and 1, where higher values mean higher layout sensitivity to empty space
 	sweepMode: 'left' | 'top' | 'shorter' | 'auto'; // Sweep to left, top, shorter-side, or to minimise empty space
 	sweptNodesPrio: 'linear' | 'sqrt' | 'pow-2/3'; // Specifies allocation of space to swept-vs-remaining nodes
 	sweepToParent: 'none' | 'prefer' | 'fallback'; // Allow placing swept nodes in a parent swept-leaves area
@@ -572,7 +573,7 @@ let rectLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse,
 			child => (child.dims[0] + opts.tileSpacing) * (child.dims[1] + opts.tileSpacing) - child.empSpc));
 		let empSpc = newDims[0] * newDims[1] - usedSpc;
 		// Check with best-so-far
-		if (empSpc < lowestEmpSpc){
+		if (empSpc < lowestEmpSpc * opts.rectSensitivity){
 			lowestEmpSpc = empSpc;
 			usedTree = tempTree;
 			usedEmpRight = empRight;

@@ -56,6 +56,7 @@ function getDefaultLytOpts(): LayoutOptions {
 		// Layout-algorithm related
 		layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
 		rectMode: 'auto first-row', //'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
+		rectSensitivity: 0.9, //Between 0 and 1
 		sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
 		sweptNodesPrio: 'sqrt', //'linear' | 'sqrt' | 'pow-2/3'
 		sweepToParent: 'prefer', //'none' | 'prefer' | 'fallback'
