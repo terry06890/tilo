@@ -10,6 +10,7 @@
     -   AncestryBar.vue:   Displays ancestors of the top-level Tile.
     -   TutorialPane.vue:  Displays tutorial content.
     -   RButton.vue:       Basic button component.
+    -   IconButton.vue:    Basic button component containing SVG icon.
     -   icon:              Contains components that display SVG icons.
 -   layout.ts: Contains code for laying out Tiles.
 -   lib.ts:    Contains classes/types and utility functions.

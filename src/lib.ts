@@ -46,16 +46,21 @@ export type Action =
 //
 export type UiOptions = {
 	// Shared styling
+	textColor: string, // CSS color
+	bgColor: string,
+	bgColorLight: string,
+	bgColorDark: string,
+	bgColorLight2: string,
+	bgColorDark2: string,
+	altColor: string,
+	altColorDark: string,
 	borderRadius: number, // CSS border-radius value, in px
 	shadowNormal: string, // CSS box-shadow value
 	shadowHovered: string,
 	shadowFocused: string,
 	// Styling for App
-	appBgColor: string, // CSS color
-	titleBarBgColor: string, // CSS color
 	mainTileMargin: number, // px
 	// Styling for tiles
-	textColor: string, // CSS color
 	childQtyColors: [number, string][],
 		// Specifies, for an increasing sequence of minimum-child-quantity values, CSS colors to use
 		//eg: [[1, 'green'], [10, 'orange'], [100, 'red']]
@@ -67,18 +72,16 @@ export type UiOptions = {
 		// Specifies CSS colors to use at various tree depths
 		// With N strings, tiles at depth M use the color at index M % N
 	nonleafHeaderFontSz: number, // px
-	nonleafHeaderBgColor: string, // CSS color
 	// Styling for other components
 	infoModalImgSz: number, // px
 	ancestryBarBgColor: string, // CSS color
 	ancestryBarImgSz: number, // px
 	ancestryTileGap: number, // Gap between ancestor tiles, in px
 	tutPaneSz: number, // px
-	tutPaneBgColor: string, // CSS color
 	// Timing related
 	clickHoldDuration: number, // Time after mousedown when a click-and-hold is recognised, in ms
 	transitionDuration: number, // ms
-	autoActionDelay: number, // Time between auto-mode actions, in ms
+	autoActionDelay: number, // Time between auto-mode actions (incl transitions), in ms
 	// Other
 	useReducedTree: boolean,
 	searchSuggLimit: number, // Max number of search suggestions

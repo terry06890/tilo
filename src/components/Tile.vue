@@ -220,7 +220,7 @@ export default defineComponent({
 				height: this.lytOpts.headerSz + 'px',
 				borderTopLeftRadius: 'inherit',
 				borderTopRightRadius: 'inherit',
-				backgroundColor: this.uiOpts.nonleafHeaderBgColor,
+				backgroundColor: this.uiOpts.bgColorDark,
 			};
 			if (this.isOverflownRoot){
 				styles = {

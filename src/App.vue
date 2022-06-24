@@ -57,34 +57,37 @@ function getDefaultLytOpts(): LayoutOptions {
 }
 function getDefaultUiOpts(){
 	let screenSz = getBreakpoint();
-	let bgColor = '#292524', bgLight1 = '#44403c', bgLight2 = '#57534e', bgDark1 = '#1c1917', bgDark2 = '#0e0c0b';
+	let bgColorLight = '#44403c', altColor = '#a3e623';
 	return {
 		// Shared styling
+		textColor: '#fafaf9',
+		bgColor: '#292524',
+		bgColorLight,
+		bgColorDark: '#1c1917',
+		bgColorLight2: '#57534e',
+		bgColorDark2: '#0e0c0b',
+		altColor,
+		altColorDark: '#65a30d',
 		borderRadius: 5, // px
 		shadowNormal: '0 0 2px black',
-		shadowHovered: '0 0 1px 2px greenyellow',
+		shadowHovered: '0 0 1px 2px' + altColor,
 		shadowFocused: '0 0 1px 2px orange',
 		// Styling for App
-		appBgColor: bgColor,
-		titleBarBgColor: bgDark2,
 		mainTileMargin: screenSz == 'sm' ? 6 : 10, // px
 		// Styling for tiles
-		textColor: '#fafaf9',
-		childQtyColors: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
+		childQtyColors: [[1, altColor], [10, 'orange'], [100, 'red']],
 		infoIconSz: 18, // px
 		infoIconMargin: 2, // px
 		leafPadding: 4, // px
 		leafHeaderFontSz: 15, // px
-		nonleafBgColors: [bgLight1, bgLight2],
+		nonleafBgColors: ['#44403c', '#57534e'],
 		nonleafHeaderFontSz: 15, // px
-		nonleafHeaderBgColor: bgDark1,
 		// Styling for other components
 		infoModalImgSz: 200, // px
-		ancestryBarBgColor: 'transparent',
+		ancestryBarBgColor: bgColorLight,
 		ancestryBarImgSz: 100, // px
 		ancestryTileGap: 5, // px
 		tutPaneSz: 200, // px
-		tutPaneBgColor: bgDark1,
 		// Timing related
 		clickHoldDuration: 400, // ms
 		transitionDuration: 300, // ms
@@ -159,6 +162,12 @@ export default defineComponent({
 				node = node.parent;
 			}
 			return ancestors.reverse();
+		},
+		iconButtonStyles(): Record<string,string> {
+			return {
+				color: this.uiOpts.textColor,
+				backgroundColor: this.uiOpts.altColorDark,
+			};
 		},
 		tutPaneContainerStyles(): Record<string,string> {
 			return {
@@ -918,24 +927,24 @@ export default defineComponent({
 
 <template>
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
-	:style="{backgroundColor: uiOpts.appBgColor}">
-	<div class="flex shadow" :style="{backgroundColor: uiOpts.titleBarBgColor}">
-		<h1 class="text-lime-500 px-4 my-auto text-2xl">Tree of Life</h1>
+	:style="{backgroundColor: uiOpts.bgColor}">
+	<div class="flex shadow" :style="{backgroundColor: uiOpts.bgColorDark2}">
+		<h1 class="px-4 my-auto text-2xl" :style="{color: uiOpts.altColor}">Tree of Life</h1>
 		<!-- Icons -->
 		<icon-button v-if="!uiOpts.disabledActions.has('search')"
-			class="ml-auto mr-2 my-2 bg-lime-600 text-lime-100" @click="onSearchIconClick">
+			class="ml-auto mr-2 my-2" :style="iconButtonStyles" @click="onSearchIconClick">
 			<search-icon/>
 		</icon-button>
 		<icon-button v-if="!uiOpts.disabledActions.has('autoMode')"
-			class="mr-2 my-2 bg-lime-600 text-lime-100" @click="onPlayIconClick">
+			class="mr-2 my-2" :style="iconButtonStyles" @click="onPlayIconClick">
 			<play-icon/>
 		</icon-button>
 		<icon-button v-if="!uiOpts.disabledActions.has('settings')"
-			class="mr-2 my-2 bg-lime-600 text-lime-100" @click="onSettingsIconClick">
+			class="mr-2 my-2" :style="iconButtonStyles" @click="onSettingsIconClick">
 			<settings-icon/>
 		</icon-button>
 		<icon-button v-if="!uiOpts.disabledActions.has('help')"
-			class="mr-2 my-2 bg-lime-600 text-lime-100" @click="onHelpIconClick">
+			class="mr-2 my-2" :style="iconButtonStyles" @click="onHelpIconClick">
 			<help-icon/>
 		</icon-button>
 	</div>

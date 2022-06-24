@@ -20,7 +20,7 @@ export default defineComponent({
 	computed: {
 		 styles(): Record<string,string> {
 			return {
-				backgroundColor: this.uiOpts.tutPaneBgColor,
+				backgroundColor: this.uiOpts.bgColorDark,
 				color: this.uiOpts.textColor,
 				height: this.height,
 			};
