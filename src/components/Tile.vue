@@ -33,6 +33,7 @@ export default defineComponent({
 			scrollOffset: 0, // Used to track scroll offset when displaying with overflow
 			pendingScrollHdlr: 0,
 			justUnhidden: false,
+			inFlash: false, // Used to 'flash' the tile when focused
 		};
 	},
 	computed: {
@@ -318,6 +319,9 @@ export default defineComponent({
 		hidden(){
 			return this.layoutNode.hidden;
 		},
+		hasFocus(){
+			return this.layoutNode.hasFocus;
+		},
 	},
 	watch: {
 		// For setting transition state (can be triggered externally, like via search and auto-mode)
@@ -357,6 +361,12 @@ export default defineComponent({
 			if (oldVal && !newVal){
 				this.justUnhidden = true;
 				setTimeout(() => {this.justUnhidden = false;}, this.uiOpts.tileChgDuration);
+			}
+		},
+		hasFocus(newVal, oldVal){
+			if (newVal != oldVal && newVal){
+				this.inFlash = true;
+				setTimeout(() => {this.inFlash = false;}, this.uiOpts.tileChgDuration);
 			}
 		},
 	},
@@ -501,6 +511,9 @@ export default defineComponent({
 				<info-icon :style="infoIconStyles" class="text-white/10 hover:text-white hover:cursor-pointer"
 					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 			</div>
+			<transition name="fadein">
+				<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 bg-amber-500/70 z-20"></div>
+			</transition>
 		</div>
 		<tile v-for="child in visibleChildren" :key="child.name"
 			:layoutNode="child" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" :overflownDim="overflownDim"
@@ -508,6 +521,9 @@ export default defineComponent({
 			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
 			@info-click="onInnerInfoIconClick"/>
 	</div>
+	<transition name="fadein">
+		<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 bg-amber-500/70"></div>
+	</transition>
 </div>
 </template>
 
@@ -563,5 +579,13 @@ export default defineComponent({
 	to {
 		transform: translate3d(0,0,0) scale(1, 1);
 	}
+}
+.fadein-leave-to {
+	opacity: 0;
+}
+.fadein-leave-active {
+	transition-property: opacity;
+	transition-duration: 300ms;
+	transition-timing-function: ease-out;
 }
 </style>
