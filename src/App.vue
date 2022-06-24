@@ -57,6 +57,7 @@ function getDefaultLytOpts(): LayoutOptions {
 }
 function getDefaultUiOpts(){
 	let screenSz = getBreakpoint();
+	let bgColor = '#292524', bgLight1 = '#44403c', bgLight2 = '#57534e', bgDark1 = '#1c1917', bgDark2 = '#0e0c0b';
 	return {
 		// Shared styling
 		borderRadius: 5, // px
@@ -64,8 +65,8 @@ function getDefaultUiOpts(){
 		shadowHovered: '0 0 1px 2px greenyellow',
 		shadowFocused: '0 0 1px 2px orange',
 		// Styling for App
-		appBgColor: '#292524',
-		titleBarBgColor: 'black',
+		appBgColor: bgColor,
+		titleBarBgColor: bgDark2,
 		mainTileMargin: screenSz == 'sm' ? 6 : 10, // px
 		// Styling for tiles
 		textColor: '#fafaf9',
@@ -74,16 +75,16 @@ function getDefaultUiOpts(){
 		infoIconMargin: 2, // px
 		leafPadding: 4, // px
 		leafHeaderFontSz: 15, // px
-		nonleafBgColors: ['#44403c', '#57534e'],
+		nonleafBgColors: [bgLight1, bgLight2],
 		nonleafHeaderFontSz: 15, // px
-		nonleafHeaderBgColor: '#1c1917',
+		nonleafHeaderBgColor: bgDark1,
 		// Styling for other components
 		infoModalImgSz: 200, // px
-		ancestryBarBgColor: '#44403c',
+		ancestryBarBgColor: 'transparent',
 		ancestryBarImgSz: 100, // px
 		ancestryTileGap: 5, // px
 		tutPaneSz: 200, // px
-		tutPaneBgColor: '#1c1917',
+		tutPaneBgColor: bgDark1,
 		// Timing related
 		clickHoldDuration: 400, // ms
 		transitionDuration: 300, // ms
