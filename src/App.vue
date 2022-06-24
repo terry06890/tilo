@@ -176,6 +176,7 @@ export default defineComponent({
 				minHeight: 'auto',
 				maxHeight: 'none',
 				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
+				transitionProperty: '',
 				overflow: 'hidden'
 			};
 			if (this.mainAreaDims[0] > this.mainAreaDims[1]){
@@ -461,7 +462,7 @@ export default defineComponent({
 				targetNode = this.layoutMap.get(name);
 				this.onLeafClickHeld(targetNode!.parent!);
 				//
-				this.setLastFocused(targetNode!);
+				setTimeout(() => {this.setLastFocused(targetNode!);}, this.uiOpts.tileChgDuration);
 				this.modeRunning = false;
 				return;
 			}
@@ -622,9 +623,7 @@ export default defineComponent({
 			// Re-initialise tree
 			this.initTreeFromServer();
 		},
-		onSettingsClose(changedLytOpts: Set<string>, changedUiOpts: Set<string>){
-			this.settingsOpen = false;
-			// Save changed settings
+		onSettingsChg(changedLytOpts: Iterable<string>, changedUiOpts: Iterable<string>){
 			for (let opt of changedLytOpts){
 				localStorage.setItem('lyt ' + opt, String(this.lytOpts[opt as keyof LayoutOptions]));
 			}
@@ -936,7 +935,7 @@ export default defineComponent({
 	<!-- Modals -->
 	<transition name="fade">
 		<search-modal v-if="searchOpen" :tolMap="tolMap" :uiOpts="uiOpts" ref="searchModal"
-			@close="searchOpen = false" @search="onSearch" @info-click="onInfoClick"/>
+			@close="searchOpen = false" @search="onSearch" @info-click="onInfoClick" @settings-chg="onSettingsChg" />
 	</transition>
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null"
@@ -948,7 +947,7 @@ export default defineComponent({
 			@close="helpOpen = false" @start-tutorial="onStartTutorial"/>
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
-		@close="onSettingsClose" @reset="onResetSettings"
+		@close="settingsOpen = false" @settings-chg="onSettingsChg" @reset="onResetSettings"
 		@layout-setting-chg="relayoutWithCollapse" @tree-chg="onTreeChange"/>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"

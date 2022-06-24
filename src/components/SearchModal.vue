@@ -34,13 +34,13 @@ export default defineComponent({
 			};
 		},
 		suggDisplayStrings(): [string, string, string][] {
-			let result = [];
-			let input = this.$refs.searchInput.value;
+			let result: [string, string, string][] = [];
+			let input = (this.$refs.searchInput as HTMLInputElement).value;
 			// For each SearchSugg
 			for (let sugg of this.searchSuggs){
 				let idx = sugg.name.indexOf(input);
 				// Split suggestion text into parts before/within/after an input match
-				let strings;
+				let strings: [string, string, string];
 				if (idx != -1){
 					strings = [sugg.name.substring(0, idx), input, sugg.name.substring(idx + input.length)];
 				} else {
@@ -72,6 +72,7 @@ export default defineComponent({
 		},
 		onSearchModeChg(){
 			this.uiOpts.jumpToSearchedNode = !this.uiOpts.jumpToSearchedNode;
+			this.$emit('settings-chg', [], ['jumpToSearchedNode']);
 		},
 		resolveSearch(tolNodeName: string){
 			if (tolNodeName == ''){
@@ -190,7 +191,7 @@ export default defineComponent({
 		(this.$refs.searchInput as HTMLInputElement).focus();
 	},
 	components: {SearchIcon, InfoIcon, LogInIcon, },
-	emits: ['search', 'close', 'info-click'],
+	emits: ['search', 'close', 'info-click', 'settings-chg', ],
 });
 </script>
 

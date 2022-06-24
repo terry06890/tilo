@@ -19,7 +19,8 @@ export default defineComponent({
 	methods: {
 		onCloseClick(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
-				this.$emit('close', this.changedLytOpts, this.changedUiOpts);
+				this.$emit('settings-chg', this.changedLytOpts, this.changedUiOpts);
+				this.$emit('close');
 			}
 		},
 		onLytOptChg(opt: string){
@@ -52,7 +53,7 @@ export default defineComponent({
 		},
 	},
 	components: {CloseIcon, RButton, },
-	emits: ['close', 'layout-setting-chg', 'tree-chg', 'reset', ],
+	emits: ['close', 'layout-setting-chg', 'tree-chg', 'reset', 'settings-chg', ],
 });
 </script>
 
