@@ -300,12 +300,7 @@ export default defineComponent({
 				this.activeRoot = layoutNode;
 				// Repeatedly relayout tiles during ancestry-bar transition
 				this.ancestryBarInTransition = true;
-				let timerId = setInterval(() => {
-					this.updateAreaDims().then(() => this.relayoutWithCollapse());
-					if (!this.ancestryBarInTransition){
-						clearTimeout(timerId);
-					}
-				}, 100);
+				this.relayoutDuringAncestryBarTransition();
 				//
 				return this.updateAreaDims().then(() => {
 					this.overflownRoot = false;
@@ -359,12 +354,7 @@ export default defineComponent({
 			this.activeRoot = layoutNode;
 			// Repeatedly relayout tiles during ancestry-bar transition
 			this.ancestryBarInTransition = true;
-			let timerId = setInterval(() => {
-				this.updateAreaDims().then(() => this.relayoutWithCollapse());
-				if (!this.ancestryBarInTransition){
-					clearTimeout(timerId);
-				}
-			}, 100);
+			this.relayoutDuringAncestryBarTransition();
 			//
 			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
@@ -378,12 +368,7 @@ export default defineComponent({
 			this.overflownRoot = false;
 			// Repeatedly relayout tiles during ancestry-bar transition
 			this.ancestryBarInTransition = true;
-			let timerId = setInterval(() => {
-				this.updateAreaDims().then(() => this.relayoutWithCollapse());
-				if (!this.ancestryBarInTransition){
-					clearTimeout(timerId);
-				}
-			}, 100);
+			this.relayoutDuringAncestryBarTransition();
 			//
 			if (alsoCollapse){
 				this.onNonleafClick(layoutNode, true);
@@ -666,12 +651,7 @@ export default defineComponent({
 				this.tutorialOpen = true;
 				// Repeatedly relayout tiles during tutorial-pane transition
 				this.tutPaneInTransition = true;
-				let timerId = setInterval(() => {
-					this.updateAreaDims().then(() => this.relayoutWithCollapse());
-					if (!this.tutPaneInTransition){
-						clearTimeout(timerId);
-					}
-				}, 100);
+				this.relayoutDuringTutPaneTransition();
 			}
 		},
 		onTutorialClose(){
@@ -680,12 +660,7 @@ export default defineComponent({
 			this.uiOpts.disabledActions.clear();
 			// Repeatedly relayout tiles during tutorial-pane transition
 			this.tutPaneInTransition = true;
-			let timerId = setInterval(() => {
-				this.updateAreaDims().then(() => this.relayoutWithCollapse());
-				if (!this.tutPaneInTransition){
-					clearTimeout(timerId);
-				}
-			}, 100);
+			this.relayoutDuringTutPaneTransition();
 		},
 		onTutorialSkip(){
 			localStorage.setItem('ui tutorialSkip', String(true));
@@ -890,8 +865,32 @@ export default defineComponent({
 		ancestryBarTransitionEnd(){
 			this.ancestryBarInTransition = false;
 		},
+		relayoutDuringAncestryBarTransition(){
+			let timerId = setInterval(() => {
+				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+				if (!this.ancestryBarInTransition){
+					clearTimeout(timerId);
+				}
+			}, 100);
+			setTimeout(() => {
+				clearTimeout(timerId);
+				console.log('Reached timeout waiting for transition-end event');
+			}, this.uiOpts.tileChgDuration * 3);
+		},
 		tutPaneTransitionEnd(){
 			this.tutPaneInTransition = false;
+		},
+		relayoutDuringTutPaneTransition(){
+			let timerId = setInterval(() => {
+				this.updateAreaDims().then(() => this.relayoutWithCollapse());
+				if (!this.tutPaneInTransition){
+					clearTimeout(timerId);
+				}
+			}, 100);
+			setTimeout(() => {
+				clearTimeout(timerId);
+				console.log('Reached timeout waiting for transition-end event');
+			}, this.uiOpts.tileChgDuration * 3);
 		},
 	},
 	created(){
