@@ -760,11 +760,21 @@ export default defineComponent({
 		onKeyUp(evt: KeyboardEvent){
 			if (evt.key == 'Escape'){
 				this.resetMode();
-			} else if (evt.key == 'F' && evt.ctrlKey){ // On ctrl-shift-f
-				if (!this.searchOpen){
-					this.onSearchIconClick();
-				} else {
-					(this.$refs.searchModal as InstanceType<typeof SearchModal>).focusInput();
+			} else if (evt.key == 'f' && evt.ctrlKey){
+				// If no non-search modal is open, open/focus search bar
+				if (this.infoModalNodeName == null && !this.helpOpen && !this.settingsOpen){
+					evt.preventDefault();
+					if (!this.searchOpen){
+						this.onSearchIconClick();
+					} else {
+						(this.$refs.searchModal as InstanceType<typeof SearchModal>).focusInput();
+					}
+				}
+			} else if (evt.key == 'F' && evt.ctrlKey){
+				// If search bar is open, swap search mode
+				if (this.searchOpen){
+					this.uiOpts.jumpToSearchedNode = !this.uiOpts.jumpToSearchedNode;
+					this.onSettingsChg([], ['jumpToSearchedNode']);
 				}
 			}
 		},
@@ -886,12 +896,12 @@ export default defineComponent({
 	},
 	created(){
 		window.addEventListener('resize', this.onResize);
-		window.addEventListener('keyup', this.onKeyUp);
+		window.addEventListener('keydown', this.onKeyUp);
 		this.initTreeFromServer();
 	},
 	unmounted(){
 		window.removeEventListener('resize', this.onResize);
-		window.removeEventListener('keyup', this.onKeyUp);
+		window.removeEventListener('keydown', this.onKeyUp);
 	},
 	components: {
 		Tile, AncestryBar,
