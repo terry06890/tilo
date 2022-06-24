@@ -95,7 +95,7 @@ export default defineComponent({
 		},
 		boxShadow(): string {
 			if (this.highlight){
-				return this.uiOpts.shadowHighlight;
+				return this.uiOpts.shadowHovered;
 			} else if (this.layoutNode.hasFocus && !this.inTransition){
 				return this.uiOpts.shadowFocused;
 			} else {
@@ -113,7 +113,7 @@ export default defineComponent({
 				boxShadow: this.boxShadow,
 				borderRadius: this.uiOpts.borderRadius + 'px',
 				// Transition related
-				transitionDuration: (this.skipTransition ? 0 : this.uiOpts.tileChgDuration) + 'ms',
+				transitionDuration: (this.skipTransition ? 0 : this.uiOpts.transitionDuration) + 'ms',
 				transitionProperty: 'left, top, width, height, visibility',
 				transitionTimingFunction: 'ease-out',
 				zIndex: this.inTransition && this.wasClicked ? '1' : '0',
@@ -174,20 +174,20 @@ export default defineComponent({
 		},
 		leafHeaderStyles(): Record<string,string> {
 			let numChildren = this.tolNode.children.length;
-			let headerColor = this.uiOpts.headerColor;
-			for (let [threshold, color] of this.uiOpts.childThresholds){
+			let textColor = this.uiOpts.textColor;
+			for (let [threshold, color] of this.uiOpts.childQtyColors){
 				if (numChildren >= threshold){
-					headerColor = color;
+					textColor = color;
 				} else {
 					break;
 				}
 			}
 			return {
-				height: (this.uiOpts.leafHeaderFontSz + this.uiOpts.leafTilePadding * 2) + 'px',
-				padding: this.uiOpts.leafTilePadding + 'px',
+				height: (this.uiOpts.leafHeaderFontSz + this.uiOpts.leafPadding * 2) + 'px',
+				padding: this.uiOpts.leafPadding + 'px',
 				lineHeight: this.uiOpts.leafHeaderFontSz + 'px',
 				fontSize: this.uiOpts.leafHeaderFontSz + 'px',
-				color: headerColor,
+				color: textColor,
 				// For ellipsis
 				overflow: 'hidden',
 				textOverflow: 'ellipsis',
@@ -240,7 +240,7 @@ export default defineComponent({
 				lineHeight: this.lytOpts.headerSz + 'px',
 				fontSize: this.uiOpts.nonleafHeaderFontSz + 'px',
 				textAlign: 'center',
-				color: this.uiOpts.nonleafHeaderColor,
+				color: this.uiOpts.textColor,
 				paddingLeft: '5px',
 				// For ellipsis
 				overflow: 'hidden',
@@ -266,7 +266,7 @@ export default defineComponent({
 				position: 'absolute',
 				backgroundColor: this.nonleafBgColor,
 				boxShadow: this.boxShadow,
-				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
+				transitionDuration: this.uiOpts.transitionDuration + 'ms',
 				transitionProperty: 'left, top, width, height, visibility',
 				transitionTimingFunction: 'ease-out',
 			};
@@ -326,7 +326,7 @@ export default defineComponent({
 		pos: {
 			handler(newVal, oldVal){
 				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
-				if (valChanged && this.uiOpts.tileChgDuration > 100 && !this.inTransition){
+				if (valChanged && this.uiOpts.transitionDuration > 100 && !this.inTransition){
 					this.inTransition = true;
 				}
 			},
@@ -335,7 +335,7 @@ export default defineComponent({
 		dims: {
 			handler(newVal, oldVal){
 				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
-				if (valChanged && this.uiOpts.tileChgDuration > 100 && !this.inTransition){
+				if (valChanged && this.uiOpts.transitionDuration > 100 && !this.inTransition){
 					this.inTransition = true;
 				}
 			},
@@ -358,13 +358,13 @@ export default defineComponent({
 		hidden(newVal, oldVal){
 			if (oldVal && !newVal){
 				this.justUnhidden = true;
-				setTimeout(() => {this.justUnhidden = false;}, this.uiOpts.tileChgDuration);
+				setTimeout(() => {this.justUnhidden = false;}, this.uiOpts.transitionDuration);
 			}
 		},
 		hasFocus(newVal, oldVal){
 			if (newVal != oldVal && newVal){
 				this.inFlash = true;
-				setTimeout(() => {this.inFlash = false;}, this.uiOpts.tileChgDuration);
+				setTimeout(() => {this.inFlash = false;}, this.uiOpts.transitionDuration);
 			}
 		},
 	},

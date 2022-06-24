@@ -29,8 +29,8 @@ export default defineComponent({
 				// For child layout
 				display: 'flex',
 				flexDirection: this.vert ? 'column' : 'row',
-				gap: this.uiOpts.ancestryTileMargin + 'px',
-				padding: this.uiOpts.ancestryTileMargin + 'px',
+				gap: this.uiOpts.ancestryTileGap + 'px',
+				padding: this.uiOpts.ancestryTileGap + 'px',
 				// Other
 				backgroundColor: this.uiOpts.ancestryBarBgColor,
 				boxShadow: this.uiOpts.shadowNormal,

@@ -20,8 +20,8 @@ export default defineComponent({
 	computed: {
 		 styles(): Record<string,string> {
 			return {
-				backgroundColor: this.uiOpts.tutorialPaneBgColor,
-				color: this.uiOpts.tutorialPaneTextColor,
+				backgroundColor: this.uiOpts.tutPaneBgColor,
+				color: this.uiOpts.textColor,
 				height: this.height,
 			};
 		 },

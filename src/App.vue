@@ -3,12 +3,12 @@
 import {defineComponent, PropType} from 'vue';
 // Components
 import Tile from './components/Tile.vue';
-import AncestryBar from './components/AncestryBar.vue';
-import TutorialPane from './components/TutorialPane.vue';
 import TileInfoModal from './components/TileInfoModal.vue';
 import SearchModal from './components/SearchModal.vue';
 import SettingsModal from './components/SettingsModal.vue';
 import HelpModal from './components/HelpModal.vue';
+import AncestryBar from './components/AncestryBar.vue';
+import TutorialPane from './components/TutorialPane.vue';
 // Icons
 import SearchIcon from './components/icon/SearchIcon.vue';
 import PlayIcon from './components/icon/PlayIcon.vue';
@@ -16,7 +16,7 @@ import SettingsIcon from './components/icon/SettingsIcon.vue';
 import HelpIcon from './components/icon/HelpIcon.vue';
 // Other
 	// Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
-import {TolNode, TolMap, UiOptions, Action} from './lib';
+import {TolNode, TolMap, Action, UiOptions} from './lib';
 import {LayoutNode, LayoutOptions, LayoutTreeChg} from './layout';
 import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import {arraySum, randWeightedChoice, getScrollBarWidth, getBreakpoint} from './util';
@@ -37,62 +37,56 @@ function getReverseAction(action: AutoAction): AutoAction | null {
 		return null;
 	}
 }
-
-// Initialise tree-of-life data
-const initialTolMap: TolMap = new Map();
-initialTolMap.set("", new TolNode());
-
-// Configurable options
+// Functions providing default option values
 function getDefaultLytOpts(): LayoutOptions {
 	let screenSz = getBreakpoint();
 	return {
 		tileSpacing: screenSz == 'sm' ? 6 : 10, //px
-		headerSz: 22, //px
-		minTileSz: 50, //px
-		maxTileSz: 200, //px
+		headerSz: 22, // px
+		minTileSz: 50, // px
+		maxTileSz: 200, // px
 		// Layout-algorithm related
-		layoutType: 'sweep', //'sqr' | 'rect' | 'sweep'
-		rectMode: 'auto first-row', //'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
-		rectSensitivity: 0.9, //Between 0 and 1
-		sweepMode: 'left', //'left' | 'top' | 'shorter' | 'auto'
-		sweptNodesPrio: 'sqrt', //'linear' | 'sqrt' | 'pow-2/3'
-		sweepToParent: 'prefer', //'none' | 'prefer' | 'fallback'
+		layoutType: 'sweep', // 'sqr' | 'rect' | 'sweep'
+		rectMode: 'auto first-row', // 'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
+		rectSensitivity: 0.9, // Between 0 and 1
+		sweepMode: 'left', // 'left' | 'top' | 'shorter' | 'auto'
+		sweptNodesPrio: 'sqrt', // 'linear' | 'sqrt' | 'pow-2/3'
+		sweepToParent: 'prefer', // 'none' | 'prefer' | 'fallback'
 	};
 }
 function getDefaultUiOpts(){
 	let screenSz = getBreakpoint();
 	return {
 		// Shared styling
-		borderRadius: 5, //px
+		borderRadius: 5, // px
 		shadowNormal: '0 0 2px black',
-		shadowHighlight: '0 0 1px 2px greenyellow',
+		shadowHovered: '0 0 1px 2px greenyellow',
 		shadowFocused: '0 0 1px 2px orange',
 		// Styling for App
 		appBgColor: '#292524',
-		tileAreaOffset: screenSz == 'sm' ? 6 : 10, //px (space between root tile and display boundary)
+		titleBarBgColor: 'black',
+		mainTileMargin: screenSz == 'sm' ? 6 : 10, // px
 		// Styling for tiles
-		headerColor: '#fafaf9',
-		childThresholds: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
-		infoIconSz: 18, //px
-		infoIconMargin: 2, //px
-		leafTilePadding: 4, //px
-		leafHeaderFontSz: 15, //px
-		nonleafBgColors: ['#44403c', '#57534e'], //tiles at depth N use the Nth color, repeating from the start as needed
-		nonleafHeaderFontSz: 15, //px
-		nonleafHeaderColor: '#fafaf9',
+		textColor: '#fafaf9',
+		childQtyColors: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
+		infoIconSz: 18, // px
+		infoIconMargin: 2, // px
+		leafPadding: 4, // px
+		leafHeaderFontSz: 15, // px
+		nonleafBgColors: ['#44403c', '#57534e'],
+		nonleafHeaderFontSz: 15, // px
 		nonleafHeaderBgColor: '#1c1917',
 		// Styling for other components
-		infoModalImgSz: 200,
+		infoModalImgSz: 200, // px
 		ancestryBarBgColor: '#44403c',
-		ancestryBarImgSz: 100, //px
-		ancestryTileMargin: 5, //px (gap between detached-ancestor tiles)
-		tutorialPaneSz: 200,
-		tutorialPaneBgColor: '#1c1917',
-		tutorialPaneTextColor: 'white',
+		ancestryBarImgSz: 100, // px
+		ancestryTileGap: 5, // px
+		tutPaneSz: 200, // px
+		tutPaneBgColor: '#1c1917',
 		// Timing related
-		clickHoldDuration: 400, //ms (duration after mousedown when a click-and-hold is recognised)
-		tileChgDuration: 300, //ms (for tile move/expand/collapse)
-		autoWaitTime: 500, //ms (time to wait between actions (with their transitions))
+		clickHoldDuration: 400, // ms
+		transitionDuration: 300, // ms
+		autoActionDelay: 500, // ms
 		// Other
 		useReducedTree: false,
 		searchSuggLimit: 5,
@@ -102,6 +96,10 @@ function getDefaultUiOpts(){
 		scrollGap: getScrollBarWidth(),
 	};
 }
+
+// Initialise tree-of-life data
+const initialTolMap: TolMap = new Map();
+initialTolMap.set("", new TolNode());
 
 export default defineComponent({
 	data(){
@@ -162,22 +160,22 @@ export default defineComponent({
 		},
 		tutPaneContainerStyles(): Record<string,string> {
 			return {
-				minHeight: (this.tutorialOpen ? this.uiOpts.tutorialPaneSz : 0) + 'px',
-				maxHeight: (this.tutorialOpen ? this.uiOpts.tutorialPaneSz : 0) + 'px',
-				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
+				minHeight: (this.tutorialOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
+				maxHeight: (this.tutorialOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
+				transitionDuration: this.uiOpts.transitionDuration + 'ms',
 				transitionProperty: 'max-height, min-height',
 				overflow: 'hidden',
 			};
 		},
 		ancestryBarContainerStyles(): Record<string,string> {
 			let ancestryBarBreadth = this.detachedAncestors == null ? 0 :
-				this.uiOpts.ancestryBarImgSz + this.uiOpts.ancestryTileMargin*2 + this.uiOpts.scrollGap;
+				this.uiOpts.ancestryBarImgSz + this.uiOpts.ancestryTileGap*2 + this.uiOpts.scrollGap;
 			let styles = {
 				minWidth: 'auto',
 				maxWidth: 'none',
 				minHeight: 'auto',
 				maxHeight: 'none',
-				transitionDuration: this.uiOpts.tileChgDuration + 'ms',
+				transitionDuration: this.uiOpts.transitionDuration + 'ms',
 				transitionProperty: '',
 				overflow: 'hidden'
 			};
@@ -295,7 +293,7 @@ export default defineComponent({
 			let doExpansion = () => {
 				LayoutNode.hideUpward(layoutNode, this.layoutMap);
 				this.activeRoot = layoutNode;
-				if (this.detachedAncestors.length == 0){
+				if (this.detachedAncestors == null){
 					// Repeatedly relayout tiles during ancestry-bar transition
 					this.ancestryBarInTransition = true;
 					this.relayoutDuringAncestryBarTransition();
@@ -352,7 +350,7 @@ export default defineComponent({
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			this.activeRoot = layoutNode;
 			// Repeatedly relayout tiles during ancestry-bar transition
-			if (this.detachedAncestors.length == 0){
+			if (this.detachedAncestors == null){
 				this.ancestryBarInTransition = true;
 				this.relayoutDuringAncestryBarTransition();
 			}
@@ -437,7 +435,7 @@ export default defineComponent({
 				}
 				if (!this.uiOpts.jumpToSearchedNode){
 					this.onDetachedAncestorClick(nodeInAncestryBar!);
-					setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
+					setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 				} else{
 					this.onDetachedAncestorClick(nodeInAncestryBar, true)
 						.then(() => this.expandToNode(name));
@@ -459,18 +457,18 @@ export default defineComponent({
 				targetNode = this.layoutMap.get(name);
 				this.onLeafClickHeld(targetNode!.parent!);
 				//
-				setTimeout(() => {this.setLastFocused(targetNode!);}, this.uiOpts.tileChgDuration);
+				setTimeout(() => {this.setLastFocused(targetNode!);}, this.uiOpts.transitionDuration);
 				this.modeRunning = false;
 				return;
 			}
 			if (this.overflownRoot){
 				this.onLeafClickHeld(layoutNode);
-				setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
+				setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 				return;
 			}
 			this.onLeafClick(layoutNode).then(success => {
 				if (success){
-					setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
+					setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 					return;
 				}
 				// Attempt expand-to-view on an ancestor halfway to the active root
@@ -486,7 +484,7 @@ export default defineComponent({
 				}
 				layoutNode = ancestorChain[Math.floor((ancestorChain.length - 1) / 2)]
 				this.onNonleafClickHeld(layoutNode);
-				setTimeout(() => this.expandToNode(name), this.uiOpts.tileChgDuration);
+				setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 			});
 		},
 		// For auto-mode events
@@ -510,7 +508,7 @@ export default defineComponent({
 					layoutNode = layoutNode.children[idx!];
 				}
 				this.setLastFocused(layoutNode);
-				setTimeout(this.autoAction, this.uiOpts.autoWaitTime);
+				setTimeout(this.autoAction, this.uiOpts.autoActionDelay);
 			} else {
 				// Determine available actions
 				let action: AutoAction | null;
@@ -597,7 +595,7 @@ export default defineComponent({
 						this.onDetachedAncestorClick(node.parent!);
 						break;
 				}
-				setTimeout(this.autoAction, this.uiOpts.tileChgDuration + this.uiOpts.autoWaitTime);
+				setTimeout(this.autoAction, this.uiOpts.transitionDuration + this.uiOpts.autoActionDelay);
 				this.autoPrevAction = action;
 			}
 		},
@@ -881,7 +879,7 @@ export default defineComponent({
 					clearTimeout(timerId);
 					console.log('Reached timeout waiting for ancestry-bar transition-end event');
 				}
-			}, this.uiOpts.tileChgDuration * 3);
+			}, this.uiOpts.transitionDuration * 3);
 		},
 		tutPaneTransitionEnd(){
 			this.tutPaneInTransition = false;
@@ -899,7 +897,7 @@ export default defineComponent({
 					clearTimeout(timerId);
 					console.log('Reached timeout waiting for tutorial-pane transition-end event');
 				}
-			}, this.uiOpts.tileChgDuration * 3);
+			}, this.uiOpts.transitionDuration * 3);
 		},
 	},
 	created(){
@@ -922,7 +920,7 @@ export default defineComponent({
 <template>
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
 	:style="{backgroundColor: uiOpts.appBgColor}">
-	<div class="flex bg-black shadow">
+	<div class="flex shadow" :style="{backgroundColor: uiOpts.titleBarBgColor}">
 		<h1 class="text-lime-500 px-4 my-auto text-2xl">Tree of Life</h1>
 		<!-- Icons -->
 		<div v-if="!uiOpts.disabledActions.has('search')"
@@ -948,7 +946,7 @@ export default defineComponent({
 	</div>
 	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
 		<transition name="fade" @after-enter="tutPaneTransitionEnd" @after-leave="tutPaneTransitionEnd">
-			<tutorial-pane v-if="tutorialOpen" :height="uiOpts.tutorialPaneSz + 'px'"
+			<tutorial-pane v-if="tutorialOpen" :height="uiOpts.tutPaneSz + 'px'"
 				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!welcomeOpen"
 				@close="onTutorialClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
 		</transition>
@@ -962,7 +960,7 @@ export default defineComponent({
 					@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
 			</transition>
 		</div>
-		<div class="relative grow" :style="{margin: uiOpts.tileAreaOffset + 'px'}" ref="tileArea">
+		<div class="relative grow" :style="{margin: uiOpts.mainTileMargin + 'px'}" ref="tileArea">
 			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 				:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
 				@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
