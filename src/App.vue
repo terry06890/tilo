@@ -294,12 +294,11 @@ export default defineComponent({
 			// Function for expanding tile
 			let doExpansion = () => {
 				LayoutNode.hideUpward(layoutNode, this.layoutMap);
-				this.activeRoot = layoutNode;
 				if (this.detachedAncestors == null){
-					// Repeatedly relayout tiles during ancestry-bar transition
 					this.ancestryBarInTransition = true;
 					this.relayoutDuringAncestryBarTransition();
 				}
+				this.activeRoot = layoutNode;
 				//
 				return this.updateAreaDims().then(() => {
 					this.overflownRoot = false;
@@ -350,12 +349,11 @@ export default defineComponent({
 				return;
 			}
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
-			this.activeRoot = layoutNode;
-			// Repeatedly relayout tiles during ancestry-bar transition
 			if (this.detachedAncestors == null){
 				this.ancestryBarInTransition = true;
 				this.relayoutDuringAncestryBarTransition();
 			}
+			this.activeRoot = layoutNode;
 			//
 			this.updateAreaDims().then(() => this.relayoutWithCollapse());
 		},
@@ -367,7 +365,6 @@ export default defineComponent({
 			this.setLastFocused(null);
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
-			// Repeatedly relayout tiles during ancestry-bar transition
 			if (layoutNode.parent == null){
 				this.ancestryBarInTransition = true;
 				this.relayoutDuringAncestryBarTransition();
