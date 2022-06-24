@@ -9,6 +9,7 @@ import SettingsModal from './components/SettingsModal.vue';
 import HelpModal from './components/HelpModal.vue';
 import AncestryBar from './components/AncestryBar.vue';
 import TutorialPane from './components/TutorialPane.vue';
+import IconButton from './components/IconButton.vue';
 // Icons
 import SearchIcon from './components/icon/SearchIcon.vue';
 import PlayIcon from './components/icon/PlayIcon.vue';
@@ -911,7 +912,7 @@ export default defineComponent({
 	},
 	components: {
 		Tile, AncestryBar,
-		HelpIcon, SettingsIcon, SearchIcon, PlayIcon,
+		IconButton, HelpIcon, SettingsIcon, SearchIcon, PlayIcon,
 		TileInfoModal, HelpModal, SearchModal, SettingsModal, TutorialPane,
 	},
 });
@@ -923,26 +924,22 @@ export default defineComponent({
 	<div class="flex shadow" :style="{backgroundColor: uiOpts.titleBarBgColor}">
 		<h1 class="text-lime-500 px-4 my-auto text-2xl">Tree of Life</h1>
 		<!-- Icons -->
-		<div v-if="!uiOpts.disabledActions.has('search')"
-			class="ml-auto mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
-				hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onSearchIconClick">
+		<icon-button v-if="!uiOpts.disabledActions.has('search')"
+			class="ml-auto mr-2 my-2 bg-lime-600 text-lime-100" @click="onSearchIconClick">
 			<search-icon/>
-		</div>
-		<div v-if="!uiOpts.disabledActions.has('autoMode')"
-			class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
-				hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onPlayIconClick">
+		</icon-button>
+		<icon-button v-if="!uiOpts.disabledActions.has('autoMode')"
+			class="mr-2 my-2 bg-lime-600 text-lime-100" @click="onPlayIconClick">
 			<play-icon/>
-		</div>
-		<div v-if="!uiOpts.disabledActions.has('settings')"
-			class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
-				hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onSettingsIconClick">
+		</icon-button>
+		<icon-button v-if="!uiOpts.disabledActions.has('settings')"
+			class="mr-2 my-2 bg-lime-600 text-lime-100" @click="onSettingsIconClick">
 			<settings-icon/>
-		</div>
-		<div v-if="!uiOpts.disabledActions.has('help')"
-			class="mr-2 my-2 w-9 aspect-square p-2 rounded-full bg-lime-600 text-lime-100
-				hover:brightness-125 active:brightness-125 hover:cursor-pointer" @click="onHelpIconClick">
+		</icon-button>
+		<icon-button v-if="!uiOpts.disabledActions.has('help')"
+			class="mr-2 my-2 bg-lime-600 text-lime-100" @click="onHelpIconClick">
 			<help-icon/>
-		</div>
+		</icon-button>
 	</div>
 	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
 		<transition name="fade" @after-enter="tutPaneTransitionEnd" @after-leave="tutPaneTransitionEnd">
