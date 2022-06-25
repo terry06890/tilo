@@ -74,6 +74,7 @@ export type UiOptions = {
 	// Timing related
 	clickHoldDuration: number, // Time after mousedown when a click-and-hold is recognised, in ms
 	transitionDuration: number, // ms
+	animationDelay: number, // Time between updates during transitions/resizes/etc, in ms
 	autoActionDelay: number, // Time between auto-mode actions (incl transitions), in ms
 	// Other
 	useReducedTree: boolean,

@@ -38,7 +38,7 @@ function getReverseAction(action: AutoAction): AutoAction | null {
 		return null;
 	}
 }
-// Functions providing default option values
+// For options
 function getDefaultLytOpts(): LayoutOptions {
 	let screenSz = getBreakpoint();
 	return {
@@ -55,7 +55,7 @@ function getDefaultLytOpts(): LayoutOptions {
 		sweepToParent: 'prefer', // 'none' | 'prefer' | 'fallback'
 	};
 }
-function getDefaultUiOpts(lytOpts: LayoutOptions){
+function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 	let screenSz = getBreakpoint();
 	// Reused option values
 	let textColor = '#fafaf9';
@@ -91,6 +91,7 @@ function getDefaultUiOpts(lytOpts: LayoutOptions){
 		// Timing related
 		clickHoldDuration: 400, // ms
 		transitionDuration: 300, // ms
+		animationDelay: 100, // ms
 		autoActionDelay: 500, // ms
 		// Other
 		useReducedTree: false,
@@ -100,40 +101,43 @@ function getDefaultUiOpts(lytOpts: LayoutOptions){
 		disabledActions: new Set() as Set<Action>,
 	};
 }
-
-// Initialise tree-of-life data
-const initialTolMap: TolMap = new Map();
-initialTolMap.set("", new TolNode());
+const lytOptPrefix = 'LYT '; // Used when saving to localStorage
+const uiOptPrefix = 'UI ';
 
 export default defineComponent({
 	data(){
+		// Initial tree-of-life data
+		let initialTolMap: TolMap = new Map();
+		initialTolMap.set("", new TolNode());
 		let layoutTree = initLayoutTree(initialTolMap, "", 0);
 		layoutTree.hidden = true;
+		// Get/load option values
 		let lytOpts = this.getLytOpts();
 		let uiOpts = this.getUiOpts();
+		//
 		return {
+			// Tree/layout data
 			tolMap: initialTolMap,
 			layoutTree: layoutTree,
-			activeRoot: layoutTree, // Differs from layoutTree root when expand-to-view is used
-			layoutMap: initLayoutMap(layoutTree), // Maps names to LayoutNode objects
+			activeRoot: layoutTree, // Root of the displayed subtree
+			layoutMap: initLayoutMap(layoutTree), // Maps names to LayoutNodes
 			overflownRoot: false, // Set when displaying a root tile with many children, with overflow
-			// Modals and settings related
+			// For modals
 			infoModalNodeName: null as string | null, // Name of node to display info for, or null
-			helpOpen: false,
 			searchOpen: false,
 			settingsOpen: false,
-			tutorialOpen: !uiOpts.tutorialSkip,
-			welcomeOpen: !uiOpts.tutorialSkip,
-			ancestryBarInTransition: false,
-			tutTriggerAction: null as Action | null,
-			tutTriggerFlag: false,
-			tutPaneInTransition: false,
+			helpOpen: false,
 			// For search and auto-mode
 			modeRunning: false,
-			lastFocused: null as LayoutNode | null,
+			lastFocused: null as LayoutNode | null, // Used to un-focus 
 			// For auto-mode
 			autoPrevAction: null as AutoAction | null, // Used to help prevent action cycles
 			autoPrevActionFail: false, // Used to avoid re-trying a failed expand/collapse
+			// For tutorial pane
+			tutPaneOpen: !uiOpts.tutorialSkip,
+			tutWelcome: !uiOpts.tutorialSkip,
+			tutTriggerAction: null as Action | null, // Used to advance tutorial upon user-actions
+			tutTriggerFlag: false,
 			// Options
 			lytOpts: lytOpts,
 			uiOpts: uiOpts,
@@ -142,14 +146,20 @@ export default defineComponent({
 			tileAreaDims: [0, 0] as [number, number],
 			lastResizeHdlrTime: 0, // Used to throttle resize handling
 			pendingResizeHdlr: 0, // Set via setTimeout() for a non-initial resize event
+			// For transitions
+			ancestryBarInTransition: false,
+			tutPaneInTransition: false,
 			// Other
-			justInitialised: false,
+			justInitialised: false, // Used to skip transition for tile initially loaded from server
 			changedSweepToParent: false, // Set during search animation for efficiency
-			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries are removed (done on tile collapse)
+			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries get removed
 		};
 	},
 	computed: {
-		// Nodes to show in ancestry-bar, with tol root first
+		wideArea(): boolean {
+			return this.mainAreaDims[0] > this.mainAreaDims[1];
+		},
+		// Nodes to show in ancestry-bar (ordered from root downwards)
 		detachedAncestors(): LayoutNode[] | null {
 			if (this.activeRoot == this.layoutTree){
 				return null;
@@ -162,6 +172,7 @@ export default defineComponent({
 			}
 			return ancestors.reverse();
 		},
+		// Styles
 		buttonStyles(): Record<string,string> {
 			return {
 				color: this.uiOpts.textColor,
@@ -170,8 +181,8 @@ export default defineComponent({
 		},
 		tutPaneContainerStyles(): Record<string,string> {
 			return {
-				minHeight: (this.tutorialOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
-				maxHeight: (this.tutorialOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
+				minHeight: (this.tutPaneOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
+				maxHeight: (this.tutPaneOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
 				transitionDuration: this.uiOpts.transitionDuration + 'ms',
 				transitionProperty: 'max-height, min-height',
 				overflow: 'hidden',
@@ -186,9 +197,9 @@ export default defineComponent({
 				maxHeight: 'none',
 				transitionDuration: this.uiOpts.transitionDuration + 'ms',
 				transitionProperty: '',
-				overflow: 'hidden'
+				overflow: 'hidden',
 			};
-			if (this.mainAreaDims[0] > this.mainAreaDims[1]){
+			if (this.wideArea){
 				styles.minWidth = ancestryBarBreadth + 'px';
 				styles.maxWidth = ancestryBarBreadth + 'px';
 				styles.transitionProperty = 'min-width, max-width';
@@ -202,16 +213,16 @@ export default defineComponent({
 	},
 	methods: {
 		// For tile expand/collapse events
-		onLeafClick(layoutNode: LayoutNode){
+		async onLeafClick(layoutNode: LayoutNode): Promise<boolean> {
 			if (this.uiOpts.disabledActions.has('expand')){
-				return Promise.resolve(false);
+				return false;
 			}
 			this.handleActionForTutorial('expand');
 			this.setLastFocused(null);
 			// If clicking child of overflowing active-root
 			if (this.overflownRoot){
 				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
-				return Promise.resolve(false);
+				return false;
 			}
 			// Function for expanding tile
 			let doExpansion = () => {
@@ -220,16 +231,16 @@ export default defineComponent({
 					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
 					layoutMap: this.layoutMap
 				};
-				let success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts, lytFnOpts);
+				let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, lytFnOpts);
 				// If expanding active-root with too many children to fit, allow overflow
 				if (!success && layoutNode == this.activeRoot){
-					success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims,
+					success = tryLayout(this.activeRoot, this.tileAreaDims,
 						{...this.lytOpts, layoutType: 'flex-sqr'}, lytFnOpts);
 					if (success){
 						this.overflownRoot = true;
 					}
 				}
-				// Check for failure
+				//
 				if (!success){
 					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 				}
@@ -238,28 +249,30 @@ export default defineComponent({
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				let urlPath = '/data/node?name=' + encodeURIComponent(layoutNode.name)
-				urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
-				return fetch(urlPath)
-					.then(response => response.json())
-					.then(obj => {
-						Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])});
-						doExpansion();
-					})
-					.catch(error => {
-						console.log('ERROR loading tolnode data', error);
-					});
+				let responseObj: {[x: string]: TolNode};
+				try {
+					let urlPath = '/data/node?name=' + encodeURIComponent(layoutNode.name)
+					urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+					let response = await fetch(urlPath);
+					responseObj = await response.json();
+				} catch (error){
+					console.log('ERROR loading tolnode data', error);
+					return false;
+				}
+				Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
+				return doExpansion();
 			} else {
-				return new Promise((resolve, reject) => resolve(doExpansion()));
+				return doExpansion();
 			}
 		},
-		onNonleafClick(layoutNode: LayoutNode, skipClean = false){
+		async onNonleafClick(layoutNode: LayoutNode, {skipClean = false} = {}): Promise<boolean> {
 			if (this.uiOpts.disabledActions.has('collapse')){
 				return false;
 			}
 			this.handleActionForTutorial('collapse');
 			this.setLastFocused(null);
-			let success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts, {
+			//
+			let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, {
 				allowCollapse: false,
 				chg: {type: 'collapse', node: layoutNode, tolMap: this.tolMap},
 				layoutMap: this.layoutMap
@@ -267,7 +280,7 @@ export default defineComponent({
 			if (!success){
 				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 			} else {
-				// Update overflownRoot if root was collapsed
+				// Update overflownRoot to indicate root was collapsed
 				if (this.overflownRoot){
 					this.overflownRoot = false;
 				}
@@ -288,143 +301,153 @@ export default defineComponent({
 			return success;
 		},
 		// For expand-to-view and ancestry-bar events
-		onLeafClickHeld(layoutNode: LayoutNode){
+		async onLeafClickHeld(layoutNode: LayoutNode): Promise<boolean> {
 			if (this.uiOpts.disabledActions.has('expandToView')){
-				return;
+				return false;
 			}
 			this.handleActionForTutorial('expandToView');
 			this.setLastFocused(null);
+			// Special case for active root
 			if (layoutNode == this.activeRoot){
 				this.onLeafClick(layoutNode);
-				return;
+				return true;
 			}
 			// Function for expanding tile
-			let doExpansion = () => {
+			let doExpansion = async () => {
+				// Hide ancestors
 				LayoutNode.hideUpward(layoutNode, this.layoutMap);
-				if (this.detachedAncestors == null){
+				if (this.detachedAncestors == null){ // Account for ancestry-bar transition
 					this.ancestryBarInTransition = true;
 					this.relayoutDuringAncestryBarTransition();
 				}
 				this.activeRoot = layoutNode;
+				// Relayout
+				await this.updateAreaDims();
+				this.overflownRoot = false;
+				let lytFnOpts = {
+					allowCollapse: false,
+					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
+					layoutMap: this.layoutMap
+				};
+				let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, lytFnOpts);
+				// If expanding active-root with too many children to fit, allow overflow
+				if (!success){
+					success = tryLayout(this.activeRoot, this.tileAreaDims,
+						{...this.lytOpts, layoutType: 'flex-sqr'}, lytFnOpts);
+					if (success){
+						this.overflownRoot = true;
+					}
+				}
 				//
-				return this.updateAreaDims().then(() => {
-					this.overflownRoot = false;
-					let lytFnOpts = {
-						allowCollapse: false,
-						chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
-						layoutMap: this.layoutMap
-					};
-					let success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts, lytFnOpts);
-					if (!success){
-						success = tryLayout(this.activeRoot, [0,0], this.tileAreaDims,
-							{...this.lytOpts, layoutType: 'flex-sqr'}, lytFnOpts);
-						if (success){
-							this.overflownRoot = true;
-						}
-					}
-					// Check for failure
-					if (!success){
-						layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
-					}
-					return success;
-				});
+				if (!success){
+					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+				}
+				return success;
 			};
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				let urlPath = '/data/node?name=' + encodeURIComponent(layoutNode.name)
-				urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
-				return fetch(urlPath)
-					.then(response => response.json())
-					.then(obj => {Object.getOwnPropertyNames(obj).forEach(key => {this.tolMap.set(key, obj[key])})})
-					.then(doExpansion)
-					.catch(error => {
-						console.log('ERROR loading tolnode data', error);
-					});
+				let responseObj: {[x: string]: TolNode};
+				try {
+					let urlPath = '/data/node?name=' + encodeURIComponent(layoutNode.name)
+					urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+					let response = await fetch(urlPath);
+					responseObj = await response.json();
+				} catch (error){
+					console.log('ERROR loading tolnode data', error);
+					return false;
+				}
+				Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
+				return doExpansion();
 			} else {
 				return doExpansion();
 			}
 		},
-		onNonleafClickHeld(layoutNode: LayoutNode){
+		async onNonleafClickHeld(layoutNode: LayoutNode): Promise<boolean> {
 			if (this.uiOpts.disabledActions.has('expandToView')){
-				return;
+				return false;
 			}
 			this.handleActionForTutorial('expandToView');
 			this.setLastFocused(null);
+			// Special case for active root
 			if (layoutNode == this.activeRoot){
 				console.log('Ignored expand-to-view on active-root node');
-				return;
+				return false;
 			}
+			// Hide ancestors
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
-			if (this.detachedAncestors == null){
+			if (this.detachedAncestors == null){ // Account for ancestry-bar transition
 				this.ancestryBarInTransition = true;
 				this.relayoutDuringAncestryBarTransition();
 			}
 			this.activeRoot = layoutNode;
-			//
-			this.updateAreaDims().then(() => this.relayoutWithCollapse());
+			// Relayout
+			await this.updateAreaDims();
+			return this.relayoutWithCollapse();
 		},
-		onDetachedAncestorClick(layoutNode: LayoutNode, alsoCollapse = false){
+		async onDetachedAncestorClick(layoutNode: LayoutNode, {collapseAndNoRelayout = false} = {}): Promise<boolean> {
 			if (this.uiOpts.disabledActions.has('unhideAncestor')){
-				return Promise.resolve(false);
+				return false;
 			}
 			this.handleActionForTutorial('unhideAncestor');
 			this.setLastFocused(null);
+			// Unhide ancestors
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
-			if (layoutNode.parent == null){
+			if (layoutNode.parent == null){ // Account for ancestry-bar transition
 				this.ancestryBarInTransition = true;
 				this.relayoutDuringAncestryBarTransition();
 			}
 			//
-			if (alsoCollapse){
-				this.onNonleafClick(layoutNode, true);
+			let success: boolean;
+			if (collapseAndNoRelayout){
+				success = await this.onNonleafClick(layoutNode, {skipClean: true});
+			} else {
+				await this.updateAreaDims();
+				success = this.relayoutWithCollapse();
 			}
-			return this.updateAreaDims().then(() => {
-				this.relayoutWithCollapse();
-				LayoutNode.showDownward(layoutNode);
-			});
+			LayoutNode.showDownward(layoutNode);
+			return success;
 		},
 		// For tile-info events
-		onInfoClick(nodeName: string){
+		onInfoClick(nodeName: string): void {
 			this.handleActionForTutorial('tileInfo');
-			if (!this.searchOpen){
+			if (!this.searchOpen){ // Close an active non-search mode
 				this.resetMode();
 			}
 			this.infoModalNodeName = nodeName;
 		},
 		// For search events
-		onSearchIconClick(){
+		onSearchIconClick(): void {
 			this.handleActionForTutorial('search');
-			this.resetMode();
-			this.searchOpen = true;
+			if (!this.searchOpen){
+				this.resetMode();
+				this.searchOpen = true;
+			}
 		},
-		onSearch(name: string){
+		onSearch(name: string): void {
 			if (this.modeRunning){
 				console.log("WARNING: Unexpected search event while search/auto mode is running")
 				return;
 			}
 			this.searchOpen = false;
 			this.modeRunning = true;
-			if (this.lytOpts.sweepToParent == 'fallback'){
+			if (this.lytOpts.sweepToParent == 'fallback'){ // Temporary change for efficiency
 				this.lytOpts.sweepToParent = 'prefer';
 				this.changedSweepToParent = true;
 			}
 			this.expandToNode(name);
 		},
-		expandToNode(name: string){
+		async expandToNode(name: string){
 			if (!this.modeRunning){
 				return;
 			}
-			// Check if searched node is displayed
+			// Check if node is displayed
 			let targetNode = this.layoutMap.get(name);
 			if (targetNode != null && !targetNode.hidden){
 				this.setLastFocused(targetNode);
 				this.modeRunning = false;
-				if (this.changedSweepToParent){
-					this.lytOpts.sweepToParent = 'fallback';
-					this.changedSweepToParent = false;
-				}
+				this.afterSearch();
 				return;
 			}
 			// Get nearest in-layout-tree ancestor
@@ -440,11 +463,11 @@ export default defineComponent({
 					nodeInAncestryBar = nodeInAncestryBar.parent!;
 				}
 				if (!this.uiOpts.searchJumpMode){
-					this.onDetachedAncestorClick(nodeInAncestryBar!);
+					await this.onDetachedAncestorClick(nodeInAncestryBar!);
 					setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 				} else{
-					this.onDetachedAncestorClick(nodeInAncestryBar, true)
-						.then(() => this.expandToNode(name));
+					await this.onDetachedAncestorClick(nodeInAncestryBar, {collapseAndNoRelayout: true});
+					this.expandToNode(name);
 				}
 				return;
 			}
@@ -461,46 +484,50 @@ export default defineComponent({
 				layoutNode.addDescendantChain(nodesToAdd, this.tolMap, this.layoutMap);
 				// Expand-to-view on target-node's parent
 				targetNode = this.layoutMap.get(name);
-				this.onLeafClickHeld(targetNode!.parent!);
-				//
+				await this.onLeafClickHeld(targetNode!.parent!);
 				setTimeout(() => {this.setLastFocused(targetNode!);}, this.uiOpts.transitionDuration);
 				this.modeRunning = false;
 				return;
 			}
 			if (this.overflownRoot){
-				this.onLeafClickHeld(layoutNode);
+				await this.onLeafClickHeld(layoutNode);
 				setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 				return;
 			}
-			this.onLeafClick(layoutNode).then(success => {
-				if (success){
-					setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
-					return;
-				}
-				// Attempt expand-to-view on an ancestor halfway to the active root
-				if (layoutNode == this.activeRoot){
-					console.log('Screen too small to expand active root');
-					this.modeRunning = false;
-					return;
-				}
-				let ancestorChain = [layoutNode];
-				while (layoutNode.parent! != this.activeRoot){
-					layoutNode = layoutNode.parent!;
-					ancestorChain.push(layoutNode);
-				}
-				layoutNode = ancestorChain[Math.floor((ancestorChain.length - 1) / 2)]
-				this.onNonleafClickHeld(layoutNode);
+			let success = await this.onLeafClick(layoutNode);
+			if (success){
 				setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
-			});
+				return;
+			}
+			// Attempt expand-to-view on an ancestor halfway to the active root
+			if (layoutNode == this.activeRoot){
+				console.log('Screen too small to expand active root');
+				this.modeRunning = false;
+				return;
+			}
+			let ancestorChain = [layoutNode];
+			while (layoutNode.parent! != this.activeRoot){
+				layoutNode = layoutNode.parent!;
+				ancestorChain.push(layoutNode);
+			}
+			layoutNode = ancestorChain[Math.floor((ancestorChain.length - 1) / 2)]
+			await this.onNonleafClickHeld(layoutNode);
+			setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
+		},
+		afterSearch(): void {
+			if (this.changedSweepToParent){
+				this.lytOpts.sweepToParent = 'fallback';
+				this.changedSweepToParent = false;
+			}
 		},
 		// For auto-mode events
-		onPlayIconClick(){
+		onAutoIconClick(): void {
 			this.handleActionForTutorial('autoMode');
 			this.resetMode();
 			this.modeRunning = true;
 			this.autoAction();
 		},
-		autoAction(){
+		async autoAction(){
 			if (!this.modeRunning){
 				this.setLastFocused(null);
 				return;
@@ -522,39 +549,33 @@ export default defineComponent({
 				let node: LayoutNode = this.lastFocused;
 				if (node.children.length == 0){
 					actionWeights = {'move across': 1, 'move up': 2, 'expand': 3};
-					// Zero weights for disallowed actions
-					if (node == this.activeRoot || node.parent!.children.length == 1){
-						actionWeights['move across'] = 0;
-					}
-					if (node == this.activeRoot){
-						actionWeights['move up'] = 0;
-					}
-					if (this.tolMap.get(node.name)!.children.length == 0 || this.overflownRoot){
-						actionWeights['expand'] = 0;
-					}
 				} else {
 					actionWeights = {
 						'move across': 1, 'move down': 2, 'move up': 1,
 						'collapse': 1, 'expandToView': 1, 'unhideAncestor': 1
 					};
-					// Zero weights for disallowed actions
-					if (node == this.activeRoot || node.parent!.children.length == 1){
-						actionWeights['move across'] = 0;
-					}
-					if (node == this.activeRoot){
-						actionWeights['move up'] = 0;
-					}
-					if (!node.children.every(n => n.children.length == 0)){
-						actionWeights['collapse'] = 0; // Only collapse if all children are leaves
-					}
-					if (node.parent != this.activeRoot){
-						actionWeights['expandToView'] = 0; // Only expand-to-view if direct child of activeRoot
-					}
-					if (this.activeRoot.parent == null || node != this.activeRoot){
-						actionWeights['unhideAncestor'] = 0; // Only expand ancestry-bar if able and activeRoot
-					}
 				}
-				if (this.autoPrevAction != null){ // Avoid undoing previous action
+				// Zero weights for disallowed actions
+				if (node == this.activeRoot || node.parent!.children.length == 1){
+					actionWeights['move across'] = 0;
+				}
+				if (node == this.activeRoot){
+					actionWeights['move up'] = 0;
+				}
+				if (this.tolMap.get(node.name)!.children.length == 0 || this.overflownRoot){
+					actionWeights['expand'] = 0;
+				}
+				if (!node.children.every(n => n.children.length == 0)){
+					actionWeights['collapse'] = 0; // Only collapse if all children are leaves
+				}
+				if (node.parent != this.activeRoot){
+					actionWeights['expandToView'] = 0; // Only expand-to-view if direct child of activeRoot
+				}
+				if (this.activeRoot.parent == null || node != this.activeRoot){
+					actionWeights['unhideAncestor'] = 0; // Only expand ancestry-bar if able and activeRoot
+				}
+				// Avoid undoing previous action
+				if (this.autoPrevAction != null){
 					let revAction = getReverseAction(this.autoPrevAction);
 					if (revAction != null && revAction in actionWeights){
 						actionWeights[revAction as keyof typeof actionWeights] = 0;
@@ -572,69 +593,72 @@ export default defineComponent({
 					action = actionList[randWeightedChoice(weightList)!] as AutoAction;
 				}
 				// Perform action
-				this.autoPrevActionFail = false;
-				switch (action){
-					case 'move across': // Bias towards siblings with higher dCount
-						let siblings = node.parent!.children.filter(n => n != node);
-						let siblingWeights = siblings.map(n => n.dCount + 1);
-						this.setLastFocused(siblings[randWeightedChoice(siblingWeights)!]);
-						break;
-					case 'move down': // Bias towards children with higher dCount
-						let childWeights = node.children.map(n => n.dCount + 1);
-						this.setLastFocused(node.children[randWeightedChoice(childWeights)!]);
-						break;
-					case 'move up':
-						this.setLastFocused(node.parent!);
-						break;
-					case 'expand':
-						this.onLeafClick(node)
-							.then(success => this.autoPrevActionFail = !success)
-							.catch(error => this.autoPrevActionFail = true);
-						break;
-					case 'collapse':
-						this.autoPrevActionFail = !this.onNonleafClick(node);
-						break;
-					case 'expandToView':
-						this.onNonleafClickHeld(node);
-						break;
-					case 'unhideAncestor':
-						this.onDetachedAncestorClick(node.parent!);
-						break;
-				}
-				setTimeout(this.autoAction, this.uiOpts.transitionDuration + this.uiOpts.autoActionDelay);
 				this.autoPrevAction = action;
+				let success = true;
+				try {
+					switch (action){
+						case 'move across': // Bias towards siblings with higher dCount
+							let siblings = node.parent!.children.filter(n => n != node);
+							let siblingWeights = siblings.map(n => n.dCount + 1);
+							this.setLastFocused(siblings[randWeightedChoice(siblingWeights)!]);
+							break;
+						case 'move down': // Bias towards children with higher dCount
+							let childWeights = node.children.map(n => n.dCount + 1);
+							this.setLastFocused(node.children[randWeightedChoice(childWeights)!]);
+							break;
+						case 'move up':
+							this.setLastFocused(node.parent!);
+							break;
+						case 'expand':
+							success = await this.onLeafClick(node);
+							break;
+						case 'collapse':
+							success = await this.onNonleafClick(node);
+							break;
+						case 'expandToView':
+							success = await this.onNonleafClickHeld(node);
+							break;
+						case 'unhideAncestor':
+							success = await this.onDetachedAncestorClick(node.parent!);
+							break;
+					}
+				} catch (error) {
+					this.autoPrevActionFail = true;
+					return;
+				}
+				this.autoPrevActionFail = !success;
+				setTimeout(this.autoAction, this.uiOpts.transitionDuration + this.uiOpts.autoActionDelay);
 			}
 		},
 		// For settings events
-		onSettingsIconClick(){
+		onSettingsIconClick(): void {
 			this.handleActionForTutorial('settings');
 			this.resetMode();
 			this.settingsOpen = true;
 		},
-		onTreeChange(){
-			// Collapse tree to root
+		async onTreeChange(){
 			if (this.activeRoot != this.layoutTree){
-				this.onDetachedAncestorClick(this.layoutTree);
+				// Collapse tree to root
+				await this.onDetachedAncestorClick(this.layoutTree);
 			}
-			this.onNonleafClick(this.layoutTree);
-			// Re-initialise tree
-			this.initTreeFromServer();
+			await this.onNonleafClick(this.layoutTree);
+			await this.initTreeFromServer();
 		},
-		onSettingsChg(changedLytOpts: Iterable<string>, changedUiOpts: Iterable<string>){
+		onSettingsChg(changedLytOpts: Iterable<string>, changedUiOpts: Iterable<string>): void {
 			let changed = false;
 			for (let opt of changedLytOpts){
-				localStorage.setItem('lyt ' + opt, String(this.lytOpts[opt as keyof LayoutOptions]));
+				localStorage.setItem(lytOptPrefix + opt, String(this.lytOpts[opt as keyof LayoutOptions]));
 				changed = true;
 			}
 			for (let opt of changedUiOpts){
-				localStorage.setItem('ui ' + opt, String(this.uiOpts[opt]));
+				localStorage.setItem(uiOptPrefix + opt, String(this.uiOpts[opt]));
 				changed = true;
 			}
 			if (changed){
 				console.log('Settings saved');
 			}
 		},
-		onResetSettings(){
+		onResetSettings(): void {
 			localStorage.clear();
 			let defaultLytOpts = getDefaultLytOpts();
 			let defaultUiOpts = getDefaultUiOpts(defaultLytOpts);
@@ -647,42 +671,43 @@ export default defineComponent({
 			this.relayoutWithCollapse();
 		},
 		// For help events
-		onHelpIconClick(){
+		onHelpIconClick(): void {
 			this.handleActionForTutorial('help');
 			this.resetMode();
 			this.helpOpen = true;
 		},
-		// For tutorial events
-		onStartTutorial(){
-			if (this.tutorialOpen == false){
-				this.tutorialOpen = true;
-				// Repeatedly relayout tiles during tutorial-pane transition
+		// For tutorial-pane events
+		onTutPaneClose(): void {
+			this.tutPaneOpen = false;
+			this.tutWelcome = false;
+			this.uiOpts.disabledActions.clear();
+			// Account for tutorial-pane transition
+			this.tutPaneInTransition = true;
+			this.relayoutDuringTutPaneTransition();
+		},
+		onTutStageChg(triggerAction: Action | null): void {
+			this.tutWelcome = false;
+			this.tutTriggerAction = triggerAction;
+		},
+		onTutorialSkip(): void {
+			// Remember to skip in future sessions
+			localStorage.setItem(uiOptPrefix + 'tutorialSkip', String(true));
+		},
+		onStartTutorial(): void {
+			if (!this.tutPaneOpen){
+				this.tutPaneOpen = true;
+				// Account for tutorial-pane transition
 				this.tutPaneInTransition = true;
 				this.relayoutDuringTutPaneTransition();
 			}
 		},
-		onTutorialClose(){
-			this.tutorialOpen = false;
-			this.welcomeOpen = false;
-			this.uiOpts.disabledActions.clear();
-			// Repeatedly relayout tiles during tutorial-pane transition
-			this.tutPaneInTransition = true;
-			this.relayoutDuringTutPaneTransition();
-		},
-		onTutorialSkip(){
-			localStorage.setItem('ui tutorialSkip', String(true));
-		},
-		onTutStageChg(triggerAction: Action | null){
-			this.welcomeOpen = false;
-			this.tutTriggerAction = triggerAction;
-		},
-		handleActionForTutorial(action: Action){
-			if (!this.tutorialOpen){
+		handleActionForTutorial(action: Action): void {
+			if (!this.tutPaneOpen){
 				return;
 			}
 			// Close welcome message on first action
-			if (this.welcomeOpen){
-				this.onTutorialClose();
+			if (this.tutWelcome){
+				this.onTutPaneClose();
 			}
 			// Tell TutorialPane if trigger-action was done
 			if (this.tutTriggerAction == action){
@@ -690,57 +715,55 @@ export default defineComponent({
 			}
 		},
 		// For other events
-		onResize(){
+		async onResize(){
 			// Handle event, delaying/ignoring if this was recently done
 			if (this.pendingResizeHdlr == 0){
-				const resizeDelay = 100;
-				let handleResize = () => {
-					// Update unmodified layout/ui options with defaults
+				let handleResize = async () => {
+					// Update layout/ui options with defaults, excluding user-modified ones
 					let lytOpts = getDefaultLytOpts();
 					let uiOpts = getDefaultUiOpts(lytOpts);
 					let changedTree = false;
-					for (let prop of Object.getOwnPropertyNames(lytOpts)){
-						let item = localStorage.getItem('lyt ' + prop);
-						if (item == null && this.lytOpts[prop] != lytOpts[prop as keyof LayoutOptions]){
-							this.lytOpts[prop] = lytOpts[prop as keyof LayoutOptions];
+					for (let prop of Object.getOwnPropertyNames(lytOpts) as (keyof LayoutOptions)[]){
+						let item = localStorage.getItem(lytOptPrefix + prop);
+						if (item == null && this.lytOpts[prop] != lytOpts[prop]){
+							this.lytOpts[prop] = lytOpts[prop];
 						}
 					}
-					for (let prop of Object.getOwnPropertyNames(uiOpts)){
-						let item = localStorage.getItem('lyt ' + prop);
-						if (item == null && this.uiOpts[prop] != uiOpts[prop as keyof typeof uiOpts]){
-							console.log("Loaded UI prop " + prop)
-							this.uiOpts[prop] = uiOpts[prop as keyof typeof uiOpts];
+					for (let prop of Object.getOwnPropertyNames(uiOpts) as (keyof UiOptions)[]){
+						let item = localStorage.getItem(lytOptPrefix + prop);
+						if (item == null && this.uiOpts[prop] != uiOpts[prop]){
+							this.uiOpts[prop] = uiOpts[prop];
 							if (prop == 'useReducedTree'){
 								changedTree = true;
 							}
 						}
 					}
-					//
+					// Relayout
 					this.overflownRoot = false;
 					if (!changedTree){
-						return this.updateAreaDims().then(() => this.relayoutWithCollapse());
+						await this.updateAreaDims();
+						this.relayoutWithCollapse();
 					} else {
-						return Promise.resolve(this.onTreeChange());
+						this.onTreeChange();
 					}
 				};
+				//
 				let currentTime = new Date().getTime();
-				if (currentTime - this.lastResizeHdlrTime > resizeDelay){
+				if (currentTime - this.lastResizeHdlrTime > this.uiOpts.animationDelay){
 					this.lastResizeHdlrTime = currentTime;
-					handleResize().then(() => {
-						this.lastResizeHdlrTime = new Date().getTime();
-					});
+					await handleResize();
+					this.lastResizeHdlrTime = new Date().getTime();
 				} else {
-					let remainingDelay = resizeDelay - (currentTime - this.lastResizeHdlrTime);
-					this.pendingResizeHdlr = setTimeout(() => {
+					let remainingDelay = this.uiOpts.animationDelay - (currentTime - this.lastResizeHdlrTime);
+					this.pendingResizeHdlr = setTimeout(async () => {
 						this.pendingResizeHdlr = 0;
-						handleResize().then(() => {
-							this.lastResizeHdlrTime = new Date().getTime();
-						});
+						await handleResize();
+						this.lastResizeHdlrTime = new Date().getTime();
 					}, remainingDelay);
 				}
 			}
 		},
-		onKeyUp(evt: KeyboardEvent){
+		onKeyUp(evt: KeyboardEvent): void {
 			if (evt.key == 'Escape'){
 				this.resetMode();
 			} else if (evt.key == 'f' && evt.ctrlKey){
@@ -754,92 +777,150 @@ export default defineComponent({
 					}
 				}
 			} else if (evt.key == 'F' && evt.ctrlKey){
-				// If search bar is open, swap search mode
+				// If search bar is open, switch search mode
 				if (this.searchOpen){
 					this.uiOpts.searchJumpMode = !this.uiOpts.searchJumpMode;
 					this.onSettingsChg([], ['searchJumpMode']);
 				}
 			}
 		},
-		// Helper methods
-		initTreeFromServer(){
-			let urlPath = '/data/node';
-			urlPath += this.uiOpts.useReducedTree ? '?tree=reduced' : '';
-			fetch(urlPath)
-				.then(response => response.json())
-				.then(obj => {
-					// Get root node name
-					let rootName = null;
-					let nodeNames = Object.getOwnPropertyNames(obj);
-					for (let n of nodeNames){
-						if (obj[n].parent == null){
-							rootName = n;
-							break;
-						}
-					}
-					if (rootName == null){
-						throw new Error('Server response has no root node');
-					}
-					// Initialise tree
-					this.tolMap.clear();
-					nodeNames.forEach(n => {this.tolMap.set(n, obj[n])});
-					this.layoutTree = initLayoutTree(this.tolMap, rootName, 0);
-					this.activeRoot = this.layoutTree;
-					this.layoutMap = initLayoutMap(this.layoutTree);
-					this.updateAreaDims().then(() => {
-						this.relayoutWithCollapse(false);
-						this.justInitialised = true;
-						setTimeout(() => {this.justInitialised = false;}, 300);
-					});
-				})
-				.catch(error => {
-					console.log('ERROR loading initial tolnode data', error);
-				});
+		// For initialisation
+		async initTreeFromServer(){
+			// Query server
+			let responseObj: {[x: string]: TolNode};
+			try {
+				let urlPath = '/data/node';
+				urlPath += this.uiOpts.useReducedTree ? '?tree=reduced' : '';
+				let response = await fetch(urlPath);
+				responseObj = await response.json();
+			} catch (error) {
+				console.log('ERROR: Unable to get tree data', error);
+				return;
+			}
+			// Get root node name
+			let rootName = null;
+			let nodeNames = Object.getOwnPropertyNames(responseObj);
+			for (let n of nodeNames){
+				if (responseObj[n].parent == null){
+					rootName = n;
+					break;
+				}
+			}
+			if (rootName == null){
+				console.log('ERROR: Server response has no root node');
+				return;
+			}
+			// Initialise tree
+			this.tolMap.clear();
+			nodeNames.forEach(n => {this.tolMap.set(n, responseObj[n])});
+			this.layoutTree = initLayoutTree(this.tolMap, rootName, 0);
+			this.activeRoot = this.layoutTree;
+			this.layoutMap = initLayoutMap(this.layoutTree);
+			// Relayout
+			await this.updateAreaDims();
+			this.relayoutWithCollapse(false);
+			// Skip initial transition
+			this.justInitialised = true;
+			setTimeout(() => {this.justInitialised = false;}, this.uiOpts.transitionDuration);
 		},
-		getLytOpts(){
-			let opts: {[x: string]: boolean|number|string} = getDefaultLytOpts();
-			for (let prop of Object.getOwnPropertyNames(opts)){
-				let item = localStorage.getItem('lyt ' + prop);
+		getLytOpts(): LayoutOptions {
+			let opts = getDefaultLytOpts();
+			for (let prop of Object.getOwnPropertyNames(opts) as (keyof LayoutOptions)[]){
+				let item = localStorage.getItem(lytOptPrefix + prop);
 				if (item != null){
 					switch (typeof(opts[prop])){
-						case 'boolean': opts[prop] = Boolean(item); break;
-						case 'number': opts[prop] = Number(item); break;
-						case 'string': opts[prop] = item; break;
+						case 'boolean': (opts[prop] as unknown as boolean) = Boolean(item); break;
+						case 'number': (opts[prop] as unknown as number) = Number(item); break;
+						case 'string': (opts[prop] as unknown as string) = item; break;
 						default: console.log(`WARNING: Found saved layout setting "${prop}" with unexpected type`);
 					}
 				}
 			}
 			return opts;
 		},
-		getUiOpts(){
-			let opts: {[x: string]: boolean|number|string|string[]|(string|number)[][]|Set<Action>} =
-				getDefaultUiOpts(getDefaultLytOpts());
-			for (let prop of Object.getOwnPropertyNames(opts)){
-				let item = localStorage.getItem('ui ' + prop);
+		getUiOpts(): UiOptions {
+			let opts = getDefaultUiOpts(getDefaultLytOpts());
+			for (let prop of Object.getOwnPropertyNames(opts) as (keyof UiOptions)[]){
+				let item = localStorage.getItem(uiOptPrefix + prop);
 				if (item != null){
 					switch (typeof(opts[prop])){
-						case 'boolean': opts[prop] = item == 'true'; break;
-						case 'number': opts[prop] = Number(item); break;
-						case 'string': opts[prop] = item; break;
+						case 'boolean': (opts[prop] as unknown as boolean) = (item == 'true'); break;
+						case 'number': (opts[prop] as unknown as number) = Number(item); break;
+						case 'string': (opts[prop] as unknown as string) = item; break;
 						default: console.log(`WARNING: Found saved UI setting "${prop}" with unexpected type`);
 					}
 				}
 			}
 			return opts;
 		},
-		resetMode(){
+		// For transitions
+		relayoutDuringAncestryBarTransition(): void {
+			let timerId = setInterval(async () => {
+				await this.updateAreaDims();
+				this.relayoutWithCollapse();
+				if (!this.ancestryBarInTransition){
+					clearTimeout(timerId);
+				}
+			}, this.uiOpts.animationDelay);
+			setTimeout(() => {
+				if (this.ancestryBarInTransition){
+					this.ancestryBarInTransition = false;
+					clearTimeout(timerId);
+					console.log('Reached timeout waiting for ancestry-bar transition-end event');
+				}
+			}, this.uiOpts.transitionDuration + 300);
+		},
+		relayoutDuringTutPaneTransition(): void {
+			let timerId = setInterval(async () => {
+				await this.updateAreaDims();
+				this.relayoutWithCollapse();
+				if (!this.tutPaneInTransition){
+					clearTimeout(timerId);
+				}
+			}, this.uiOpts.animationDelay);
+			setTimeout(() => {
+				if (this.tutPaneInTransition){
+					this.tutPaneInTransition = false;
+					clearTimeout(timerId);
+					console.log('Reached timeout waiting for tutorial-pane transition-end event');
+				}
+			}, this.uiOpts.transitionDuration + 300);
+		},
+		// For relayout
+		relayoutWithCollapse(secondPass = true): boolean {
+			let success;
+			if (this.overflownRoot){
+				success = tryLayout(this.activeRoot, this.tileAreaDims,
+					{...this.lytOpts, layoutType: 'flex-sqr'}, {allowCollapse: false, layoutMap: this.layoutMap});
+			} else {
+				success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
+					{allowCollapse: true, layoutMap: this.layoutMap});
+				if (secondPass){
+					// Relayout again, which can help allocate remaining tiles 'evenly'
+					success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
+						{allowCollapse: false, layoutMap: this.layoutMap});
+				}
+			}
+			return success;
+		},
+		async updateAreaDims(){
+			let mainAreaEl = this.$refs.mainArea as HTMLElement;
+			this.mainAreaDims = [mainAreaEl.offsetWidth, mainAreaEl.offsetHeight];
+			await this.$nextTick(); // Wait until ancestor-bar is laid-out
+			let tileAreaEl = this.$refs.tileArea as HTMLElement;
+			this.tileAreaDims = [tileAreaEl.offsetWidth, tileAreaEl.offsetHeight];
+		},
+		// Other
+		resetMode(): void {
 			this.infoModalNodeName = null;
 			this.searchOpen = false;
-			this.helpOpen = false;
+			this.afterSearch();
 			this.settingsOpen = false;
+			this.helpOpen = false;
 			this.modeRunning = false;
 			this.setLastFocused(null);
-			if (this.changedSweepToParent){
-				this.lytOpts.sweepToParent = 'fallback';
-				this.changedSweepToParent = false;
-			}
 		},
-		setLastFocused(node: LayoutNode | null){
+		setLastFocused(node: LayoutNode | null): void {
 			if (this.lastFocused != null){
 				this.lastFocused.hasFocus = false;
 			}
@@ -847,65 +928,6 @@ export default defineComponent({
 			if (node != null){
 				node.hasFocus = true;
 			}
-		},
-		relayoutWithCollapse(secondPass = true){
-			if (this.overflownRoot){
-				tryLayout(this.activeRoot, [0,0], this.tileAreaDims,
-					{...this.lytOpts, layoutType: 'flex-sqr'}, {allowCollapse: false, layoutMap: this.layoutMap});
-				return;
-			}
-			tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts,
-				{allowCollapse: true, layoutMap: this.layoutMap});
-			if (secondPass){
-				// Relayout again to allocate remaining tiles 'evenly'
-				tryLayout(this.activeRoot, [0,0], this.tileAreaDims, this.lytOpts,
-					{allowCollapse: false, layoutMap: this.layoutMap});
-			}
-		},
-		updateAreaDims(){
-			let mainAreaEl = this.$refs.mainArea as HTMLElement;
-			this.mainAreaDims = [mainAreaEl.offsetWidth, mainAreaEl.offsetHeight];
-			// Need to wait until ancestor-bar is laid-out before computing tileAreaDims
-			return this.$nextTick(() => {
-				let tileAreaEl = this.$refs.tileArea as HTMLElement;
-				this.tileAreaDims = [tileAreaEl.offsetWidth, tileAreaEl.offsetHeight];
-			});
-		},
-		ancestryBarTransitionEnd(){
-			this.ancestryBarInTransition = false;
-		},
-		relayoutDuringAncestryBarTransition(){
-			let timerId = setInterval(() => {
-				this.updateAreaDims().then(() => this.relayoutWithCollapse());
-				if (!this.ancestryBarInTransition){
-					clearTimeout(timerId);
-				}
-			}, 100);
-			setTimeout(() => {
-				if (this.ancestryBarInTransition){
-					this.ancestryBarInTransition = false;
-					clearTimeout(timerId);
-					console.log('Reached timeout waiting for ancestry-bar transition-end event');
-				}
-			}, this.uiOpts.transitionDuration * 3);
-		},
-		tutPaneTransitionEnd(){
-			this.tutPaneInTransition = false;
-		},
-		relayoutDuringTutPaneTransition(){
-			let timerId = setInterval(() => {
-				this.updateAreaDims().then(() => this.relayoutWithCollapse());
-				if (!this.tutPaneInTransition){
-					clearTimeout(timerId);
-				}
-			}, 100);
-			setTimeout(() => {
-				if (this.tutPaneInTransition){
-					this.tutPaneInTransition = false;
-					clearTimeout(timerId);
-					console.log('Reached timeout waiting for tutorial-pane transition-end event');
-				}
-			}, this.uiOpts.transitionDuration * 3);
 		},
 	},
 	created(){
@@ -918,9 +940,9 @@ export default defineComponent({
 		window.removeEventListener('keydown', this.onKeyUp);
 	},
 	components: {
-		Tile, AncestryBar,
-		IconButton, HelpIcon, SettingsIcon, SearchIcon, PlayIcon,
-		TileInfoModal, HelpModal, SearchModal, SettingsModal, TutorialPane,
+		Tile, TutorialPane, AncestryBar,
+		IconButton, SearchIcon, PlayIcon, SettingsIcon, HelpIcon,
+		TileInfoModal, SearchModal, SettingsModal, HelpModal,
 	},
 });
 </script>
@@ -928,14 +950,15 @@ export default defineComponent({
 <template>
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
 	:style="{backgroundColor: uiOpts.bgColor}">
+	<!-- Title bar -->
 	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: uiOpts.bgColorDark2}">
-		<h1 class="my-auto text-2xl" :style="{color: uiOpts.altColor}">Tol Explorer</h1>
-		<!-- Icons -->
+		<h1 class="my-auto ml-2 text-3xl" :style="{color: uiOpts.altColor}">Tilo</h1>
 		<div class="mx-auto"/> <!-- Spacer -->
+		<!-- Icons -->
 		<icon-button v-if="!uiOpts.disabledActions.has('search')" :style="buttonStyles" @click="onSearchIconClick">
 			<search-icon/>
 		</icon-button>
-		<icon-button v-if="!uiOpts.disabledActions.has('autoMode')" :style="buttonStyles" @click="onPlayIconClick">
+		<icon-button v-if="!uiOpts.disabledActions.has('autoMode')" :style="buttonStyles" @click="onAutoIconClick">
 			<play-icon/>
 		</icon-button>
 		<icon-button v-if="!uiOpts.disabledActions.has('settings')" :style="buttonStyles" @click="onSettingsIconClick">
@@ -945,19 +968,20 @@ export default defineComponent({
 			<help-icon/>
 		</icon-button>
 	</div>
+	<!-- Content area -->
 	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
-		<transition name="fade" @after-enter="tutPaneTransitionEnd" @after-leave="tutPaneTransitionEnd">
-			<tutorial-pane v-if="tutorialOpen" :height="uiOpts.tutPaneSz + 'px'"
-				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!welcomeOpen"
-				@close="onTutorialClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
+		<transition name="fade" @after-enter="tutPaneInTransition = false" @after-leave="tutPaneInTransition = false">
+			<tutorial-pane v-if="tutPaneOpen" :height="uiOpts.tutPaneSz + 'px'"
+				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!tutWelcome"
+				@close="onTutPaneClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
 		</transition>
 	</div>
-	<div :class="['flex', mainAreaDims[0] > mainAreaDims[1] ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">
-		<div :style="ancestryBarContainerStyles">
-			<transition name="fade" @after-enter="ancestryBarTransitionEnd" @after-leave="ancestryBarTransitionEnd">
+	<div :class="['flex', wideArea ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">
+		<div :style="ancestryBarContainerStyles"> <!-- Used to slide-in/out the ancestry-bar -->
+			<transition name="fade"
+				@after-enter="ancestryBarInTransition = false" @after-leave="ancestryBarInTransition = false">
 				<ancestry-bar v-if="detachedAncestors != null" class="w-full h-full"
-					:nodes="detachedAncestors" :vert="mainAreaDims[0] > mainAreaDims[1]"
-					:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+					:nodes="detachedAncestors" :vert="wideArea" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 					@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
 			</transition>
 		</div>
@@ -980,12 +1004,11 @@ export default defineComponent({
 			@close="infoModalNodeName = null"/>
 	</transition>
 	<transition name="fade">
-		<help-modal v-if="helpOpen" :uiOpts="uiOpts"
-			@close="helpOpen = false" @start-tutorial="onStartTutorial"/>
+		<help-modal v-if="helpOpen" :uiOpts="uiOpts" @close="helpOpen = false" @start-tutorial="onStartTutorial"/>
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
-		@close="settingsOpen = false" @settings-chg="onSettingsChg" @reset="onResetSettings"
-		@layout-setting-chg="relayoutWithCollapse" @tree-chg="onTreeChange"/>
+		@close="settingsOpen = false" @reset="onResetSettings"
+		@settings-chg="onSettingsChg" @layout-setting-chg="relayoutWithCollapse" @tree-chg="onTreeChange"/>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = false"></div>

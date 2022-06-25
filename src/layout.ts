@@ -253,17 +253,17 @@ export function initLayoutTree(tolMap: TolMap, rootName: string, depth: number):
 // 'chg' allows for performing layout after expanding/collapsing a node
 // 'layoutMap' provides a LayoutMap to update with added/removed children
 export function tryLayout(
-	layoutTree: LayoutNode, pos: [number,number], dims: [number,number], options: LayoutOptions,
+	layoutTree: LayoutNode, dims: [number,number], options: LayoutOptions,
 	{allowCollapse = false, chg = null as LayoutTreeChg | null, layoutMap = null as LayoutMap | null} = {}
 	): boolean {
 	// Create a new LayoutNode tree, in case of layout failure
 	let tempTree = layoutTree.cloneNodeTree(chg);
 	let success: boolean;
 	switch (options.layoutType){
-		case 'sqr': success = sqrLayout(tempTree, pos, dims, true, allowCollapse, options); break;
-		case 'rect': success = rectLayout(tempTree, pos, dims, true, allowCollapse, options); break;
-		case 'sweep': success = sweepLayout(tempTree, pos, dims, true, allowCollapse, options); break;
-		case 'flex-sqr': success = flexSqrLayout(tempTree, pos, dims, true, allowCollapse, options); break;
+		case 'sqr': success = sqrLayout(tempTree, [0,0], dims, true, allowCollapse, options); break;
+		case 'rect': success = rectLayout(tempTree, [0,0], dims, true, allowCollapse, options); break;
+		case 'sweep': success = sweepLayout(tempTree, [0,0], dims, true, allowCollapse, options); break;
+		case 'flex-sqr': success = flexSqrLayout(tempTree, [0,0], dims, true, allowCollapse, options); break;
 	}
 	if (success){
 		if (options.layoutType != 'flex-sqr'){
