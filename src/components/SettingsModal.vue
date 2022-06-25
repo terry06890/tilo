@@ -11,50 +11,34 @@ export default defineComponent({
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
-	data(){
-		return {
-			changedLytOpts: new Set(),
-			changedUiOpts: new Set(),
-		};
-	},
 	methods: {
 		onCloseClick(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
-				this.$emit('settings-chg', this.changedLytOpts, this.changedUiOpts);
 				this.$emit('close');
 			}
 		},
-		onLytOptChg(opt: string){
-			if (opt == 'minTileSz'){
+		onSettingChg(setting: string){
+			if (setting == 'minTileSz'){
 				let minInput = this.$refs.minTileSzInput as HTMLInputElement;
 				let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
 				if (Number(minInput.value) > Number(maxInput.value)){
 					this.lytOpts.maxTileSz = this.lytOpts.minTileSz;
-					this.changedLytOpts.add('maxTileSz');
 				}
-			} else if (opt == 'maxTileSz'){
+			} else if (setting == 'maxTileSz'){
 				let minInput = this.$refs.minTileSzInput as HTMLInputElement;
 				let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
 				if (Number(maxInput.value) < Number(minInput.value)){
 					this.lytOpts.minTileSz = this.lytOpts.maxTileSz;
-					this.changedLytOpts.add('minTileSz');
 				}
 			}
-			this.$emit('layout-setting-chg');
-			this.changedLytOpts.add(opt);
-		},
-		onUiOptChg(opt: string){
-			if (opt == 'useReducedTree'){
-				this.$emit('tree-chg');
-			}
-			this.changedUiOpts.add(opt);
+			this.$emit('setting-chg', setting);
 		},
 		onReset(){
 			this.$emit('reset');
 		},
 	},
 	components: {CloseIcon, RButton, },
-	emits: ['close', 'layout-setting-chg', 'tree-chg', 'reset', 'settings-chg', ],
+	emits: ['close', 'setting-chg', 'reset', ],
 });
 </script>
 
@@ -68,21 +52,21 @@ export default defineComponent({
 		<hr class="border-stone-400"/>
 		<div>
 			<label>Tile Spacing <input type="range" min="0" max="20" class="mx-2 w-[3cm]"
-				v-model.number="lytOpts.tileSpacing" @input="onLytOptChg('tileSpacing')"/></label>
+				v-model.number="lytOpts.tileSpacing" @input="onSettingChg('tileSpacing')"/></label>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>
 			<label>
 				<span class="inline-block w-[3cm]">Min Tile Size</span>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz" class="w-[3cm]"
-					@input="onLytOptChg('minTileSz')" ref="minTileSzInput"/>
+					@input="onSettingChg('minTileSz')" ref="minTileSzInput"/>
 			</label>
 		</div>
 		<div>
 			<label>
 				<span class="inline-block w-[3cm]">Max Tile Size</span>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz" class="w-[3cm]"
-					@input="onLytOptChg('maxTileSz')" ref="maxTileSzInput"/>
+					@input="onSettingChg('maxTileSz')" ref="maxTileSzInput"/>
 			</label>
 		</div>
 		<hr class="border-stone-400"/>
@@ -91,15 +75,15 @@ export default defineComponent({
 			<ul>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.layoutType" value="sqr"
-						@change="onLytOptChg('layoutType')"/> Squares </label>
+						@change="onSettingChg('layoutType')"/> Squares </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.layoutType" value="rect"
-						@change="onLytOptChg('layoutType')"/> Rectangles </label>
+						@change="onSettingChg('layoutType')"/> Rectangles </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.layoutType" value="sweep"
-						@change="onLytOptChg('layoutType')"/> Sweep to side </label>
+						@change="onSettingChg('layoutType')"/> Sweep to side </label>
 				</li>
 			</ul>
 		</div>
@@ -109,15 +93,15 @@ export default defineComponent({
 			<ul>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="none"
-						@change="onLytOptChg('sweepToParent')"/> None </label>
+						@change="onSettingChg('sweepToParent')"/> None </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="prefer"
-						@change="onLytOptChg('sweepToParent')"/> Prefer </label>
+						@change="onSettingChg('sweepToParent')"/> Prefer </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepToParent" value="fallback"
-						@change="onLytOptChg('sweepToParent')"/> Fallback </label>
+						@change="onSettingChg('sweepToParent')"/> Fallback </label>
 				</li>
 			</ul>
 		</div>
@@ -127,31 +111,31 @@ export default defineComponent({
 			<ul>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepMode" value="left"
-						@change="onLytOptChg('sweepMode')"/> To left </label>
+						@change="onSettingChg('sweepMode')"/> To left </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepMode" value="top"
-						@change="onLytOptChg('sweepMode')"/> To top </label>
+						@change="onSettingChg('sweepMode')"/> To top </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepMode" value="shorter"
-						@change="onLytOptChg('sweepMode')"/> To shorter </label>
+						@change="onSettingChg('sweepMode')"/> To shorter </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="lytOpts.sweepMode" value="auto"
-						@change="onLytOptChg('sweepMode')"/> Auto </label>
+						@change="onSettingChg('sweepMode')"/> Auto </label>
 				</li>
 			</ul>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>
 			<label>Animation Duration <input type="range" min="0" max="3000" class="mx-2 w-[3cm]"
-				v-model.number="uiOpts.transitionDuration" @change="onUiOptChg('transitionDuration')"/></label>
+				v-model.number="uiOpts.transitionDuration" @change="onSettingChg('transitionDuration')"/></label>
 		</div>
 		<hr class="border-stone-400"/>
 		<div>
 			<label>
-				<input type="checkbox" v-model="uiOpts.searchJumpMode" @change="onUiOptChg('searchJumpMode')"/>
+				<input type="checkbox" v-model="uiOpts.searchJumpMode" @change="onSettingChg('searchJumpMode')"/>
 				Jump to search result
 			</label>
 		</div>
@@ -161,11 +145,11 @@ export default defineComponent({
 			<ul>
 				<li>
 					<label> <input type="radio" v-model="uiOpts.useReducedTree" :value="false"
-						@change="onUiOptChg('useReducedTree')"/> Default </label>
+						@change="onSettingChg('useReducedTree')"/> Default </label>
 				</li>
 				<li>
 					<label> <input type="radio" v-model="uiOpts.useReducedTree" :value="true"
-						@change="onUiOptChg('useReducedTree')"/> Reduced </label>
+						@change="onSettingChg('useReducedTree')"/> Reduced </label>
 				</li>
 			</ul>
 		</div>

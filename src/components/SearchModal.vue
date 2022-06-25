@@ -72,7 +72,7 @@ export default defineComponent({
 		},
 		onSearchModeChg(){
 			this.uiOpts.searchJumpMode = !this.uiOpts.searchJumpMode;
-			this.$emit('settings-chg', [], ['searchJumpMode']);
+			this.$emit('setting-chg', 'searchJumpMode');
 		},
 		resolveSearch(tolNodeName: string){
 			if (tolNodeName == ''){
@@ -191,7 +191,7 @@ export default defineComponent({
 		(this.$refs.searchInput as HTMLInputElement).focus();
 	},
 	components: {SearchIcon, InfoIcon, LogInIcon, },
-	emits: ['search', 'close', 'info-click', 'settings-chg', ],
+	emits: ['search', 'close', 'info-click', 'setting-chg', ],
 });
 </script>
 

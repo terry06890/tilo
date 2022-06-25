@@ -636,6 +636,20 @@ export default defineComponent({
 			this.resetMode();
 			this.settingsOpen = true;
 		},
+		async onSettingChg(setting: string){
+			if (setting in this.lytOpts){
+				localStorage.setItem(lytOptPrefix + setting, String(this.lytOpts[setting as keyof LayoutOptions]));
+				this.relayoutWithCollapse();
+			} else if (setting in this.uiOpts){
+				localStorage.setItem(uiOptPrefix + setting, String(this.uiOpts[setting as keyof UiOptions]));
+				if (setting == 'useReducedTree'){
+					this.onTreeChange();
+				}
+			} else {
+				throw new Error('Unexpected setting');
+			}
+			console.log(`Saved ${setting}`)
+		},
 		async onTreeChange(){
 			if (this.activeRoot != this.layoutTree){
 				// Collapse tree to root
@@ -643,20 +657,6 @@ export default defineComponent({
 			}
 			await this.onNonleafClick(this.layoutTree);
 			await this.initTreeFromServer();
-		},
-		onSettingsChg(changedLytOpts: Iterable<string>, changedUiOpts: Iterable<string>): void {
-			let changed = false;
-			for (let opt of changedLytOpts){
-				localStorage.setItem(lytOptPrefix + opt, String(this.lytOpts[opt as keyof LayoutOptions]));
-				changed = true;
-			}
-			for (let opt of changedUiOpts){
-				localStorage.setItem(uiOptPrefix + opt, String(this.uiOpts[opt]));
-				changed = true;
-			}
-			if (changed){
-				console.log('Settings saved');
-			}
 		},
 		onResetSettings(): void {
 			localStorage.clear();
@@ -780,7 +780,7 @@ export default defineComponent({
 				// If search bar is open, switch search mode
 				if (this.searchOpen){
 					this.uiOpts.searchJumpMode = !this.uiOpts.searchJumpMode;
-					this.onSettingsChg([], ['searchJumpMode']);
+					this.onSettingChg('searchJumpMode');
 				}
 			}
 		},
@@ -996,7 +996,7 @@ export default defineComponent({
 	<!-- Modals -->
 	<transition name="fade">
 		<search-modal v-if="searchOpen" :tolMap="tolMap" :uiOpts="uiOpts" ref="searchModal"
-			@close="searchOpen = false" @search="onSearch" @info-click="onInfoClick" @settings-chg="onSettingsChg" />
+			@close="searchOpen = false" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg" />
 	</transition>
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null"
@@ -1007,8 +1007,7 @@ export default defineComponent({
 		<help-modal v-if="helpOpen" :uiOpts="uiOpts" @close="helpOpen = false" @start-tutorial="onStartTutorial"/>
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
-		@close="settingsOpen = false" @reset="onResetSettings"
-		@settings-chg="onSettingsChg" @layout-setting-chg="relayoutWithCollapse" @tree-chg="onTreeChange"/>
+		@close="settingsOpen = false" @reset="onResetSettings" @setting-chg="onSettingChg"/>
 	<!-- Overlay used to prevent interaction and capture clicks -->
 	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = false"></div>
