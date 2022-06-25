@@ -26,7 +26,7 @@ export class LayoutNode {
 	// Other
 	hidden: boolean; // Used to hide nodes upon an expand-to-view
 	hiddenWithVisibleTip: boolean;
-	hasFocus: boolean; // Used by search and auto-mode to highlight a tile
+	hasFocus: boolean; // Used by search and auto-mode to mark/flash a tile
 	failFlag: boolean; // Used to trigger failure animations
 	// Constructor ('parent' are 'depth' are generally initialised later, 'tips' is computed)
 	constructor(name: string, children: LayoutNode[]){
