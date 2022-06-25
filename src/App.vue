@@ -748,8 +748,9 @@ export default defineComponent({
 						}
 					}
 					for (let prop of Object.getOwnPropertyNames(uiOpts) as (keyof UiOptions)[]){
-						let item = localStorage.getItem(lytOptPrefix + prop);
-						if (item == null && this.uiOpts[prop] != uiOpts[prop]){
+						let item = localStorage.getItem(uiOptPrefix + prop);
+						//Not: Using JSON.stringify here to roughly deep-compare values
+						if (item == null && JSON.stringify(this.uiOpts[prop]) != JSON.stringify(uiOpts[prop])){
 							this.uiOpts[prop] = uiOpts[prop];
 							if (prop == 'useReducedTree'){
 								changedTree = true;
