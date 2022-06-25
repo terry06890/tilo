@@ -22,7 +22,7 @@ export function range(len: number): number[] {
 export function arraySum(array: number[]): number {
 	return array.reduce((x,y) => x+y);
 }
-// Returns an array of increasing evenly-spaced numbers from 'start' to 'end' with size 'size'
+// Returns an array of increasing evenly-spaced numbers from 'start' to 'end', with size 'size'
 export function linspace(start: number, end: number, size: number): number[] {
 	let step = (end - start) / (size - 1);
 	let ar = [];
@@ -69,8 +69,8 @@ export function limitVals(arr: number[], min: number, max: number): number[] | n
 		owedChg = 0;
 	}
 }
-// Usable to iterate through possible int arrays with ascending values in the range 0 to maxLen-1, starting with [0]
-	// eg: With maxLen 3, updates [0] to [0,1], then to [0,2], then [0,1,2]
+// Usable to iterate through possible int arrays with ascending values in the range 0 to N, where N < maxLen
+	// For example, with maxLen 3, passing [0] will update it to [0,1], then [0,2], then [0,1,2]
 // Returns false when there is no next array
 export function updateAscSeq(seq: number[], maxLen: number): boolean {
 	// Try increasing last element, then preceding elements, then extending the array

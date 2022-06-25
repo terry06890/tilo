@@ -12,7 +12,8 @@
     -   RButton.vue:       Basic button component.
     -   IconButton.vue:    Basic button component containing SVG icon.
     -   icon:              Contains components that display SVG icons.
--   layout.ts: Contains code for laying out Tiles.
 -   lib.ts:    Contains classes/types and utility functions.
+-   layout.ts: Contains code for laying out Tiles.
+-   util.ts:   Contains utility functions.
 -   index.css: Included by main.ts. Provides Tailwind's CSS classes.
 -   env.d.ts:  From Vite's template files.

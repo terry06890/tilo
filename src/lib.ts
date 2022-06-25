@@ -1,11 +1,7 @@
-
 /*
  * Project-wide types/classes
  */
 
-// Used for tree-of-life representation
-// Maps tree-of-life node names to node objects
-export type TolMap = Map<string, TolNode>;
 // Represents a tree-of-life node
 export class TolNode {
 	otolId: string | null;
@@ -14,7 +10,8 @@ export class TolNode {
 	tips: number;
 	pSupport: boolean;
 	commonName: null | string;
-	imgName: null | string | [string, string] | [null, string] | [string, null];
+	imgName: null | string |
+		[string, string] | [null, string] | [string, null]; // Pairs represent compound-images
 	constructor(children: string[] = [], parent = null, tips = 0, pSupport = false){
 		this.otolId = null;
 		this.children = children;
@@ -25,14 +22,33 @@ export class TolNode {
 		this.imgName = null;
 	}
 }
-// Used for server search-responses
-export type SearchSugg = {name: string, canonicalName: string | null};
-	// Represents a search-string suggestion
-export type SearchSuggResponse = {suggs: SearchSugg[], hasMore: boolean};
-	// Holds search suggestions and an indication of if there was more
-// Used for server info-responses
-export type DescInfo = {text: string, wikiId: number, fromRedirect: boolean, fromDbp: boolean};
-export type ImgInfo = {id: number, src: string, url: string, license: string, artist: string, credit: string}
+// Maps TolNode names to TolNode objects
+export type TolMap = Map<string, TolNode>;
+
+// For server search responses
+export type SearchSugg = { // Represents a search-string suggestion
+	name: string,
+	canonicalName: string | null,
+};
+export type SearchSuggResponse = { // Holds search suggestions and an indication of if there was more
+	suggs: SearchSugg[],
+	hasMore: boolean,
+};
+// For server tile-info responses
+export type DescInfo = {
+	text: string,
+	wikiId: number,
+	fromRedirect: boolean,
+	fromDbp: boolean,
+};
+export type ImgInfo = {
+	id: number,
+	src: string,
+	url: string,
+	license: string,
+	artist: string,
+	credit: string,
+}
 export type TileInfoResponse = {
 	tolNode: null | TolNode,
 	descData: null | DescInfo | [DescInfo, DescInfo],
@@ -43,7 +59,8 @@ export type TileInfoResponse = {
 export type Action =
 	'expand' | 'collapse' | 'expandToView' | 'unhideAncestor' |
 	'tileInfo' | 'search' | 'autoMode' | 'settings' | 'help';
-//
+
+// Project-wide configurable options (supersets the user-configurable settings)
 export type UiOptions = {
 	// Shared coloring/sizing
 	textColor: string, // CSS color

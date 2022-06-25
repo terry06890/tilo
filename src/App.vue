@@ -235,7 +235,7 @@ export default defineComponent({
 				// If expanding active-root with too many children to fit, allow overflow
 				if (!success && layoutNode == this.activeRoot){
 					success = tryLayout(this.activeRoot, this.tileAreaDims,
-						{...this.lytOpts, layoutType: 'flex-sqr'}, lytFnOpts);
+						{...this.lytOpts, layoutType: 'sqr-overflow'}, lytFnOpts);
 					if (success){
 						this.overflownRoot = true;
 					}
@@ -333,7 +333,7 @@ export default defineComponent({
 				// If expanding active-root with too many children to fit, allow overflow
 				if (!success){
 					success = tryLayout(this.activeRoot, this.tileAreaDims,
-						{...this.lytOpts, layoutType: 'flex-sqr'}, lytFnOpts);
+						{...this.lytOpts, layoutType: 'sqr-overflow'}, lytFnOpts);
 					if (success){
 						this.overflownRoot = true;
 					}
@@ -496,7 +496,7 @@ export default defineComponent({
 				// Expand-to-view on target-node's parent
 				targetNode = this.layoutMap.get(name);
 				await this.onLeafClickHeld(targetNode!.parent!);
-				setTimeout(() => {this.setLastFocused(targetNode!);}, this.uiOpts.transitionDuration);
+				setTimeout(() => this.setLastFocused(targetNode!), this.uiOpts.transitionDuration);
 				this.modeRunning = false;
 				return;
 			}
@@ -554,7 +554,7 @@ export default defineComponent({
 				// Pick random leaf LayoutNode
 				let layoutNode = this.activeRoot;
 				while (layoutNode.children.length > 0){
-					let childWeights = layoutNode.children.map(n => n.dCount);
+					let childWeights = layoutNode.children.map(n => n.tips);
 					let idx = randWeightedChoice(childWeights);
 					layoutNode = layoutNode.children[idx!];
 				}
@@ -615,13 +615,13 @@ export default defineComponent({
 				let success = true;
 				try {
 					switch (action){
-						case 'move across': // Bias towards siblings with higher dCount
+						case 'move across': // Bias towards siblings with higher tips
 							let siblings = node.parent!.children.filter(n => n != node);
-							let siblingWeights = siblings.map(n => n.dCount + 1);
+							let siblingWeights = siblings.map(n => n.tips + 1);
 							this.setLastFocused(siblings[randWeightedChoice(siblingWeights)!]);
 							break;
-						case 'move down': // Bias towards children with higher dCount
-							let childWeights = node.children.map(n => n.dCount + 1);
+						case 'move down': // Bias towards children with higher tips
+							let childWeights = node.children.map(n => n.tips + 1);
 							this.setLastFocused(node.children[randWeightedChoice(childWeights)!]);
 							break;
 						case 'move up':
@@ -839,7 +839,7 @@ export default defineComponent({
 			this.relayoutWithCollapse(false);
 			// Skip initial transition
 			this.justInitialised = true;
-			setTimeout(() => {this.justInitialised = false;}, this.uiOpts.transitionDuration);
+			setTimeout(() => {this.justInitialised = false}, this.uiOpts.transitionDuration);
 		},
 		getLytOpts(): LayoutOptions {
 			let opts = getDefaultLytOpts();
@@ -909,7 +909,7 @@ export default defineComponent({
 			let success;
 			if (this.overflownRoot){
 				success = tryLayout(this.activeRoot, this.tileAreaDims,
-					{...this.lytOpts, layoutType: 'flex-sqr'}, {allowCollapse: false, layoutMap: this.layoutMap});
+					{...this.lytOpts, layoutType: 'sqr-overflow'}, {allowCollapse: false, layoutMap: this.layoutMap});
 			} else {
 				success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
 					{allowCollapse: true, layoutMap: this.layoutMap});
