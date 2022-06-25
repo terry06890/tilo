@@ -401,6 +401,10 @@ export default defineComponent({
 			//
 			let success: boolean;
 			if (collapseAndNoRelayout){
+				if (this.uiOpts.disabledActions.has('collapse')){
+					console.log('INFO: Ignored unhide-ancestor due to disabled collapse');
+					return false;
+				}
 				success = await this.onNonleafClick(layoutNode, {skipClean: true});
 			} else {
 				await this.updateAreaDims();
@@ -427,9 +431,16 @@ export default defineComponent({
 		},
 		onSearch(name: string): void {
 			if (this.modeRunning){
-				console.log("WARNING: Unexpected search event while search/auto mode is running")
+				console.log('WARNING: Unexpected search event while search/auto mode is running')
 				return;
 			}
+			let disabledActions = this.uiOpts.disabledActions;
+			if (disabledActions.has('expand') || disabledActions.has('expandToView') ||
+				disabledActions.has('unhideAncestor')){
+				console.log('INFO: Ignored search action due to disabled expand/expandToView');
+				return;
+			}
+			//
 			this.searchOpen = false;
 			this.modeRunning = true;
 			if (this.lytOpts.sweepToParent == 'fallback'){ // Temporary change for efficiency
@@ -522,6 +533,13 @@ export default defineComponent({
 		},
 		// For auto-mode events
 		onAutoIconClick(): void {
+			let disabledActions = this.uiOpts.disabledActions;
+			if (disabledActions.has('expand') || disabledActions.has('collapse') ||
+				disabledActions.has('expandToView') || disabledActions.has('unhideAncestor')){
+				console.log('INFO: Ignored auto-mode action due to disabled expand/collapse/etc');
+				return;
+			}
+			//
 			this.handleActionForTutorial('autoMode');
 			this.resetMode();
 			this.modeRunning = true;
