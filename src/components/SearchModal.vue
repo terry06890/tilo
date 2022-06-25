@@ -24,13 +24,13 @@ export default defineComponent({
 	},
 	computed: {
 		infoIconStyles(): Record<string,string> {
-			let size = this.uiOpts.infoIconSz + 'px';
+			let size = '18px';
 			return {
 				width: size,
 				height: size,
 				minWidth: size,
 				minHeight: size,
-				margin: this.uiOpts.infoIconMargin + 'px',
+				margin: '2px',
 			};
 		},
 		suggDisplayStrings(): [string, string, string][] {
@@ -71,8 +71,8 @@ export default defineComponent({
 			}
 		},
 		onSearchModeChg(){
-			this.uiOpts.jumpToSearchedNode = !this.uiOpts.jumpToSearchedNode;
-			this.$emit('settings-chg', [], ['jumpToSearchedNode']);
+			this.uiOpts.searchJumpMode = !this.uiOpts.searchJumpMode;
+			this.$emit('settings-chg', [], ['searchJumpMode']);
 		},
 		resolveSearch(tolNodeName: string){
 			if (tolNodeName == ''){
@@ -223,7 +223,7 @@ export default defineComponent({
 		</div>
 		<div class="my-auto mx-2 hover:cursor-pointer hover:brightness-75 rounded">
 			<log-in-icon @click.stop="onSearchModeChg" class="block w-8 h-8"
-				:class="uiOpts.jumpToSearchedNode ? 'text-stone-500' : 'text-stone-300'"/>
+				:class="uiOpts.searchJumpMode ? 'text-stone-500' : 'text-stone-300'"/>
 		</div>
 	</div>
 </div>

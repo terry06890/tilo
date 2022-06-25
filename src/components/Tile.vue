@@ -102,6 +102,9 @@ export default defineComponent({
 				return this.uiOpts.shadowNormal;
 			}
 		},
+		fontSz(): number {
+			return 0.7 * this.lytOpts.headerSz;
+		},
 		styles(): Record<string,string> {
 			let layoutStyles = {
 				position: 'absolute',
@@ -151,7 +154,7 @@ export default defineComponent({
 				return {
 					// Image (and scrims)
 					backgroundImage: this.tolNode.imgName != null ?
-						'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
+						'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%),' +
 							'url(\'/img/' + (this.tolNode.imgName as string).replaceAll('\'', '\\\'') + '\')' :
 						'none',
 					backgroundColor: '#1c1917',
@@ -183,10 +186,10 @@ export default defineComponent({
 				}
 			}
 			return {
-				height: (this.uiOpts.leafHeaderFontSz + this.uiOpts.leafPadding * 2) + 'px',
-				padding: this.uiOpts.leafPadding + 'px',
-				lineHeight: this.uiOpts.leafHeaderFontSz + 'px',
-				fontSize: this.uiOpts.leafHeaderFontSz + 'px',
+				height: (this.fontSz * 1.3) + 'px',
+				padding: this.fontSz * 0.3 + 'px',
+				lineHeight: this.fontSz + 'px',
+				fontSize: this.fontSz + 'px',
 				color: textColor,
 				// For ellipsis
 				overflow: 'hidden',
@@ -220,7 +223,7 @@ export default defineComponent({
 				height: this.lytOpts.headerSz + 'px',
 				borderTopLeftRadius: 'inherit',
 				borderTopRightRadius: 'inherit',
-				backgroundColor: this.uiOpts.bgColorDark,
+				backgroundColor: this.uiOpts.nonleafHeaderColor,
 			};
 			if (this.isOverflownRoot){
 				styles = {
@@ -238,7 +241,7 @@ export default defineComponent({
 		nonleafHeaderTextStyles(): Record<string,string> {
 			return {
 				lineHeight: this.lytOpts.headerSz + 'px',
-				fontSize: this.uiOpts.nonleafHeaderFontSz + 'px',
+				fontSize: this.fontSz + 'px',
 				textAlign: 'center',
 				color: this.uiOpts.textColor,
 				paddingLeft: '5px',
@@ -249,15 +252,14 @@ export default defineComponent({
 			};
 		},
 		infoIconStyles(): Record<string,string> {
-			let size = this.uiOpts.infoIconSz + 'px';
+			let size = (this.lytOpts.headerSz * 0.8) + 'px';
+			let marginSz = (this.lytOpts.headerSz * 0.2) + 'px';
 			return {
 				width: size,
 				height: size,
 				minWidth: size,
 				minHeight: size,
-				margin: this.uiOpts.infoIconMargin + 'px',
-				marginTop: 'auto',
-				marginLeft: 'auto',
+				margin: this.isLeaf ? `auto ${marginSz} ${marginSz} auto` : `auto ${marginSz}`,
 			};
 		},
 		sepSweptAreaStyles(): Record<string,string> {
@@ -446,7 +448,7 @@ export default defineComponent({
 				height: '100%',
 				// Image (and scrims)
 				backgroundImage: (this.tolNode.imgName![idx]! != null) ?
-					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.4) 100%),' +
+					'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%),' +
 						'url(\'/img/' + this.tolNode.imgName![idx]!.replaceAll('\'', '\\\'') + '\')' :
 					'none',
 				backgroundColor: '#1c1917',

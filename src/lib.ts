@@ -45,7 +45,7 @@ export type Action =
 	'tileInfo' | 'search' | 'autoMode' | 'settings' | 'help';
 //
 export type UiOptions = {
-	// Shared styling
+	// Shared coloring/sizing
 	textColor: string, // CSS color
 	bgColor: string,
 	bgColorLight: string,
@@ -58,26 +58,19 @@ export type UiOptions = {
 	shadowNormal: string, // CSS box-shadow value
 	shadowHovered: string,
 	shadowFocused: string,
-	// Styling for App
-	mainTileMargin: number, // px
-	// Styling for tiles
+	// Component coloring
 	childQtyColors: [number, string][],
 		// Specifies, for an increasing sequence of minimum-child-quantity values, CSS colors to use
 		//eg: [[1, 'green'], [10, 'orange'], [100, 'red']]
-	infoIconSz: number, // px
-	infoIconMargin: number, // px
-	leafPadding: number, // px
-	leafHeaderFontSz: number, // px
 	nonleafBgColors: string[],
 		// Specifies CSS colors to use at various tree depths
 		// With N strings, tiles at depth M use the color at index M % N
-	nonleafHeaderFontSz: number, // px
-	// Styling for other components
-	infoModalImgSz: number, // px
-	ancestryBarBgColor: string, // CSS color
-	ancestryBarImgSz: number, // px
-	ancestryTileGap: number, // Gap between ancestor tiles, in px
-	tutPaneSz: number, // px
+	nonleafHeaderColor: string, // CSS color
+	ancestryBarBgColor: string,
+	// Component sizing
+	ancestryBarBreadth: number, // px (fixed value needed for transitions)
+	tutPaneSz: number, // px (fixed value needed for transitions)
+	scrollGap: number, // Size of scroll bar, in px
 	// Timing related
 	clickHoldDuration: number, // Time after mousedown when a click-and-hold is recognised, in ms
 	transitionDuration: number, // ms
@@ -85,8 +78,7 @@ export type UiOptions = {
 	// Other
 	useReducedTree: boolean,
 	searchSuggLimit: number, // Max number of search suggestions
-	jumpToSearchedNode: boolean,
+	searchJumpMode: boolean,
 	tutorialSkip: boolean,
 	disabledActions: Set<Action>,
-	scrollGap: number, // Size of scroll bar, in px
 };

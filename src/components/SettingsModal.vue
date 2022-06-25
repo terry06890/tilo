@@ -151,7 +151,7 @@ export default defineComponent({
 		<hr class="border-stone-400"/>
 		<div>
 			<label>
-				<input type="checkbox" v-model="uiOpts.jumpToSearchedNode" @change="onUiOptChg('jumpToSearchedNode')"/>
+				<input type="checkbox" v-model="uiOpts.searchJumpMode" @change="onUiOptChg('searchJumpMode')"/>
 				Jump to search result
 			</label>
 		</div>

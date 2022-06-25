@@ -55,39 +55,39 @@ function getDefaultLytOpts(): LayoutOptions {
 		sweepToParent: 'prefer', // 'none' | 'prefer' | 'fallback'
 	};
 }
-function getDefaultUiOpts(){
+function getDefaultUiOpts(lytOpts: LayoutOptions){
 	let screenSz = getBreakpoint();
-	let bgColorLight = '#44403c', altColor = '#a3e623';
+	// Reused option values
+	let textColor = '#fafaf9';
+	let bgColor = '#292524', bgColorLight = '#44403c', bgColorDark = '#1c1917',
+		bgColorLight2 = '#57534e', bgColorDark2 = '#0e0c0b';
+	let altColor = '#a3e623', altColorDark = '#65a30d';
+	let accentColor = '#f59e0b';
+	let scrollGap = getScrollBarWidth();
+	//
 	return {
-		// Shared styling
-		textColor: '#fafaf9',
-		bgColor: '#292524',
+		// Shared coloring/sizing
+		textColor,
+		bgColor,
 		bgColorLight,
-		bgColorDark: '#1c1917',
-		bgColorLight2: '#57534e',
-		bgColorDark2: '#0e0c0b',
+		bgColorDark,
+		bgColorLight2,
+		bgColorDark2,
 		altColor,
-		altColorDark: '#65a30d',
+		altColorDark,
 		borderRadius: 5, // px
 		shadowNormal: '0 0 2px black',
-		shadowHovered: '0 0 1px 2px' + altColor,
-		shadowFocused: '0 0 1px 2px orange',
-		// Styling for App
-		mainTileMargin: screenSz == 'sm' ? 6 : 10, // px
-		// Styling for tiles
-		childQtyColors: [[1, altColor], [10, 'orange'], [100, 'red']],
-		infoIconSz: 18, // px
-		infoIconMargin: 2, // px
-		leafPadding: 4, // px
-		leafHeaderFontSz: 15, // px
-		nonleafBgColors: ['#44403c', '#57534e'],
-		nonleafHeaderFontSz: 15, // px
-		// Styling for other components
-		infoModalImgSz: 200, // px
+		shadowHovered: '0 0 1px 2px ' + altColor,
+		shadowFocused: '0 0 1px 2px ' + accentColor,
+		// Component coloring
+		childQtyColors: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
+		nonleafBgColors: [bgColorLight, bgColorLight2],
+		nonleafHeaderColor: bgColorDark,
 		ancestryBarBgColor: bgColorLight,
-		ancestryBarImgSz: 100, // px
-		ancestryTileGap: 5, // px
+		// Component sizing
+		ancestryBarBreadth: lytOpts.maxTileSz / 2 + lytOpts.tileSpacing*2 + scrollGap, // px
 		tutPaneSz: 200, // px
+		scrollGap,
 		// Timing related
 		clickHoldDuration: 400, // ms
 		transitionDuration: 300, // ms
@@ -95,10 +95,9 @@ function getDefaultUiOpts(){
 		// Other
 		useReducedTree: false,
 		searchSuggLimit: 5,
-		jumpToSearchedNode: false,
+		searchJumpMode: false,
 		tutorialSkip: false,
 		disabledActions: new Set() as Set<Action>,
-		scrollGap: getScrollBarWidth(),
 	};
 }
 
@@ -163,7 +162,7 @@ export default defineComponent({
 			}
 			return ancestors.reverse();
 		},
-		iconButtonStyles(): Record<string,string> {
+		buttonStyles(): Record<string,string> {
 			return {
 				color: this.uiOpts.textColor,
 				backgroundColor: this.uiOpts.altColorDark,
@@ -179,8 +178,7 @@ export default defineComponent({
 			};
 		},
 		ancestryBarContainerStyles(): Record<string,string> {
-			let ancestryBarBreadth = this.detachedAncestors == null ? 0 :
-				this.uiOpts.ancestryBarImgSz + this.uiOpts.ancestryTileGap*2 + this.uiOpts.scrollGap;
+			let ancestryBarBreadth = this.detachedAncestors == null ? 0 : this.uiOpts.ancestryBarBreadth;
 			let styles = {
 				minWidth: 'auto',
 				maxWidth: 'none',
@@ -441,7 +439,7 @@ export default defineComponent({
 				while (!this.detachedAncestors!.includes(nodeInAncestryBar)){
 					nodeInAncestryBar = nodeInAncestryBar.parent!;
 				}
-				if (!this.uiOpts.jumpToSearchedNode){
+				if (!this.uiOpts.searchJumpMode){
 					this.onDetachedAncestorClick(nodeInAncestryBar!);
 					setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 				} else{
@@ -451,7 +449,7 @@ export default defineComponent({
 				return;
 			}
 			// Attempt tile-expand
-			if (this.uiOpts.jumpToSearchedNode){
+			if (this.uiOpts.searchJumpMode){
 				// Extend layout tree
 				let tolNode = this.tolMap.get(name)!;
 				let nodesToAdd = [name] as string[];
@@ -639,7 +637,7 @@ export default defineComponent({
 		onResetSettings(){
 			localStorage.clear();
 			let defaultLytOpts = getDefaultLytOpts();
-			let defaultUiOpts = getDefaultUiOpts();
+			let defaultUiOpts = getDefaultUiOpts(defaultLytOpts);
 			if (this.uiOpts.useReducedTree != defaultUiOpts.useReducedTree){
 				this.onTreeChange();
 			}
@@ -699,7 +697,7 @@ export default defineComponent({
 				let handleResize = () => {
 					// Update unmodified layout/ui options with defaults
 					let lytOpts = getDefaultLytOpts();
-					let uiOpts = getDefaultUiOpts();
+					let uiOpts = getDefaultUiOpts(lytOpts);
 					let changedTree = false;
 					for (let prop of Object.getOwnPropertyNames(lytOpts)){
 						let item = localStorage.getItem('lyt ' + prop);
@@ -710,6 +708,7 @@ export default defineComponent({
 					for (let prop of Object.getOwnPropertyNames(uiOpts)){
 						let item = localStorage.getItem('lyt ' + prop);
 						if (item == null && this.uiOpts[prop] != uiOpts[prop as keyof typeof uiOpts]){
+							console.log("Loaded UI prop " + prop)
 							this.uiOpts[prop] = uiOpts[prop as keyof typeof uiOpts];
 							if (prop == 'useReducedTree'){
 								changedTree = true;
@@ -757,8 +756,8 @@ export default defineComponent({
 			} else if (evt.key == 'F' && evt.ctrlKey){
 				// If search bar is open, swap search mode
 				if (this.searchOpen){
-					this.uiOpts.jumpToSearchedNode = !this.uiOpts.jumpToSearchedNode;
-					this.onSettingsChg([], ['jumpToSearchedNode']);
+					this.uiOpts.searchJumpMode = !this.uiOpts.searchJumpMode;
+					this.onSettingsChg([], ['searchJumpMode']);
 				}
 			}
 		},
@@ -813,7 +812,8 @@ export default defineComponent({
 			return opts;
 		},
 		getUiOpts(){
-			let opts: {[x: string]: boolean|number|string|string[]|(string|number)[][]|Set<Action>} = getDefaultUiOpts();
+			let opts: {[x: string]: boolean|number|string|string[]|(string|number)[][]|Set<Action>} =
+				getDefaultUiOpts(getDefaultLytOpts());
 			for (let prop of Object.getOwnPropertyNames(opts)){
 				let item = localStorage.getItem('ui ' + prop);
 				if (item != null){
@@ -928,23 +928,20 @@ export default defineComponent({
 <template>
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
 	:style="{backgroundColor: uiOpts.bgColor}">
-	<div class="flex shadow" :style="{backgroundColor: uiOpts.bgColorDark2}">
-		<h1 class="px-4 my-auto text-2xl" :style="{color: uiOpts.altColor}">Tree of Life</h1>
+	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: uiOpts.bgColorDark2}">
+		<h1 class="my-auto text-2xl" :style="{color: uiOpts.altColor}">Tol Explorer</h1>
 		<!-- Icons -->
-		<icon-button v-if="!uiOpts.disabledActions.has('search')"
-			class="ml-auto mr-2 my-2" :style="iconButtonStyles" @click="onSearchIconClick">
+		<div class="mx-auto"/> <!-- Spacer -->
+		<icon-button v-if="!uiOpts.disabledActions.has('search')" :style="buttonStyles" @click="onSearchIconClick">
 			<search-icon/>
 		</icon-button>
-		<icon-button v-if="!uiOpts.disabledActions.has('autoMode')"
-			class="mr-2 my-2" :style="iconButtonStyles" @click="onPlayIconClick">
+		<icon-button v-if="!uiOpts.disabledActions.has('autoMode')" :style="buttonStyles" @click="onPlayIconClick">
 			<play-icon/>
 		</icon-button>
-		<icon-button v-if="!uiOpts.disabledActions.has('settings')"
-			class="mr-2 my-2" :style="iconButtonStyles" @click="onSettingsIconClick">
+		<icon-button v-if="!uiOpts.disabledActions.has('settings')" :style="buttonStyles" @click="onSettingsIconClick">
 			<settings-icon/>
 		</icon-button>
-		<icon-button v-if="!uiOpts.disabledActions.has('help')"
-			class="mr-2 my-2" :style="iconButtonStyles" @click="onHelpIconClick">
+		<icon-button v-if="!uiOpts.disabledActions.has('help')" :style="buttonStyles" @click="onHelpIconClick">
 			<help-icon/>
 		</icon-button>
 	</div>
@@ -964,7 +961,7 @@ export default defineComponent({
 					@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
 			</transition>
 		</div>
-		<div class="relative grow" :style="{margin: uiOpts.mainTileMargin + 'px'}" ref="tileArea">
+		<div class="relative grow" :style="{margin: lytOpts.tileSpacing + 'px'}" ref="tileArea">
 			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 				:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
 				@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"

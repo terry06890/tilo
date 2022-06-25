@@ -50,7 +50,7 @@ export default defineComponent({
 		},
 		dummyNode(): LayoutNode {
 			let newNode = new LayoutNode(this.nodeName, []);
-			newNode.dims = [this.uiOpts.infoModalImgSz, this.uiOpts.infoModalImgSz];
+			newNode.dims = [this.lytOpts.maxTileSz, this.lytOpts.maxTileSz];
 			return newNode;
 		},
 	},
@@ -69,8 +69,8 @@ export default defineComponent({
 					'none',
 				backgroundColor: '#1c1917',
 				backgroundSize: 'cover',
-				width: this.uiOpts.infoModalImgSz + 'px',
-				height: this.uiOpts.infoModalImgSz + 'px',
+				width: this.lytOpts.maxTileSz + 'px',
+				height: this.lytOpts.maxTileSz + 'px',
 			};
 		},
 		licenseToUrl(license: string){

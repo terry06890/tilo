@@ -15,10 +15,13 @@ export default defineComponent({
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
 	computed: {
+		imgSz(){
+			return this.uiOpts.ancestryBarBreadth - this.lytOpts.tileSpacing*2 - this.uiOpts.scrollGap;
+		},
 		usedNodes(){ // Childless versions of 'nodes' used to parameterise <tile>
 			return this.nodes.map(n => {
 				let newNode = new LayoutNode(n.name, []);
-				newNode.dims = [this.uiOpts.ancestryBarImgSz, this.uiOpts.ancestryBarImgSz];
+				newNode.dims = [this.imgSz, this.imgSz];
 				return newNode;
 			});
 		},
@@ -29,8 +32,8 @@ export default defineComponent({
 				// For child layout
 				display: 'flex',
 				flexDirection: this.vert ? 'column' : 'row',
-				gap: this.uiOpts.ancestryTileGap + 'px',
-				padding: this.uiOpts.ancestryTileGap + 'px',
+				gap: this.lytOpts.tileSpacing + 'px',
+				padding: this.lytOpts.tileSpacing + 'px',
 				// Other
 				backgroundColor: this.uiOpts.ancestryBarBgColor,
 				boxShadow: this.uiOpts.shadowNormal,
