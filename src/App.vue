@@ -58,10 +58,11 @@ function getDefaultLytOpts(): LayoutOptions {
 function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 	let screenSz = getBreakpoint();
 	// Reused option values
-	let textColor = '#fafaf9';
-	let bgColor = '#292524', bgColorAlt = '#fafaf9',
+	let textColor = '#fafaf9', textColorAlt = '#1c1917';
+	let bgColor = '#292524',
 		bgColorLight = '#44403c', bgColorDark = '#1c1917',
-		bgColorLight2 = '#57534e', bgColorDark2 = '#0e0c0b';
+		bgColorLight2 = '#57534e', bgColorDark2 = '#0e0c0b',
+		bgColorAlt = '#fafaf9', bgColorAltDark = '#a8a29e';
 	let altColor = '#a3e623', altColorDark = '#65a30d';
 	let accentColor = '#f59e0b';
 	let scrollGap = getScrollBarWidth();
@@ -69,12 +70,14 @@ function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 	return {
 		// Shared coloring/sizing
 		textColor,
+		textColorAlt,
 		bgColor,
-		bgColorAlt,
 		bgColorLight,
 		bgColorDark,
 		bgColorLight2,
 		bgColorDark2,
+		bgColorAlt,
+		bgColorAltDark,
 		altColor,
 		altColorDark,
 		borderRadius: 5, // px
@@ -97,7 +100,7 @@ function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		autoActionDelay: 500, // ms
 		// Other
 		useReducedTree: false,
-		searchSuggLimit: 5,
+		searchSuggLimit: 10,
 		searchJumpMode: false,
 		tutorialSkip: false,
 		disabledActions: new Set() as Set<Action>,
@@ -258,7 +261,7 @@ export default defineComponent({
 					let response = await fetch(urlPath);
 					responseObj = await response.json();
 				} catch (error){
-					console.log('ERROR: Unable to retreive tol-node data', error);
+					console.log('Error with retreiving tol-node data: ' + error);
 					return false;
 				}
 				Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
@@ -356,7 +359,7 @@ export default defineComponent({
 					let response = await fetch(urlPath);
 					responseObj = await response.json();
 				} catch (error){
-					console.log('ERROR: Unable to retreive tol-node data', error);
+					console.log('Error with retreiving tol-node data: ' + error);
 					return false;
 				}
 				Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
@@ -815,7 +818,7 @@ export default defineComponent({
 				let response = await fetch(urlPath);
 				responseObj = await response.json();
 			} catch (error) {
-				console.log('ERROR: Unable to retrieve tree data', error);
+				console.log('Error with retrieving tree data: ' + error);
 				return;
 			}
 			// Get root node name
@@ -1016,7 +1019,7 @@ export default defineComponent({
 	</div>
 	<!-- Modals -->
 	<transition name="fade">
-		<search-modal v-if="searchOpen" :tolMap="tolMap" :uiOpts="uiOpts" ref="searchModal"
+		<search-modal v-if="searchOpen" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" ref="searchModal"
 			@close="searchOpen = false" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg" />
 	</transition>
 	<transition name="fade">

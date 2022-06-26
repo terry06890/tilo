@@ -68,12 +68,14 @@ export type Action =
 export type UiOptions = {
 	// Shared coloring/sizing
 	textColor: string, // CSS color
+	textColorAlt: string,
 	bgColor: string,
-	bgColorAlt: string,
 	bgColorLight: string,
 	bgColorDark: string,
 	bgColorLight2: string,
 	bgColorDark2: string,
+	bgColorAlt: string,
+	bgColorAltDark: string,
 	altColor: string,
 	altColorDark: string,
 	borderRadius: number, // CSS border-radius value, in px

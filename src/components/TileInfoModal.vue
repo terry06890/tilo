@@ -112,7 +112,7 @@ export default defineComponent({
 			let response = await fetch(url.toString());
 			responseObj = await response.json();
 		} catch (error){
-			console.log("ERROR: Unable to retrieve data from server")
+			console.log("Error with retrieving data from server: " + error);
 			return;
 		}
 		// Set fields from response
