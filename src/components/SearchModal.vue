@@ -87,7 +87,12 @@ export default defineComponent({
 				}
 				this.searchSuggs = responseObj.suggs;
 				this.searchHadMoreSuggs = responseObj.hasMore;
-				this.focusedSuggIdx = null;
+				// Auto-select first result if present
+				if (this.searchSuggs.length > 0){
+					this.focusedSuggIdx = 0;
+				} else {
+					this.focusedSuggIdx = null;
+				}
 			};
 			let currentTime = new Date().getTime();
 			if (this.lastSuggReqTime == 0){
@@ -111,33 +116,21 @@ export default defineComponent({
 			this.$emit('info-click', nodeName);
 		},
 		onDownKey(){
-			// Select next search-suggestion, possibly cycling back to top
-			if (this.searchSuggs.length > 0){
-				if (this.focusedSuggIdx == null){
-					this.focusedSuggIdx = 0;
-				} else if (this.focusedSuggIdx == this.searchSuggs.length - 1){
-					this.focusedSuggIdx = null;
-				} else {
-					this.focusedSuggIdx += 1;
-				}
+			if (this.focusedSuggIdx != null){
+				this.focusedSuggIdx = (this.focusedSuggIdx + 1) % this.searchSuggs.length;
 			}
 		},
 		onUpKey(){
-			// Select previous search-suggestion, possibly cycling to bottom
-			if (this.searchSuggs.length > 0){
-				if (this.focusedSuggIdx == null){
-					this.focusedSuggIdx = this.searchSuggs.length - 1;
-				} else if (this.focusedSuggIdx == 0){
-					this.focusedSuggIdx = null;
-				} else {
-					this.focusedSuggIdx -= 1;
-				}
+			if (this.focusedSuggIdx != null){
+				this.focusedSuggIdx = (this.focusedSuggIdx - 1 + this.searchSuggs.length) % this.searchSuggs.length;
+					// The addition after -1 is to avoid becoming negative
 			}
 		},
 		// Search events
 		onSearch(){
 			if (this.focusedSuggIdx == null){
-				this.resolveSearch((this.$refs.searchInput as HTMLInputElement).value.toLowerCase())
+				let input = (this.$refs.searchInput as HTMLInputElement).value.toLowerCase();
+				this.resolveSearch(input)
 			} else {
 				let sugg = this.searchSuggs[this.focusedSuggIdx]
 				this.resolveSearch(sugg.canonicalName || sugg.name);
