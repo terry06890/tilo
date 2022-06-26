@@ -7,7 +7,7 @@
     -   SearchModal.vue:   Modal providing a search bar.
     -   SettingsModal:     Modal displaying configurable settings.
     -   HelpModal.vue:     Modal displaying help info.
-    -   AncestryBar.vue:   Displays ancestors of the top-level Tile.
+    -   AncestryBar.vue:   Displays ancestors of the outermost Tile.
     -   TutorialPane.vue:  Displays tutorial content.
     -   RButton.vue:       Basic button component.
     -   IconButton.vue:    Basic button component containing SVG icon.

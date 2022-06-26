@@ -27,7 +27,7 @@ export default defineComponent({
 		},
 	},
 	watch: {
-		sweepLeaves(newVal, oldVal){
+		sweepLeaves(newVal: boolean, oldVal: boolean){
 			this.lytOpts.layoutType = newVal ? 'sweep' : 'rect';
 		},
 	},

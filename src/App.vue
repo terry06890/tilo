@@ -990,7 +990,7 @@ export default defineComponent({
 	<!-- Content area -->
 	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
 		<transition name="fade" @after-enter="tutPaneInTransition = false" @after-leave="tutPaneInTransition = false">
-			<tutorial-pane v-if="tutPaneOpen" :height="uiOpts.tutPaneSz + 'px'"
+			<tutorial-pane v-if="tutPaneOpen" :style="{height: uiOpts.tutPaneSz + 'px'}"
 				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!tutWelcome"
 				@close="onTutPaneClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
 		</transition>
