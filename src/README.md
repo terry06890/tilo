@@ -4,7 +4,7 @@
 -   components:
     -   Tile.vue:          Displays a tree-of-life node.
     -   TileInfoModal.vue: Modal displaying info about a Tile's node.
-    -   SearchModal.vue:   Modal with a search bar.
+    -   SearchModal.vue:   Modal providing a search bar.
     -   SettingsModal:     Modal displaying configurable settings.
     -   HelpModal.vue:     Modal displaying help info.
     -   AncestryBar.vue:   Displays ancestors of the top-level Tile.

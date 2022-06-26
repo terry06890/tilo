@@ -26,6 +26,11 @@ export default defineComponent({
 			};
 		},
 	},
+	watch: {
+		sweepLeaves(newVal, oldVal){
+			this.lytOpts.layoutType = newVal ? 'sweep' : 'rect';
+		},
+	},
 	methods: {
 		onClose(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
@@ -45,11 +50,6 @@ export default defineComponent({
 			}
 			//
 			this.$emit('setting-chg', setting);
-		},
-	},
-	watch: {
-		sweepLeaves(newVal, oldVal){
-			this.lytOpts.layoutType = newVal ? 'sweep' : 'rect';
 		},
 	},
 	components: {RButton, CloseIcon, },

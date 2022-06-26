@@ -1,16 +1,25 @@
 <script lang="ts">
+
 import {defineComponent, PropType} from 'vue';
-import CloseIcon from './icon/CloseIcon.vue';
 import RButton from './RButton.vue';
+import CloseIcon from './icon/CloseIcon.vue';
 import {UiOptions} from '../lib';
 
-// Displays help information
 export default defineComponent({
 	props: {
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
+	computed: {
+		styles(): Record<string,string> {
+			return {
+				backgroundColor: this.uiOpts.bgColorAlt,
+				borderRadius: this.uiOpts.borderRadius + 'px',
+				boxShadow: this.uiOpts.shadowNormal,
+			};
+		},
+	},
 	methods: {
-		onCloseClick(evt: Event){
+		onClose(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
 				this.$emit('close');
 			}
@@ -20,16 +29,15 @@ export default defineComponent({
 			this.$emit('close');
 		},
 	},
-	components: {CloseIcon, RButton, },
+	components: {RButton, CloseIcon, },
 	emits: ['close', 'start-tutorial', ],
 });
 </script>
 
 <template>
-<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onCloseClick">
-	<div class="absolute left-1/2 -translate-x-1/2 w-4/5 top-1/2 -translate-y-1/2 p-4
-		bg-stone-50 rounded-md shadow shadow-black">
-		<close-icon @click.stop="onCloseClick" ref="closeIcon"
+<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
+	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-4/5 p-4" :style="styles">
+		<close-icon @click.stop="onClose" ref="closeIcon"
 			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
 		<h1 class="text-center text-xl font-bold mb-2">Help Info</h1>
 		<hr class="mb-4 border-stone-400"/>
@@ -52,7 +60,7 @@ export default defineComponent({
 			in culpa qui officia deserunt mollit anim id
 			est laborum.
 		</div>
-		<r-button class="bg-stone-800 text-white" @click.stop="onStartTutorial">
+		<r-button :style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}" @click.stop="onStartTutorial">
 			Start Tutorial
 		</r-button>
 	</div>

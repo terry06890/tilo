@@ -1,24 +1,24 @@
 <script lang="ts">
+
 import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue'
 import {TolMap, UiOptions} from '../lib';
 import {LayoutNode, LayoutOptions} from '../layout';
 
-// Displays a sequence of nodes, representing ancestors from a tree-of-life root to a currently-active root
 export default defineComponent({
 	props: {
 		nodes: {type: Array as PropType<LayoutNode[]>, required: true},
 		vert: {type: Boolean, default: false},
 		// Other
-		tolMap: {type: Object as PropType<TolMap>, required: true},
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
+		tolMap: {type: Object as PropType<TolMap>, required: true},
 	},
 	computed: {
 		imgSz(){
 			return this.uiOpts.ancestryBarBreadth - this.lytOpts.tileSpacing*2 - this.uiOpts.scrollGap;
 		},
-		usedNodes(){ // Childless versions of 'nodes' used to parameterise <tile>
+		dummyNodes(){ // Childless versions of 'nodes' used to parameterise <tile>s
 			return this.nodes.map(n => {
 				let newNode = new LayoutNode(n.name, []);
 				newNode.dims = [this.imgSz, this.imgSz];
@@ -27,13 +27,13 @@ export default defineComponent({
 		},
 		styles(): Record<string,string> {
 			return {
-				overflowX: this.vert ? 'hidden' : 'scroll',
-				overflowY: this.vert ? 'scroll' : 'hidden',
 				// For child layout
 				display: 'flex',
 				flexDirection: this.vert ? 'column' : 'row',
 				gap: this.lytOpts.tileSpacing + 'px',
 				padding: this.lytOpts.tileSpacing + 'px',
+				overflowX: this.vert ? 'hidden' : 'scroll',
+				overflowY: this.vert ? 'scroll' : 'hidden',
 				// Other
 				backgroundColor: this.uiOpts.ancestryBarBgColor,
 				boxShadow: this.uiOpts.shadowNormal,
@@ -41,6 +41,7 @@ export default defineComponent({
 		},
 	},
 	watch: {
+		// Used to scroll to end of bar upon node/screen changes
 		nodes(){
 			setTimeout(() => this.scrollToEnd(), 0); // Without timeout, seems to run before new tiles are added
 		},
@@ -49,18 +50,20 @@ export default defineComponent({
 		},
 	},
 	methods: {
+		// Click events
 		onTileClick(node: LayoutNode){
 			this.$emit('ancestor-click', node);
 		},
 		onInfoIconClick(data: string){
 			this.$emit('info-click', data);
 		},
+		// For converting vertical scroll to horizontal
 		onWheelEvt(evt: WheelEvent){
-			// Possibly convert vertical scroll to horizontal
 			if (!this.vert && Math.abs(evt.deltaX) < Math.abs(evt.deltaY)){
 				this.$el.scrollLeft -= (evt.deltaY > 0 ? -30 : 30);
 			}
 		},
+		// Other
 		scrollToEnd(){
 			if (this.vert){
 				this.$el.scrollTop = this.$el.scrollHeight;
@@ -79,7 +82,7 @@ export default defineComponent({
 
 <template>
 <div :style="styles" @wheel.stop="onWheelEvt">
-	<tile v-for="(node, idx) in usedNodes" :key="node.name" class="shrink-0"
+	<tile v-for="(node, idx) in dummyNodes" :key="node.name" class="shrink-0"
 		:layoutNode="node" :tolMap="tolMap" :nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@leaf-click="onTileClick(nodes[idx])" @info-click="onInfoIconClick"/>
 </div>
