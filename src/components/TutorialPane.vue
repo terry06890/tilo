@@ -1,7 +1,7 @@
 <script lang="ts">
 
 import {defineComponent, PropType} from 'vue';
-import RButton from './RButton.vue';
+import SButton from './SButton.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import {Action, UiOptions} from '../lib';
 
@@ -99,7 +99,7 @@ export default defineComponent({
 			this.stage += 1;
 		}
 	},
-	components: {CloseIcon, RButton, },
+	components: {CloseIcon, SButton, },
 	emits: ['close', 'stage-chg', 'skip', ],
 });
 </script>
@@ -118,8 +118,8 @@ export default defineComponent({
 			For more project information, click here.
 		</div>
 		<div class="w-full flex justify-evenly mt-2">
-			<r-button :style="buttonStyles" @click="onStartTutorial">Start Tutorial</r-button>
-			<r-button :style="buttonStyles" @click="onSkipTutorial">Skip</r-button>
+			<s-button :style="buttonStyles" @click="onStartTutorial">Start Tutorial</s-button>
+			<s-button :style="buttonStyles" @click="onSkipTutorial">Skip</s-button>
 		</div>
 	</template>
 	<template v-else>
@@ -154,12 +154,12 @@ export default defineComponent({
 		</div>
 		<!-- Buttons -->
 		<div class="w-full flex justify-evenly mt-2">
-			<r-button :disabled="stage == 1" :style="buttonStyles" @click="onPrevClick">
+			<s-button :disabled="stage == 1" :style="buttonStyles" @click="onPrevClick">
 				Prev
-			</r-button>
-			<r-button :style="buttonStyles" @click="(stage != lastStage) ? onNextClick() : onClose()">
+			</s-button>
+			<s-button :style="buttonStyles" @click="(stage != lastStage) ? onNextClick() : onClose()">
 				{{stage != lastStage ? 'Next' : 'Finish'}}
-			</r-button>
+			</s-button>
 		</div>
 	</template>
 </div>

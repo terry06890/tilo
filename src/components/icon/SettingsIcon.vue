@@ -4,7 +4,7 @@ export default defineComponent({});
 </script>
 
 <template>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+<svg viewBox="0 0 24 24" fill="none"
 	stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 	<circle cx="12" cy="12" r="3"/>
 	<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0

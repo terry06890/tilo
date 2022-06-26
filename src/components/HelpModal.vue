@@ -1,7 +1,7 @@
 <script lang="ts">
 
 import {defineComponent, PropType} from 'vue';
-import RButton from './RButton.vue';
+import SButton from './SButton.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import {UiOptions} from '../lib';
 
@@ -29,7 +29,7 @@ export default defineComponent({
 			this.$emit('close');
 		},
 	},
-	components: {RButton, CloseIcon, },
+	components: {SButton, CloseIcon, },
 	emits: ['close', 'start-tutorial', ],
 });
 </script>
@@ -60,9 +60,9 @@ export default defineComponent({
 			in culpa qui officia deserunt mollit anim id
 			est laborum.
 		</div>
-		<r-button :style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}" @click.stop="onStartTutorial">
+		<s-button :style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}" @click.stop="onStartTutorial">
 			Start Tutorial
-		</r-button>
+		</s-button>
 	</div>
 </div>
 </template>

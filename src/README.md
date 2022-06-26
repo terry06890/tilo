@@ -9,8 +9,8 @@
     -   HelpModal.vue:     Modal displaying help info.
     -   AncestryBar.vue:   Displays ancestors of the outermost Tile.
     -   TutorialPane.vue:  Displays tutorial content.
-    -   RButton.vue:       Basic button component.
-    -   IconButton.vue:    Basic button component containing SVG icon.
+    -   SButton.vue:       Simple button component.
+    -   IconButton.vue:    Simple button component containing an SVG icon.
     -   icon:              Contains components that display SVG icons.
 -   lib.ts:    Contains classes/types and utility functions.
 -   layout.ts: Contains code for laying out Tiles.

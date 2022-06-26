@@ -1,7 +1,7 @@
 <script lang="ts">
 
 import {defineComponent, PropType} from 'vue';
-import RButton from './RButton.vue';
+import SButton from './SButton.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import {UiOptions} from '../lib';
 import {LayoutOptions} from '../layout';
@@ -52,7 +52,7 @@ export default defineComponent({
 			this.$emit('setting-chg', setting);
 		},
 	},
-	components: {RButton, CloseIcon, },
+	components: {SButton, CloseIcon, },
 	emits: ['close', 'setting-chg', 'reset', ],
 });
 </script>
@@ -132,10 +132,10 @@ export default defineComponent({
 					@change="onSettingChg('searchJumpMode')"/> Skip search animation </label>
 			</div>
 		</div>
-		<r-button class="mx-auto mt-2" :style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}"
+		<s-button class="mx-auto mt-2" :style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}"
 			@click="$emit('reset')">
 			Reset
-		</r-button>
+		</s-button>
 	</div>
 </div>
 </template>
