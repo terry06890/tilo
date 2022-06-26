@@ -59,7 +59,8 @@ function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 	let screenSz = getBreakpoint();
 	// Reused option values
 	let textColor = '#fafaf9';
-	let bgColor = '#292524', bgColorLight = '#44403c', bgColorDark = '#1c1917',
+	let bgColor = '#292524', bgColorAlt = '#fafaf9',
+		bgColorLight = '#44403c', bgColorDark = '#1c1917',
 		bgColorLight2 = '#57534e', bgColorDark2 = '#0e0c0b';
 	let altColor = '#a3e623', altColorDark = '#65a30d';
 	let accentColor = '#f59e0b';
@@ -69,6 +70,7 @@ function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		// Shared coloring/sizing
 		textColor,
 		bgColor,
+		bgColorAlt,
 		bgColorLight,
 		bgColorDark,
 		bgColorLight2,
@@ -256,7 +258,7 @@ export default defineComponent({
 					let response = await fetch(urlPath);
 					responseObj = await response.json();
 				} catch (error){
-					console.log('ERROR loading tolnode data', error);
+					console.log('ERROR: Unable to retreive tol-node data', error);
 					return false;
 				}
 				Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
@@ -354,7 +356,7 @@ export default defineComponent({
 					let response = await fetch(urlPath);
 					responseObj = await response.json();
 				} catch (error){
-					console.log('ERROR loading tolnode data', error);
+					console.log('ERROR: Unable to retreive tol-node data', error);
 					return false;
 				}
 				Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
@@ -813,7 +815,7 @@ export default defineComponent({
 				let response = await fetch(urlPath);
 				responseObj = await response.json();
 			} catch (error) {
-				console.log('ERROR: Unable to get tree data', error);
+				console.log('ERROR: Unable to retrieve tree data', error);
 				return;
 			}
 			// Get root node name

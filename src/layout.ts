@@ -308,7 +308,7 @@ let sqrLayout: LayoutFn = function (node, pos, dims, showHeader, allowCollapse, 
 	let numChildren = node.children.length;
 	let areaAR = newDims[0] / newDims[1]; // Aspect ratio
 	let lowestEmpSpc = Number.POSITIVE_INFINITY, usedNumCols = 0, usedNumRows = 0, usedTileSz = 0;
-	const MAX_TRIES = 20; // If there are many possibilities, skip some
+	const MAX_TRIES = 50; // If there are many possibilities, skip some
 	let ptlNumCols = numChildren == 1 ? [1] :
 		linspace(1, numChildren, Math.min(numChildren, MAX_TRIES)).map(n => Math.floor(n));
 	for (let numCols of ptlNumCols){

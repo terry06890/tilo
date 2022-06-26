@@ -2,7 +2,7 @@
 -   main.ts: Included by ../index.html. Creates the main Vue component.
 -   App.vue: The main Vue component.
 -   components:
-    -   Tile.vue:          Displays a tree-of-life node, and can include child nodes.
+    -   Tile.vue:          Displays a tree-of-life node.
     -   TileInfoModal.vue: Modal displaying info about a Tile's node.
     -   SearchModal.vue:   Modal with a search bar.
     -   SettingsModal:     Modal displaying configurable settings.

@@ -68,12 +68,17 @@ class ImgInfo:
 		self.license = license # string
 		self.artist = artist   # string
 		self.credit = credit   # string
+class NodeInfo:
+	" Represents info about a node "
+	def __init__(self, tolNode, descInfo, imgInfo):
+		self.tolNode = tolNode   # TolNode
+		self.descInfo = descInfo # null | DescInfo
+		self.imgInfo = imgInfo   # null | ImgInfo
 class InfoResponse:
 	" Sent as responses to 'info' requests "
-	def __init__(self, tolNode, descData, imgData):
-		self.tolNode = tolNode   # null | TolNode
-		self.descData = descData # null | DescInfo | [DescInfo, DescInfo]
-		self.imgData = imgData   # null | ImgInfo | [ImgInfo, ImgInfo]
+	def __init__(self, nodeInfo, subNodesInfo = None):
+		self.nodeInfo = nodeInfo         # NodeInfo
+		self.subNodesInfo = subNodesInfo # [] | [NodeInfo, NodeInfo]
 
 # Connect to db
 dbCon = sqlite3.connect(dbFile)
@@ -194,48 +199,42 @@ def lookupNodeInfo(name, useReducedTree):
 	tolNode = nameToNodes[name] if name in nameToNodes else None
 	if tolNode == None:
 		return None
-	# Get node desc
-	descData = None
+	# Check for compound node
 	match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
-	if match == None:
-		query = "SELECT desc, wiki_id, redirected, from_dbp FROM" \
-			" wiki_ids INNER JOIN descs ON wiki_ids.id = descs.wiki_id WHERE wiki_ids.name = ?"
-		row = cur.execute(query, (name,)).fetchone()
-		if row != None:
-			(desc, wikiId, redirected, fromDbp) = row
-			descData = DescInfo(desc, wikiId, redirected == 1, fromDbp == 1)
-	else:
-		# Get descs for compound-node element
-		descData = [None, None]
-		query = "SELECT name, desc, wiki_id, redirected, from_dbp FROM" \
-			" wiki_ids INNER JOIN descs ON wiki_ids.id = descs.wiki_id WHERE wiki_ids.name IN (?, ?)"
-		for (nodeName, desc, wikiId, redirected, fromDbp) in cur.execute(query, match.group(1,2)):
-			idx = 0 if nodeName == match.group(1) else 1
-			descData[idx] = DescInfo(desc, wikiId, redirected == 1, fromDbp == 1)
+	subNames = [match.group(1), match.group(2)] if match != None else []
+	if len(subNames) > 0:
+		nameToSubNodes = lookupNodes(subNames, useReducedTree)
+		if len(nameToSubNodes) < 2:
+			print(f"ERROR: Unable to find sub-names entries for {name}", file=sys.stderr)
+			return None
+		nameToNodes.update(nameToSubNodes)
+	namesToLookup = [name] if len(subNames) == 0 else subNames
+	# Get desc info
+	nameToDescInfo = {}
+	query = "SELECT name, desc, wiki_id, redirected, from_dbp FROM" \
+		" wiki_ids INNER JOIN descs ON wiki_ids.id = descs.wiki_id" \
+		" WHERE wiki_ids.name IN ({})".format(",".join(["?"] * len(namesToLookup)))
+	for (nodeName, desc, wikiId, redirected, fromDbp) in cur.execute(query, namesToLookup):
+		nameToDescInfo[nodeName] = DescInfo(desc, wikiId, redirected == 1, fromDbp == 1)
 	# Get image info
-	imgData = None
-	if isinstance(tolNode.imgName, str):
-		otolId = tolNode.imgName[:-4] # Convert filename excluding .jpg suffix
-		query = "SELECT images.id, images.src, url, license, artist, credit FROM" \
-			" nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
-			" INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
-			" WHERE nodes.id = ?"
-		(imgId, imgSrc, url, license, artist, credit) = cur.execute(query, (otolId,)).fetchone()
-		imgData = ImgInfo(imgId, imgSrc, url, license, artist, credit)
-	elif isinstance(tolNode.imgName, list):
-		# Get info for compound-image parts
-		imgData = [None, None]
-		idsToLookup = [n[:-4] for n in tolNode.imgName if n != None]
-		query = "SELECT nodes.id, images.id, images.src, url, license, artist, credit FROM" \
-			" nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
-			" INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
-			" WHERE nodes.id IN ({})".format(",".join(["?"] * len(idsToLookup)))
-		for (imgOtolId, imgId, imgSrc, url, license, artist, credit) in cur.execute(query, idsToLookup):
-			imgName1 = tolNode.imgName[0]
-			idx = 0 if (imgName1 != None and imgOtolId == imgName1[:-4]) else 1
-			imgData[idx] = ImgInfo(imgId, imgSrc, url, license, artist, credit)
-	#
-	return InfoResponse(tolNode, descData, imgData)
+	nameToImgInfo = {}
+	idsToNames = {nameToNodes[n].imgName[:-4]: n for n in namesToLookup if nameToNodes[n].imgName != None}
+	idsToLookup = list(idsToNames.keys()) # Lookup using IDs avoids having to check linked_imgs
+	query = "SELECT nodes.id, images.id, images.src, url, license, artist, credit FROM" \
+		" nodes INNER JOIN node_imgs ON nodes.name = node_imgs.name" \
+		" INNER JOIN images ON node_imgs.img_id = images.id AND node_imgs.src = images.src" \
+		" WHERE nodes.id IN ({})".format(",".join(["?"] * len(idsToLookup)))
+	for (id, imgId, imgSrc, url, license, artist, credit) in cur.execute(query, idsToLookup):
+		nameToImgInfo[idsToNames[id]] = ImgInfo(imgId, imgSrc, url, license, artist, credit)
+	# Construct response
+	nodeInfoObjs = [
+		NodeInfo(
+			nameToNodes[n],
+			nameToDescInfo[n] if n in nameToDescInfo else None,
+			nameToImgInfo[n] if n in nameToImgInfo else None
+		) for n in [name] + subNames
+	]
+	return InfoResponse(nodeInfoObjs[0], nodeInfoObjs[1:])
 
 class DbServer(BaseHTTPRequestHandler):
 	" Provides handlers for requests to the server "

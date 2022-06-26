@@ -48,11 +48,15 @@ export type ImgInfo = {
 	license: string,
 	artist: string,
 	credit: string,
-}
-export type TileInfoResponse = {
-	tolNode: null | TolNode,
-	descData: null | DescInfo | [DescInfo, DescInfo],
-	imgData: null | ImgInfo | [ImgInfo, ImgInfo],
+};
+export type NodeInfo = {
+	tolNode: TolNode,
+	descInfo: null | DescInfo,
+	imgInfo: null | ImgInfo,
+};
+export type InfoResponse = {
+	nodeInfo: NodeInfo,
+	subNodesInfo: [] | [NodeInfo, NodeInfo],
 };
 
 // Used by auto-mode and tutorial
@@ -65,6 +69,7 @@ export type UiOptions = {
 	// Shared coloring/sizing
 	textColor: string, // CSS color
 	bgColor: string,
+	bgColorAlt: string,
 	bgColorLight: string,
 	bgColorDark: string,
 	bgColorLight2: string,
