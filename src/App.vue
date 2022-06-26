@@ -69,17 +69,9 @@ function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 	//
 	return {
 		// Shared coloring/sizing
-		textColor,
-		textColorAlt,
-		bgColor,
-		bgColorLight,
-		bgColorDark,
-		bgColorLight2,
-		bgColorDark2,
-		bgColorAlt,
-		bgColorAltDark,
-		altColor,
-		altColorDark,
+		textColor, textColorAlt,
+		bgColor, bgColorLight, bgColorDark, bgColorLight2, bgColorDark2, bgColorAlt, bgColorAltDark,
+		altColor, altColorDark,
 		borderRadius: 5, // px
 		shadowNormal: '0 0 2px black',
 		shadowHovered: '0 0 1px 2px ' + altColor,
@@ -660,6 +652,7 @@ export default defineComponent({
 			this.settingsOpen = true;
 		},
 		async onSettingChg(setting: string){
+			// Save in localStorage
 			if (setting in this.lytOpts){
 				localStorage.setItem(lytOptPrefix + setting, String(this.lytOpts[setting as keyof LayoutOptions]));
 				this.relayoutWithCollapse();
@@ -671,7 +664,7 @@ export default defineComponent({
 			} else {
 				throw new Error('Unexpected setting');
 			}
-			console.log(`Saved ${setting}`)
+			console.log(`Saved setting ${setting}`);
 		},
 		async onTreeChange(){
 			if (this.activeRoot != this.layoutTree){
@@ -683,6 +676,7 @@ export default defineComponent({
 		},
 		onResetSettings(): void {
 			localStorage.clear();
+			// Restore default options
 			let defaultLytOpts = getDefaultLytOpts();
 			let defaultUiOpts = getDefaultUiOpts(defaultLytOpts);
 			if (this.uiOpts.useReducedTree != defaultUiOpts.useReducedTree){
@@ -691,6 +685,7 @@ export default defineComponent({
 			Object.assign(this.lytOpts, defaultLytOpts);
 			Object.assign(this.uiOpts, defaultUiOpts);
 			console.log('Settings reset');
+			//
 			this.relayoutWithCollapse();
 		},
 		// For help events

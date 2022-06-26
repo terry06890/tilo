@@ -327,7 +327,7 @@ export default defineComponent({
 	watch: {
 		// For setting transition state (allows external triggering, like via search and auto-mode)
 		pos: {
-			handler(newVal, oldVal){
+			handler(newVal: [number, number], oldVal: [number, number]){
 				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
 				if (valChanged && this.uiOpts.transitionDuration > 100 && !this.inTransition){
 					this.inTransition = true;
@@ -336,7 +336,7 @@ export default defineComponent({
 			deep: true,
 		},
 		dims: {
-			handler(newVal, oldVal){
+			handler(newVal: [number, number], oldVal: [number, number]){
 				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
 				if (valChanged && this.uiOpts.transitionDuration > 100 && !this.inTransition){
 					this.inTransition = true;
@@ -349,7 +349,7 @@ export default defineComponent({
 			this.triggerAnimation(this.isLeaf ? 'animate-expand-shrink' : 'animate-shrink-expand');
 		},
 		// Scroll to focused child if overflownRoot
-		hasFocusedChild(newVal, oldVal){
+		hasFocusedChild(newVal: boolean, oldVal: boolean){
 			if (newVal && this.isOverflownRoot){
 				let focusedChild = this.layoutNode.children.find(n => n.hasFocus)!
 				let bottomY = focusedChild.pos[1] + focusedChild.dims[1] + this.lytOpts.tileSpacing;
@@ -358,14 +358,14 @@ export default defineComponent({
 			}
 		},
 		// Allow overflow temporarily after being unhidden
-		hidden(newVal, oldVal){
+		hidden(newVal: boolean, oldVal: boolean){
 			if (oldVal && !newVal){
 				this.justUnhidden = true;
 				setTimeout(() => {this.justUnhidden = false;}, this.uiOpts.transitionDuration);
 			}
 		},
 		// Used to 'flash' the tile when focused
-		hasFocus(newVal, oldVal){
+		hasFocus(newVal: boolean, oldVal: boolean){
 			if (newVal != oldVal && newVal){
 				this.inFlash = true;
 				setTimeout(() => {this.inFlash = false;}, this.uiOpts.transitionDuration);
