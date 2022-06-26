@@ -5,7 +5,7 @@
 		<close-icon @click.stop="onClose" ref="closeIcon"
 			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer" />
 		<h1 class="text-xl font-bold mb-2">Settings</h1>
-		<div class="border rounded">
+		<div class="border rounded p-1">
 			<h2 class="text-center">Layout</h2>
 			<div class="flex gap-2">
 				<div class="grow">
@@ -34,20 +34,20 @@
 				<label for="minTileSizeInput">Min Tile Size</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz"
 					@input="onSettingChg('minTileSz')" name="minTileSizeInput" ref="minTileSzInput"/>
-				<div class="my-auto text-right">{{lytOpts.minTileSz}} px</div>
+				<div class="my-auto text-right">{{pxToMm(lytOpts.minTileSz)}} mm</div>
 				<!-- Row 2 -->
 				<label for="maxTileSizeInput">Max Tile Size</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz"
 					@input="onSettingChg('maxTileSz')" name="maxTileSizeInput" ref="maxTileSzInput"/>
-				<div class="my-auto text-right">{{lytOpts.maxTileSz}} px</div>
+				<div class="my-auto text-right">{{pxToMm(lytOpts.maxTileSz)}} mm</div>
 				<!-- Row 3 -->
 				<label for="tileSpacingInput">Tile Spacing</label>
 				<input type="range" min="0" max="20" v-model.number="lytOpts.tileSpacing"
 					@input="onSettingChg('tileSpacing')" name="tileSpacingInput"/>
-				<div class="my-auto text-right">{{lytOpts.tileSpacing}} px</div>
+				<div class="my-auto text-right">{{pxToMm(lytOpts.tileSpacing)}} mm</div>
 			</div>
 		</div>
-		<div class="border rounded">
+		<div class="border rounded p-1">
 			<h2 class="text-center">Timing</h2>
 			<div class="grid grid-cols-[minmax(0,3fr)_minmax(0,4fr)_minmax(0,2fr)] gap-1">
 				<!-- Row 1 -->
@@ -62,7 +62,7 @@
 				<div class="my-auto text-right">{{uiOpts.autoActionDelay}} ms</div>
 			</div>
 		</div>
-		<div class="border rounded">
+		<div class="border rounded p-1">
 			<h2 class="text-center">Other</h2>
 			<div>
 				<label> <input type="checkbox" v-model="uiOpts.useReducedTree"
@@ -133,6 +133,9 @@ export default defineComponent({
 			//
 			this.$emit('setting-chg', setting);
 		},
+		pxToMm(px: number): number{
+			return (px / 3.78).toFixed();
+		}
 	},
 	components: {SButton, CloseIcon, },
 	emits: ['close', 'setting-chg', 'reset', ],
