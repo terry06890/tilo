@@ -1,5 +1,54 @@
-<script lang="ts">
+<template>
+<div :style="styles" @transitionend="onTransitionEnd" @scroll="onScroll"> <!-- Need enclosing div for transitions -->
+	<div v-if="isLeaf" :class="[hasOneImage ? 'flex' : 'grid', {'hover:cursor-pointer': isExpandableLeaf}]"
+		class="w-full h-full flex-col grid-cols-1" :style="leafStyles"
+		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
+		<template v-if="hasOneImage">
+			<h1 :style="leafHeaderStyles">{{displayName}}</h1>
+			<info-icon v-if="infoIconDisabled" :style="infoIconStyles" :class="infoIconClasses"
+				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
+		</template>
+		<template v-else>
+			<div :style="leafFirstImgStyles" class="col-start-1 row-start-1"></div>
+			<div :style="leafSecondImgStyles" class="col-start-1 row-start-1"></div>
+			<h1 :style="leafHeaderStyles" class="col-start-1 row-start-1 z-10">{{displayName}}</h1>
+			<info-icon v-if="infoIconDisabled" class="col-start-1 row-start-1 z-10"
+				:style="infoIconStyles" :class="infoIconClasses"
+				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
+		</template>
+	</div>
+	<div v-else :style="nonleafStyles" ref="nonleaf">
+		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
+			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
+			<h1 :style="nonleafHeaderTextStyles" class="grow">{{displayName}}</h1>
+			<info-icon v-if="infoIconDisabled" :style="infoIconStyles" :class="infoIconClasses"
+				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
+		</div>
+		<div :style="sepSweptAreaStyles" :class="sepSweptAreaHideEdgeClass" ref="sepSweptArea">
+			<div v-if="layoutNode.sepSweptArea?.sweptLeft === false"
+				:style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
+				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
+				<h1 :style="nonleafHeaderTextStyles" class="grow">{{displayName}}</h1>
+				<info-icon v-if="infoIconDisabled" :style="infoIconStyles" :class="infoIconClasses"
+					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
+			</div>
+			<transition name="fadein">
+				<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 bg-amber-500/70 z-20"></div>
+			</transition>
+		</div>
+		<tile v-for="child in visibleChildren" :key="child.name"
+			:layoutNode="child" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" :overflownDim="overflownDim"
+			@leaf-click="onInnerLeafClick" @nonleaf-click="onInnerNonleafClick"
+			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
+			@info-click="onInnerInfoIconClick"/>
+	</div>
+	<transition name="fadein">
+		<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 bg-amber-500/70"></div>
+	</transition>
+</div>
+</template>
 
+<script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {TolNode, TolMap, UiOptions} from '../lib';
@@ -477,56 +526,6 @@ export default defineComponent({
 	emits: ['leaf-click', 'nonleaf-click', 'leaf-click-held', 'nonleaf-click-held', 'info-click', ],
 });
 </script>
-
-<template>
-<div :style="styles" @transitionend="onTransitionEnd" @scroll="onScroll"> <!-- Need enclosing div for transitions -->
-	<div v-if="isLeaf" :class="[hasOneImage ? 'flex' : 'grid', {'hover:cursor-pointer': isExpandableLeaf}]"
-		class="w-full h-full flex-col grid-cols-1" :style="leafStyles"
-		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-		<template v-if="hasOneImage">
-			<h1 :style="leafHeaderStyles">{{displayName}}</h1>
-			<info-icon v-if="infoIconDisabled" :style="infoIconStyles" :class="infoIconClasses"
-				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
-		</template>
-		<template v-else>
-			<div :style="leafFirstImgStyles" class="col-start-1 row-start-1"></div>
-			<div :style="leafSecondImgStyles" class="col-start-1 row-start-1"></div>
-			<h1 :style="leafHeaderStyles" class="col-start-1 row-start-1 z-10">{{displayName}}</h1>
-			<info-icon v-if="infoIconDisabled" class="col-start-1 row-start-1 z-10"
-				:style="infoIconStyles" :class="infoIconClasses"
-				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
-		</template>
-	</div>
-	<div v-else :style="nonleafStyles" ref="nonleaf">
-		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
-			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-			<h1 :style="nonleafHeaderTextStyles" class="grow">{{displayName}}</h1>
-			<info-icon v-if="infoIconDisabled" :style="infoIconStyles" :class="infoIconClasses"
-				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
-		</div>
-		<div :style="sepSweptAreaStyles" :class="sepSweptAreaHideEdgeClass" ref="sepSweptArea">
-			<div v-if="layoutNode.sepSweptArea?.sweptLeft === false"
-				:style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
-				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
-				<h1 :style="nonleafHeaderTextStyles" class="grow">{{displayName}}</h1>
-				<info-icon v-if="infoIconDisabled" :style="infoIconStyles" :class="infoIconClasses"
-					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
-			</div>
-			<transition name="fadein">
-				<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 bg-amber-500/70 z-20"></div>
-			</transition>
-		</div>
-		<tile v-for="child in visibleChildren" :key="child.name"
-			:layoutNode="child" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" :overflownDim="overflownDim"
-			@leaf-click="onInnerLeafClick" @nonleaf-click="onInnerNonleafClick"
-			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
-			@info-click="onInnerInfoIconClick"/>
-	</div>
-	<transition name="fadein">
-		<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 bg-amber-500/70"></div>
-	</transition>
-</div>
-</template>
 
 <style>
 .hide-right-edge::before {

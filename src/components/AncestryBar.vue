@@ -1,5 +1,12 @@
-<script lang="ts">
+<template>
+<div :style="styles" @wheel.stop="onWheelEvt">
+	<tile v-for="(node, idx) in dummyNodes" :key="node.name" class="shrink-0"
+		:layoutNode="node" :tolMap="tolMap" :nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
+		@leaf-click="onTileClick(nodes[idx])" @info-click="onInfoIconClick"/>
+</div>
+</template>
 
+<script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue'
 import {TolMap, UiOptions} from '../lib';
@@ -79,11 +86,3 @@ export default defineComponent({
 	emits: ['ancestor-click', 'info-click', ],
 });
 </script>
-
-<template>
-<div :style="styles" @wheel.stop="onWheelEvt">
-	<tile v-for="(node, idx) in dummyNodes" :key="node.name" class="shrink-0"
-		:layoutNode="node" :tolMap="tolMap" :nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
-		@leaf-click="onTileClick(nodes[idx])" @info-click="onInfoIconClick"/>
-</div>
-</template>

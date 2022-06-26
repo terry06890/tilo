@@ -1,62 +1,3 @@
-<script lang="ts">
-
-import {defineComponent, PropType} from 'vue';
-import SButton from './SButton.vue';
-import CloseIcon from './icon/CloseIcon.vue';
-import {UiOptions} from '../lib';
-import {LayoutOptions} from '../layout';
-
-export default defineComponent({
-	props: {
-		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
-		uiOpts: {type: Object as PropType<UiOptions>, required: true},
-	},
-	data(){
-		return {
-			sweepLeaves: this.lytOpts.layoutType == 'sweep',
-				// For making only two of 'layoutType's values available for user selection
-		};
-	},
-	computed: {
-		styles(): Record<string,string> {
-			return {
-				backgroundColor: this.uiOpts.bgColorAlt,
-				borderRadius: this.uiOpts.borderRadius + 'px',
-				boxShadow: this.uiOpts.shadowNormal,
-			};
-		},
-	},
-	watch: {
-		sweepLeaves(newVal: boolean, oldVal: boolean){
-			this.lytOpts.layoutType = newVal ? 'sweep' : 'rect';
-		},
-	},
-	methods: {
-		onClose(evt: Event){
-			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
-				this.$emit('close');
-			}
-		},
-		onSettingChg(setting: string){
-			// Maintain min/max-tile-size consistency
-			if (setting == 'minTileSz' || setting == 'maxTileSz'){
-				let minInput = this.$refs.minTileSzInput as HTMLInputElement;
-				let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
-				if (setting == 'minTileSz' && Number(minInput.value) > Number(maxInput.value)){
-					this.lytOpts.maxTileSz = this.lytOpts.minTileSz;
-				} else if (setting == 'maxTileSz' && Number(maxInput.value) < Number(minInput.value)){
-					this.lytOpts.minTileSz = this.lytOpts.maxTileSz;
-				}
-			}
-			//
-			this.$emit('setting-chg', setting);
-		},
-	},
-	components: {SButton, CloseIcon, },
-	emits: ['close', 'setting-chg', 'reset', ],
-});
-</script>
-
 <template>
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
@@ -139,3 +80,61 @@ export default defineComponent({
 	</div>
 </div>
 </template>
+
+<script lang="ts">
+import {defineComponent, PropType} from 'vue';
+import SButton from './SButton.vue';
+import CloseIcon from './icon/CloseIcon.vue';
+import {UiOptions} from '../lib';
+import {LayoutOptions} from '../layout';
+
+export default defineComponent({
+	props: {
+		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
+		uiOpts: {type: Object as PropType<UiOptions>, required: true},
+	},
+	data(){
+		return {
+			sweepLeaves: this.lytOpts.layoutType == 'sweep',
+				// For making only two of 'layoutType's values available for user selection
+		};
+	},
+	computed: {
+		styles(): Record<string,string> {
+			return {
+				backgroundColor: this.uiOpts.bgColorAlt,
+				borderRadius: this.uiOpts.borderRadius + 'px',
+				boxShadow: this.uiOpts.shadowNormal,
+			};
+		},
+	},
+	watch: {
+		sweepLeaves(newVal: boolean, oldVal: boolean){
+			this.lytOpts.layoutType = newVal ? 'sweep' : 'rect';
+		},
+	},
+	methods: {
+		onClose(evt: Event){
+			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
+				this.$emit('close');
+			}
+		},
+		onSettingChg(setting: string){
+			// Maintain min/max-tile-size consistency
+			if (setting == 'minTileSz' || setting == 'maxTileSz'){
+				let minInput = this.$refs.minTileSzInput as HTMLInputElement;
+				let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
+				if (setting == 'minTileSz' && Number(minInput.value) > Number(maxInput.value)){
+					this.lytOpts.maxTileSz = this.lytOpts.minTileSz;
+				} else if (setting == 'maxTileSz' && Number(maxInput.value) < Number(minInput.value)){
+					this.lytOpts.minTileSz = this.lytOpts.maxTileSz;
+				}
+			}
+			//
+			this.$emit('setting-chg', setting);
+		},
+	},
+	components: {SButton, CloseIcon, },
+	emits: ['close', 'setting-chg', 'reset', ],
+});
+</script>

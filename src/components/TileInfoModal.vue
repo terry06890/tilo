@@ -1,5 +1,61 @@
-<script lang="ts">
+<template>
+<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
+	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-4/5 max-h-[80%] p-4" :style="styles">
+		<close-icon @click.stop="onClose" ref="closeIcon"
+			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
+		<h1 class="text-center text-xl font-bold mb-2">
+			{{getDisplayName(nodeName, tolNode)}}
+			<div v-if="tolNode != null">
+				({{tolNode.children.length}} children, {{tolNode.tips}} tips,
+					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId">
+						{{tolNode.otolId}}</a>)
+			</div>
+		</h1>
+		<hr class="mb-4 border-stone-400"/>
+		<div v-if="tolNode == null">Querying server</div>
+		<template v-else>
+			<div v-if="nodes.length > 1">This is a compound node</div>
+			<div v-for="idx in (nodes.length == 1 ? [0] : [0, 1])">
+				<h1 v-if="nodes.length > 1" class="text-center font-bold">
+					{{getDisplayName(subNames![idx], nodes[idx])}}
+				</h1>
+				<div class="flex gap-1">
+					<div class="w-1/2">
+						<div :style="getImgStyles(nodes[idx])"/>
+						<ul v-if="imgInfos[idx]! != null">
+							<li>Obtained via: {{imgInfos[idx]!.src}}</li>
+							<li>License:
+								<a :href="licenseToUrl(imgInfos[idx]!.license)">{{imgInfos[idx]!.license}}</a>
+							</li>
+							<li><a :href="imgInfos[idx]!.url" class="underline">Source URL</a></li>
+							<li>Artist: {{imgInfos[idx]!.artist}}</li>
+							<li v-if="imgInfos[idx]!.credit != ''" class="overflow-auto">
+								Credit: {{imgInfos[idx]!.credit}}
+							</li>
+						</ul>
+					</div>
+					<div v-if="descInfos[idx]! != null">
+						<div>
+							Redirected: {{descInfos[idx]!.fromRedirect}} <br/>
+							Short-description from {{descInfos[idx]!.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
+							<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId" class="underline">
+								Wikipedia Link
+							</a>
+						</div>
+						<hr/>
+						<div>{{descInfos[idx]!.text}}</div>
+					</div>
+					<div v-else>
+						(No description found)
+					</div>
+				</div>
+			</div>
+		</template>
+	</div>
+</div>
+</template>
 
+<script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import {LayoutNode, LayoutOptions} from '../layout';
@@ -133,60 +189,3 @@ export default defineComponent({
 	emits: ['close', ],
 });
 </script>
-
-<template>
-<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
-	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-4/5 max-h-[80%] p-4" :style="styles">
-		<close-icon @click.stop="onClose" ref="closeIcon"
-			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
-		<h1 class="text-center text-xl font-bold mb-2">
-			{{getDisplayName(nodeName, tolNode)}}
-			<div v-if="tolNode != null">
-				({{tolNode.children.length}} children, {{tolNode.tips}} tips,
-					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId">
-						{{tolNode.otolId}}</a>)
-			</div>
-		</h1>
-		<hr class="mb-4 border-stone-400"/>
-		<div v-if="tolNode == null">Querying server</div>
-		<template v-else>
-			<div v-if="nodes.length > 1">This is a compound node</div>
-			<div v-for="idx in (nodes.length == 1 ? [0] : [0, 1])">
-				<h1 v-if="nodes.length > 1" class="text-center font-bold">
-					{{getDisplayName(subNames![idx], nodes[idx])}}
-				</h1>
-				<div class="flex gap-1">
-					<div class="w-1/2">
-						<div :style="getImgStyles(nodes[idx])"/>
-						<ul v-if="imgInfos[idx]! != null">
-							<li>Obtained via: {{imgInfos[idx]!.src}}</li>
-							<li>License:
-								<a :href="licenseToUrl(imgInfos[idx]!.license)">{{imgInfos[idx]!.license}}</a>
-							</li>
-							<li><a :href="imgInfos[idx]!.url" class="underline">Source URL</a></li>
-							<li>Artist: {{imgInfos[idx]!.artist}}</li>
-							<li v-if="imgInfos[idx]!.credit != ''" class="overflow-auto">
-								Credit: {{imgInfos[idx]!.credit}}
-							</li>
-						</ul>
-					</div>
-					<div v-if="descInfos[idx]! != null">
-						<div>
-							Redirected: {{descInfos[idx]!.fromRedirect}} <br/>
-							Short-description from {{descInfos[idx]!.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
-							<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId" class="underline">
-								Wikipedia Link
-							</a>
-						</div>
-						<hr/>
-						<div>{{descInfos[idx]!.text}}</div>
-					</div>
-					<div v-else>
-						(No description found)
-					</div>
-				</div>
-			</div>
-		</template>
-	</div>
-</div>
-</template>

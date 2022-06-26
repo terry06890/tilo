@@ -1,5 +1,71 @@
-<script lang="ts">
+<template>
+<div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
+	:style="{backgroundColor: uiOpts.bgColor}">
+	<!-- Title bar -->
+	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: uiOpts.bgColorDark2}">
+		<h1 class="my-auto ml-2 text-3xl" :style="{color: uiOpts.altColor}">Tilo</h1>
+		<div class="mx-auto"/> <!-- Spacer -->
+		<!-- Icons -->
+		<icon-button v-if="!uiOpts.disabledActions.has('search')" :style="buttonStyles" @click="onSearchIconClick">
+			<search-icon/>
+		</icon-button>
+		<icon-button v-if="!uiOpts.disabledActions.has('autoMode')" :style="buttonStyles" @click="onAutoIconClick">
+			<play-icon/>
+		</icon-button>
+		<icon-button v-if="!uiOpts.disabledActions.has('settings')" :style="buttonStyles" @click="onSettingsIconClick">
+			<settings-icon/>
+		</icon-button>
+		<icon-button v-if="!uiOpts.disabledActions.has('help')" :style="buttonStyles" @click="onHelpIconClick">
+			<help-icon/>
+		</icon-button>
+	</div>
+	<!-- Content area -->
+	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
+		<transition name="fade" @after-enter="tutPaneInTransition = false" @after-leave="tutPaneInTransition = false">
+			<tutorial-pane v-if="tutPaneOpen" :style="{height: uiOpts.tutPaneSz + 'px'}"
+				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!tutWelcome"
+				@close="onTutPaneClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
+		</transition>
+	</div>
+	<div :class="['flex', wideArea ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">
+		<div :style="ancestryBarContainerStyles"> <!-- Used to slide-in/out the ancestry-bar -->
+			<transition name="fade"
+				@after-enter="ancestryBarInTransition = false" @after-leave="ancestryBarInTransition = false">
+				<ancestry-bar v-if="detachedAncestors != null" class="w-full h-full"
+					:nodes="detachedAncestors" :vert="wideArea" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+					@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
+			</transition>
+		</div>
+		<div class="relative grow" :style="{margin: lytOpts.tileSpacing + 'px'}" ref="tileArea">
+			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+				:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
+				@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
+				@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
+				@info-click="onInfoClick"/>
+		</div>
+	</div>
+	<!-- Modals -->
+	<transition name="fade">
+		<search-modal v-if="searchOpen" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" ref="searchModal"
+			@close="searchOpen = false" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg" />
+	</transition>
+	<transition name="fade">
+		<tile-info-modal v-if="infoModalNodeName != null"
+			:nodeName="infoModalNodeName" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+			@close="infoModalNodeName = null"/>
+	</transition>
+	<transition name="fade">
+		<help-modal v-if="helpOpen" :uiOpts="uiOpts" @close="helpOpen = false" @start-tutorial="onStartTutorial"/>
+	</transition>
+	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
+		@close="settingsOpen = false" @reset="onResetSettings" @setting-chg="onSettingChg"/>
+	<!-- Overlay used to prevent interaction and capture clicks -->
+	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"
+		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = false"></div>
+</div>
+</template>
 
+<script lang="ts">
 import {defineComponent, PropType} from 'vue';
 // Components
 import Tile from './components/Tile.vue';
@@ -965,73 +1031,6 @@ export default defineComponent({
 	},
 });
 </script>
-
-<template>
-<div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
-	:style="{backgroundColor: uiOpts.bgColor}">
-	<!-- Title bar -->
-	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: uiOpts.bgColorDark2}">
-		<h1 class="my-auto ml-2 text-3xl" :style="{color: uiOpts.altColor}">Tilo</h1>
-		<div class="mx-auto"/> <!-- Spacer -->
-		<!-- Icons -->
-		<icon-button v-if="!uiOpts.disabledActions.has('search')" :style="buttonStyles" @click="onSearchIconClick">
-			<search-icon/>
-		</icon-button>
-		<icon-button v-if="!uiOpts.disabledActions.has('autoMode')" :style="buttonStyles" @click="onAutoIconClick">
-			<play-icon/>
-		</icon-button>
-		<icon-button v-if="!uiOpts.disabledActions.has('settings')" :style="buttonStyles" @click="onSettingsIconClick">
-			<settings-icon/>
-		</icon-button>
-		<icon-button v-if="!uiOpts.disabledActions.has('help')" :style="buttonStyles" @click="onHelpIconClick">
-			<help-icon/>
-		</icon-button>
-	</div>
-	<!-- Content area -->
-	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
-		<transition name="fade" @after-enter="tutPaneInTransition = false" @after-leave="tutPaneInTransition = false">
-			<tutorial-pane v-if="tutPaneOpen" :style="{height: uiOpts.tutPaneSz + 'px'}"
-				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!tutWelcome"
-				@close="onTutPaneClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
-		</transition>
-	</div>
-	<div :class="['flex', wideArea ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">
-		<div :style="ancestryBarContainerStyles"> <!-- Used to slide-in/out the ancestry-bar -->
-			<transition name="fade"
-				@after-enter="ancestryBarInTransition = false" @after-leave="ancestryBarInTransition = false">
-				<ancestry-bar v-if="detachedAncestors != null" class="w-full h-full"
-					:nodes="detachedAncestors" :vert="wideArea" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-					@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
-			</transition>
-		</div>
-		<div class="relative grow" :style="{margin: lytOpts.tileSpacing + 'px'}" ref="tileArea">
-			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-				:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
-				@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
-				@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
-				@info-click="onInfoClick"/>
-		</div>
-	</div>
-	<!-- Modals -->
-	<transition name="fade">
-		<search-modal v-if="searchOpen" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" ref="searchModal"
-			@close="searchOpen = false" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg" />
-	</transition>
-	<transition name="fade">
-		<tile-info-modal v-if="infoModalNodeName != null"
-			:nodeName="infoModalNodeName" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-			@close="infoModalNodeName = null"/>
-	</transition>
-	<transition name="fade">
-		<help-modal v-if="helpOpen" :uiOpts="uiOpts" @close="helpOpen = false" @start-tutorial="onStartTutorial"/>
-	</transition>
-	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
-		@close="settingsOpen = false" @reset="onResetSettings" @setting-chg="onSettingChg"/>
-	<!-- Overlay used to prevent interaction and capture clicks -->
-	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"
-		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = false"></div>
-</div>
-</template>
 
 <style>
 .fade-enter-from, .fade-leave-to {

@@ -1,5 +1,39 @@
-<script lang="ts">
+<template>
+<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
+	<div class="absolute left-1/2 -translate-x-1/2 top-1/4 w-3/4 -translate-y-1/2 flex" :style="styles">
+		<div class="relative grow m-2">
+			<input type="text" class="block border p-1 w-full" ref="searchInput"
+				@keyup.enter="onSearch" @keyup.esc="onClose"
+				@input="onInput" @keydown.down.prevent="onDownKey" @keydown.up.prevent="onUpKey"/>
+			<div class="absolute top-[100%] w-full"
+				:style="{backgroundColor: uiOpts.bgColorAlt, color: uiOpts.textColorAlt}">
+				<div v-for="(sugg, idx) of searchSuggs"
+					:style="{backgroundColor: idx == focusedSuggIdx ? uiOpts.bgColorAltDark : uiOpts.bgColorAlt}"
+					class="border p-1 hover:underline hover:cursor-pointer flex"
+					@click="resolveSearch(sugg.canonicalName || sugg.name)">
+					<div class="grow overflow-hidden whitespace-nowrap text-ellipsis">
+						<span>{{suggDisplayStrings[idx][0]}}</span>
+						<span class="font-bold">{{suggDisplayStrings[idx][1]}}</span>
+						<span>{{suggDisplayStrings[idx][2]}}</span>
+					</div>
+					<info-icon class="hover:cursor-pointer my-auto w-5 h-5"
+						@click.stop="onInfoIconClick(sugg.canonicalName || sugg.name)"/>
+				</div>
+				<div v-if="searchHadMoreSuggs" class="text-center border">...</div>
+			</div>
+		</div>
+		<div class="my-auto hover:cursor-pointer hover:brightness-75  rounded border shadow">
+			<search-icon @click.stop="onSearch" class="block w-8 h-8"/>
+		</div>
+		<div class="my-auto mx-2 hover:cursor-pointer hover:brightness-75 rounded">
+			<log-in-icon @click.stop="onSearchModeChg" class="block w-8 h-8"
+				:class="uiOpts.searchJumpMode ? 'opacity-100' : 'opacity-30'"/>
+		</div>
+	</div>
+</div>
+</template>
 
+<script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import SearchIcon from './icon/SearchIcon.vue';
 import LogInIcon from './icon/LogInIcon.vue';
@@ -190,41 +224,6 @@ export default defineComponent({
 	emits: ['search', 'close', 'info-click', 'setting-chg', ],
 });
 </script>
-
-<template>
-<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
-	<div class="absolute left-1/2 -translate-x-1/2 top-1/4 w-3/4 -translate-y-1/2 flex" :style="styles">
-		<div class="relative grow m-2">
-			<input type="text" class="block border p-1 w-full" ref="searchInput"
-				@keyup.enter="onSearch" @keyup.esc="onClose"
-				@input="onInput" @keydown.down.prevent="onDownKey" @keydown.up.prevent="onUpKey"/>
-			<div class="absolute top-[100%] w-full"
-				:style="{backgroundColor: uiOpts.bgColorAlt, color: uiOpts.textColorAlt}">
-				<div v-for="(sugg, idx) of searchSuggs"
-					:style="{backgroundColor: idx == focusedSuggIdx ? uiOpts.bgColorAltDark : uiOpts.bgColorAlt}"
-					class="border p-1 hover:underline hover:cursor-pointer flex"
-					@click="resolveSearch(sugg.canonicalName || sugg.name)">
-					<div class="grow overflow-hidden whitespace-nowrap text-ellipsis">
-						<span>{{suggDisplayStrings[idx][0]}}</span>
-						<span class="font-bold">{{suggDisplayStrings[idx][1]}}</span>
-						<span>{{suggDisplayStrings[idx][2]}}</span>
-					</div>
-					<info-icon class="hover:cursor-pointer my-auto w-5 h-5"
-						@click.stop="onInfoIconClick(sugg.canonicalName || sugg.name)"/>
-				</div>
-				<div v-if="searchHadMoreSuggs" class="text-center border">...</div>
-			</div>
-		</div>
-		<div class="my-auto hover:cursor-pointer hover:brightness-75  rounded border shadow">
-			<search-icon @click.stop="onSearch" class="block w-8 h-8"/>
-		</div>
-		<div class="my-auto mx-2 hover:cursor-pointer hover:brightness-75 rounded">
-			<log-in-icon @click.stop="onSearchModeChg" class="block w-8 h-8"
-				:class="uiOpts.searchJumpMode ? 'opacity-100' : 'opacity-30'"/>
-		</div>
-	</div>
-</div>
-</template>
 
 <style>
 .animate-red-then-fade {

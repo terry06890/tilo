@@ -1,8 +1,3 @@
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
-export default defineComponent({});
-</script>
-
 <template>
 <svg viewBox="0 0 24 24" fill="none"
 	stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -11,3 +6,8 @@ export default defineComponent({});
 	<line x1="15" y1="12" x2="3" y2="12"></line>
 </svg>
 </template>
+
+<script lang="ts">
+import {defineComponent, PropType} from 'vue';
+export default defineComponent({});
+</script>
