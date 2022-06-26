@@ -12,46 +12,9 @@ export default defineComponent({
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
 	data(){
-		// For making subsets of various options' values available for user selection
-		let userLayoutTypeVals = [ // Holds pairs of labels with option values
-			['Yes', 'sweep'],
-			['No', 'rect']
-		];
-		let userTileSpacingVals = [
-			['Small', 6],
-			['Medium', 10],
-			['Large', 20]
-		];
-		let userTileSizeVals = [
-			['Default', 50, 200],
-			['Small', 50, 50],
-			['Medium', 100, 100],
-			['Large', 200, 200],
-			['Flexible', 0, 400],
-		];
-		// Warn if user-available values don't include the active option value (indicates a developer mistake)
-		let layoutTypeIdx = userLayoutTypeVals.findIndex(([, optVal]) => optVal == this.lytOpts.layoutType);
-		if (layoutTypeIdx == -1){
-			console.log("WARNING: Initial layoutType option value not included in user setting values");
-		}
-		let tileSpacingIdx = userTileSpacingVals.findIndex(([, optVal]) => optVal == this.lytOpts.tileSpacing);
-		if (tileSpacingIdx == -1){
-			console.log("WARNING: Initial tileSpacing option value not included in user setting values");
-		}
-		let tileSizeValIdx = userTileSizeVals.findIndex(
-			([, min, max]) => min == this.lytOpts.minTileSz && max == this.lytOpts.maxTileSz
-		);
-		if (tileSizeValIdx == -1){
-			console.log("WARNING: Initial minTileSz/maxTileSz option value not included in user setting values");
-		}
-		//
 		return {
-			userLayoutTypeVals,
-			userLayoutType: userLayoutTypeVals[layoutTypeIdx != -1 ? layoutTypeIdx : 0][0],
-			userTileSpacingVals,
-			userTileSpacing: userTileSpacingVals[tileSpacingIdx != -1 ? tileSpacingIdx : 0][0],
-			userTileSizeVals,
-			userTileSize: userTileSizeVals[tileSizeValIdx != -1 ? tileSizeValIdx : 0][0],
+			sweepLeaves: this.lytOpts.layoutType == 'sweep',
+				// For making only two of 'layoutType's values available for user selection
 		};
 	},
 	computed: {
@@ -70,23 +33,23 @@ export default defineComponent({
 			}
 		},
 		onSettingChg(setting: string){
+			// Maintain min/max-tile-size consistency
+			if (setting == 'minTileSz' || setting == 'maxTileSz'){
+				let minInput = this.$refs.minTileSzInput as HTMLInputElement;
+				let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
+				if (setting == 'minTileSz' && Number(minInput.value) > Number(maxInput.value)){
+					this.lytOpts.maxTileSz = this.lytOpts.minTileSz;
+				} else if (setting == 'maxTileSz' && Number(maxInput.value) < Number(minInput.value)){
+					this.lytOpts.minTileSz = this.lytOpts.maxTileSz;
+				}
+			}
+			//
 			this.$emit('setting-chg', setting);
 		},
 	},
 	watch: {
-		// Propagate option-subsetting user-settings to options
-		userLayoutType(newVal, oldVal){
-			let [,optVal] = this.userLayoutTypeVals.find(([val,]) => val == newVal)!;
-			this.lytOpts.layoutType = optVal as LayoutOptions['layoutType'];
-		},
-		userTileSpacing(newVal, oldVal){
-			let [,optVal] = this.userTileSpacingVals.find(([val,]) => val == newVal)!;
-			this.lytOpts.tileSpacing = optVal as LayoutOptions['tileSpacing'];
-		},
-		userTileSize(newVal, oldVal){
-			let [,min,max] = this.userTileSizeVals.find(([val,,]) => val == newVal)!;
-			this.lytOpts.minTileSz = min as LayoutOptions['minTileSz'];
-			this.lytOpts.maxTileSz = max as LayoutOptions['maxTileSz'];
+		sweepLeaves(newVal, oldVal){
+			this.lytOpts.layoutType = newVal ? 'sweep' : 'rect';
 		},
 	},
 	components: {RButton, CloseIcon, },
@@ -103,63 +66,59 @@ export default defineComponent({
 		<h1 class="text-xl font-bold mb-2">Settings</h1>
 		<div class="border rounded">
 			<h2 class="text-center">Layout</h2>
-			<div class="grid grid-cols-2 gap-2">
-				<div>
+			<div class="flex gap-2">
+				<div class="grow">
 					Sweep leaves to side
 					<ul>
-						<li v-for="[val,] in userLayoutTypeVals">
-							<label> <input type="radio" v-model="userLayoutType" :value="val"
-								@change="onSettingChg('layoutType')"/> {{val}} </label>
-						</li>
+						<li> <label> <input type="radio" v-model="sweepLeaves" :value="true"
+								@change="onSettingChg('layoutType')"/> Yes </label> </li>
+						<li> <label> <input type="radio" v-model="sweepLeaves" :value="false"
+								@change="onSettingChg('layoutType')"/> No </label> </li>
 					</ul>
 				</div>
-				<div>
+				<div class="grow">
 					Sweep into parent
 					<ul>
-						<li> <label> <input type="radio" :disabled="lytOpts.layoutType != 'sweep'"
-							v-model="lytOpts.sweepToParent" value="none"
-							@change="onSettingChg('sweepToParent')"/> Never </label> </li>
-						<li> <label> <input type="radio" :disabled="lytOpts.layoutType != 'sweep'"
-							v-model="lytOpts.sweepToParent" value="prefer"
-							@change="onSettingChg('sweepToParent')"/> Always </label> </li>
-						<li> <label> <input type="radio" :disabled="lytOpts.layoutType != 'sweep'"
-							v-model="lytOpts.sweepToParent" value="fallback"
-							@change="onSettingChg('sweepToParent')"/> If needed </label> </li>
+						<li> <label> <input type="radio" :disabled="!sweepLeaves" v-model="lytOpts.sweepToParent"
+							value="none" @change="onSettingChg('sweepToParent')"/> Never </label> </li>
+						<li> <label> <input type="radio" :disabled="!sweepLeaves" v-model="lytOpts.sweepToParent"
+							value="prefer" @change="onSettingChg('sweepToParent')"/> Always </label> </li>
+						<li> <label> <input type="radio" :disabled="!sweepLeaves" v-model="lytOpts.sweepToParent"
+							value="fallback" @change="onSettingChg('sweepToParent')"/> If needed </label> </li>
 					</ul>
 				</div>
-				<div>
-					Tile Spacing
-					<ul>
-						<li v-for="[val,] in userTileSpacingVals">
-							<label> <input type="radio" v-model="userTileSpacing" :value="val"
-								@change="onSettingChg('tileSpacing')"/> {{val}} </label>
-						</li>
-					</ul>
-				</div>
-				<div>
-					Tile Size
-					<ul>
-						<li v-for="[val,,] in userTileSizeVals">
-							<label> <input type="radio" v-model="userTileSize" :value="val"
-								@change="onSettingChg('minTileSz'), onSettingChg('maxTileSz')"/> {{val}} </label>
-						</li>
-					</ul>
-				</div>
+			</div>
+			<div class="grid grid-cols-[minmax(0,3fr)_minmax(0,4fr)_minmax(0,2fr)] gap-1">
+				<!-- Row 1 -->
+				<label for="minTileSizeInput">Min Tile Size</label>
+				<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz"
+					@input="onSettingChg('minTileSz')" name="minTileSizeInput" ref="minTileSzInput"/>
+				<div class="my-auto text-right">{{lytOpts.minTileSz}} px</div>
+				<!-- Row 2 -->
+				<label for="maxTileSizeInput">Max Tile Size</label>
+				<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz"
+					@input="onSettingChg('maxTileSz')" name="maxTileSizeInput" ref="maxTileSzInput"/>
+				<div class="my-auto text-right">{{lytOpts.maxTileSz}} px</div>
+				<!-- Row 3 -->
+				<label for="tileSpacingInput">Tile Spacing</label>
+				<input type="range" min="0" max="20" v-model.number="lytOpts.tileSpacing"
+					@input="onSettingChg('tileSpacing')" name="tileSpacingInput"/>
+				<div class="my-auto text-right">{{lytOpts.tileSpacing}} px</div>
 			</div>
 		</div>
 		<div class="border rounded">
 			<h2 class="text-center">Timing</h2>
-			<div class="grid grid-cols-3">
+			<div class="grid grid-cols-[minmax(0,3fr)_minmax(0,4fr)_minmax(0,2fr)] gap-1">
 				<!-- Row 1 -->
 				<label for="animationTimeInput">Animation Time</label>
-				<input type="range" min="0" max="3000" class="my-auto" name="animationTimeInput"
-					v-model.number="uiOpts.transitionDuration" @change="onSettingChg('transitionDuration')"/>
-				<div class="my-auto">{{uiOpts.transitionDuration}} ms</div>
+				<input type="range" min="0" max="3000" v-model.number="uiOpts.transitionDuration"
+					@change="onSettingChg('transitionDuration')" class="my-auto" name="animationTimeInput"/>
+				<div class="my-auto text-right">{{uiOpts.transitionDuration}} ms</div>
 				<!-- Row 2 -->
 				<label for="autoModeDelayInput">Auo-mode Delay</label>
-				<input type="range" min="0" max="3000" class="my-auto" name="autoModeDelayInput"
-					v-model.number="uiOpts.autoActionDelay" @change="onSettingChg('autoActionDelay')"/>
-				<div class="my-auto">{{uiOpts.autoActionDelay}} ms</div>
+				<input type="range" min="0" max="3000" v-model.number="uiOpts.autoActionDelay"
+					@change="onSettingChg('autoActionDelay')" class="my-auto" name="autoModeDelayInput"/>
+				<div class="my-auto text-right">{{uiOpts.autoActionDelay}} ms</div>
 			</div>
 		</div>
 		<div class="border rounded">
