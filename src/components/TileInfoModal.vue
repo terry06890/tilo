@@ -60,7 +60,7 @@ import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import {LayoutNode, LayoutOptions} from '../layout';
 import {TolNode, TolMap, UiOptions, DescInfo, ImgInfo, NodeInfo, InfoResponse} from '../lib';
-import {capitalizeWords} from '../util';
+import {getServerResponse, capitalizeWords} from '../util';
 
 export default defineComponent({
 	props: {
@@ -157,18 +157,10 @@ export default defineComponent({
 	},
 	async created(){
 		// Query server for tol-node info
-		let url = new URL(window.location.href);
-		url.pathname = '/data/info';
-		url.search = '?name=' + encodeURIComponent(this.nodeName);
-		if (this.uiOpts.useReducedTree){
-			url.search += '&tree=reduced';
-		}
-		let responseObj: InfoResponse;
-		try {
-			let response = await fetch(url.toString());
-			responseObj = await response.json();
-		} catch (error){
-			console.log("Error with retrieving data from server: " + error);
+		let urlParams = 'name=' + encodeURIComponent(this.nodeName);
+		urlParams += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+		let responseObj: InfoResponse = await getServerResponse('/data/info', urlParams);
+		if (responseObj == null){
 			return;
 		}
 		// Set fields from response

@@ -86,7 +86,7 @@ import HelpIcon from './components/icon/HelpIcon.vue';
 import {TolNode, TolMap, Action, UiOptions} from './lib';
 import {LayoutNode, LayoutOptions, LayoutTreeChg} from './layout';
 import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
-import {arraySum, randWeightedChoice, getScrollBarWidth, getBreakpoint} from './util';
+import {getServerResponse, getBreakpoint, getScrollBarWidth, arraySum, randWeightedChoice} from './util';
 
 // Type representing auto-mode actions
 type AutoAction = 'move across' | 'move down' | 'move up' | Action;
@@ -312,14 +312,10 @@ export default defineComponent({
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				let responseObj: {[x: string]: TolNode};
-				try {
-					let urlPath = '/data/node?name=' + encodeURIComponent(layoutNode.name)
-					urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
-					let response = await fetch(urlPath);
-					responseObj = await response.json();
-				} catch (error){
-					console.log('Error with retreiving tol-node data: ' + error);
+				let urlParams = 'name=' + encodeURIComponent(layoutNode.name);
+				urlParams += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+				let responseObj: {[x: string]: TolNode} = await getServerResponse('/data/node', urlParams);
+				if (responseObj == null){
 					return false;
 				}
 				Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
@@ -410,14 +406,10 @@ export default defineComponent({
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				let responseObj: {[x: string]: TolNode};
-				try {
-					let urlPath = '/data/node?name=' + encodeURIComponent(layoutNode.name)
-					urlPath += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
-					let response = await fetch(urlPath);
-					responseObj = await response.json();
-				} catch (error){
-					console.log('Error with retreiving tol-node data: ' + error);
+				let urlParams = 'name=' + encodeURIComponent(layoutNode.name);
+				urlParams += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+				let responseObj: {[x: string]: TolNode} = await getServerResponse('/data/node', urlParams);
+				if (responseObj == null){
 					return false;
 				}
 				Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
@@ -872,14 +864,9 @@ export default defineComponent({
 		// For initialisation
 		async initTreeFromServer(){
 			// Query server
-			let responseObj: {[x: string]: TolNode};
-			try {
-				let urlPath = '/data/node';
-				urlPath += this.uiOpts.useReducedTree ? '?tree=reduced' : '';
-				let response = await fetch(urlPath);
-				responseObj = await response.json();
-			} catch (error) {
-				console.log('Error with retrieving tree data: ' + error);
+			let urlParams = this.uiOpts.useReducedTree ? '?tree=reduced' : '';
+			let responseObj: {[x: string]: TolNode} = await getServerResponse('/data/node', urlParams);
+			if (responseObj == null){
 				return;
 			}
 			// Get root node name

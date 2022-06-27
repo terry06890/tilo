@@ -40,6 +40,7 @@ import LogInIcon from './icon/LogInIcon.vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {TolNode, TolMap, UiOptions, SearchSugg, SearchSuggResponse} from '../lib';
 import {LayoutNode, LayoutOptions} from '../layout';
+import {getServerResponse} from '../util';
 
 export default defineComponent({
 	props: {
@@ -51,7 +52,7 @@ export default defineComponent({
 		return {
 			// For search-suggestion requests
 			lastSuggReqTime: 0, // Set when a search-suggestions request is initiated
-			pendingSuggReqUrl: '', // Used by a search-suggestion requester to use the latest user input
+			pendingSuggReqParams: '', // Used by a search-suggestion requester to use the latest user input
 			pendingDelayedSuggReq: 0, // Set via setTimeout() for a non-initial search-suggestions request
 			// Search-suggestion data
 			searchSuggs: [] as SearchSugg[],
@@ -102,21 +103,16 @@ export default defineComponent({
 				this.focusedSuggIdx = null;
 				return;
 			}
-			// Get URL to use for querying search-suggestions
-			let url = new URL(window.location.href);
-			url.pathname = '/data/search';
-			url.search = '?name=' + encodeURIComponent(input.value);
-			url.search += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
-			url.search += '&limit=' + this.uiOpts.searchSuggLimit;
+			// Get URL params to use for querying search-suggestions
+			let urlParams = 'name=' + encodeURIComponent(input.value);
+			urlParams += '&limit=' + this.uiOpts.searchSuggLimit;
+			urlParams += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
 			// Query server, delaying/skipping if a request was recently sent
-			this.pendingSuggReqUrl = url.toString();
+			this.pendingSuggReqParams = urlParams;
 			let doReq = async () => {
-				let responseObj: SearchSuggResponse;
-				try {
-					let response = await fetch(this.pendingSuggReqUrl);
-					responseObj = await response.json();
-				} catch (error){
-					console.log('Error with getting search suggestions from server: ' + error)
+				let responseObj: SearchSuggResponse =
+					await getServerResponse('/data/search', this.pendingSuggReqParams);
+				if (responseObj == null){
 					return;
 				}
 				this.searchSuggs = responseObj.suggs;
@@ -175,16 +171,10 @@ export default defineComponent({
 				return;
 			}
 			// Ask server for nodes in parent-chain, updates tolMap, then emits search event
-			let url = new URL(window.location.href);
-			url.pathname = '/data/chain';
-			url.search = '?name=' + encodeURIComponent(tolNodeName);
-			url.search += (this.uiOpts.useReducedTree ? '&tree=reduced' : '');
-			let responseObj: {[x: string]: TolNode};
-			try {
-				let response = await fetch(url.toString());
-				responseObj = await response.json();
-			} catch (error){
-				console.log('Error with getting tolnode chain: ' + error);
+			let urlParams = 'name=' + encodeURIComponent(tolNodeName);
+			urlParams += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+			let responseObj: {[x: string]: TolNode} = await getServerResponse('/data/chain', urlParams);
+			if (responseObj == null){
 				return;
 			}
 			let keys = Object.getOwnPropertyNames(responseObj);

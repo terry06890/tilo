@@ -34,17 +34,17 @@
 				<label for="minTileSizeInput">Min Tile Size</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz"
 					@input="onSettingChg('minTileSz')" name="minTileSizeInput" ref="minTileSzInput"/>
-				<div class="my-auto text-right">{{pxToMm(lytOpts.minTileSz)}} mm</div>
+				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.minTileSz)}}</div>
 				<!-- Row 2 -->
 				<label for="maxTileSizeInput">Max Tile Size</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz"
 					@input="onSettingChg('maxTileSz')" name="maxTileSizeInput" ref="maxTileSzInput"/>
-				<div class="my-auto text-right">{{pxToMm(lytOpts.maxTileSz)}} mm</div>
+				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.maxTileSz)}}</div>
 				<!-- Row 3 -->
 				<label for="tileSpacingInput">Tile Spacing</label>
 				<input type="range" min="0" max="20" v-model.number="lytOpts.tileSpacing"
 					@input="onSettingChg('tileSpacing')" name="tileSpacingInput"/>
-				<div class="my-auto text-right">{{pxToMm(lytOpts.tileSpacing)}} mm</div>
+				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.tileSpacing)}}</div>
 			</div>
 		</div>
 		<div class="border rounded p-1">
@@ -133,8 +133,8 @@ export default defineComponent({
 			//
 			this.$emit('setting-chg', setting);
 		},
-		pxToMm(px: number): number{
-			return (px / 3.78).toFixed();
+		pxToDisplayStr(px: number): string {
+			return (px / 3.78).toFixed() + ' mm';
 		}
 	},
 	components: {SButton, CloseIcon, },
