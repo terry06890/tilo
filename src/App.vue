@@ -86,7 +86,7 @@ import HelpIcon from './components/icon/HelpIcon.vue';
 import {TolNode, TolMap, Action, UiOptions} from './lib';
 import {LayoutNode, LayoutOptions, LayoutTreeChg} from './layout';
 import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
-import {getServerResponse, getBreakpoint, getScrollBarWidth, arraySum, randWeightedChoice} from './util';
+import {getServerResponse, getBreakpoint, getScrollBarWidth, arraySum, randWeightedChoice, timeout} from './util';
 
 // Type representing auto-mode actions
 type AutoAction = 'move across' | 'move down' | 'move up' | Action;
@@ -730,6 +730,7 @@ export default defineComponent({
 				await this.onDetachedAncestorClick(this.layoutTree);
 			}
 			await this.onNonleafClick(this.layoutTree);
+			await timeout(this.uiOpts.transitionDuration);
 			await this.initTreeFromServer();
 		},
 		onResetSettings(): void {

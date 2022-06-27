@@ -151,3 +151,7 @@ export function capitalizeWords(str: string){
 	str = str.replace(/(\w)'S/, '$1\'s'); // Avoid cases like "traveler's tree" -> "Traveler'S Tree"
 	return str;
 }
+// Used to async-await for until after a timeout
+export async function timeout(ms: number){
+	return new Promise(resolve => setTimeout(resolve, ms))
+}
