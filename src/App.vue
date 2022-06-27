@@ -312,9 +312,9 @@ export default defineComponent({
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				let urlParams = 'name=' + encodeURIComponent(layoutNode.name);
-				urlParams += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
-				let responseObj: {[x: string]: TolNode} = await getServerResponse('/data/node', urlParams);
+				let urlParams = 'type=node&name=' + encodeURIComponent(layoutNode.name);
+				urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+				let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
 				if (responseObj == null){
 					return false;
 				}
@@ -406,9 +406,9 @@ export default defineComponent({
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				let urlParams = 'name=' + encodeURIComponent(layoutNode.name);
-				urlParams += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
-				let responseObj: {[x: string]: TolNode} = await getServerResponse('/data/node', urlParams);
+				let urlParams = 'type=node&name=' + encodeURIComponent(layoutNode.name);
+				urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+				let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
 				if (responseObj == null){
 					return false;
 				}
@@ -865,8 +865,9 @@ export default defineComponent({
 		// For initialisation
 		async initTreeFromServer(){
 			// Query server
-			let urlParams = this.uiOpts.useReducedTree ? '?tree=reduced' : '';
-			let responseObj: {[x: string]: TolNode} = await getServerResponse('/data/node', urlParams);
+			let urlParams = 'type=node';
+			urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+			let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
 			if (responseObj == null){
 				return;
 			}

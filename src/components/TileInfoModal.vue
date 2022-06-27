@@ -157,9 +157,9 @@ export default defineComponent({
 	},
 	async created(){
 		// Query server for tol-node info
-		let urlParams = 'name=' + encodeURIComponent(this.nodeName);
-		urlParams += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
-		let responseObj: InfoResponse = await getServerResponse('/data/info', urlParams);
+		let urlParams = 'type=info&name=' + encodeURIComponent(this.nodeName);
+		urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+		let responseObj: InfoResponse = await getServerResponse(urlParams);
 		if (responseObj == null){
 			return;
 		}

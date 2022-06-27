@@ -103,14 +103,14 @@ export default defineComponent({
 				return;
 			}
 			// Get URL params to use for querying search-suggestions
-			let urlParams = 'name=' + encodeURIComponent(input.value);
+			let urlParams = 'type=sugg&name=' + encodeURIComponent(input.value);
 			urlParams += '&limit=' + this.uiOpts.searchSuggLimit;
-			urlParams += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
+			urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
 			// Query server, delaying/skipping if a request was recently sent
 			this.pendingSuggReqParams = urlParams;
 			let doReq = async () => {
 				let responseObj: SearchSuggResponse =
-					await getServerResponse('/data/search', this.pendingSuggReqParams);
+					await getServerResponse(this.pendingSuggReqParams);
 				if (responseObj == null){
 					return;
 				}
@@ -170,9 +170,9 @@ export default defineComponent({
 				return;
 			}
 			// Ask server for nodes in parent-chain, updates tolMap, then emits search event
-			let urlParams = 'name=' + encodeURIComponent(tolNodeName);
-			urlParams += this.uiOpts.useReducedTree ? '&tree=reduced' : '';
-			let responseObj: {[x: string]: TolNode} = await getServerResponse('/data/chain', urlParams);
+			let urlParams = 'type=node&toroot=true&name=' + encodeURIComponent(tolNodeName);
+			urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+			let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
 			if (responseObj == null){
 				return;
 			}

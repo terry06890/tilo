@@ -26,11 +26,10 @@ export class TolNode {
 export type TolMap = Map<string, TolNode>;
 
 // For server requests
-const SERVER_URL = 'http://localhost:8000'
-export async function getServerResponse(path: string, params: string){
+const SERVER_URL = 'http://localhost:8000/cgi-bin/data.py'
+export async function getServerResponse(params: string){
 	// Construct URL
 	let url = new URL(SERVER_URL);
-	url.pathname = path;
 	url.search = params;
 	// Query server
 	let responseObj;

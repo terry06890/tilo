@@ -1,3 +1,8 @@
 # Files
--   server.py: Runs the server
--   data/: For generating the server's tree-of-life database
+-   cgi-bin/data.py: CGI script for providing tree-of-life data to client
+-   data: Contains scripts for generating the tree-of-life database
+
+# During development
+Having generated the database as data/data.db, and with this as the current
+directory, running `python3 -m http.server --cgi 8000` allows the client to access
+the CGI script, and hence the database, via `localhost:8000/cgi-bin/data.py`.
