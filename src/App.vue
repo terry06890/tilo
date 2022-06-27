@@ -1018,14 +1018,3 @@ export default defineComponent({
 	},
 });
 </script>
-
-<style>
-.fade-enter-from, .fade-leave-to {
-	opacity: 0;
-}
-.fade-enter-active, .fade-leave-active {
-	transition-property: opacity;
-	transition-duration: 300ms;
-	transition-timing-function: ease-out;
-}
-</style>

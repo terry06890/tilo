@@ -546,46 +546,4 @@ export default defineComponent({
 	width: calc(100% + var(--tileSpacing));
 	height: var(--tileSpacing);
 }
-.animate-expand-shrink {
-	animation-name: expand-shrink;
-	animation-duration: 300ms;
-	animation-iteration-count: 1;
-	animation-timing-function: ease-in-out;
-}
-@keyframes expand-shrink {
-	from {
-		transform: scale(1, 1);
-	}
-	50% {
-		transform: scale(1.1, 1.1);
-	}
-	to {
-		transform: scale(1, 1);
-	}
-}
-.animate-shrink-expand {
-	animation-name: shrink-expand;
-	animation-duration: 300ms;
-	animation-iteration-count: 1;
-	animation-timing-function: ease-in-out;
-}
-@keyframes shrink-expand {
-	from {
-		transform: translate3d(0,0,0) scale(1, 1);
-	}
-	50% {
-		transform: translate3d(0,0,0) scale(0.9, 0.9);
-	}
-	to {
-		transform: translate3d(0,0,0) scale(1, 1);
-	}
-}
-.fadein-leave-to {
-	opacity: 0;
-}
-.fadein-leave-active {
-	transition-property: opacity;
-	transition-duration: 300ms;
-	transition-timing-function: ease-out;
-}
 </style>
