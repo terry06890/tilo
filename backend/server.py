@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys, re, sqlite3
+import sys, re, sqlite3, time
 import os.path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
@@ -152,12 +152,12 @@ def lookupName(searchStr, suggLimit, useReducedTree):
 	query1, query2 = (None, None)
 	if not useReducedTree:
 		query1 = "SELECT DISTINCT name FROM nodes" \
-			" WHERE name LIKE ? ORDER BY length(name) LIMIT ?"
+			" WHERE name LIKE ? AND name NOT LIKE '[%' ORDER BY length(name) LIMIT ?"
 		query2 = "SELECT DISTINCT alt_name, name FROM names" \
 			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
 	else:
 		query1 = "SELECT DISTINCT name FROM r_nodes" \
-			" WHERE name LIKE ? ORDER BY length(name) LIMIT ?"
+			" WHERE name LIKE ? AND name NOT LIKE '[%' ORDER BY length(name) LIMIT ?"
 		query2 = "SELECT DISTINCT alt_name, names.name FROM" \
 			" names INNER JOIN r_nodes ON names.name = r_nodes.name" \
 			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
@@ -300,7 +300,7 @@ class DbServer(BaseHTTPRequestHandler):
 						invalidLimit = True
 				except ValueError:
 					invalidLimit = True
-				print(f"Invalid limit {suggLimit}")
+					print(f"Invalid limit {suggLimit}")
 				# Get search suggestions
 				if not invalidLimit:
 					self.respondJson(lookupName(name, suggLimit, useReducedTree))
