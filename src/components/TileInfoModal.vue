@@ -59,8 +59,8 @@
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import {LayoutNode, LayoutOptions} from '../layout';
-import {TolNode, TolMap, UiOptions, DescInfo, ImgInfo, NodeInfo, InfoResponse} from '../lib';
-import {getServerResponse, capitalizeWords} from '../util';
+import {TolNode, TolMap, getServerResponse, DescInfo, ImgInfo, NodeInfo, InfoResponse, UiOptions} from '../lib';
+import {capitalizeWords} from '../util';
 
 export default defineComponent({
 	props: {

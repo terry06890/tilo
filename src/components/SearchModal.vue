@@ -38,9 +38,8 @@ import {defineComponent, PropType} from 'vue';
 import SearchIcon from './icon/SearchIcon.vue';
 import LogInIcon from './icon/LogInIcon.vue';
 import InfoIcon from './icon/InfoIcon.vue';
-import {TolNode, TolMap, UiOptions, SearchSugg, SearchSuggResponse} from '../lib';
+import {TolNode, TolMap, getServerResponse, SearchSugg, SearchSuggResponse, UiOptions} from '../lib';
 import {LayoutNode, LayoutOptions} from '../layout';
-import {getServerResponse} from '../util';
 
 export default defineComponent({
 	props: {

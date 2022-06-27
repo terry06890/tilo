@@ -1,25 +1,27 @@
-# Grid of Life
+# Tilo
+Provides an interactive visualisation of the biological Tree of Life.
 
-An interactive visualisation of the biological tree of life.
-
-Each tile represents a group of organisms with a common ancestor.
--   Clicking on a tile expands it into tiles representing direct descendants.
-    If there are too many other tiles, there might not be room to expand.
--   Clicking on an expanded tile collapses it back into one tile.
--   Double-clicking on a tile expands it to fill the whole view.
-    Other tiles will be moved to the side.
-
-# Files
--   package.json:       Contains project information, including what packages need to be installed.
+## Files
+-   package.json:       Contains project information, including package dependencies.
 -   src:                Contains most of the client-side code.
--   index.html:         Holds code for the main page, into which code from src/ will be included.
--   backend:            Contains code for running the server, and generating tree-of-life data
--   public:             Contains files to be copied unchanged when building for production.
+-   index.html:         Holds code for the main page, into which code from 'src' will be included.
+-   backend:            Contains code for the server, and generating tree-of-life data
+-   vite.config.js:     For configuring Vite.
 -   tailwind.config.js: For configuring Tailwind.
 -   postcss.config.js:  For configuring Tailwind.
 -   tsconfig.json:      For configuring Typescript.
--   vite.config.js:     For configuring Vite.
 -   .gitignore:         Lists files to be ignored by Git.
+-   public:             Contains files to be copied unchanged when building for production.
 
-# Overview
-# Instructions
+## Overview
+(TODO)
+
+## Setup Instructions
+(TODO)
+
+##
+
+During development, a client request to the server on the same machine
+would be blocked due to the Same Origin Policy. This is avoided by
+adding an 'Access-Control-Allow-Origin: *' header to server responses.
+This should be disabled during production.

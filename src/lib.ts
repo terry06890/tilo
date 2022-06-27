@@ -25,6 +25,24 @@ export class TolNode {
 // Maps TolNode names to TolNode objects
 export type TolMap = Map<string, TolNode>;
 
+// For server requests
+const SERVER_URL = 'http://localhost:8000'
+export async function getServerResponse(path: string, params: string){
+	// Construct URL
+	let url = new URL(SERVER_URL);
+	url.pathname = path;
+	url.search = params;
+	// Query server
+	let responseObj;
+	try {
+		let response = await fetch(url.toString());
+		responseObj = await response.json();
+	} catch (error){
+		console.log(`Error with querying ${url}: ${error}`);
+		return null;
+	}
+	return responseObj;
+}
 // For server search responses
 export type SearchSugg = { // Represents a search-string suggestion
 	name: string,

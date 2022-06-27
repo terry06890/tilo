@@ -12,6 +12,7 @@ dbFile = "data/data.db"
 imgDir = "../public/img/"
 DEFAULT_SUGG_LIM = 5
 MAX_SUGG_LIM = 50
+CORS_ANY_ORIGIN = True # Used during development to avoid Cross-Origin Resource Sharing restrictions
 
 usageInfo = f"""
 Usage: {sys.argv[0]}
@@ -312,9 +313,12 @@ class DbServer(BaseHTTPRequestHandler):
 					return
 		self.send_response(404)
 	def respondJson(self, val):
+		global CORS_ANY_ORIGIN
 		content = jsonpickle.encode(val, unpicklable=False).encode("utf-8")
 		self.send_response(200)
 		self.send_header("Content-type", "application/json")
+		if CORS_ANY_ORIGIN:
+			self.send_header("Access-Control-Allow-Origin", "*")
 		if "accept-encoding" in self.headers and "gzip" in self.headers["accept-encoding"]:
 			if len(content) > 100:
 				content = gzip.compress(content, compresslevel=5)

@@ -83,10 +83,10 @@ import SettingsIcon from './components/icon/SettingsIcon.vue';
 import HelpIcon from './components/icon/HelpIcon.vue';
 // Other
 	// Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
-import {TolNode, TolMap, Action, UiOptions} from './lib';
+import {TolNode, TolMap, getServerResponse, Action, UiOptions} from './lib';
 import {LayoutNode, LayoutOptions, LayoutTreeChg} from './layout';
 import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
-import {getServerResponse, getBreakpoint, getScrollBarWidth, arraySum, randWeightedChoice, timeout} from './util';
+import {getBreakpoint, getScrollBarWidth, arraySum, randWeightedChoice, timeout} from './util';
 
 // Type representing auto-mode actions
 type AutoAction = 'move across' | 'move down' | 'move up' | Action;

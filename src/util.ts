@@ -2,23 +2,6 @@
  * General utility functions
  */
 
-// For server requests
-export async function getServerResponse(path: string, params: string){
-	// Construct URL
-	let url = new URL(window.location.href);
-	url.pathname = path;
-	url.search = params;
-	// Query server
-	let responseObj;
-	try {
-		let response = await fetch(url.toString());
-		responseObj = await response.json();
-	} catch (error){
-		console.log(`Error with querying ${url}: ${error}`);
-		return null;
-	}
-	return responseObj;
-}
 // For detecting screen size
 export type Breakpoint = 'sm' | 'md' | 'lg';
 export function getBreakpoint(): Breakpoint {
@@ -31,8 +14,7 @@ export function getBreakpoint(): Breakpoint {
 		return 'lg';
 	}
 }
-// Dynamically obtains scroll bar width
-// From stackoverflow.com/questions/13382516/getting-scroll-bar-width-using-javascript
+// For getting scroll-bar width // From stackoverflow.com/questions/13382516/getting-scroll-bar-width-using-javascript
 export function getScrollBarWidth(){
 	// Create hidden outer div
 	let outer = document.createElement('div');
