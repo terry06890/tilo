@@ -7,8 +7,8 @@
 			{{getDisplayName(nodeName, tolNode)}}
 			<div v-if="tolNode != null">
 				({{tolNode.children.length}} children, {{tolNode.tips}} tips,
-					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId">
-						{{tolNode.otolId}}</a>)
+					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId"
+						target="_blank">{{tolNode.otolId}}</a>)
 			</div>
 		</h1>
 		<hr class="mb-4 border-stone-400"/>
@@ -20,15 +20,23 @@
 			<div class="flex gap-1">
 				<div class="w-1/2">
 					<div v-if="imgInfos[idx] == null" :style="getImgStyles(nodes[idx])"/>
-					<a v-else :href="imgInfos[idx].url">
+					<a v-else :href="imgInfos[idx].url" target="_blank">
 						<div :style="getImgStyles(nodes[idx])"/>
 					</a>
 					<ul v-if="imgInfos[idx]! != null">
 						<li>Obtained via: {{imgInfos[idx]!.src}}</li>
 						<li>License:
-							<a :href="licenseToUrl(imgInfos[idx]!.license)">{{imgInfos[idx]!.license}}</a>
+							<a :href="licenseToUrl(imgInfos[idx]!.license)" target="_blank">
+								<span class="underline">{{imgInfos[idx]!.license}}</span>
+								<external-link-icon class="inline-block w-3 h-3 ml-1"/>
+							</a>
 						</li>
-						<li><a :href="imgInfos[idx]!.url" class="underline">Source URL</a></li>
+						<li>
+							<a :href="imgInfos[idx]!.url" target="_blank">
+								<span class="underline">Source URL</span>
+								<external-link-icon class="inline-block w-3 h-3 ml-1"/>
+							</a>
+						</li>
 						<li>Artist: {{imgInfos[idx]!.artist}}</li>
 						<li v-if="imgInfos[idx]!.credit != ''" class="overflow-auto">
 							Credit: {{imgInfos[idx]!.credit}}
@@ -39,8 +47,9 @@
 					<div>
 						Redirected: {{descInfos[idx]!.fromRedirect}} <br/>
 						Short-description from {{descInfos[idx]!.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
-						<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId" class="underline">
-							Wikipedia Link
+						<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId" target="_blank">
+							<span class="underline">Wikipedia Link</span>
+							<external-link-icon class="inline-block w-3 h-3 ml-1"/>
 						</a>
 					</div>
 					<hr/>
@@ -58,6 +67,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
+import ExternalLinkIcon from './icon/ExternalLinkIcon.vue';
 import {LayoutNode, LayoutOptions} from '../layout';
 import {TolNode, TolMap, getServerResponse, getImagePath,
 	DescInfo, ImgInfo, NodeInfo, InfoResponse, UiOptions} from '../lib';
@@ -172,7 +182,7 @@ export default defineComponent({
 			}
 		},
 	},
-	components: {CloseIcon, },
+	components: {CloseIcon, ExternalLinkIcon, },
 	emits: ['close', ],
 });
 </script>
