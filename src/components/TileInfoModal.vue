@@ -12,45 +12,42 @@
 			</div>
 		</h1>
 		<hr class="mb-4 border-stone-400"/>
-		<div v-if="tolNode == null">Querying server</div>
-		<template v-else>
-			<div v-if="nodes.length > 1">This is a compound node</div>
-			<div v-for="idx in (nodes.length == 1 ? [0] : [0, 1])">
-				<h1 v-if="nodes.length > 1" class="text-center font-bold">
-					{{getDisplayName(subNames![idx], nodes[idx])}}
-				</h1>
-				<div class="flex gap-1">
-					<div class="w-1/2">
-						<div :style="getImgStyles(nodes[idx])"/>
-						<ul v-if="imgInfos[idx]! != null">
-							<li>Obtained via: {{imgInfos[idx]!.src}}</li>
-							<li>License:
-								<a :href="licenseToUrl(imgInfos[idx]!.license)">{{imgInfos[idx]!.license}}</a>
-							</li>
-							<li><a :href="imgInfos[idx]!.url" class="underline">Source URL</a></li>
-							<li>Artist: {{imgInfos[idx]!.artist}}</li>
-							<li v-if="imgInfos[idx]!.credit != ''" class="overflow-auto">
-								Credit: {{imgInfos[idx]!.credit}}
-							</li>
-						</ul>
+		<div v-if="nodes.length > 1">This is a compound node</div>
+		<div v-for="idx in (nodes.length == 1 ? [0] : [0, 1])">
+			<h1 v-if="nodes.length > 1" class="text-center font-bold">
+				{{getDisplayName(subNames![idx], nodes[idx])}}
+			</h1>
+			<div class="flex gap-1">
+				<div class="w-1/2">
+					<div :style="getImgStyles(nodes[idx])"/>
+					<ul v-if="imgInfos[idx]! != null">
+						<li>Obtained via: {{imgInfos[idx]!.src}}</li>
+						<li>License:
+							<a :href="licenseToUrl(imgInfos[idx]!.license)">{{imgInfos[idx]!.license}}</a>
+						</li>
+						<li><a :href="imgInfos[idx]!.url" class="underline">Source URL</a></li>
+						<li>Artist: {{imgInfos[idx]!.artist}}</li>
+						<li v-if="imgInfos[idx]!.credit != ''" class="overflow-auto">
+							Credit: {{imgInfos[idx]!.credit}}
+						</li>
+					</ul>
+				</div>
+				<div v-if="descInfos[idx]! != null">
+					<div>
+						Redirected: {{descInfos[idx]!.fromRedirect}} <br/>
+						Short-description from {{descInfos[idx]!.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
+						<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId" class="underline">
+							Wikipedia Link
+						</a>
 					</div>
-					<div v-if="descInfos[idx]! != null">
-						<div>
-							Redirected: {{descInfos[idx]!.fromRedirect}} <br/>
-							Short-description from {{descInfos[idx]!.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
-							<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId" class="underline">
-								Wikipedia Link
-							</a>
-						</div>
-						<hr/>
-						<div>{{descInfos[idx]!.text}}</div>
-					</div>
-					<div v-else>
-						(No description found)
-					</div>
+					<hr/>
+					<div>{{descInfos[idx]!.text}}</div>
+				</div>
+				<div v-else>
+					(No description found)
 				</div>
 			</div>
-		</template>
+		</div>
 	</div>
 </div>
 </template>
@@ -65,22 +62,38 @@ import {capitalizeWords} from '../util';
 
 export default defineComponent({
 	props: {
+		// Node data to display
 		nodeName: {type: String, required: true},
-		tolMap: {type: Object as PropType<TolMap>, required: true},
+		infoResponse: {type: Object as PropType<InfoResponse>, required: true},
 		// Options
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
-	data(){
-		return {
-			// These are set using a server response
-			tolNode: null as null | TolNode,
-			nodes: [] as TolNode[], // The nodes to display info for
-			imgInfos: [] as (ImgInfo | null)[],
-			descInfos: [] as (DescInfo | null)[],
-		};
-	},
 	computed: {
+		tolNode(): TolNode {
+			return this.infoResponse.nodeInfo.tolNode;
+		},
+		nodes(): TolNode[] {
+			if (this.infoResponse.subNodesInfo.length == 0){
+				return [this.tolNode];
+			} else {
+				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo.tolNode);
+			}
+		},
+		imgInfos(): (ImgInfo | null)[] {
+			if (this.infoResponse.subNodesInfo.length == 0){
+				return [this.infoResponse.nodeInfo.imgInfo];
+			} else {
+				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo.imgInfo);
+			}
+		},
+		descInfos(): (DescInfo | null)[] {
+			if (this.infoResponse.subNodesInfo.length == 0){
+				return [this.infoResponse.nodeInfo.descInfo];
+			} else {
+				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo.descInfo);
+			}
+		},
 		subNames(): [string, string] | null {
 			const regex = /\[(.+) \+ (.+)\]/;
 			let results = regex.exec(this.nodeName);
@@ -155,28 +168,6 @@ export default defineComponent({
 				this.$emit('close');
 			}
 		},
-	},
-	async created(){
-		// Query server for tol-node info
-		let urlParams = 'type=info&name=' + encodeURIComponent(this.nodeName);
-		urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
-		let responseObj: InfoResponse = await getServerResponse(urlParams);
-		if (responseObj == null){
-			return;
-		}
-		// Set fields from response
-		this.tolNode = responseObj.nodeInfo.tolNode;
-		if (responseObj.subNodesInfo.length == 0){
-			this.nodes = [this.tolNode]
-			this.imgInfos = [responseObj.nodeInfo.imgInfo];
-			this.descInfos = [responseObj.nodeInfo.descInfo];
-		} else {
-			for (let nodeInfo of responseObj.subNodesInfo){
-				this.nodes.push(nodeInfo.tolNode);
-				this.imgInfos.push(nodeInfo.imgInfo);
-				this.descInfos.push(nodeInfo.descInfo);
-			}
-		}
 	},
 	components: {CloseIcon, },
 	emits: ['close', ],

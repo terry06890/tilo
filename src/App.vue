@@ -50,9 +50,9 @@
 			@close="searchOpen = false" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg" />
 	</transition>
 	<transition name="fade">
-		<tile-info-modal v-if="infoModalNodeName != null"
-			:nodeName="infoModalNodeName" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-			@close="infoModalNodeName = null"/>
+		<tile-info-modal v-if="infoModalNodeName != null && infoModalData != null"
+			:nodeName="infoModalNodeName" :infoResponse="infoModalData"
+			:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" @close="infoModalNodeName = null"/>
 	</transition>
 	<transition name="fade">
 		<help-modal v-if="helpOpen" :uiOpts="uiOpts" @close="helpOpen = false" @start-tutorial="onStartTutorial"/>
@@ -83,7 +83,7 @@ import SettingsIcon from './components/icon/SettingsIcon.vue';
 import HelpIcon from './components/icon/HelpIcon.vue';
 // Other
 	// Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
-import {TolNode, TolMap, getServerResponse, Action, UiOptions} from './lib';
+import {TolNode, TolMap, getServerResponse, InfoResponse, Action, UiOptions} from './lib';
 import {LayoutNode, LayoutOptions, LayoutTreeChg} from './layout';
 import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import {getBreakpoint, getScrollBarWidth, isTouchDevice,
@@ -189,6 +189,7 @@ export default defineComponent({
 			overflownRoot: false, // Set when displaying a root tile with many children, with overflow
 			// For modals
 			infoModalNodeName: null as string | null, // Name of node to display info for, or null
+			infoModalData: null as InfoResponse | null,
 			searchOpen: false,
 			settingsOpen: false,
 			helpOpen: false,
@@ -471,12 +472,21 @@ export default defineComponent({
 			return success;
 		},
 		// For tile-info events
-		onInfoClick(nodeName: string): void {
+		async onInfoClick(nodeName: string){
 			this.handleActionForTutorial('tileInfo');
 			if (!this.searchOpen){ // Close an active non-search mode
 				this.resetMode();
 			}
+			// Query server for tol-node info
+			let urlParams = 'type=info&name=' + encodeURIComponent(nodeName);
+			urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+			let responseObj: InfoResponse = await getServerResponse(urlParams);
+			if (responseObj == null){
+				return;
+			}
+			// Set fields from response
 			this.infoModalNodeName = nodeName;
+			this.infoModalData = responseObj;
 		},
 		// For search events
 		onSearchIconClick(): void {
