@@ -3,7 +3,7 @@
 	:style="{backgroundColor: uiOpts.bgColor}">
 	<!-- Title bar -->
 	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: uiOpts.bgColorDark2}">
-		<h1 class="my-auto ml-2 text-3xl" :style="{color: uiOpts.altColor}">Tilo</h1>
+		<h1 class="my-auto ml-2 text-3xl" :style="{color: uiOpts.altColor}">Tilo (prototype)</h1>
 		<div class="mx-auto"/> <!-- Spacer -->
 		<!-- Icons -->
 		<icon-button v-if="!uiOpts.disabledActions.has('search')" :style="buttonStyles" @click="onSearchIconClick">
@@ -86,7 +86,8 @@ import HelpIcon from './components/icon/HelpIcon.vue';
 import {TolNode, TolMap, getServerResponse, Action, UiOptions} from './lib';
 import {LayoutNode, LayoutOptions, LayoutTreeChg} from './layout';
 import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
-import {getBreakpoint, getScrollBarWidth, arraySum, randWeightedChoice, timeout} from './util';
+import {getBreakpoint, getScrollBarWidth, isTouchDevice,
+	arraySum, randWeightedChoice, timeout} from './util';
 
 // Type representing auto-mode actions
 type AutoAction = 'move across' | 'move down' | 'move up' | Action;
@@ -162,6 +163,7 @@ function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		searchJumpMode: false,
 		tutorialSkip: false,
 		disabledActions: new Set() as Set<Action>,
+		useDblClick: isTouchDevice(),
 	};
 }
 const lytOptPrefix = 'LYT '; // Used when saving to localStorage

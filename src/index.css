@@ -8,6 +8,7 @@
 }
 body {
 	font-family: Ubuntu, system-ui, sans-serif;
+	touch-action: manipulation; /* Prevents non-standard gestures such as double-tap to zoom */
 }
 
 /* For transitions/animations */

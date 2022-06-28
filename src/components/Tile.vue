@@ -425,17 +425,34 @@ export default defineComponent({
 		// Click handling
 		onMouseDown(): void {
 			this.highlight = false;
-			clearTimeout(this.clickHoldTimer);
-			this.clickHoldTimer = setTimeout(() => {
-				this.clickHoldTimer = 0;
-				this.onClickHold();
-			}, this.uiOpts.clickHoldDuration);
+			if (!this.uiOpts.useDblClick){
+				// Wait for a mouseup or click-hold
+				clearTimeout(this.clickHoldTimer);
+				this.clickHoldTimer = setTimeout(() => {
+					this.clickHoldTimer = 0;
+					this.onClickHold();
+				}, this.uiOpts.clickHoldDuration);
+			} else {
+				// Wait for or recognise a double-click
+				if (this.clickHoldTimer == 0){
+					this.clickHoldTimer = setTimeout(() => {
+						this.clickHoldTimer = 0;
+						this.onClick();
+					}, this.uiOpts.clickHoldDuration);
+				} else {
+					clearTimeout(this.clickHoldTimer)
+					this.clickHoldTimer = 0;
+					this.onDblClick();
+				}
+			}
 		},
 		onMouseUp(): void {
-			if (this.clickHoldTimer > 0){
-				clearTimeout(this.clickHoldTimer);
-				this.clickHoldTimer = 0;
-				this.onClick();
+			if (!this.uiOpts.useDblClick){
+				if (this.clickHoldTimer > 0){
+					clearTimeout(this.clickHoldTimer);
+					this.clickHoldTimer = 0;
+					this.onClick();
+				}
 			}
 		},
 		onClick(): void {
@@ -452,6 +469,9 @@ export default defineComponent({
 				return;
 			}
 			this.$emit(this.isLeaf ? 'leaf-click-held' : 'nonleaf-click-held', this.layoutNode);
+		},
+		onDblClick(): void {
+			this.onClickHold();
 		},
 		onInfoIconClick(evt: Event): void {
 			this.$emit('info-click', this.layoutNode.name);

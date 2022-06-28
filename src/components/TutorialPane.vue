@@ -8,8 +8,7 @@
 	<template v-if="stage == 0">
 		<div :style="contentStyles">
 			This page provides a visualisation of the biological Tree of Life.
-			It was made using data from OTOL, EOL, and Wikipedia.
-			For more project information, click here.
+			It is unfinished, and is just here for testing.
 		</div>
 		<div class="w-full flex justify-evenly mt-2">
 			<s-button :style="buttonStyles" @click="onStartTutorial">Start Tutorial</s-button>

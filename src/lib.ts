@@ -127,4 +127,5 @@ export type UiOptions = {
 	searchJumpMode: boolean,
 	tutorialSkip: boolean,
 	disabledActions: Set<Action>,
+	useDblClick: boolean,
 };
