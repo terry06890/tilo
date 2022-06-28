@@ -51,7 +51,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import InfoIcon from './icon/InfoIcon.vue';
-import {TolNode, TolMap, UiOptions} from '../lib';
+import {TolNode, TolMap, getImagePath, UiOptions} from '../lib';
 import {LayoutNode, LayoutOptions} from '../layout';
 import {capitalizeWords} from '../util';
 
@@ -215,7 +215,7 @@ export default defineComponent({
 				styles = {
 					...styles,
 					backgroundImage: this.tolNode.imgName != null ?
-						`${scrimGradient},url('/img/${(this.tolNode.imgName as string).replaceAll('\'', '\\\'')}')` :
+						`${scrimGradient},url('${getImagePath(this.tolNode.imgName as string)}')` :
 						'none',
 					backgroundColor: this.uiOpts.bgColorDark,
 					backgroundSize: 'cover',
@@ -499,7 +499,7 @@ export default defineComponent({
 				height: '100%',
 				// Image (and scrims)
 				backgroundImage: (this.tolNode.imgName![idx]! != null) ?
-					`${scrimGradient},url('/img/${(this.tolNode.imgName![idx] as string).replaceAll('\'', '\\\'')}')` :
+					`${scrimGradient},url('${getImagePath(this.tolNode.imgName![idx]! as string)}')` :
 					'none',
 				backgroundColor: this.uiOpts.bgColorDark,
 				backgroundSize: '125%',

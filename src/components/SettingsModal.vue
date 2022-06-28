@@ -56,7 +56,7 @@
 					@change="onSettingChg('transitionDuration')" class="my-auto" name="animationTimeInput"/>
 				<div class="my-auto text-right">{{uiOpts.transitionDuration}} ms</div>
 				<!-- Row 2 -->
-				<label for="autoModeDelayInput">Auo-mode Delay</label>
+				<label for="autoModeDelayInput">Auto-mode Delay</label>
 				<input type="range" min="0" max="3000" v-model.number="uiOpts.autoActionDelay"
 					@change="onSettingChg('autoActionDelay')" class="my-auto" name="autoModeDelayInput"/>
 				<div class="my-auto text-right">{{uiOpts.autoActionDelay}} ms</div>

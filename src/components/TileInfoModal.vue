@@ -59,7 +59,8 @@
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import {LayoutNode, LayoutOptions} from '../layout';
-import {TolNode, TolMap, getServerResponse, DescInfo, ImgInfo, NodeInfo, InfoResponse, UiOptions} from '../lib';
+import {TolNode, TolMap, getServerResponse, getImagePath,
+	DescInfo, ImgInfo, NodeInfo, InfoResponse, UiOptions} from '../lib';
 import {capitalizeWords} from '../util';
 
 export default defineComponent({
@@ -111,7 +112,7 @@ export default defineComponent({
 				width: this.lytOpts.maxTileSz + 'px',
 				height: this.lytOpts.maxTileSz + 'px',
 				backgroundImage: imgName != null ?
-					'url(\'/img/' + imgName.replaceAll('\'', '\\\'') + '\')' :
+					`url('${getImagePath(imgName as string)}')` :
 					'none',
 				backgroundColor: this.uiOpts.bgColorDark,
 				backgroundSize: 'cover',

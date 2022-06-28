@@ -6,7 +6,6 @@ import sqlite3
 import gzip, jsonpickle
 
 dbFile = "data/data.db"
-imgDir = "data/img/"
 DEFAULT_SUGG_LIM = 5
 MAX_SUGG_LIM = 50
 CORS_ANY_ORIGIN = True # Used during development to avoid Cross-Origin Resource Sharing restrictions

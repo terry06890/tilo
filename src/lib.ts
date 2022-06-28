@@ -42,6 +42,10 @@ export async function getServerResponse(params: string){
 	}
 	return responseObj;
 }
+const SERVER_IMG_PATH = '/img/'
+export function getImagePath(imgName: string): string {
+	return SERVER_IMG_PATH + imgName.replaceAll('\'', '\\\'');
+}
 // For server search responses
 export type SearchSugg = { // Represents a search-string suggestion
 	name: string,
