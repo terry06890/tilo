@@ -49,13 +49,15 @@ export default defineComponent({
 	},
 	data(){
 		return {
-			// For search-suggestion requests
-			lastSuggReqTime: 0, // Set when a search-suggestions request is initiated
-			pendingSuggReqParams: '', // Used by a search-suggestion requester to use the latest user input
-			pendingDelayedSuggReq: 0, // Set via setTimeout() for a non-initial search-suggestions request
 			// Search-suggestion data
 			searchSuggs: [] as SearchSugg[],
 			searchHadMoreSuggs: false,
+			suggsInput: '', // The input that resulted in the current suggestions (used to highlight matching text)
+			// For search-suggestion requests
+			lastSuggReqTime: 0, // Set when a search-suggestions request is initiated
+			pendingSuggReqParams: '', // Used by a search-suggestion requester to request with the latest user input
+			pendingDelayedSuggReq: 0, // Set via setTimeout() for a non-initial search-suggestions request
+			pendingSuggInput: '', // Used to remember what input triggered a suggestions request
 			// Other
 			focusedSuggIdx: null as null | number, // Denotes a search-suggestion selected using the arrow keys
 		};
@@ -70,7 +72,7 @@ export default defineComponent({
 		},
 		suggDisplayStrings(): [string, string, string][] {
 			let result: [string, string, string][] = [];
-			let input = (this.$refs.searchInput as HTMLInputElement).value;
+			let input = this.suggsInput;
 			// For each SearchSugg
 			for (let sugg of this.searchSuggs){
 				let idx = sugg.name.indexOf(input);
@@ -108,7 +110,9 @@ export default defineComponent({
 			urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
 			// Query server, delaying/skipping if a request was recently sent
 			this.pendingSuggReqParams = urlParams;
+			this.pendingSuggInput = input.value;
 			let doReq = async () => {
+				let suggInput = this.pendingSuggInput;
 				let responseObj: SearchSuggResponse =
 					await getServerResponse(this.pendingSuggReqParams);
 				if (responseObj == null){
@@ -116,6 +120,7 @@ export default defineComponent({
 				}
 				this.searchSuggs = responseObj.suggs;
 				this.searchHadMoreSuggs = responseObj.hasMore;
+				this.suggsInput = suggInput;
 				// Auto-select first result if present
 				if (this.searchSuggs.length > 0){
 					this.focusedSuggIdx = 0;

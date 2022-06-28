@@ -118,7 +118,7 @@ function getDefaultLytOpts(): LayoutOptions {
 		rectSensitivity: 0.9, // Between 0 and 1
 		sweepMode: 'left', // 'left' | 'top' | 'shorter' | 'auto'
 		sweptNodesPrio: 'sqrt', // 'linear' | 'sqrt' | 'pow-2/3'
-		sweepToParent: 'prefer', // 'none' | 'prefer' | 'fallback'
+		sweepToParent: 'fallback', // 'none' | 'prefer' | 'fallback'
 	};
 }
 function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {

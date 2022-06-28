@@ -354,7 +354,7 @@ export default defineComponent({
 			};
 		},
 		infoIconClasses(): string {
-			return 'text-white/10 hover:text-white hover:cursor-pointer';
+			return 'text-white/20 hover:text-white hover:cursor-pointer';
 		},
 		// For watching layoutNode data
 		pos(){
