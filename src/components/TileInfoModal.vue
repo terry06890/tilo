@@ -19,7 +19,10 @@
 			</h1>
 			<div class="flex gap-1">
 				<div class="w-1/2">
-					<div :style="getImgStyles(nodes[idx])"/>
+					<div v-if="imgInfos[idx] == null" :style="getImgStyles(nodes[idx])"/>
+					<a v-else :href="imgInfos[idx].url">
+						<div :style="getImgStyles(nodes[idx])"/>
+					</a>
 					<ul v-if="imgInfos[idx]! != null">
 						<li>Obtained via: {{imgInfos[idx]!.src}}</li>
 						<li>License:
