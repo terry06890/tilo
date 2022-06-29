@@ -16,6 +16,7 @@ export default defineComponent({
 	props: {
 		nodes: {type: Array as PropType<LayoutNode[]>, required: true},
 		vert: {type: Boolean, default: false},
+		breadth: {type: Number, required: true},
 		// Other
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
@@ -23,7 +24,7 @@ export default defineComponent({
 	},
 	computed: {
 		imgSz(){
-			return this.uiOpts.ancestryBarBreadth - this.lytOpts.tileSpacing - this.uiOpts.scrollGap;
+			return this.breadth - this.lytOpts.tileSpacing - this.uiOpts.scrollGap;
 		},
 		dummyNodes(){ // Childless versions of 'nodes' used to parameterise <tile>s
 			return this.nodes.map(n => {

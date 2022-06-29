@@ -32,7 +32,8 @@
 			<transition name="fade"
 				@after-enter="ancestryBarInTransition = false" @after-leave="ancestryBarInTransition = false">
 				<ancestry-bar v-if="detachedAncestors != null" class="w-full h-full"
-					:nodes="detachedAncestors" :vert="wideArea" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+					:nodes="detachedAncestors" :vert="wideArea" :breadth="uiOpts.ancestryBarBreadth"
+					:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 					@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
 			</transition>
 		</div>
