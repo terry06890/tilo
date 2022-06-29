@@ -2,28 +2,9 @@
  * Project-wide types/classes
  */
 
-// Represents a tree-of-life node
-export class TolNode {
-	otolId: string | null;
-	children: string[];
-	parent: string | null;
-	tips: number;
-	pSupport: boolean;
-	commonName: null | string;
-	imgName: null | string |
-		[string, string] | [null, string] | [string, null]; // Pairs represent compound-images
-	constructor(children: string[] = [], parent = null, tips = 0, pSupport = false){
-		this.otolId = null;
-		this.children = children;
-		this.parent = parent;
-		this.tips = tips;
-		this.pSupport = pSupport;
-		this.commonName = null;
-		this.imgName = null;
-	}
-}
-// Maps TolNode names to TolNode objects
-export type TolMap = Map<string, TolNode>;
+import {TolNode} from './tol';
+import {LayoutOptions} from './layout';
+import {getBreakpoint, getScrollBarWidth, isTouchDevice} from './util';
 
 // For server requests
 const SERVER_URL = 'http://localhost:8000/cgi-bin/data.py'
@@ -129,5 +110,66 @@ export type UiOptions = {
 	disabledActions: Set<Action>,
 	useDblClick: boolean,
 };
+// Option defaults
+export function getDefaultLytOpts(): LayoutOptions {
+	let screenSz = getBreakpoint();
+	return {
+		tileSpacing: screenSz == 'sm' ? 6 : 10, //px
+		headerSz: 22, // px
+		minTileSz: 50, // px
+		maxTileSz: 200, // px
+		// Layout-algorithm related
+		layoutType: 'sweep', // 'sqr' | 'rect' | 'sweep'
+		rectMode: 'auto first-row', // 'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
+		rectSensitivity: 0.9, // Between 0 and 1
+		sweepMode: 'left', // 'left' | 'top' | 'shorter' | 'auto'
+		sweptNodesPrio: 'sqrt', // 'linear' | 'sqrt' | 'pow-2/3'
+		sweepToParent: 'fallback', // 'none' | 'prefer' | 'fallback'
+	};
+}
+export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
+	let screenSz = getBreakpoint();
+	// Reused option values
+	let textColor = '#fafaf9', textColorAlt = '#1c1917';
+	let bgColor = '#292524',
+		bgColorLight = '#44403c', bgColorDark = '#1c1917',
+		bgColorLight2 = '#57534e', bgColorDark2 = '#0e0c0b',
+		bgColorAlt = '#fafaf9', bgColorAltDark = '#a8a29e';
+	let altColor = '#a3e623', altColorDark = '#65a30d';
+	let accentColor = '#f59e0b';
+	let scrollGap = getScrollBarWidth();
+	//
+	return {
+		// Shared coloring/sizing
+		textColor, textColorAlt,
+		bgColor, bgColorLight, bgColorDark, bgColorLight2, bgColorDark2, bgColorAlt, bgColorAltDark,
+		altColor, altColorDark,
+		borderRadius: 5, // px
+		shadowNormal: '0 0 2px black',
+		shadowHovered: '0 0 1px 2px ' + altColor,
+		shadowFocused: '0 0 1px 2px ' + accentColor,
+		// Component coloring
+		childQtyColors: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
+		nonleafBgColors: [bgColorLight, bgColorLight2],
+		nonleafHeaderColor: bgColorDark,
+		ancestryBarBgColor: bgColorLight,
+		// Component sizing
+		ancestryBarBreadth: lytOpts.maxTileSz / 2 + lytOpts.tileSpacing*2, // px
+		tutPaneSz: 200, // px
+		scrollGap,
+		// Timing related
+		clickHoldDuration: 400, // ms
+		transitionDuration: 300, // ms
+		animationDelay: 100, // ms
+		autoActionDelay: 500, // ms
+		// Other
+		useReducedTree: false,
+		searchSuggLimit: 10,
+		searchJumpMode: false,
+		tutorialSkip: false,
+		disabledActions: new Set() as Set<Action>,
+		useDblClick: isTouchDevice(),
+	};
+}
 // Used in Settings.vue, and when saving to localStorage
 export type OptionType = 'LYT' | 'UI';

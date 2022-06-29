@@ -9,8 +9,9 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import Tile from './Tile.vue'
-import {TolMap, UiOptions} from '../lib';
+import {TolMap} from '../tol';
 import {LayoutNode, LayoutOptions} from '../layout';
+import {UiOptions} from '../lib';
 
 export default defineComponent({
 	props: {

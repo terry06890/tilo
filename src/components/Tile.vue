@@ -51,8 +51,9 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import InfoIcon from './icon/InfoIcon.vue';
-import {TolNode, TolMap, getImagePath, UiOptions} from '../lib';
+import {TolNode, TolMap} from '../tol';
 import {LayoutNode, LayoutOptions} from '../layout';
+import {getImagePath, UiOptions} from '../lib';
 import {capitalizeWords} from '../util';
 
 const scrimGradient = 'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%)';

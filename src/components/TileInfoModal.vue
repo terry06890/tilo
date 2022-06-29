@@ -68,9 +68,9 @@
 import {defineComponent, PropType} from 'vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import ExternalLinkIcon from './icon/ExternalLinkIcon.vue';
+import {TolNode, TolMap} from '../tol';
 import {LayoutNode, LayoutOptions} from '../layout';
-import {TolNode, TolMap, getServerResponse, getImagePath,
-	DescInfo, ImgInfo, NodeInfo, InfoResponse, UiOptions} from '../lib';
+import {getServerResponse, getImagePath, DescInfo, ImgInfo, NodeInfo, InfoResponse, UiOptions} from '../lib';
 import {capitalizeWords} from '../util';
 
 export default defineComponent({

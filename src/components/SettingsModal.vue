@@ -93,7 +93,7 @@
 import {defineComponent, PropType} from 'vue';
 import SButton from './SButton.vue';
 import CloseIcon from './icon/CloseIcon.vue';
-import {UiOptions, OptionType} from '../lib';
+import {UiOptions, OptionType, getDefaultLytOpts, getDefaultUiOpts} from '../lib';
 import {LayoutOptions} from '../layout';
 
 export default defineComponent({
@@ -141,11 +141,11 @@ export default defineComponent({
 					this.$emit('setting-chg', 'LYT', 'minTileSz', {save: false});
 				}
 			}
-			//
+			// Notify App
 			this.$emit('setting-chg', optionType, option,
 				{save, relayout: optionType == 'LYT', reinit: optionType == 'UI' && option == 'useReducedTree'});
+			// Possibly make saved-indicator appear/animate
 			if (save){
-				// Make saved-indicator appear/animate
 				if (!this.saved){
 					this.saved = true;
 				} else {
@@ -157,7 +157,15 @@ export default defineComponent({
 			}
 		},
 		onReset(){
-			this.$emit('reset');
+			// Restore default options
+			let defaultLytOpts = getDefaultLytOpts();
+			let defaultUiOpts = getDefaultUiOpts(defaultLytOpts);
+			let needReinit = this.uiOpts.useReducedTree != defaultUiOpts.useReducedTree;
+			Object.assign(this.lytOpts, defaultLytOpts);
+			Object.assign(this.uiOpts, defaultUiOpts);
+			// Notify App
+			this.$emit('reset', needReinit);
+			// Clear saved-indicator
 			this.saved = false;
 		},
 		pxToDisplayStr(px: number): string {

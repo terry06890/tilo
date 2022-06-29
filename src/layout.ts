@@ -5,7 +5,7 @@
  * LayoutNode tree, on which tryLayout() can run a layout algorithm.
  */
 
-import {TolNode, TolMap} from './lib';
+import {TolNode, TolMap} from './tol';
 import {range, arraySum, linspace, limitVals, updateAscSeq} from './util';
 
 // Represents a node/tree that holds layout data for a TolNode node/tree

@@ -84,11 +84,12 @@ import SettingsIcon from './components/icon/SettingsIcon.vue';
 import HelpIcon from './components/icon/HelpIcon.vue';
 // Other
 	// Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
-import {TolNode, TolMap, getServerResponse, InfoResponse, Action, UiOptions, OptionType} from './lib';
-import {LayoutNode, LayoutOptions, LayoutTreeChg} from './layout';
-import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
-import {getBreakpoint, getScrollBarWidth, isTouchDevice,
-	arraySum, randWeightedChoice, timeout} from './util';
+import {TolNode, TolMap} from './tol';
+import {LayoutNode, LayoutOptions, LayoutTreeChg,
+	initLayoutTree, initLayoutMap, tryLayout} from './layout';
+import {getServerResponse, InfoResponse, Action,
+	UiOptions, getDefaultLytOpts, getDefaultUiOpts, OptionType} from './lib';
+import {arraySum, randWeightedChoice, timeout} from './util';
 
 // Type representing auto-mode actions
 type AutoAction = 'move across' | 'move down' | 'move up' | Action;
@@ -107,66 +108,6 @@ function getReverseAction(action: AutoAction): AutoAction | null {
 	}
 }
 // For options
-function getDefaultLytOpts(): LayoutOptions {
-	let screenSz = getBreakpoint();
-	return {
-		tileSpacing: screenSz == 'sm' ? 6 : 10, //px
-		headerSz: 22, // px
-		minTileSz: 50, // px
-		maxTileSz: 200, // px
-		// Layout-algorithm related
-		layoutType: 'sweep', // 'sqr' | 'rect' | 'sweep'
-		rectMode: 'auto first-row', // 'horz' | 'vert' | 'linear' | 'auto' | 'auto first-row'
-		rectSensitivity: 0.9, // Between 0 and 1
-		sweepMode: 'left', // 'left' | 'top' | 'shorter' | 'auto'
-		sweptNodesPrio: 'sqrt', // 'linear' | 'sqrt' | 'pow-2/3'
-		sweepToParent: 'fallback', // 'none' | 'prefer' | 'fallback'
-	};
-}
-function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
-	let screenSz = getBreakpoint();
-	// Reused option values
-	let textColor = '#fafaf9', textColorAlt = '#1c1917';
-	let bgColor = '#292524',
-		bgColorLight = '#44403c', bgColorDark = '#1c1917',
-		bgColorLight2 = '#57534e', bgColorDark2 = '#0e0c0b',
-		bgColorAlt = '#fafaf9', bgColorAltDark = '#a8a29e';
-	let altColor = '#a3e623', altColorDark = '#65a30d';
-	let accentColor = '#f59e0b';
-	let scrollGap = getScrollBarWidth();
-	//
-	return {
-		// Shared coloring/sizing
-		textColor, textColorAlt,
-		bgColor, bgColorLight, bgColorDark, bgColorLight2, bgColorDark2, bgColorAlt, bgColorAltDark,
-		altColor, altColorDark,
-		borderRadius: 5, // px
-		shadowNormal: '0 0 2px black',
-		shadowHovered: '0 0 1px 2px ' + altColor,
-		shadowFocused: '0 0 1px 2px ' + accentColor,
-		// Component coloring
-		childQtyColors: [[1, 'greenyellow'], [10, 'orange'], [100, 'red']],
-		nonleafBgColors: [bgColorLight, bgColorLight2],
-		nonleafHeaderColor: bgColorDark,
-		ancestryBarBgColor: bgColorLight,
-		// Component sizing
-		ancestryBarBreadth: lytOpts.maxTileSz / 2 + lytOpts.tileSpacing*2, // px
-		tutPaneSz: 200, // px
-		scrollGap,
-		// Timing related
-		clickHoldDuration: 400, // ms
-		transitionDuration: 300, // ms
-		animationDelay: 100, // ms
-		autoActionDelay: 500, // ms
-		// Other
-		useReducedTree: false,
-		searchSuggLimit: 10,
-		searchJumpMode: false,
-		tutorialSkip: false,
-		disabledActions: new Set() as Set<Action>,
-		useDblClick: isTouchDevice(),
-	};
-}
 
 export default defineComponent({
 	data(){
@@ -737,19 +678,13 @@ export default defineComponent({
 				this.relayoutWithCollapse();
 			}
 		},
-		onResetSettings(): void {
+		onResetSettings(reinit: boolean): void {
 			localStorage.clear();
-			// Restore default options
-			let defaultLytOpts = getDefaultLytOpts();
-			let defaultUiOpts = getDefaultUiOpts(defaultLytOpts);
-			if (this.uiOpts.useReducedTree != defaultUiOpts.useReducedTree){
+			if (reinit){
 				this.reInit();
+			} else {
+				this.relayoutWithCollapse();
 			}
-			Object.assign(this.lytOpts, defaultLytOpts);
-			Object.assign(this.uiOpts, defaultUiOpts);
-			console.log('Settings reset');
-			//
-			this.relayoutWithCollapse();
 		},
 		// For help events
 		onHelpIconClick(): void {
