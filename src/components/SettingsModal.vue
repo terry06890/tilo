@@ -9,7 +9,7 @@
 			<h2 class="text-center">Layout</h2>
 			<div class="flex gap-2">
 				<div class="grow">
-					<div @click="onReset('LYT', 'layoutType')" :class="labelClasses">Sweep leaves to side</div>
+					<div>Sweep leaves to side</div>
 					<ul>
 						<li> <label> <input type="radio" v-model="sweepLeaves" :value="true"
 							@change="onSettingChg('LYT', 'layoutType')"/> Yes </label> </li>
@@ -18,7 +18,7 @@
 					</ul>
 				</div>
 				<div class="grow">
-					<div @click="onReset('LYT', 'sweepToParent')" :class="labelClasses">Sweep into parent</div>
+					<div>Sweep into parent</div>
 					<ul>
 						<li> <label> <input type="radio" :disabled="!sweepLeaves" v-model="lytOpts.sweepToParent"
 							value="none" @change="onSettingChg('LYT', 'sweepToParent')"/> Never </label> </li>
@@ -31,7 +31,7 @@
 			</div>
 			<div class="grid grid-cols-[minmax(0,3fr)_minmax(0,4fr)_minmax(0,2fr)] gap-1">
 				<!-- Row 1 -->
-				<label for="minTileSizeInput" @click="onReset('LYT', 'minTileSz')" :class="labelClasses">
+				<label for="minTileSizeInput" @click="onReset('LYT', 'minTileSz')" :class="rLabelClasses">
 					Min Tile Size
 				</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz"
@@ -39,7 +39,7 @@
 					name="minTileSizeInput" ref="minTileSzInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.minTileSz)}}</div>
 				<!-- Row 2 -->
-				<label for="maxTileSizeInput" @click="onReset('LYT', 'maxTileSz')" :class="labelClasses">
+				<label for="maxTileSizeInput" @click="onReset('LYT', 'maxTileSz')" :class="rLabelClasses">
 					Max Tile Size
 				</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz"
@@ -47,7 +47,7 @@
 					name="maxTileSizeInput" ref="maxTileSzInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.maxTileSz)}}</div>
 				<!-- Row 3 -->
-				<label for="tileSpacingInput" @click="onReset('LYT', 'tileSpacing')" :class="labelClasses">
+				<label for="tileSpacingInput" @click="onReset('LYT', 'tileSpacing')" :class="rLabelClasses">
 					Tile Spacing
 				</label>
 				<input type="range" min="0" max="20" v-model.number="lytOpts.tileSpacing"
@@ -60,14 +60,14 @@
 			<h2 class="text-center">Timing</h2>
 			<div class="grid grid-cols-[minmax(0,3fr)_minmax(0,4fr)_minmax(0,2fr)] gap-1">
 				<!-- Row 1 -->
-				<label for="animTimeInput" @click="onReset('UI', 'transitionDuration')" :class="labelClasses">
+				<label for="animTimeInput" @click="onReset('UI', 'transitionDuration')" :class="rLabelClasses">
 					Animation Time
 				</label>
 				<input type="range" min="0" max="3000" v-model.number="uiOpts.transitionDuration"
 					@change="onSettingChg('UI', 'transitionDuration')" class="my-auto" name="animTimeInput"/>
 				<div class="my-auto text-right">{{uiOpts.transitionDuration}} ms</div>
 				<!-- Row 2 -->
-				<label for="autoDelayInput" @click="onReset('UI', 'autoActionDelay')" :class="labelClasses">
+				<label for="autoDelayInput" @click="onReset('UI', 'autoActionDelay')" :class="rLabelClasses">
 					Auto-mode Delay
 				</label>
 				<input type="range" min="0" max="3000" v-model.number="uiOpts.autoActionDelay"
@@ -78,16 +78,12 @@
 		<div class="border rounded p-1">
 			<h2 class="text-center">Other</h2>
 			<div>
-				<input type="checkbox" v-model="uiOpts.useReducedTree"
-					@change="onSettingChg('UI', 'useReducedTree')" name="useReducedTreeInput"/>
-				<label for="useReducedTreeInput" @click="onReset('UI', 'useReducedTree')"
-					:class="labelClasses" class="ml-1"> Use simplified tree </label>
+				<label> <input type="checkbox" v-model="uiOpts.useReducedTree"
+					@change="onSettingChg('UI', 'useReducedTree')"/> Use simplified tree </label>
 			</div>
 			<div>
-				<input type="checkbox" v-model="uiOpts.searchJumpMode"
-					@change="onSettingChg('UI', 'searchJumpMode')" name="searchModeInput"/>
-				<label for="searchModeInput" @click="onReset('UI', 'searchJumpMode')"
-					:class="labelClasses" class="ml-1"> Skip search animation </label>
+				<label> <input type="checkbox" v-model="uiOpts.searchJumpMode"
+					@change="onSettingChg('UI', 'searchJumpMode')"/> Skip search animation </label>
 			</div>
 		</div>
 		<s-button class="mx-auto mt-2" :style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}"
@@ -131,7 +127,7 @@ export default defineComponent({
 				boxShadow: this.uiOpts.shadowNormal,
 			};
 		},
-		labelClasses(): string {
+		rLabelClasses(): string { // For reset-upon-click labels
 			return "w-fit hover:cursor-pointer hover:text-lime-600";
 		},
 	},
