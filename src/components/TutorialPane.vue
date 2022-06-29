@@ -1,7 +1,9 @@
 <template>
 <div :style="styles" class="p-2 flex flex-col justify-between">
 	<div class="flex">
-		<h2 class="text-center mb-2 mx-auto">{{stage == 0 ? 'Welcome' : 'Tutorial'}}</h2>
+		<h2 class="text-center mb-2 mx-auto">
+			{{stage == 0 ? 'Welcome' : `Tutorial (${stage} / ${lastStage + 1})`}}
+		</h2>
 		<close-icon @click.stop="onClose"
 			class="block w-6 h-6 hover:cursor-pointer"/>
 	</div>
