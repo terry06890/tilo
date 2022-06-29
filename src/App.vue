@@ -720,20 +720,23 @@ export default defineComponent({
 			this.resetMode();
 			this.settingsOpen = true;
 		},
-		async onSettingChg(optionType: OptionType, option: string){
+		async onSettingChg(optionType: OptionType, option: string, save = true){
 			// Save in localStorage
 			if (optionType == 'LYT'){
-				localStorage.setItem(`${optionType} ${option}`, String(this.lytOpts[option as keyof LayoutOptions]));
+				if (save){
+					localStorage.setItem(`${optionType} ${option}`, String(this.lytOpts[option as keyof LayoutOptions]));
+				}
 				this.relayoutWithCollapse();
 			} else if (optionType == 'UI') {
-				localStorage.setItem(`${optionType} ${option}`, String(this.uiOpts[option as keyof UiOptions]));
+				if (save){
+					localStorage.setItem(`${optionType} ${option}`, String(this.uiOpts[option as keyof UiOptions]));
+				}
 				if (option == 'useReducedTree'){
 					this.onTreeChange();
 				}
 			} else {
 				throw new Error(`Unexpected setting: ${optionType}, ${option}`);
 			}
-			console.log(`Saved setting: ${optionType}, ${option}`);
 		},
 		async onTreeChange(){
 			if (this.activeRoot != this.layoutTree){

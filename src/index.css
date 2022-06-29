@@ -75,3 +75,16 @@ body {
 		background-color: transparent;
 	}
 }
+.animate-flash-green {
+	animation-name: flash-green;
+	animation-duration: 700ms;
+	animation-timing-function: ease-in;
+}
+@keyframes flash-green {
+	from {
+		color: lawngreen;
+	}
+	to {
+		color: inherit;
+	}
+}

@@ -33,17 +33,20 @@
 				<!-- Row 1 -->
 				<label for="minTileSizeInput">Min Tile Size</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz"
-					@input="onSettingChg('LYT', 'minTileSz')" name="minTileSizeInput" ref="minTileSzInput"/>
+					@input="onSettingChg('LYT', 'minTileSz', false)" @change="onSettingChg('LYT', 'minTileSz')"
+					name="minTileSizeInput" ref="minTileSzInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.minTileSz)}}</div>
 				<!-- Row 2 -->
 				<label for="maxTileSizeInput">Max Tile Size</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz"
-					@input="onSettingChg('LYT', 'maxTileSz')" name="maxTileSizeInput" ref="maxTileSzInput"/>
+					@input="onSettingChg('LYT', 'maxTileSz', false)" @change="onSettingChg('LYT', 'maxTileSz')"
+					name="maxTileSizeInput" ref="maxTileSzInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.maxTileSz)}}</div>
 				<!-- Row 3 -->
 				<label for="tileSpacingInput">Tile Spacing</label>
 				<input type="range" min="0" max="20" v-model.number="lytOpts.tileSpacing"
-					@input="onSettingChg('LYT', 'tileSpacing')" name="tileSpacingInput"/>
+					@input="onSettingChg('LYT', 'tileSpacing', false)" @change="onSettingChg('LYT', 'tileSpacing')"
+					name="tileSpacingInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.tileSpacing)}}</div>
 			</div>
 		</div>
@@ -74,9 +77,14 @@
 			</div>
 		</div>
 		<s-button class="mx-auto mt-2" :style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}"
-			@click="$emit('reset')">
+			@click="onReset">
 			Reset
 		</s-button>
+		<transition name="fade">
+			<div v-if="saved" class="absolute right-1 bottom-1" ref="saveIndicator">
+				Saved
+			</div>
+		</transition>
 	</div>
 </div>
 </template>
@@ -97,6 +105,7 @@ export default defineComponent({
 		return {
 			sweepLeaves: this.lytOpts.layoutType == 'sweep',
 				// For making only two of 'layoutType's values available for user selection
+			saved: false, // Set to true after a setting is saved
 		};
 	},
 	computed: {
@@ -119,7 +128,7 @@ export default defineComponent({
 				this.$emit('close');
 			}
 		},
-		onSettingChg(optionType: OptionType, option: string){
+		onSettingChg(optionType: OptionType, option: string, save = true){
 			// Maintain min/max-tile-size consistency
 			if (optionType == 'LYT' && (option == 'minTileSz' || option == 'maxTileSz')){
 				let minInput = this.$refs.minTileSzInput as HTMLInputElement;
@@ -131,7 +140,22 @@ export default defineComponent({
 				}
 			}
 			//
-			this.$emit('setting-chg', optionType, option);
+			this.$emit('setting-chg', optionType, option, save);
+			if (save){
+				// Make saved-indicator appear/animate
+				if (!this.saved){
+					this.saved = true;
+				} else {
+					let el = this.$refs.saveIndicator as HTMLDivElement;
+					el.classList.remove('animate-flash-green');
+					el.offsetWidth; // Triggers reflow
+					el.classList.add('animate-flash-green');
+				}
+			}
+		},
+		onReset(){
+			this.$emit('reset');
+			this.saved = false;
 		},
 		pxToDisplayStr(px: number): string {
 			return (px / 3.78).toFixed() + ' mm';
