@@ -10,7 +10,7 @@
 			<search-icon/>
 		</icon-button>
 		<icon-button :disabled="isDisabled('autoMode')" :style="buttonStyles" @click="onAutoIconClick">
-			<play-icon v-if="!modeRunning"/>
+			<play-icon v-if="modeRunning != 'autoMode'"/>
 			<pause-icon v-else/>
 		</icon-button>
 		<icon-button :disabled="isDisabled('settings')" :style="buttonStyles" @click="onSettingsIconClick">
@@ -49,7 +49,7 @@
 	<!-- Modals -->
 	<transition name="fade">
 		<search-modal v-if="searchOpen" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" ref="searchModal"
-			@close="searchOpen = false" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg" />
+			@close="onSearchClose" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg" />
 	</transition>
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null && infoModalData != null"
@@ -62,8 +62,8 @@
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
 		@close="settingsOpen = false" @reset="onResetSettings" @setting-chg="onSettingChg"/>
 	<!-- Overlay used to prevent interaction and capture clicks -->
-	<div :style="{visibility: modeRunning ? 'visible' : 'hidden'}"
-		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = false"></div>
+	<div :style="{visibility: modeRunning != null ? 'visible' : 'hidden'}"
+		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = null"></div>
 </div>
 </template>
 
@@ -136,7 +136,7 @@ export default defineComponent({
 			settingsOpen: false,
 			helpOpen: false,
 			// For search and auto-mode
-			modeRunning: false,
+			modeRunning: null as null | 'search' | 'autoMode',
 			lastFocused: null as LayoutNode | null, // Used to un-focus 
 			// For auto-mode
 			autoPrevAction: null as AutoAction | null, // Used to help prevent action cycles
@@ -218,6 +218,38 @@ export default defineComponent({
 				styles.transitionProperty = 'min-height, max-height';
 			}
 			return styles;
+		},
+	},
+	watch: {
+		modeRunning(newVal, oldVal){
+			// For sweepToParent setting 'fallback', temporarily change to 'prefer' for efficiency
+			if (newVal != null){
+				if (this.lytOpts.sweepToParent == 'fallback'){
+					this.lytOpts.sweepToParent = 'prefer';
+					this.changedSweepToParent = true;
+				}
+			} else {
+				if (this.changedSweepToParent){
+					this.lytOpts.sweepToParent = 'fallback';
+					this.changedSweepToParent = false;
+				}
+			}
+			// Possibly trigger tutorial advance
+			if (newVal == null){
+				this.handleActionForTutorial(oldVal);
+			}
+		},
+		settingsOpen(newVal, oldVal){
+			// Possibly trigger tutorial advance
+			if (newVal == false){
+				this.handleActionForTutorial('settings');
+			}
+		},
+		helpOpen(newVal, oldVal){
+			// Possibly trigger tutorial advance
+			if (newVal == false){
+				this.handleActionForTutorial('help');
+			}
 		},
 	},
 	methods: {
@@ -439,14 +471,13 @@ export default defineComponent({
 			if (this.isDisabled('search')){
 				return;
 			}
-			this.handleActionForTutorial('search');
 			if (!this.searchOpen){
 				this.resetMode();
 				this.searchOpen = true;
 			}
 		},
 		onSearch(name: string): void {
-			if (this.modeRunning){
+			if (this.modeRunning != null){
 				console.log('WARNING: Unexpected search event while search/auto mode is running')
 				return;
 			}
@@ -456,23 +487,18 @@ export default defineComponent({
 			}
 			//
 			this.searchOpen = false;
-			this.modeRunning = true;
-			if (this.lytOpts.sweepToParent == 'fallback'){ // Temporary change for efficiency
-				this.lytOpts.sweepToParent = 'prefer';
-				this.changedSweepToParent = true;
-			}
+			this.modeRunning = 'search';
 			this.expandToNode(name);
 		},
 		async expandToNode(name: string){
-			if (!this.modeRunning){
+			if (this.modeRunning == null){
 				return;
 			}
 			// Check if node is displayed
 			let targetNode = this.layoutMap.get(name);
 			if (targetNode != null && !targetNode.hidden){
 				this.setLastFocused(targetNode);
-				this.modeRunning = false;
-				this.afterSearch();
+				this.modeRunning = null;
 				return;
 			}
 			// Get nearest in-layout-tree ancestor
@@ -511,7 +537,7 @@ export default defineComponent({
 				targetNode = this.layoutMap.get(name);
 				await this.onLeafClickHeld(targetNode!.parent!);
 				setTimeout(() => this.setLastFocused(targetNode!), this.uiOpts.transitionDuration);
-				this.modeRunning = false;
+				this.modeRunning = null;
 				return;
 			}
 			if (this.overflownRoot){
@@ -527,7 +553,7 @@ export default defineComponent({
 			// Attempt expand-to-view on an ancestor halfway to the active root
 			if (layoutNode == this.activeRoot){
 				console.log('Screen too small to expand active root');
-				this.modeRunning = false;
+				this.modeRunning = null;
 				return;
 			}
 			let ancestorChain = [layoutNode];
@@ -539,11 +565,9 @@ export default defineComponent({
 			await this.onNonleafClickHeld(layoutNode);
 			setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 		},
-		afterSearch(): void {
-			if (this.changedSweepToParent){
-				this.lytOpts.sweepToParent = 'fallback';
-				this.changedSweepToParent = false;
-			}
+		onSearchClose(){
+			this.searchOpen = false;
+			this.handleActionForTutorial('search');
 		},
 		// For auto-mode events
 		onAutoIconClick(): void {
@@ -556,13 +580,12 @@ export default defineComponent({
 				return;
 			}
 			//
-			this.handleActionForTutorial('autoMode');
 			this.resetMode();
-			this.modeRunning = true;
+			this.modeRunning = 'autoMode';
 			this.autoAction();
 		},
 		async autoAction(){
-			if (!this.modeRunning){
+			if (this.modeRunning == null){
 				this.setLastFocused(null);
 				return;
 			}
@@ -669,7 +692,6 @@ export default defineComponent({
 			if (this.isDisabled('settings')){
 				return;
 			}
-			this.handleActionForTutorial('settings');
 			this.resetMode();
 			this.settingsOpen = true;
 		},
@@ -703,7 +725,6 @@ export default defineComponent({
 			if (this.isDisabled('help')){
 				return;
 			}
-			this.handleActionForTutorial('help');
 			this.resetMode();
 			this.helpOpen = true;
 		},
@@ -952,10 +973,9 @@ export default defineComponent({
 		resetMode(): void {
 			this.infoModalNodeName = null;
 			this.searchOpen = false;
-			this.afterSearch();
 			this.settingsOpen = false;
 			this.helpOpen = false;
-			this.modeRunning = false;
+			this.modeRunning = null;
 			this.setLastFocused(null);
 		},
 		setLastFocused(node: LayoutNode | null): void {
