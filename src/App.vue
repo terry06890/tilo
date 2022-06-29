@@ -185,6 +185,7 @@ export default defineComponent({
 			return {
 				color: this.uiOpts.textColor,
 				backgroundColor: this.uiOpts.altColorDark,
+				aspectRatio: '1/1',
 			};
 		},
 		tutPaneContainerStyles(): Record<string,string> {
@@ -783,17 +784,18 @@ export default defineComponent({
 			}
 		},
 		onKeyUp(evt: KeyboardEvent): void {
+			if (this.uiOpts.disableShortcuts){
+				return;
+			}
 			if (evt.key == 'Escape'){
 				this.resetMode();
 			} else if (evt.key == 'f' && evt.ctrlKey){
-				// If no non-search modal is open, open/focus search bar
-				if (this.infoModalNodeName == null && !this.helpOpen && !this.settingsOpen){
-					evt.preventDefault();
-					if (!this.searchOpen){
-						this.onSearchIconClick();
-					} else {
-						(this.$refs.searchModal as InstanceType<typeof SearchModal>).focusInput();
-					}
+				evt.preventDefault();
+				// Open/focus search bar
+				if (!this.searchOpen){
+					this.onSearchIconClick();
+				} else {
+					(this.$refs.searchModal as InstanceType<typeof SearchModal>).focusInput();
 				}
 			} else if (evt.key == 'F' && evt.ctrlKey){
 				// If search bar is open, switch search mode

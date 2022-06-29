@@ -4,7 +4,7 @@
 
 import {TolNode} from './tol';
 import {LayoutOptions} from './layout';
-import {getBreakpoint, getScrollBarWidth, isTouchDevice} from './util';
+import {getBreakpoint, getScrollBarWidth, onTouchDevice} from './util';
 
 // For server requests
 const SERVER_URL = 'http://localhost:8000/cgi-bin/data.py'
@@ -109,6 +109,7 @@ export type UiOptions = {
 	tutorialSkip: boolean,
 	disabledActions: Set<Action>,
 	useDblClick: boolean,
+	disableShortcuts: boolean,
 };
 // Option defaults
 export function getDefaultLytOpts(): LayoutOptions {
@@ -168,7 +169,8 @@ export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		searchJumpMode: false,
 		tutorialSkip: false,
 		disabledActions: new Set() as Set<Action>,
-		useDblClick: isTouchDevice(),
+		useDblClick: onTouchDevice(),
+		disableShortcuts: false,
 	};
 }
 // Used in Settings.vue, and when saving to localStorage

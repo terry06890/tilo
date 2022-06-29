@@ -32,7 +32,7 @@ export function getScrollBarWidth(){
 	return scrollBarWidth;
 }
 // Detects a touch device
-export function isTouchDevice(){
+export function onTouchDevice(){
 	return window.matchMedia('(pointer: coarse)').matches;
 }
 
