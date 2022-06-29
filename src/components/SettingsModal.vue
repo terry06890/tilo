@@ -35,7 +35,7 @@
 					Min Tile Size
 				</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz"
-					@input="onSettingChg('LYT', 'minTileSz', false)" @change="onSettingChg('LYT', 'minTileSz')"
+					@input="onSettingChgThrottled('LYT', 'minTileSz')" @change="onSettingChg('LYT', 'minTileSz')"
 					name="minTileSizeInput" ref="minTileSzInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.minTileSz)}}</div>
 				<!-- Row 2 -->
@@ -43,7 +43,7 @@
 					Max Tile Size
 				</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz"
-					@input="onSettingChg('LYT', 'maxTileSz', false)" @change="onSettingChg('LYT', 'maxTileSz')"
+					@input="onSettingChgThrottled('LYT', 'maxTileSz')" @change="onSettingChg('LYT', 'maxTileSz')"
 					name="maxTileSizeInput" ref="maxTileSzInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.maxTileSz)}}</div>
 				<!-- Row 3 -->
@@ -51,7 +51,7 @@
 					Tile Spacing
 				</label>
 				<input type="range" min="0" max="20" v-model.number="lytOpts.tileSpacing"
-					@input="onSettingChg('LYT', 'tileSpacing', false)" @change="onSettingChg('LYT', 'tileSpacing')"
+					@input="onSettingChgThrottled('LYT', 'tileSpacing')" @change="onSettingChg('LYT', 'tileSpacing')"
 					name="tileSpacingInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.tileSpacing)}}</div>
 			</div>
@@ -117,9 +117,10 @@ export default defineComponent({
 	},
 	data(){
 		return {
+			saved: false, // Set to true after a setting is saved
 			sweepLeaves: this.lytOpts.layoutType == 'sweep',
 				// For making only two of 'layoutType's values available for user selection
-			saved: false, // Set to true after a setting is saved
+			settingChgTimeout: 0, // Use to throttle some setting-change handling
 		};
 	},
 	computed: {
@@ -130,7 +131,7 @@ export default defineComponent({
 				boxShadow: this.uiOpts.shadowNormal,
 			};
 		},
-		labelClasses(): Record<string,string> {
+		labelClasses(): string {
 			return "w-fit hover:cursor-pointer hover:text-lime-600";
 		},
 	},
@@ -145,7 +146,7 @@ export default defineComponent({
 				this.$emit('close');
 			}
 		},
-		onSettingChg(optionType: OptionType, option: string, save = true){
+		onSettingChg(optionType: OptionType, option: string){
 			// Maintain min/max-tile-size consistency
 			if (optionType == 'LYT' && (option == 'minTileSz' || option == 'maxTileSz')){
 				let minInput = this.$refs.minTileSzInput as HTMLInputElement;
@@ -160,17 +161,23 @@ export default defineComponent({
 			}
 			// Notify App
 			this.$emit('setting-chg', optionType, option,
-				{save, relayout: optionType == 'LYT', reinit: optionType == 'UI' && option == 'useReducedTree'});
+				{relayout: optionType == 'LYT', reinit: optionType == 'UI' && option == 'useReducedTree'});
 			// Possibly make saved-indicator appear/animate
-			if (save){
-				if (!this.saved){
-					this.saved = true;
-				} else {
-					let el = this.$refs.saveIndicator as HTMLDivElement;
-					el.classList.remove('animate-flash-green');
-					el.offsetWidth; // Triggers reflow
-					el.classList.add('animate-flash-green');
-				}
+			if (!this.saved){
+				this.saved = true;
+			} else {
+				let el = this.$refs.saveIndicator as HTMLDivElement;
+				el.classList.remove('animate-flash-green');
+				el.offsetWidth; // Triggers reflow
+				el.classList.add('animate-flash-green');
+			}
+		},
+		onSettingChgThrottled(optionType: OptionType, option: string){
+			if (this.settingChgTimeout == 0){
+				this.settingChgTimeout = setTimeout(() => {
+					this.settingChgTimeout = 0;
+					this.onSettingChg(optionType, option);
+				}, this.uiOpts.animationDelay);
 			}
 		},
 		onReset(optionType: OptionType, option: string){
