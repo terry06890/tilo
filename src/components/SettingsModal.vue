@@ -12,20 +12,20 @@
 					Sweep leaves to side
 					<ul>
 						<li> <label> <input type="radio" v-model="sweepLeaves" :value="true"
-								@change="onSettingChg('layoutType')"/> Yes </label> </li>
+								@change="onSettingChg('LYT', 'layoutType')"/> Yes </label> </li>
 						<li> <label> <input type="radio" v-model="sweepLeaves" :value="false"
-								@change="onSettingChg('layoutType')"/> No </label> </li>
+								@change="onSettingChg('LYT', 'layoutType')"/> No </label> </li>
 					</ul>
 				</div>
 				<div class="grow">
 					Sweep into parent
 					<ul>
 						<li> <label> <input type="radio" :disabled="!sweepLeaves" v-model="lytOpts.sweepToParent"
-							value="none" @change="onSettingChg('sweepToParent')"/> Never </label> </li>
+							value="none" @change="onSettingChg('LYT', 'sweepToParent')"/> Never </label> </li>
 						<li> <label> <input type="radio" :disabled="!sweepLeaves" v-model="lytOpts.sweepToParent"
-							value="prefer" @change="onSettingChg('sweepToParent')"/> Always </label> </li>
+							value="prefer" @change="onSettingChg('LYT', 'sweepToParent')"/> Always </label> </li>
 						<li> <label> <input type="radio" :disabled="!sweepLeaves" v-model="lytOpts.sweepToParent"
-							value="fallback" @change="onSettingChg('sweepToParent')"/> If needed </label> </li>
+							value="fallback" @change="onSettingChg('LYT', 'sweepToParent')"/> If needed </label> </li>
 					</ul>
 				</div>
 			</div>
@@ -33,17 +33,17 @@
 				<!-- Row 1 -->
 				<label for="minTileSizeInput">Min Tile Size</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.minTileSz"
-					@input="onSettingChg('minTileSz')" name="minTileSizeInput" ref="minTileSzInput"/>
+					@input="onSettingChg('LYT', 'minTileSz')" name="minTileSizeInput" ref="minTileSzInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.minTileSz)}}</div>
 				<!-- Row 2 -->
 				<label for="maxTileSizeInput">Max Tile Size</label>
 				<input type="range" min="0" max="400" v-model.number="lytOpts.maxTileSz"
-					@input="onSettingChg('maxTileSz')" name="maxTileSizeInput" ref="maxTileSzInput"/>
+					@input="onSettingChg('LYT', 'maxTileSz')" name="maxTileSizeInput" ref="maxTileSzInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.maxTileSz)}}</div>
 				<!-- Row 3 -->
 				<label for="tileSpacingInput">Tile Spacing</label>
 				<input type="range" min="0" max="20" v-model.number="lytOpts.tileSpacing"
-					@input="onSettingChg('tileSpacing')" name="tileSpacingInput"/>
+					@input="onSettingChg('LYT', 'tileSpacing')" name="tileSpacingInput"/>
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.tileSpacing)}}</div>
 			</div>
 		</div>
@@ -53,12 +53,12 @@
 				<!-- Row 1 -->
 				<label for="animationTimeInput">Animation Time</label>
 				<input type="range" min="0" max="3000" v-model.number="uiOpts.transitionDuration"
-					@change="onSettingChg('transitionDuration')" class="my-auto" name="animationTimeInput"/>
+					@change="onSettingChg('UI', 'transitionDuration')" class="my-auto" name="animationTimeInput"/>
 				<div class="my-auto text-right">{{uiOpts.transitionDuration}} ms</div>
 				<!-- Row 2 -->
 				<label for="autoModeDelayInput">Auto-mode Delay</label>
 				<input type="range" min="0" max="3000" v-model.number="uiOpts.autoActionDelay"
-					@change="onSettingChg('autoActionDelay')" class="my-auto" name="autoModeDelayInput"/>
+					@change="onSettingChg('UI', 'autoActionDelay')" class="my-auto" name="autoModeDelayInput"/>
 				<div class="my-auto text-right">{{uiOpts.autoActionDelay}} ms</div>
 			</div>
 		</div>
@@ -66,11 +66,11 @@
 			<h2 class="text-center">Other</h2>
 			<div>
 				<label> <input type="checkbox" v-model="uiOpts.useReducedTree"
-					@change="onSettingChg('useReducedTree')"/> Use simplified tree </label>
+					@change="onSettingChg('UI', 'useReducedTree')"/> Use simplified tree </label>
 			</div>
 			<div>
 				<label> <input type="checkbox" v-model="uiOpts.searchJumpMode"
-					@change="onSettingChg('searchJumpMode')"/> Skip search animation </label>
+					@change="onSettingChg('UI', 'searchJumpMode')"/> Skip search animation </label>
 			</div>
 		</div>
 		<s-button class="mx-auto mt-2" :style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}"
@@ -85,7 +85,7 @@
 import {defineComponent, PropType} from 'vue';
 import SButton from './SButton.vue';
 import CloseIcon from './icon/CloseIcon.vue';
-import {UiOptions} from '../lib';
+import {UiOptions, OptionType} from '../lib';
 import {LayoutOptions} from '../layout';
 
 export default defineComponent({
@@ -119,19 +119,19 @@ export default defineComponent({
 				this.$emit('close');
 			}
 		},
-		onSettingChg(setting: string){
+		onSettingChg(optionType: OptionType, option: string){
 			// Maintain min/max-tile-size consistency
-			if (setting == 'minTileSz' || setting == 'maxTileSz'){
+			if (optionType == 'LYT' && (option == 'minTileSz' || option == 'maxTileSz')){
 				let minInput = this.$refs.minTileSzInput as HTMLInputElement;
 				let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
-				if (setting == 'minTileSz' && Number(minInput.value) > Number(maxInput.value)){
+				if (option == 'minTileSz' && Number(minInput.value) > Number(maxInput.value)){
 					this.lytOpts.maxTileSz = this.lytOpts.minTileSz;
-				} else if (setting == 'maxTileSz' && Number(maxInput.value) < Number(minInput.value)){
+				} else if (option == 'maxTileSz' && Number(maxInput.value) < Number(minInput.value)){
 					this.lytOpts.minTileSz = this.lytOpts.maxTileSz;
 				}
 			}
 			//
-			this.$emit('setting-chg', setting);
+			this.$emit('setting-chg', optionType, option);
 		},
 		pxToDisplayStr(px: number): string {
 			return (px / 3.78).toFixed() + ' mm';

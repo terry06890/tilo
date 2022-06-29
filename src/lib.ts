@@ -129,3 +129,5 @@ export type UiOptions = {
 	disabledActions: Set<Action>,
 	useDblClick: boolean,
 };
+// Used in Settings.vue, and when saving to localStorage
+export type OptionType = 'LYT' | 'UI';

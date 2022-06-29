@@ -84,7 +84,7 @@ import SettingsIcon from './components/icon/SettingsIcon.vue';
 import HelpIcon from './components/icon/HelpIcon.vue';
 // Other
 	// Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
-import {TolNode, TolMap, getServerResponse, InfoResponse, Action, UiOptions} from './lib';
+import {TolNode, TolMap, getServerResponse, InfoResponse, Action, UiOptions, OptionType} from './lib';
 import {LayoutNode, LayoutOptions, LayoutTreeChg} from './layout';
 import {initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import {getBreakpoint, getScrollBarWidth, isTouchDevice,
@@ -167,8 +167,6 @@ function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		useDblClick: isTouchDevice(),
 	};
 }
-const lytOptPrefix = 'LYT '; // Used when saving to localStorage
-const uiOptPrefix = 'UI ';
 
 export default defineComponent({
 	data(){
@@ -722,20 +720,20 @@ export default defineComponent({
 			this.resetMode();
 			this.settingsOpen = true;
 		},
-		async onSettingChg(setting: string){
+		async onSettingChg(optionType: OptionType, option: string){
 			// Save in localStorage
-			if (setting in this.lytOpts){
-				localStorage.setItem(lytOptPrefix + setting, String(this.lytOpts[setting as keyof LayoutOptions]));
+			if (optionType == 'LYT'){
+				localStorage.setItem(`${optionType} ${option}`, String(this.lytOpts[option as keyof LayoutOptions]));
 				this.relayoutWithCollapse();
-			} else if (setting in this.uiOpts){
-				localStorage.setItem(uiOptPrefix + setting, String(this.uiOpts[setting as keyof UiOptions]));
-				if (setting == 'useReducedTree'){
+			} else if (optionType == 'UI') {
+				localStorage.setItem(`${optionType} ${option}`, String(this.uiOpts[option as keyof UiOptions]));
+				if (option == 'useReducedTree'){
 					this.onTreeChange();
 				}
 			} else {
-				throw new Error('Unexpected setting');
+				throw new Error(`Unexpected setting: ${optionType}, ${option}`);
 			}
-			console.log(`Saved setting ${setting}`);
+			console.log(`Saved setting: ${optionType}, ${option}`);
 		},
 		async onTreeChange(){
 			if (this.activeRoot != this.layoutTree){
@@ -781,7 +779,7 @@ export default defineComponent({
 		},
 		onTutorialSkip(): void {
 			// Remember to skip in future sessions
-			localStorage.setItem(uiOptPrefix + 'tutorialSkip', String(true));
+			localStorage.setItem('UI tutorialSkip', String(true));
 		},
 		onStartTutorial(): void {
 			if (!this.tutPaneOpen){
@@ -814,13 +812,13 @@ export default defineComponent({
 					let uiOpts = getDefaultUiOpts(lytOpts);
 					let changedTree = false;
 					for (let prop of Object.getOwnPropertyNames(lytOpts) as (keyof LayoutOptions)[]){
-						let item = localStorage.getItem(lytOptPrefix + prop);
+						let item = localStorage.getItem('LYT ' + prop);
 						if (item == null && this.lytOpts[prop] != lytOpts[prop]){
 							this.lytOpts[prop] = lytOpts[prop];
 						}
 					}
 					for (let prop of Object.getOwnPropertyNames(uiOpts) as (keyof UiOptions)[]){
-						let item = localStorage.getItem(uiOptPrefix + prop);
+						let item = localStorage.getItem('UI ' + prop);
 						//Not: Using JSON.stringify here to roughly deep-compare values
 						if (item == null && JSON.stringify(this.uiOpts[prop]) != JSON.stringify(uiOpts[prop])){
 							this.uiOpts[prop] = uiOpts[prop];
@@ -871,7 +869,7 @@ export default defineComponent({
 				// If search bar is open, switch search mode
 				if (this.searchOpen){
 					this.uiOpts.searchJumpMode = !this.uiOpts.searchJumpMode;
-					this.onSettingChg('searchJumpMode');
+					this.onSettingChg('UI', 'searchJumpMode');
 				}
 			}
 		},
@@ -913,7 +911,7 @@ export default defineComponent({
 		getLytOpts(): LayoutOptions {
 			let opts = getDefaultLytOpts();
 			for (let prop of Object.getOwnPropertyNames(opts) as (keyof LayoutOptions)[]){
-				let item = localStorage.getItem(lytOptPrefix + prop);
+				let item = localStorage.getItem('LYT ' + prop);
 				if (item != null){
 					switch (typeof(opts[prop])){
 						case 'boolean': (opts[prop] as unknown as boolean) = Boolean(item); break;
@@ -928,7 +926,7 @@ export default defineComponent({
 		getUiOpts(): UiOptions {
 			let opts = getDefaultUiOpts(getDefaultLytOpts());
 			for (let prop of Object.getOwnPropertyNames(opts) as (keyof UiOptions)[]){
-				let item = localStorage.getItem(uiOptPrefix + prop);
+				let item = localStorage.getItem('UI ' + prop);
 				if (item != null){
 					switch (typeof(opts[prop])){
 						case 'boolean': (opts[prop] as unknown as boolean) = (item == 'true'); break;
