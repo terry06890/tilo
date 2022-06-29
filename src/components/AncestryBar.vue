@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
-import Tile from './Tile.vue'
+import Tile from './Tile.vue';
 import {TolMap} from '../tol';
 import {LayoutNode, LayoutOptions} from '../layout';
 import {UiOptions} from '../lib';

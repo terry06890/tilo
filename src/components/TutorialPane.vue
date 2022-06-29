@@ -77,10 +77,12 @@ export default defineComponent({
 		return {
 			stage: 0, // Indicates the current step of the tutorial (stage 0 is the welcome message)
 			lastStage: 9,
-			stageActions: [ // Specifies, for stages 1+, when actions are introduced (null means none)
+			disabledOnce: false, // Set to true after disabling features at stage 1
+			stageActions: [
+				// Specifies, for stages 1+, what action to enable (can repeat an action to enable nothing new)
 				'expand', 'collapse', 'expandToView', 'unhideAncestor',
 				'tileInfo', 'search', 'autoMode', 'settings', 'help',
-			] as (Action | null)[],
+			] as Action[],
 		};
 	},
 	computed: {
@@ -107,26 +109,19 @@ export default defineComponent({
 	},
 	watch: {
 		stage(newVal, oldVal){
-			// Update disabled actions
-			let disabledActions = this.uiOpts.disabledActions;
-			if (this.stage == 0){
-				disabledActions.clear();
-				return;
-			}
-			let currentAction = null as null | Action;
-			for (let i = 0; i < this.lastStage; i++){
-				let action = this.stageActions[i];
-				if (action != null){
-					if (i < this.stage){
-						currentAction = action;
-						disabledActions.delete(action);
-					} else {
-						disabledActions.add(action);
+			// If starting tutorial, disable 'all' actions
+			if (newVal == 1 && !this.disabledOnce){
+				for (let action of this.stageActions){
+					if (action != null){
+						this.uiOpts.disabledActions.add(action);
 					}
 				}
+				this.disabledOnce = true;
 			}
+			// Enable action for this stage
+			this.uiOpts.disabledActions.delete(this.stageActions[this.stage - 1]);
 			// Notify of new trigger-action
-			this.$emit('stage-chg', currentAction);
+			this.$emit('stage-chg', this.stageActions[this.stage - 1]);
 		},
 		// Called when a trigger-action is done, and advances to the next stage
 		triggerFlag(){
