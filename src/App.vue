@@ -720,32 +720,22 @@ export default defineComponent({
 			this.resetMode();
 			this.settingsOpen = true;
 		},
-		async onSettingChg(optionType: OptionType, option: string, save = true){
-			// Save in localStorage
-			if (optionType == 'LYT'){
-				if (save){
-					localStorage.setItem(`${optionType} ${option}`, String(this.lytOpts[option as keyof LayoutOptions]));
+		async onSettingChg(optionType: OptionType, option: string,
+			{save = true, relayout = false, reinit = false} = {}){
+			if (save){
+				if (optionType == 'LYT'){
+					localStorage.setItem(`${optionType} ${option}`,
+						String(this.lytOpts[option as keyof LayoutOptions]));
+				} else if (optionType == 'UI') {
+					localStorage.setItem(`${optionType} ${option}`,
+						String(this.uiOpts[option as keyof UiOptions]));
 				}
+			}
+			if (reinit){
+				this.reInit();
+			} else if (relayout){
 				this.relayoutWithCollapse();
-			} else if (optionType == 'UI') {
-				if (save){
-					localStorage.setItem(`${optionType} ${option}`, String(this.uiOpts[option as keyof UiOptions]));
-				}
-				if (option == 'useReducedTree'){
-					this.onTreeChange();
-				}
-			} else {
-				throw new Error(`Unexpected setting: ${optionType}, ${option}`);
 			}
-		},
-		async onTreeChange(){
-			if (this.activeRoot != this.layoutTree){
-				// Collapse tree to root
-				await this.onDetachedAncestorClick(this.layoutTree);
-			}
-			await this.onNonleafClick(this.layoutTree);
-			await timeout(this.uiOpts.transitionDuration);
-			await this.initTreeFromServer();
 		},
 		onResetSettings(): void {
 			localStorage.clear();
@@ -753,7 +743,7 @@ export default defineComponent({
 			let defaultLytOpts = getDefaultLytOpts();
 			let defaultUiOpts = getDefaultUiOpts(defaultLytOpts);
 			if (this.uiOpts.useReducedTree != defaultUiOpts.useReducedTree){
-				this.onTreeChange();
+				this.reInit();
 			}
 			Object.assign(this.lytOpts, defaultLytOpts);
 			Object.assign(this.uiOpts, defaultUiOpts);
@@ -836,7 +826,7 @@ export default defineComponent({
 						await this.updateAreaDims();
 						this.relayoutWithCollapse();
 					} else {
-						this.onTreeChange();
+						this.reInit();
 					}
 				};
 				//
@@ -910,6 +900,15 @@ export default defineComponent({
 			// Skip initial transition
 			this.justInitialised = true;
 			setTimeout(() => {this.justInitialised = false}, this.uiOpts.transitionDuration);
+		},
+		async reInit(){
+			if (this.activeRoot != this.layoutTree){
+				// Collapse tree to root
+				await this.onDetachedAncestorClick(this.layoutTree);
+			}
+			await this.onNonleafClick(this.layoutTree);
+			await timeout(this.uiOpts.transitionDuration);
+			await this.initTreeFromServer();
 		},
 		getLytOpts(): LayoutOptions {
 			let opts = getDefaultLytOpts();

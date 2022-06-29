@@ -135,12 +135,15 @@ export default defineComponent({
 				let maxInput = this.$refs.maxTileSzInput as HTMLInputElement;
 				if (option == 'minTileSz' && Number(minInput.value) > Number(maxInput.value)){
 					this.lytOpts.maxTileSz = this.lytOpts.minTileSz;
+					this.$emit('setting-chg', 'LYT', 'maxTileSz', {save: false});
 				} else if (option == 'maxTileSz' && Number(maxInput.value) < Number(minInput.value)){
 					this.lytOpts.minTileSz = this.lytOpts.maxTileSz;
+					this.$emit('setting-chg', 'LYT', 'minTileSz', {save: false});
 				}
 			}
 			//
-			this.$emit('setting-chg', optionType, option, save);
+			this.$emit('setting-chg', optionType, option,
+				{save, relayout: optionType == 'LYT', reinit: optionType == 'UI' && option == 'useReducedTree'});
 			if (save){
 				// Make saved-indicator appear/animate
 				if (!this.saved){
