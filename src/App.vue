@@ -10,7 +10,8 @@
 			<search-icon/>
 		</icon-button>
 		<icon-button v-if="!uiOpts.disabledActions.has('autoMode')" :style="buttonStyles" @click="onAutoIconClick">
-			<play-icon/>
+			<play-icon v-if="!modeRunning"/>
+			<pause-icon v-else/>
 		</icon-button>
 		<icon-button v-if="!uiOpts.disabledActions.has('settings')" :style="buttonStyles" @click="onSettingsIconClick">
 			<settings-icon/>
@@ -80,6 +81,7 @@ import IconButton from './components/IconButton.vue';
 // Icons
 import SearchIcon from './components/icon/SearchIcon.vue';
 import PlayIcon from './components/icon/PlayIcon.vue';
+import PauseIcon from './components/icon/PauseIcon.vue';
 import SettingsIcon from './components/icon/SettingsIcon.vue';
 import HelpIcon from './components/icon/HelpIcon.vue';
 // Other
@@ -963,7 +965,7 @@ export default defineComponent({
 	},
 	components: {
 		Tile, TutorialPane, AncestryBar,
-		IconButton, SearchIcon, PlayIcon, SettingsIcon, HelpIcon,
+		IconButton, SearchIcon, PlayIcon, PauseIcon, SettingsIcon, HelpIcon,
 		TileInfoModal, SearchModal, SettingsModal, HelpModal,
 	},
 });
