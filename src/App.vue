@@ -221,6 +221,12 @@ export default defineComponent({
 		},
 	},
 	watch: {
+		infoModalNodeName(newVal, oldVal){
+			// Possibly trigger tutorial advance
+			if (newVal == null){
+				this.handleActionForTutorial('tileInfo');
+			}
+		},
 		modeRunning(newVal, oldVal){
 			// For sweepToParent setting 'fallback', temporarily change to 'prefer' for efficiency
 			if (newVal != null){
@@ -451,7 +457,6 @@ export default defineComponent({
 		},
 		// For tile-info events
 		async onInfoClick(nodeName: string){
-			this.handleActionForTutorial('tileInfo');
 			if (!this.searchOpen){ // Close an active non-search mode
 				this.resetMode();
 			}
