@@ -24,7 +24,8 @@
 			<div v-if="searchHadMoreSuggs" class="text-center border">...</div>
 		</div>
 		<label :style="animateLabelStyles" class="flex gap-1">
-			<input type="checkbox" v-model="uiOpts.searchJumpMode" @change="$emit('setting-chg', 'searchJumpMode')"/>
+			<input type="checkbox" v-model="uiOpts.searchJumpMode" :true-value="false" :false-value="true"
+				@change="$emit('setting-chg', 'searchJumpMode')"/>
 			<div class="text-sm">Animate</div>
 		</label>
 	</div>
