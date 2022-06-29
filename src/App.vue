@@ -6,17 +6,17 @@
 		<h1 class="my-auto ml-2 text-3xl" :style="{color: uiOpts.altColor}">Tilo (prototype)</h1>
 		<div class="mx-auto"/> <!-- Spacer -->
 		<!-- Icons -->
-		<icon-button v-if="!uiOpts.disabledActions.has('search')" :style="buttonStyles" @click="onSearchIconClick">
+		<icon-button :disabled="isDisabled('search')" :style="buttonStyles" @click="onSearchIconClick">
 			<search-icon/>
 		</icon-button>
-		<icon-button v-if="!uiOpts.disabledActions.has('autoMode')" :style="buttonStyles" @click="onAutoIconClick">
+		<icon-button :disabled="isDisabled('autoMode')" :style="buttonStyles" @click="onAutoIconClick">
 			<play-icon v-if="!modeRunning"/>
 			<pause-icon v-else/>
 		</icon-button>
-		<icon-button v-if="!uiOpts.disabledActions.has('settings')" :style="buttonStyles" @click="onSettingsIconClick">
+		<icon-button :disabled="isDisabled('settings')" :style="buttonStyles" @click="onSettingsIconClick">
 			<settings-icon/>
 		</icon-button>
-		<icon-button v-if="!uiOpts.disabledActions.has('help')" :style="buttonStyles" @click="onHelpIconClick">
+		<icon-button :disabled="isDisabled('help')" :style="buttonStyles" @click="onHelpIconClick">
 			<help-icon/>
 		</icon-button>
 	</div>
@@ -223,7 +223,7 @@ export default defineComponent({
 	methods: {
 		// For tile expand/collapse events
 		async onLeafClick(layoutNode: LayoutNode): Promise<boolean> {
-			if (this.uiOpts.disabledActions.has('expand')){
+			if (this.isDisabled('expand')){
 				return false;
 			}
 			this.handleActionForTutorial('expand');
@@ -271,7 +271,7 @@ export default defineComponent({
 			}
 		},
 		async onNonleafClick(layoutNode: LayoutNode, {skipClean = false} = {}): Promise<boolean> {
-			if (this.uiOpts.disabledActions.has('collapse')){
+			if (this.isDisabled('collapse')){
 				return false;
 			}
 			this.handleActionForTutorial('collapse');
@@ -307,7 +307,7 @@ export default defineComponent({
 		},
 		// For expand-to-view and ancestry-bar events
 		async onLeafClickHeld(layoutNode: LayoutNode): Promise<boolean> {
-			if (this.uiOpts.disabledActions.has('expandToView')){
+			if (this.isDisabled('expandToView')){
 				return false;
 			}
 			this.handleActionForTutorial('expandToView');
@@ -365,7 +365,7 @@ export default defineComponent({
 			}
 		},
 		async onNonleafClickHeld(layoutNode: LayoutNode): Promise<boolean> {
-			if (this.uiOpts.disabledActions.has('expandToView')){
+			if (this.isDisabled('expandToView')){
 				return false;
 			}
 			this.handleActionForTutorial('expandToView');
@@ -387,7 +387,7 @@ export default defineComponent({
 			return this.relayoutWithCollapse();
 		},
 		async onDetachedAncestorClick(layoutNode: LayoutNode, {collapseAndNoRelayout = false} = {}): Promise<boolean> {
-			if (this.uiOpts.disabledActions.has('unhideAncestor')){
+			if (this.isDisabled('unhideAncestor')){
 				return false;
 			}
 			this.handleActionForTutorial('unhideAncestor');
@@ -402,7 +402,7 @@ export default defineComponent({
 			//
 			let success: boolean;
 			if (collapseAndNoRelayout){
-				if (this.uiOpts.disabledActions.has('collapse')){
+				if (this.isDisabled('collapse')){
 					console.log('INFO: Ignored unhide-ancestor due to disabled collapse');
 					return false;
 				}
@@ -433,6 +433,9 @@ export default defineComponent({
 		},
 		// For search events
 		onSearchIconClick(): void {
+			if (this.isDisabled('search')){
+				return;
+			}
 			this.handleActionForTutorial('search');
 			if (!this.searchOpen){
 				this.resetMode();
@@ -444,9 +447,7 @@ export default defineComponent({
 				console.log('WARNING: Unexpected search event while search/auto mode is running')
 				return;
 			}
-			let disabledActions = this.uiOpts.disabledActions;
-			if (disabledActions.has('expand') || disabledActions.has('expandToView') ||
-				disabledActions.has('unhideAncestor')){
+			if (this.isDisabled('expand') || this.isDisabled('expandToView') || this.isDisabled('unhideAncestor')){
 				console.log('INFO: Ignored search action due to disabled expand/expandToView');
 				return;
 			}
@@ -543,9 +544,11 @@ export default defineComponent({
 		},
 		// For auto-mode events
 		onAutoIconClick(): void {
-			let disabledActions = this.uiOpts.disabledActions;
-			if (disabledActions.has('expand') || disabledActions.has('collapse') ||
-				disabledActions.has('expandToView') || disabledActions.has('unhideAncestor')){
+			if (this.isDisabled('autoMode')){
+				return;
+			}
+			if (this.isDisabled('expand') || this.isDisabled('collapse') ||
+				this.isDisabled('expandToView') || this.isDisabled('unhideAncestor')){
 				console.log('INFO: Ignored auto-mode action due to disabled expand/collapse/etc');
 				return;
 			}
@@ -660,6 +663,9 @@ export default defineComponent({
 		},
 		// For settings events
 		onSettingsIconClick(): void {
+			if (this.isDisabled('settings')){
+				return;
+			}
 			this.handleActionForTutorial('settings');
 			this.resetMode();
 			this.settingsOpen = true;
@@ -691,6 +697,9 @@ export default defineComponent({
 		},
 		// For help events
 		onHelpIconClick(): void {
+			if (this.isDisabled('help')){
+				return;
+			}
 			this.handleActionForTutorial('help');
 			this.resetMode();
 			this.helpOpen = true;
@@ -954,6 +963,10 @@ export default defineComponent({
 			if (node != null){
 				node.hasFocus = true;
 			}
+		},
+		isDisabled(...actions: Action[]): boolean {
+			let disabledActions = this.uiOpts.disabledActions;
+			return actions.some(a => disabledActions.has(a));
 		},
 	},
 	created(){
