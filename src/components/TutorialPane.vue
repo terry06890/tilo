@@ -7,18 +7,12 @@
 		<close-icon @click.stop="onClose"
 			class="block w-6 h-6 hover:cursor-pointer"/>
 	</div>
-	<template v-if="stage == 0">
-		<div :style="contentStyles">
+	<transition name="fade" mode="out-in">
+		<div v-if="stage == 0" :style="contentStyles">
 			This page provides a visualisation of the biological Tree of Life.
 			It is unfinished, and is just here for testing.
 		</div>
-		<div class="w-full flex justify-evenly mt-2">
-			<s-button :style="buttonStyles" @click="onStartTutorial">Start Tutorial</s-button>
-			<s-button :style="buttonStyles" @click="onSkipTutorial">Skip</s-button>
-		</div>
-	</template>
-	<template v-else>
-		<div v-if="stage == 1" :style="contentStyles">
+		<div v-else-if="stage == 1" :style="contentStyles">
 			Clicking/touching a tile expands it and shows it's children.
 		</div>
 		<div v-else-if="stage == 2" :style="contentStyles">
@@ -47,8 +41,14 @@
 		<div v-else-if="stage == 9" :style="contentStyles">
 			And finally, the help icon provides more information.
 		</div>
-		<!-- Buttons -->
-		<div class="w-full flex justify-evenly mt-2">
+	</transition>
+	<!-- Buttons -->
+	<div class="w-full flex justify-evenly mt-2">
+		<template v-if="stage == 0">
+			<s-button :style="buttonStyles" @click="onStartTutorial">Start Tutorial</s-button>
+			<s-button :style="buttonStyles" @click="onSkipTutorial">Skip</s-button>
+		</template>
+		<template v-else>
 			<s-button v-if="hidNextPrevOnce || stage > 1" :disabled="stage == 1"
 				@click="onPrevClick" :style="buttonStyles">
 				Prev
@@ -57,8 +57,8 @@
 				@click="stage != lastStage ? onNextClick() : onClose()" :style="buttonStyles">
 				{{stage != lastStage ? 'Next' : 'Finish'}}
 			</s-button>
-		</div>
-	</template>
+		</template>
+	</div>
 </div>
 </template>
 
