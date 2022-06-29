@@ -149,7 +149,7 @@ function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		nonleafHeaderColor: bgColorDark,
 		ancestryBarBgColor: bgColorLight,
 		// Component sizing
-		ancestryBarBreadth: lytOpts.maxTileSz / 2 + lytOpts.tileSpacing*2 + scrollGap, // px
+		ancestryBarBreadth: lytOpts.maxTileSz / 2 + lytOpts.tileSpacing*2, // px
 		tutPaneSz: 200, // px
 		scrollGap,
 		// Timing related

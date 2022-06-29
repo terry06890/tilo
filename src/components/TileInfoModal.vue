@@ -20,7 +20,7 @@
 			<div class="flex gap-1">
 				<div class="w-1/2">
 					<div v-if="imgInfos[idx] == null" :style="getImgStyles(nodes[idx])"/>
-					<a v-else :href="imgInfos[idx].url" target="_blank">
+					<a v-else :href="imgInfos[idx]!.url" target="_blank">
 						<div :style="getImgStyles(nodes[idx])"/>
 					</a>
 					<ul v-if="imgInfos[idx]! != null">

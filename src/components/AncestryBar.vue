@@ -23,7 +23,7 @@ export default defineComponent({
 	},
 	computed: {
 		imgSz(){
-			return this.uiOpts.ancestryBarBreadth - this.lytOpts.tileSpacing*2 - this.uiOpts.scrollGap;
+			return this.uiOpts.ancestryBarBreadth - this.lytOpts.tileSpacing - this.uiOpts.scrollGap;
 		},
 		dummyNodes(){ // Childless versions of 'nodes' used to parameterise <tile>s
 			return this.nodes.map(n => {
@@ -37,10 +37,11 @@ export default defineComponent({
 				// For child layout
 				display: 'flex',
 				flexDirection: this.vert ? 'column' : 'row',
+				alignItems: 'center',
 				gap: this.lytOpts.tileSpacing + 'px',
 				padding: this.lytOpts.tileSpacing + 'px',
-				overflowX: this.vert ? 'hidden' : 'scroll',
-				overflowY: this.vert ? 'scroll' : 'hidden',
+				overflowX: this.vert ? 'hidden' : 'auto',
+				overflowY: this.vert ? 'auto' : 'hidden',
 				// Other
 				backgroundColor: this.uiOpts.ancestryBarBgColor,
 				boxShadow: this.uiOpts.shadowNormal,
@@ -50,7 +51,7 @@ export default defineComponent({
 	watch: {
 		// Used to scroll to end of bar upon node/screen changes
 		nodes(){
-			setTimeout(() => this.scrollToEnd(), 0); // Without timeout, seems to run before new tiles are added
+			this.$nextTick(() => this.scrollToEnd()); // Without timeout, seems to run before new tiles are added
 		},
 		vert(){
 			setTimeout(() => this.scrollToEnd(), 0);
