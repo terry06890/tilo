@@ -226,13 +226,14 @@ export default defineComponent({
 			if (this.isDisabled('expand')){
 				return false;
 			}
-			this.handleActionForTutorial('expand');
-			this.setLastFocused(null);
-			// If clicking child of overflowing active-root
+			// If clicking child of overflowing active-root, fail
 			if (this.overflownRoot){
 				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 				return false;
 			}
+			//
+			this.handleActionForTutorial('expand');
+			this.setLastFocused(null);
 			// Function for expanding tile
 			let doExpansion = () => {
 				let lytFnOpts = {
@@ -310,13 +311,14 @@ export default defineComponent({
 			if (this.isDisabled('expandToView')){
 				return false;
 			}
-			this.handleActionForTutorial('expandToView');
-			this.setLastFocused(null);
 			// Special case for active root
 			if (layoutNode == this.activeRoot){
 				this.onLeafClick(layoutNode);
 				return true;
 			}
+			//
+			this.handleActionForTutorial('expandToView');
+			this.setLastFocused(null);
 			// Function for expanding tile
 			let doExpansion = async () => {
 				// Hide ancestors
@@ -368,13 +370,14 @@ export default defineComponent({
 			if (this.isDisabled('expandToView')){
 				return false;
 			}
-			this.handleActionForTutorial('expandToView');
-			this.setLastFocused(null);
 			// Special case for active root
 			if (layoutNode == this.activeRoot){
 				console.log('Ignored expand-to-view on active-root node');
 				return false;
 			}
+			//
+			this.handleActionForTutorial('expandToView');
+			this.setLastFocused(null);
 			// Hide ancestors
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			if (this.detachedAncestors == null){ // Account for ancestry-bar transition
