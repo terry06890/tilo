@@ -2,7 +2,7 @@
 <div :style="styles" class="p-2 flex flex-col justify-between">
 	<div class="flex">
 		<h2 class="text-center mb-2 mx-auto">
-			{{stage == 0 ? 'Welcome' : `Tutorial (${stage} / ${lastStage + 1})`}}
+			{{stage == 0 ? 'Welcome' : `Tutorial (${stage} / ${lastStage})`}}
 		</h2>
 		<close-icon @click.stop="onClose"
 			class="block w-6 h-6 hover:cursor-pointer"/>
@@ -49,10 +49,12 @@
 		</div>
 		<!-- Buttons -->
 		<div class="w-full flex justify-evenly mt-2">
-			<s-button :disabled="stage == 1" :style="buttonStyles" @click="onPrevClick">
+			<s-button v-if="hidNextPrevOnce || stage > 1" :disabled="stage == 1"
+				@click="onPrevClick" :style="buttonStyles">
 				Prev
 			</s-button>
-			<s-button :style="buttonStyles" @click="(stage != lastStage) ? onNextClick() : onClose()">
+			<s-button v-if="hidNextPrevOnce || stage > 1"
+				@click="stage != lastStage ? onNextClick() : onClose()" :style="buttonStyles">
 				{{stage != lastStage ? 'Next' : 'Finish'}}
 			</s-button>
 		</div>
@@ -78,6 +80,7 @@ export default defineComponent({
 			stage: 0, // Indicates the current step of the tutorial (stage 0 is the welcome message)
 			lastStage: 9,
 			disabledOnce: false, // Set to true after disabling features at stage 1
+			hidNextPrevOnce: false, // Used to hide prev/next buttons when initially at stage 1
 			stageActions: [
 				// Specifies, for stages 1+, what action to enable (can repeat an action to enable nothing new)
 				'expand', 'collapse', 'expandToView', 'unhideAncestor',
@@ -122,6 +125,10 @@ export default defineComponent({
 			this.uiOpts.disabledActions.delete(this.stageActions[this.stage - 1]);
 			// Notify of new trigger-action
 			this.$emit('stage-chg', this.stageActions[this.stage - 1]);
+			// After stage 1, show prev/next buttons
+			if (newVal == 2){
+				this.hidNextPrevOnce = true;
+			}
 		},
 		// Called when a trigger-action is done, and advances to the next stage
 		triggerFlag(){
