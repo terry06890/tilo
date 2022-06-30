@@ -31,13 +31,13 @@
 								<external-link-icon class="inline-block w-3 h-3 ml-1"/>
 							</a>
 						</li>
-						<li>
+						<li v-if="imgInfos[idx]!.url != ''">
 							<a :href="imgInfos[idx]!.url" target="_blank">
 								<span class="underline">Source URL</span>
 								<external-link-icon class="inline-block w-3 h-3 ml-1"/>
 							</a>
 						</li>
-						<li>Artist: {{imgInfos[idx]!.artist}}</li>
+						<li v-if="imgInfos[idx]!.artist != ''">Artist: {{imgInfos[idx]!.artist}}</li>
 						<li v-if="imgInfos[idx]!.credit != ''" class="overflow-auto">
 							Credit: {{imgInfos[idx]!.credit}}
 						</li>
