@@ -85,7 +85,7 @@
 				<label> <input type="checkbox" v-model="uiOpts.searchJumpMode"
 					@change="onSettingChg('UI', 'searchJumpMode')"/> Skip search animation </label>
 			</div>
-			<div v-if="!onTouchDevice">
+			<div v-if="uiOpts.touchDevice == false">
 				<label> <input type="checkbox" v-model="uiOpts.disableShortcuts"
 					@change="onSettingChg('UI', 'disableShortcuts')"/> Disable keyboard shortcuts </label>
 			</div>
@@ -109,7 +109,6 @@ import SButton from './SButton.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import {UiOptions, OptionType, getDefaultLytOpts, getDefaultUiOpts} from '../lib';
 import {LayoutOptions} from '../layout';
-import {onTouchDevice} from '../util';
 
 export default defineComponent({
 	props: {
@@ -122,7 +121,6 @@ export default defineComponent({
 				// For making only two of 'layoutType's values available for user selection
 			saved: false, // Set to true after a setting is saved
 			settingChgTimeout: 0, // Use to throttle some setting-change handling
-			onTouchDevice: onTouchDevice(),
 		};
 	},
 	computed: {

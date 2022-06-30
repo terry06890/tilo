@@ -426,7 +426,7 @@ export default defineComponent({
 		// Click handling
 		onMouseDown(): void {
 			this.highlight = false;
-			if (!this.uiOpts.useDblClick){
+			if (!this.uiOpts.touchDevice){
 				// Wait for a mouseup or click-hold
 				clearTimeout(this.clickHoldTimer);
 				this.clickHoldTimer = setTimeout(() => {
@@ -448,7 +448,7 @@ export default defineComponent({
 			}
 		},
 		onMouseUp(): void {
-			if (!this.uiOpts.useDblClick){
+			if (!this.uiOpts.touchDevice){
 				if (this.clickHoldTimer > 0){
 					clearTimeout(this.clickHoldTimer);
 					this.clickHoldTimer = 0;

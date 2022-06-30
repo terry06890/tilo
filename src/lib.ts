@@ -108,8 +108,8 @@ export type UiOptions = {
 	searchJumpMode: boolean,
 	tutorialSkip: boolean,
 	disabledActions: Set<Action>,
-	useDblClick: boolean,
 	disableShortcuts: boolean,
+	touchDevice: boolean,
 };
 // Option defaults
 export function getDefaultLytOpts(): LayoutOptions {
@@ -169,8 +169,8 @@ export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		searchJumpMode: false,
 		tutorialSkip: false,
 		disabledActions: new Set() as Set<Action>,
-		useDblClick: onTouchDevice(),
 		disableShortcuts: false,
+		touchDevice: onTouchDevice(),
 	};
 }
 // Used in Settings.vue, and when saving to localStorage
