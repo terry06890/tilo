@@ -4,7 +4,7 @@
 
 import {TolNode} from './tol';
 import {LayoutOptions} from './layout';
-import {getBreakpoint, getScrollBarWidth, onTouchDevice} from './util';
+import {getBreakpoint, Breakpoint, getScrollBarWidth, onTouchDevice} from './util';
 
 // For server requests
 const SERVER_URL = 'http://localhost:8000/cgi-bin/data.py'
@@ -102,6 +102,9 @@ export type UiOptions = {
 	transitionDuration: number, // ms
 	animationDelay: number, // Time between updates during transitions/resizes/etc, in ms
 	autoActionDelay: number, // Time between auto-mode actions (incl transitions), in ms
+	// Device-info-like
+	touchDevice: boolean,
+	breakpoint: Breakpoint,
 	// Other
 	useReducedTree: boolean,
 	searchSuggLimit: number, // Max number of search suggestions
@@ -109,7 +112,6 @@ export type UiOptions = {
 	tutorialSkip: boolean,
 	disabledActions: Set<Action>,
 	disableShortcuts: boolean,
-	touchDevice: boolean,
 };
 // Option defaults
 export function getDefaultLytOpts(): LayoutOptions {
@@ -163,6 +165,9 @@ export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		transitionDuration: 300, // ms
 		animationDelay: 100, // ms
 		autoActionDelay: 500, // ms
+		// Device-info-like
+		touchDevice: onTouchDevice(),
+		breakpoint: getBreakpoint(),
 		// Other
 		useReducedTree: false,
 		searchSuggLimit: 10,
@@ -170,7 +175,6 @@ export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		tutorialSkip: false,
 		disabledActions: new Set() as Set<Action>,
 		disableShortcuts: false,
-		touchDevice: onTouchDevice(),
 	};
 }
 // Used in Settings.vue, and when saving to localStorage

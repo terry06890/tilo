@@ -23,7 +23,7 @@
 	<!-- Content area -->
 	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
 		<transition name="fade" @after-enter="tutPaneInTransition = false" @after-leave="tutPaneInTransition = false">
-			<tutorial-pane v-if="tutPaneOpen" :style="{height: uiOpts.tutPaneSz + 'px'}"
+			<tutorial-pane v-if="tutPaneOpen" :style="tutPaneStyles"
 				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!tutWelcome"
 				@close="onTutPaneClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
 		</transition>
@@ -48,16 +48,18 @@
 	</div>
 	<!-- Modals -->
 	<transition name="fade">
-		<search-modal v-if="searchOpen" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" ref="searchModal"
-			@close="onSearchClose" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg" />
+		<search-modal v-if="searchOpen" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
+			@close="onSearchClose" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg"
+			ref="searchModal"/>
 	</transition>
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null && infoModalData != null"
-			:nodeName="infoModalNodeName" :infoResponse="infoModalData"
-			:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" @close="infoModalNodeName = null"/>
+			:nodeName="infoModalNodeName" :infoResponse="infoModalData" :tolMap="tolMap" :lytOpts="lytOpts"
+			:uiOpts="uiOpts" class="z-10" @close="infoModalNodeName = null"/>
 	</transition>
 	<transition name="fade">
-		<help-modal v-if="helpOpen" :uiOpts="uiOpts" @close="helpOpen = false" @start-tutorial="onStartTutorial"/>
+		<help-modal v-if="helpOpen" :uiOpts="uiOpts" class="z-10"
+			@close="helpOpen = false" @start-tutorial="onStartTutorial"/>
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
 		@close="settingsOpen = false" @reset="onResetSettings" @setting-chg="onSettingChg"/>
@@ -189,13 +191,39 @@ export default defineComponent({
 			};
 		},
 		tutPaneContainerStyles(): Record<string,string> {
-			return {
-				minHeight: (this.tutPaneOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
-				maxHeight: (this.tutPaneOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
-				transitionDuration: this.uiOpts.transitionDuration + 'ms',
-				transitionProperty: 'max-height, min-height',
-				overflow: 'hidden',
-			};
+			if (this.uiOpts.breakpoint != 'lg'){
+				return {
+					minHeight: (this.tutPaneOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
+					maxHeight: (this.tutPaneOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
+					transitionProperty: 'max-height, min-height',
+					transitionDuration: this.uiOpts.transitionDuration + 'ms',
+					overflow: 'hidden',
+				};
+			} else {
+				return {
+					position: 'absolute',
+					bottom: '0.5cm',
+					right: '0.5cm',
+					zIndex: '1',
+					visibility: this.tutPaneOpen ? 'visible' : 'hidden',
+					transitionProperty: 'visibility',
+					transitionDuration: this.uiOpts.transitionDuration + 'ms',
+				};
+			}
+		},
+		tutPaneStyles(): Record<string,string>  {
+			if (this.uiOpts.breakpoint != 'lg'){
+				return {
+					height: this.uiOpts.tutPaneSz + 'px',
+				}
+			} else {
+				return {
+					height: this.uiOpts.tutPaneSz + 'px',
+					maxWidth: '10cm',
+					borderRadius: this.uiOpts.borderRadius + 'px',
+					boxShadow: '0 0 3px black',
+				};
+			}
 		},
 		ancestryBarContainerStyles(): Record<string,string> {
 			let ancestryBarBreadth = this.detachedAncestors == null ? 0 : this.uiOpts.ancestryBarBreadth;
