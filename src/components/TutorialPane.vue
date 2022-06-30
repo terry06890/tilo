@@ -49,11 +49,11 @@
 			<s-button :style="buttonStyles" @click="onSkipTutorial">Skip</s-button>
 		</template>
 		<template v-else>
-			<s-button v-if="hidNextPrevOnce || stage > 1" :disabled="stage == 1"
+			<s-button :class="{invisible: !hidNextPrevOnce && stage == 1}" :disabled="stage == 1"
 				@click="onPrevClick" :style="buttonStyles">
 				Prev
 			</s-button>
-			<s-button v-if="hidNextPrevOnce || stage > 1"
+			<s-button :class="{invisible: !hidNextPrevOnce && stage == 1}"
 				@click="stage != lastStage ? onNextClick() : onClose()" :style="buttonStyles">
 				{{stage != lastStage ? 'Next' : 'Finish'}}
 			</s-button>
