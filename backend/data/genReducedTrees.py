@@ -53,7 +53,7 @@ def genPickedNodeTree(dbCur, pickedNames, rootName):
 	print("Removing composite nodes")
 	removedNames = removeCompositeNodes(nodeMap)
 	print(f"Result has {len(nodeMap)} nodes")
-	print("Removing 'chain collapsible' nodes")
+	print("Removing 'collapsible' nodes")
 	temp = removeCollapsibleNodes(nodeMap, pickedNames)
 	removedNames.update(temp)
 	print(f"Result has {len(nodeMap)} nodes")
@@ -94,6 +94,9 @@ def genPickedNodeTree(dbCur, pickedNames, rootName):
 def genImagesOnlyTree(dbCur, nodesWithImgOrPicked, rootName):
 	print("Getting ancestors")
 	nodeMap = genNodeMap(dbCur, nodesWithImgOrPicked, 1e4)
+	print(f"Result has {len(nodeMap)} nodes")
+	print("Removing composite nodes")
+	removeCompositeNodes(nodeMap)
 	print(f"Result has {len(nodeMap)} nodes")
 	print("Removing 'collapsible' nodes")
 	removeCollapsibleNodes(nodeMap, nodesWithImgOrPicked)
