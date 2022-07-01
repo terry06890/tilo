@@ -28,5 +28,5 @@
 /backend/data/pickedEnwikiNamesToSkip.txt
 /backend/data/pickedDbpLabels.txt
 /backend/data/pickedEnwikiLabels.txt
-/backend/data/pickedReducedNodes.txt
+/backend/data/pickedNodes.txt
 /backend/data/pickedNames.txt

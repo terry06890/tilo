@@ -117,7 +117,7 @@ export default defineComponent({
 			// Get URL params to use for querying search-suggestions
 			let urlParams = 'type=sugg&name=' + encodeURIComponent(input.value);
 			urlParams += '&limit=' + this.uiOpts.searchSuggLimit;
-			urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+			urlParams += '&tree=' + this.uiOpts.tree;
 			// Query server, delaying/skipping if a request was recently sent
 			this.pendingSuggReqParams = urlParams;
 			this.pendingSuggInput = input.value;
@@ -186,7 +186,7 @@ export default defineComponent({
 			}
 			// Ask server for nodes in parent-chain, updates tolMap, then emits search event
 			let urlParams = 'type=node&toroot=true&name=' + encodeURIComponent(tolNodeName);
-			urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+			urlParams += '&tree=' + this.uiOpts.tree;
 			let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
 			if (responseObj == null){
 				return;

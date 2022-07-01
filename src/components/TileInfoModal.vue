@@ -70,7 +70,7 @@ import CloseIcon from './icon/CloseIcon.vue';
 import ExternalLinkIcon from './icon/ExternalLinkIcon.vue';
 import {TolNode, TolMap} from '../tol';
 import {LayoutNode, LayoutOptions} from '../layout';
-import {getServerResponse, getImagePath, DescInfo, ImgInfo, NodeInfo, InfoResponse, UiOptions} from '../lib';
+import {getImagePath, DescInfo, ImgInfo, NodeInfo, InfoResponse, UiOptions} from '../lib';
 import {capitalizeWords} from '../util';
 
 export default defineComponent({

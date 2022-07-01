@@ -106,7 +106,7 @@ export type UiOptions = {
 	touchDevice: boolean,
 	breakpoint: Breakpoint,
 	// Other
-	useReducedTree: boolean,
+	tree: 'trimmed' | 'images' | 'picked',
 	searchSuggLimit: number, // Max number of search suggestions
 	searchJumpMode: boolean,
 	tutorialSkip: boolean,
@@ -169,7 +169,7 @@ export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		touchDevice: onTouchDevice(),
 		breakpoint: getBreakpoint(),
 		// Other
-		useReducedTree: false,
+		tree: 'images',
 		searchSuggLimit: 10,
 		searchJumpMode: false,
 		tutorialSkip: false,

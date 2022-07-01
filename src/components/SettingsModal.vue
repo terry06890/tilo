@@ -78,8 +78,15 @@
 		<div class="border rounded p-1">
 			<h2 class="text-center">Other</h2>
 			<div>
-				<label> <input type="checkbox" v-model="uiOpts.useReducedTree"
-					@change="onSettingChg('UI', 'useReducedTree')"/> Use simplified tree </label>
+				<div>Tree to use</div>
+				<ul>
+					<li> <label> <input type="radio" v-model="uiOpts.tree" value="trimmed"
+						@change="onSettingChg('UI', 'tree')"/> Comprehensive </label> </li>
+					<li> <label> <input type="radio" v-model="uiOpts.tree" value="images"
+						@change="onSettingChg('UI', 'tree')"/> Visual </label> </li>
+					<li> <label> <input type="radio" v-model="uiOpts.tree" value="picked"
+						@change="onSettingChg('UI', 'tree')"/> Minimal </label> </li>
+				</ul>
 			</div>
 			<div>
 				<label> <input type="checkbox" v-model="uiOpts.searchJumpMode"
@@ -161,7 +168,7 @@ export default defineComponent({
 			}
 			// Notify App
 			this.$emit('setting-chg', optionType, option,
-				{relayout: optionType == 'LYT', reinit: optionType == 'UI' && option == 'useReducedTree'});
+				{relayout: optionType == 'LYT', reinit: optionType == 'UI' && option == 'tree'});
 			// Possibly make saved-indicator appear/animate
 			if (!this.saved){
 				this.saved = true;
@@ -205,7 +212,7 @@ export default defineComponent({
 			// Restore default options
 			let defaultLytOpts = getDefaultLytOpts();
 			let defaultUiOpts = getDefaultUiOpts(defaultLytOpts);
-			let needReinit = this.uiOpts.useReducedTree != defaultUiOpts.useReducedTree;
+			let needReinit = this.uiOpts.tree != defaultUiOpts.tree;
 			Object.assign(this.lytOpts, defaultLytOpts);
 			Object.assign(this.uiOpts, defaultUiOpts);
 			// Notify App

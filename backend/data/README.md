@@ -38,13 +38,11 @@ This directory holds files used to generate data.db, which contains tree-of-life
     Associates a node with an image from another node.
     `otol_ids` can be an otol ID, or two comma-separated otol IDs or empty strings.
         The latter is used for compound nodes.
-## Reduced-tree data
--   `r_nodes` <br>
-    Format: `name TEXT PRIMARY KEY, tips INT` <br>
-    Like `nodes`, but for a reduced tree.
--   `r_edges` <br>
-    Format: `node TEXT, child TEXT, p_support INT, PRIMARY KEY (node, child)` <br>
-    Like `edges` but for a reduced tree.
+## Reduced tree data
+-   `nodes_t`, `nodes_i`, `nodes_p` <br>
+    These are like `nodes`, but describe the nodes for various reduced trees.
+-   `edges_t`, `edges_i`, `edges_p` <br>
+    Like `edges` but for reduced trees.
 
 # Generating the Database
 
@@ -147,9 +145,8 @@ Some of the python scripts require third-party packages:
     -   pickedNames.txt: Has lines of the form `nodeName1|altName1|prefAlt1`.
         These correspond to entries in the `names` table. `prefAlt` should be 1 or 0.
         A line like `name1|name1|1` causes a node to have no preferred alt-name.
-3.  Run genReducedTreeData.py, which generates a second, reduced version of the tree,
-    adding the `r_nodes` and `r_edges` tables, using `nodes` and `names`. Reads from
-    pickedReducedNodes.txt, which lists names of nodes that must be included (1 per line).
-4.  Optionally run trimTree.py, which tries to remove some 'low significance' nodes,
-    for the sake of performance and content-relevance. Otherwise, some nodes may have
-    over 10k children, which can take a while to render (took over a minute in testing).
+3.  Run genReducedTrees.py, which generates multiple reduced versions of the tree,
+    adding the `nodes_*` and `edges_*` tables, using `nodes` and `names`. Reads from
+    pickedNodes.txt, which lists names of nodes that must be included (1 per line).
+    The original tree isn't used for web-queries, as some nodes would have over 
+    10k children, which can take a while to render (took over a minute in testing).

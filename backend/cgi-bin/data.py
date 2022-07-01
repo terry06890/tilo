@@ -24,8 +24,10 @@ Query parameters:
 - toroot: Used with type=node, and causes inclusion of nodes upward to the root, and their children.
     If specified, the value should be 'true'.
 - limit: Used with type=sugg to specify the max number of suggestions.
-- rtree: Specifies whether the reduced tree should be used.
-    If specified, the value should be 'true'.
+- tree: Specifies which tree should be used.
+    May be 'trimmed', 'images', or 'picked', corresponding to the
+    weakly-trimmed, images-only, and picked-nodes trees. The default
+    is 'images'.
 """
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
@@ -81,12 +83,13 @@ class InfoResponse:
 		self.subNodesInfo = subNodesInfo # [] | [NodeInfo, NodeInfo]
 
 # For data lookup
-def lookupNodes(names, useReducedTree, dbCur):
+def lookupNodes(names, tree, dbCur):
 	" For a set of node names, returns a name-to-TolNode map that describes those nodes "
 	# Get node info
 	nameToNodes = {}
-	nodesTable = "nodes" if not useReducedTree else "r_nodes"
-	edgesTable = "edges" if not useReducedTree else "r_edges"
+	tblSuffix = "t" if tree == "trimmed" else "i" if tree == "images" else "p"
+	nodesTable = f"nodes_{tblSuffix}"
+	edgesTable = f"edges_{tblSuffix}"
 	queryParamStr = ",".join(["?"] * len(names))
 	query = f"SELECT name, id, tips FROM {nodesTable} WHERE name IN ({queryParamStr})"
 	for (nodeName, otolId, tips) in dbCur.execute(query, names):
@@ -133,23 +136,20 @@ def lookupNodes(names, useReducedTree, dbCur):
 		nameToNodes[name].commonName = altName
 	#
 	return nameToNodes
-def lookupSuggs(searchStr, suggLimit, useReducedTree, dbCur):
+def lookupSuggs(searchStr, suggLimit, tree, dbCur):
 	" For a search string, returns a SearchSuggResponse describing search suggestions "
+	time1 = time.time()
 	results = []
 	hasMore = False
 	# Get node names and alt-names
 	query1, query2 = (None, None)
-	if not useReducedTree:
-		query1 = "SELECT DISTINCT name FROM nodes" \
-			" WHERE name LIKE ? AND name NOT LIKE '[%' ORDER BY length(name) LIMIT ?"
-		query2 = "SELECT DISTINCT alt_name, name FROM names" \
-			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
-	else:
-		query1 = "SELECT DISTINCT name FROM r_nodes" \
-			" WHERE name LIKE ? AND name NOT LIKE '[%' ORDER BY length(name) LIMIT ?"
-		query2 = "SELECT DISTINCT alt_name, names.name FROM" \
-			" names INNER JOIN r_nodes ON names.name = r_nodes.name" \
-			" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
+	tblSuffix = "t" if tree == "trimmed" else "i" if tree == "images" else "p"
+	nodesTable = f"nodes_{tblSuffix}"
+	query1 = f"SELECT DISTINCT name FROM {nodesTable}" \
+		f" WHERE name LIKE ? AND name NOT LIKE '[%' ORDER BY length(name) LIMIT ?"
+	query2 = f"SELECT DISTINCT alt_name, names.name FROM" \
+		f" names INNER JOIN {nodesTable} ON names.name = {nodesTable}.name" \
+		f" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
 	# Join results, and get shortest
 	suggs = []
 	for (nodeName,) in dbCur.execute(query1, (searchStr + "%", suggLimit + 1)):
@@ -178,11 +178,12 @@ def lookupSuggs(searchStr, suggLimit, useReducedTree, dbCur):
 	if len(suggs) > suggLimit:
 		hasMore = True
 	#
+	print(time.time() - time1, file=sys.stderr)
 	return SearchSuggResponse(results, hasMore)
-def lookupInfo(name, useReducedTree, dbCur):
+def lookupInfo(name, tree, dbCur):
 	" For a node name, returns an InfoResponse, or None "
 	# Get node info
-	nameToNodes = lookupNodes([name], useReducedTree, dbCur)
+	nameToNodes = lookupNodes([name], tree, dbCur)
 	tolNode = nameToNodes[name] if name in nameToNodes else None
 	if tolNode == None:
 		return None
@@ -190,7 +191,7 @@ def lookupInfo(name, useReducedTree, dbCur):
 	match = re.fullmatch(r"\[(.+) \+ (.+)]", name)
 	subNames = [match.group(1), match.group(2)] if match != None else []
 	if len(subNames) > 0:
-		nameToSubNodes = lookupNodes(subNames, useReducedTree, dbCur)
+		nameToSubNodes = lookupNodes(subNames, tree, dbCur)
 		if len(nameToSubNodes) < 2:
 			print(f"ERROR: Unable to find sub-names entries for {name}", file=sys.stderr)
 			return None
@@ -247,15 +248,19 @@ def handleReq(dbCur):
 		query = "SELECT name FROM nodes LEFT JOIN edges ON nodes.name = edges.child WHERE edges.parent IS NULL LIMIT 1"
 		(name,) = dbCur.execute(query).fetchone()
 	reqType = queryDict["type"][0] if "type" in queryDict else None
-	useReducedTree = "rtree" in queryDict and queryDict["rtree"][0] == "true"
+	tree = queryDict["tree"][0] if "tree" in queryDict else "images"
+	# Check for valid 'tree'
+	if tree != None and re.fullmatch(r"trimmed|images|picked", tree) == None:
+		respondJson(None)
+		return
 	# Get data of requested type
 	if reqType == "node":
 		toroot = "toroot" in queryDict and queryDict["toroot"][0] == "true"
 		if not toroot:
-			tolNodes = lookupNodes([name], useReducedTree, dbCur)
+			tolNodes = lookupNodes([name], tree, dbCur)
 			if len(tolNodes) > 0:
 				tolNode = tolNodes[name]
-				childNodeObjs = lookupNodes(tolNode.children, useReducedTree, dbCur)
+				childNodeObjs = lookupNodes(tolNode.children, tree, dbCur)
 				childNodeObjs[name] = tolNode
 				respondJson(childNodeObjs)
 				return
@@ -264,7 +269,7 @@ def handleReq(dbCur):
 			ranOnce = False
 			while True:
 				# Get node
-				tolNodes = lookupNodes([name], useReducedTree, dbCur)
+				tolNodes = lookupNodes([name], tree, dbCur)
 				if len(tolNodes) == 0:
 					if not ranOnce:
 						respondJson(results)
@@ -281,7 +286,7 @@ def handleReq(dbCur):
 					for childName in tolNode.children:
 						if childName not in results:
 							childNamesToAdd.append(childName)
-					childNodeObjs = lookupNodes(childNamesToAdd, useReducedTree, dbCur)
+					childNodeObjs = lookupNodes(childNamesToAdd, tree, dbCur)
 					results.update(childNodeObjs)
 				# Check if root
 				if tolNode.parent == None:
@@ -302,10 +307,10 @@ def handleReq(dbCur):
 			print(f"INFO: Invalid limit {suggLimit}", file=sys.stderr)
 		# Get search suggestions
 		if not invalidLimit:
-			respondJson(lookupSuggs(name, suggLimit, useReducedTree, dbCur))
+			respondJson(lookupSuggs(name, suggLimit, tree, dbCur))
 			return
 	elif reqType == "info":
-		infoResponse = lookupInfo(name, useReducedTree, dbCur)
+		infoResponse = lookupInfo(name, tree, dbCur)
 		if infoResponse != None:
 			respondJson(infoResponse)
 			return

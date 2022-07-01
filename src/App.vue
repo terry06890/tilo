@@ -326,7 +326,7 @@ export default defineComponent({
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
 				let urlParams = 'type=node&name=' + encodeURIComponent(layoutNode.name);
-				urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+				urlParams += '&tree=' + this.uiOpts.tree;
 				let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
 				if (responseObj == null){
 					return false;
@@ -421,7 +421,7 @@ export default defineComponent({
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
 				let urlParams = 'type=node&name=' + encodeURIComponent(layoutNode.name);
-				urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+				urlParams += '&tree=' + this.uiOpts.tree;
 				let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
 				if (responseObj == null){
 					return false;
@@ -490,7 +490,7 @@ export default defineComponent({
 			}
 			// Query server for tol-node info
 			let urlParams = 'type=info&name=' + encodeURIComponent(nodeName);
-			urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+			urlParams += '&tree=' + this.uiOpts.tree;
 			let responseObj: InfoResponse = await getServerResponse(urlParams);
 			if (responseObj == null){
 				return;
@@ -819,7 +819,7 @@ export default defineComponent({
 						//Note: Using JSON.stringify here to roughly deep-compare values
 						if (item == null && JSON.stringify(this.uiOpts[prop]) != JSON.stringify(uiOpts[prop])){
 							this.uiOpts[prop] = uiOpts[prop];
-							if (prop == 'useReducedTree'){
+							if (prop == 'tree'){
 								changedTree = true;
 							}
 						}
@@ -875,7 +875,7 @@ export default defineComponent({
 		async initTreeFromServer(){
 			// Query server
 			let urlParams = 'type=node';
-			urlParams += this.uiOpts.useReducedTree ? '&rtree=true' : '';
+			urlParams += '&tree=' + this.uiOpts.tree;
 			let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
 			if (responseObj == null){
 				return;
