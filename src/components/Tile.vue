@@ -411,7 +411,7 @@ export default defineComponent({
 		hidden(newVal: boolean, oldVal: boolean){
 			if (oldVal && !newVal){
 				this.justUnhidden = true;
-				setTimeout(() => {this.justUnhidden = false;}, this.uiOpts.transitionDuration);
+				setTimeout(() => {this.justUnhidden = false;}, this.uiOpts.transitionDuration + 100);
 			}
 		},
 		// Used to 'flash' the tile when focused
