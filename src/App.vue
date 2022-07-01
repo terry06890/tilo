@@ -872,7 +872,7 @@ export default defineComponent({
 			}
 		},
 		// For initialisation
-		async initTreeFromServer(){
+		async initTreeFromServer(firstInit = true){
 			// Query server
 			let urlParams = 'type=node';
 			urlParams += '&tree=' + this.uiOpts.tree;
@@ -903,8 +903,10 @@ export default defineComponent({
 			await this.updateAreaDims();
 			this.relayoutWithCollapse(false);
 			// Skip initial transition
-			this.justInitialised = true;
-			setTimeout(() => {this.justInitialised = false}, this.uiOpts.transitionDuration);
+			if (firstInit){
+				this.justInitialised = true;
+				setTimeout(() => {this.justInitialised = false}, this.uiOpts.transitionDuration);
+			}
 		},
 		async reInit(){
 			if (this.activeRoot != this.layoutTree){
@@ -912,8 +914,7 @@ export default defineComponent({
 				await this.onDetachedAncestorClick(this.layoutTree);
 			}
 			await this.onNonleafClick(this.layoutTree);
-			await timeout(this.uiOpts.transitionDuration);
-			await this.initTreeFromServer();
+			await this.initTreeFromServer(false);
 		},
 		getLytOpts(): LayoutOptions {
 			let opts = getDefaultLytOpts();
