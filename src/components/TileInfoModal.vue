@@ -17,7 +17,10 @@
 			<h1 v-if="nodes.length > 1" class="text-center font-bold">
 				{{getDisplayName(subNames![idx], nodes[idx])}}
 			</h1>
-			<div class="flex gap-1">
+			<div v-if="nodes[idx] == null" class="text-center">
+				(This node has been trimmed away)
+			</div>
+			<div v-else class="flex gap-1">
 				<div class="w-1/2">
 					<div v-if="imgInfos[idx] == null" :style="getImgStyles(nodes[idx])"/>
 					<a v-else :href="imgInfos[idx]!.url" target="_blank">
@@ -86,25 +89,25 @@ export default defineComponent({
 		tolNode(): TolNode {
 			return this.infoResponse.nodeInfo.tolNode;
 		},
-		nodes(): TolNode[] {
+		nodes(): (TolNode | null)[] {
 			if (this.infoResponse.subNodesInfo.length == 0){
 				return [this.tolNode];
 			} else {
-				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo.tolNode);
+				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.tolNode : null);
 			}
 		},
 		imgInfos(): (ImgInfo | null)[] {
 			if (this.infoResponse.subNodesInfo.length == 0){
 				return [this.infoResponse.nodeInfo.imgInfo];
 			} else {
-				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo.imgInfo);
+				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.imgInfo : null);
 			}
 		},
 		descInfos(): (DescInfo | null)[] {
 			if (this.infoResponse.subNodesInfo.length == 0){
 				return [this.infoResponse.nodeInfo.descInfo];
 			} else {
-				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo.descInfo);
+				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.descInfo : null);
 			}
 		},
 		subNames(): [string, string] | null {
@@ -129,9 +132,9 @@ export default defineComponent({
 				return `${capitalizeWords(tolNode.commonName)} (aka ${capitalizeWords(name)})`;
 			}
 		},
-		getImgStyles(tolNode: TolNode): Record<string,string> {
+		getImgStyles(tolNode: TolNode | null): Record<string,string> {
 			let imgName = null;
-			if (typeof(tolNode.imgName) === 'string'){ // Exclude string-array case
+			if (tolNode != null && typeof(tolNode.imgName) === 'string'){ // Exclude string-array case
 				imgName = tolNode.imgName;
 			}
 			return {

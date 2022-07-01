@@ -78,9 +78,9 @@ class NodeInfo:
 		self.imgInfo = imgInfo   # null | ImgInfo
 class InfoResponse:
 	" Sent as responses to 'info' requests "
-	def __init__(self, nodeInfo, subNodesInfo = None):
+	def __init__(self, nodeInfo, subNodesInfo):
 		self.nodeInfo = nodeInfo         # NodeInfo
-		self.subNodesInfo = subNodesInfo # [] | [NodeInfo, NodeInfo]
+		self.subNodesInfo = subNodesInfo # [] | [NodeInfo | null, NodeInfo | null]
 
 # For data lookup
 def lookupNodes(names, tree, dbCur):
@@ -138,7 +138,6 @@ def lookupNodes(names, tree, dbCur):
 	return nameToNodes
 def lookupSuggs(searchStr, suggLimit, tree, dbCur):
 	" For a search string, returns a SearchSuggResponse describing search suggestions "
-	time1 = time.time()
 	results = []
 	hasMore = False
 	# Get node names and alt-names
@@ -178,7 +177,6 @@ def lookupSuggs(searchStr, suggLimit, tree, dbCur):
 	if len(suggs) > suggLimit:
 		hasMore = True
 	#
-	print(time.time() - time1, file=sys.stderr)
 	return SearchSuggResponse(results, hasMore)
 def lookupInfo(name, tree, dbCur):
 	" For a node name, returns an InfoResponse, or None "
@@ -192,11 +190,10 @@ def lookupInfo(name, tree, dbCur):
 	subNames = [match.group(1), match.group(2)] if match != None else []
 	if len(subNames) > 0:
 		nameToSubNodes = lookupNodes(subNames, tree, dbCur)
-		if len(nameToSubNodes) < 2:
-			print(f"ERROR: Unable to find sub-names entries for {name}", file=sys.stderr)
-			return None
+		if len(nameToSubNodes) < 2: # Possible when a subname-denoted node has been trimmed away
+			subNames = [n if n in nameToSubNodes else None for n in subNames]
 		nameToNodes.update(nameToSubNodes)
-	namesToLookup = [name] if len(subNames) == 0 else subNames
+	namesToLookup = [name] if len(subNames) == 0 else [n for n in subNames if n != None]
 	# Get desc info
 	nameToDescInfo = {}
 	query = "SELECT name, desc, wiki_id, redirected, from_dbp FROM" \
@@ -220,7 +217,7 @@ def lookupInfo(name, tree, dbCur):
 			nameToNodes[n],
 			nameToDescInfo[n] if n in nameToDescInfo else None,
 			nameToImgInfo[n] if n in nameToImgInfo else None
-		) for n in [name] + subNames
+		) if n != None else None for n in [name] + subNames
 	]
 	return InfoResponse(nodeInfoObjs[0], nodeInfoObjs[1:])
 

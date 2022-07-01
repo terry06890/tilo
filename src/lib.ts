@@ -58,7 +58,7 @@ export type NodeInfo = {
 };
 export type InfoResponse = {
 	nodeInfo: NodeInfo,
-	subNodesInfo: [] | [NodeInfo, NodeInfo],
+	subNodesInfo: [] | [NodeInfo | null, NodeInfo | null],
 };
 
 // Used by auto-mode and tutorial
