@@ -158,7 +158,7 @@ export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		ancestryBarBgColor: bgColorLight,
 		// Component sizing
 		ancestryBarBreadth: lytOpts.maxTileSz / 2 + lytOpts.tileSpacing*2, // px
-		tutPaneSz: 200, // px
+		tutPaneSz: 180, // px
 		scrollGap,
 		// Timing related
 		clickHoldDuration: 400, // ms

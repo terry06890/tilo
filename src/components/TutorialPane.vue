@@ -2,44 +2,52 @@
 <div :style="styles" class="p-2 flex flex-col justify-between">
 	<div class="flex">
 		<h2 class="text-center mb-2 mx-auto">
-			{{stage == 0 ? 'Welcome' : `Tutorial (${stage} / ${lastStage})`}}
+			{{stage == 0 ? 'Welcome' : `Tutorial (Step ${stage} of ${lastStage})`}}
 		</h2>
 		<close-icon @click.stop="onClose"
 			class="block w-6 h-6 hover:cursor-pointer"/>
 	</div>
 	<transition name="fade" mode="out-in">
 		<div v-if="stage == 0" :style="contentStyles">
-			This page provides a visualisation of the biological Tree of Life.
-			It is unfinished, and is just here for testing.
+			This is a visualiser for the biological Tree of Life. For more information,
+			<a href="#" :style="{color: uiOpts.altColor}">{{touchDevice ? 'tap' : 'click'}} here</a>.
 		</div>
 		<div v-else-if="stage == 1" :style="contentStyles">
-			Clicking/touching a tile expands it and shows it's children.
+			{{touchDevice ? 'Tap' : 'Click'}} a tile to expand it and show it's children
 		</div>
 		<div v-else-if="stage == 2" :style="contentStyles">
-			Clicking on an expanded tile's header shrinks it back.
+			{{touchDevice ? 'Tap' : 'Click'}} an expanded tile's header to shrink it
 		</div>
 		<div v-else-if="stage == 3" :style="contentStyles">
-			Clicking and holding on a tile makes it fill the view, and moves it's
-				ancestors to a sidebar. The same thing applies for an expanded tile's header.
+			{{touchDevice ? 'Double tap' : 'Click and hold'}} a tile to hide it's ancestors
+			<span class="block text-sm brightness-50">
+				For an expanded tile, use the header
+			</span>
 		</div>
 		<div v-else-if="stage == 4" :style="contentStyles">
-			Clicking on a tile in the sidebar brings it back into the main view.
+			{{touchDevice ? 'Tap' : 'Click'}} a tile in the sidebar to unhide it
 		</div>
 		<div v-else-if="stage == 5" :style="contentStyles">
-			Clicking on the icon at a tile's bottom-right, or at the right of
-				an expanded tile's header, brings up more information.
+			{{touchDevice ? 'Tap' : 'Click'}} the icon on a tile's bottom-right to
+			bring up more information
+			<span class="block text-sm brightness-50">
+				For an expanded tile, it's at the header's right
+			</span>
 		</div>
 		<div v-else-if="stage == 6" :style="contentStyles">
-			You can search using the icon at the top-right. Alternatively, press Ctrl-F.
+			{{touchDevice ? 'Tap' : 'Click'}} the icon at the top-right to search
+			<span class="block text-sm brightness-50">
+				Or press Ctrl-F
+			</span>
 		</div>
 		<div v-else-if="stage == 7" :style="contentStyles">
-			You can use the play icon to enable 'Auto Mode'.
+			{{touchDevice ? 'Tap' : 'Click'}} the play icon to start Auto Mode
 		</div>
 		<div v-else-if="stage == 8" :style="contentStyles">
-			The settings icon allows adjusting the layout, animation speed, etc.
+			{{touchDevice ? 'Tap' : 'Click'}} the settings icon
 		</div>
 		<div v-else-if="stage == 9" :style="contentStyles">
-			And finally, the help icon provides more information.
+			And finally, tap the help icon for more information
 		</div>
 	</transition>
 	<!-- Buttons -->
@@ -101,6 +109,7 @@ export default defineComponent({
 				maxWidth: '15cm',
 				margin: '0 auto',
 				overflow: 'auto',
+				textAlign: 'center',
 			};
 		 },
 		 buttonStyles(): Record<string,string> {
@@ -108,7 +117,10 @@ export default defineComponent({
 				color: this.uiOpts.textColor,
 				backgroundColor: this.uiOpts.bgColor,
 			};
-		 },
+		},
+		touchDevice(): boolean {
+			return this.uiOpts.touchDevice;
+		},
 	},
 	watch: {
 		stage(newVal, oldVal){

@@ -2,22 +2,22 @@
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
 	:style="{backgroundColor: uiOpts.bgColor}">
 	<!-- Title bar -->
-	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: uiOpts.bgColorDark2}">
-		<h1 class="my-auto ml-2 text-3xl" :style="{color: uiOpts.altColor}">Tilo (prototype)</h1>
+	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: uiOpts.bgColorDark2, color: uiOpts.altColor}">
+		<h1 class="my-auto mx-2 text-4xl">Tilo</h1>
 		<div class="mx-auto"/> <!-- Spacer -->
 		<!-- Icons -->
-		<icon-button :disabled="isDisabled('search')" :style="buttonStyles" @click="onSearchIconClick">
-			<search-icon/>
+		<icon-button :disabled="isDisabled('help')" :size="45" :style="buttonStyles" @click="onHelpIconClick">
+			<help-icon/>
 		</icon-button>
-		<icon-button :disabled="isDisabled('autoMode')" :style="buttonStyles" @click="onAutoIconClick">
+		<icon-button :disabled="isDisabled('settings')" :size="45" :style="buttonStyles" @click="onSettingsIconClick">
+			<settings-icon/>
+		</icon-button>
+		<icon-button :disabled="isDisabled('autoMode')" :size="45" :style="buttonStyles" @click="onAutoIconClick">
 			<play-icon v-if="modeRunning != 'autoMode'"/>
 			<pause-icon v-else/>
 		</icon-button>
-		<icon-button :disabled="isDisabled('settings')" :style="buttonStyles" @click="onSettingsIconClick">
-			<settings-icon/>
-		</icon-button>
-		<icon-button :disabled="isDisabled('help')" :style="buttonStyles" @click="onHelpIconClick">
-			<help-icon/>
+		<icon-button :disabled="isDisabled('search')" :size="45" :style="buttonStyles" @click="onSearchIconClick">
+			<search-icon/>
 		</icon-button>
 	</div>
 	<!-- Content area -->
@@ -219,6 +219,7 @@ export default defineComponent({
 			} else {
 				return {
 					height: this.uiOpts.tutPaneSz + 'px',
+					minWidth: '10cm',
 					maxWidth: '10cm',
 					borderRadius: this.uiOpts.borderRadius + 'px',
 					boxShadow: '0 0 3px black',
