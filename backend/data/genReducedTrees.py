@@ -29,8 +29,6 @@ tree = sys.argv[1] if len(sys.argv) > 1 else None
 dbFile = "data.db"
 pickedNodesFile = "pickedNodes.txt"
 COMP_NAME_REGEX = re.compile(r"\[.+ \+ .+]") # Used to recognise composite nodes
-PREF_NUM_CHILDREN = 3 # When generating the picked-nodes tree, include extra children up to this limit
-SOFT_CHILD_LIMIT = 500 # When generating the weakly-trimmed tree, this indicates when a node has 'many' children
 
 class Node:
 	def __init__(self, id, children, parent, tips, pSupport):
@@ -45,7 +43,8 @@ dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 
 def genPickedNodeTree(dbCur, pickedNames, rootName):
-	global COMP_NAME_REGEX, PREF_NUM_CHILDREN
+	global COMP_NAME_REGEX
+	PREF_NUM_CHILDREN = 3 # Include extra children up to this limit
 	nodeMap = {} # Maps node names to Nodes
 	print("Getting ancestors")
 	nodeMap = genNodeMap(dbCur, pickedNames, 100)
@@ -87,11 +86,11 @@ def genPickedNodeTree(dbCur, pickedNames, rootName):
 		parent = None if parent == "" else parent
 		nodeMap[name] = Node(id, [], parent, 0, pSupport == 1)
 	print(f"Result has {len(nodeMap)} nodes")
-	print("Setting 'tips' values")
+	print("Updating 'tips' values")
 	updateTips(rootName, nodeMap)
 	print("Creating table")
 	addTreeTables(nodeMap, dbCur, "p")
-def genImagesOnlyTree(dbCur, nodesWithImgOrPicked, rootName):
+def genImagesOnlyTree(dbCur, nodesWithImgOrPicked, pickedNames, rootName):
 	print("Getting ancestors")
 	nodeMap = genNodeMap(dbCur, nodesWithImgOrPicked, 1e4)
 	print(f"Result has {len(nodeMap)} nodes")
@@ -101,12 +100,16 @@ def genImagesOnlyTree(dbCur, nodesWithImgOrPicked, rootName):
 	print("Removing 'collapsible' nodes")
 	removeCollapsibleNodes(nodeMap, {})
 	print(f"Result has {len(nodeMap)} nodes")
-	print(f"Setting 'tips' values")
+	print(f"Updating 'tips' values") # Needed for next trimming step
+	updateTips(rootName, nodeMap)
+	print(f"Trimming from nodes with 'many' children")
+	trimIfManyChildren(nodeMap, rootName, 300, pickedNames)
+	print(f"Result has {len(nodeMap)} nodes")
+	print(f"Updating 'tips' values")
 	updateTips(rootName, nodeMap)
 	print("Creating table")
 	addTreeTables(nodeMap, dbCur, "i")
 def genWeaklyTrimmedTree(dbCur, nodesWithImgDescOrPicked, nodesWithImgOrPicked, rootName):
-	global SOFT_CHILD_LIMIT
 	print("Getting ancestors")
 	nodeMap = genNodeMap(dbCur, nodesWithImgDescOrPicked, 1e5)
 	print(f"Result has {len(nodeMap)} nodes")
@@ -128,40 +131,12 @@ def genWeaklyTrimmedTree(dbCur, nodesWithImgDescOrPicked, nodesWithImgOrPicked, 
 	print("Removing 'collapsible' nodes")
 	removeCollapsibleNodes(nodeMap, nodesWithImgDescOrPicked)
 	print(f"Result has {len(nodeMap)} nodes")
-	print(f"Finding nodes with 'many' children")
-	namesToRemove = set()
-	iterNum = 0
-	def findTrimmables(nodeName):
-		nonlocal nodeMap, nodesFromImgOrPicked, iterNum
-		iterNum += 1
-		if iterNum % 1e5 == 0:
-			print(f"At iteration {iterNum}")
-		#
-		node = nodeMap[nodeName]
-		if len(node.children) > SOFT_CHILD_LIMIT:
-			numToTrim = len(node.children) - SOFT_CHILD_LIMIT
-			# Try removing weakly-kept nodes, preferring those with less tips
-			candidatesToTrim = [n for n in node.children if n not in nodesFromImgOrPicked]
-			childToTips = {n: nodeMap[n].tips for n in candidatesToTrim}
-			candidatesToTrim.sort(key=lambda n: childToTips[n], reverse=True)
-			childrenToRemove = set(candidatesToTrim[-numToTrim:])
-			node.children = [n for n in node.children if n not in childrenToRemove]
-			# Mark nodes for deletion
-			for n in childrenToRemove:
-				markForRemoval(n)
-		# Recurse on children
-		for n in node.children:
-			findTrimmables(n)
-	def markForRemoval(nodeName):
-		nonlocal nodeMap, namesToRemove
-		namesToRemove.add(nodeName)
-		for child in nodeMap[nodeName].children:
-			markForRemoval(child)
-	findTrimmables(rootName)
-	print(f"Deleting {len(namesToRemove)} nodes")
-	for nodeName in namesToRemove:
-		del nodeMap[nodeName]
-	print(f"Setting 'tips' values")
+	print(f"Updating 'tips' values") # Needed for next trimming step
+	updateTips(rootName, nodeMap)
+	print(f"Trimming from nodes with 'many' children")
+	trimIfManyChildren(nodeMap, rootName, 600, nodesFromImgOrPicked)
+	print(f"Result has {len(nodeMap)} nodes")
+	print(f"Updating 'tips' values")
 	updateTips(rootName, nodeMap)
 	print("Creating table")
 	addTreeTables(nodeMap, dbCur, "t")
@@ -247,6 +222,33 @@ def removeCollapsibleNodes(nodeMap, nodesToKeep = {}):
 		del nodeMap[name]
 	#
 	return namesToRemove
+def trimIfManyChildren(nodeMap, rootName, childThreshold, nodesToKeep = {}):
+	namesToRemove = set()
+	def findTrimmables(nodeName):
+		nonlocal nodeMap, nodesToKeep
+		node = nodeMap[nodeName]
+		if len(node.children) > childThreshold:
+			numToTrim = len(node.children) - childThreshold
+			# Try removing nodes, preferring those with less tips
+			candidatesToTrim = [n for n in node.children if n not in nodesToKeep]
+			childToTips = {n: nodeMap[n].tips for n in candidatesToTrim}
+			candidatesToTrim.sort(key=lambda n: childToTips[n], reverse=True)
+			childrenToRemove = set(candidatesToTrim[-numToTrim:])
+			node.children = [n for n in node.children if n not in childrenToRemove]
+			# Mark nodes for deletion
+			for n in childrenToRemove:
+				markForRemoval(n)
+		# Recurse on children
+		for n in node.children:
+			findTrimmables(n)
+	def markForRemoval(nodeName):
+		nonlocal nodeMap, namesToRemove
+		namesToRemove.add(nodeName)
+		for child in nodeMap[nodeName].children:
+			markForRemoval(child)
+	findTrimmables(rootName)
+	for nodeName in namesToRemove:
+		del nodeMap[nodeName]
 def updateTips(nodeName, nodeMap):
 	" Updates the 'tips' values for a node and it's descendants, returning the node's new 'tips' value "
 	node = nodeMap[nodeName]
@@ -317,7 +319,7 @@ if tree != 'picked':
 		nodesWithImgOrPicked.add(name)
 	if tree == 'images' or tree == None:
 		print("=== Generating images-only tree ===")
-		genImagesOnlyTree(dbCur, nodesWithImgOrPicked, rootName)
+		genImagesOnlyTree(dbCur, nodesWithImgOrPicked, pickedNames, rootName)
 	if tree == 'trimmed' or tree == None:
 		print("=== Generating weakly-trimmed tree ===")
 		genWeaklyTrimmedTree(dbCur, nodesWithImgDescOrPicked, nodesWithImgOrPicked, rootName)
