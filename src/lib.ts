@@ -118,7 +118,7 @@ export function getDefaultLytOpts(): LayoutOptions {
 	let screenSz = getBreakpoint();
 	return {
 		tileSpacing: screenSz == 'sm' ? 6 : 10, //px
-		headerSz: 22, // px
+		headerSz: screenSz == 'sm' ? 18 : 22, // px
 		minTileSz: 50, // px
 		maxTileSz: 200, // px
 		// Layout-algorithm related
@@ -157,7 +157,7 @@ export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		nonleafHeaderColor: bgColorDark,
 		ancestryBarBgColor: bgColorLight,
 		// Component sizing
-		ancestryBarBreadth: lytOpts.maxTileSz / 2 + lytOpts.tileSpacing*2, // px
+		ancestryBarBreadth: (screenSz == 'sm' ? 80 : 100) + lytOpts.tileSpacing*2, // px
 		tutPaneSz: 180, // px
 		scrollGap,
 		// Timing related

@@ -17,14 +17,14 @@
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</template>
 	</div>
-	<div v-else :style="nonleafStyles" ref="nonleaf">
+	<div v-else :style="nonleafStyles">
 		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
 			<h1 :style="nonleafHeaderTextStyles" class="grow">{{displayName}}</h1>
 			<info-icon v-if="infoIconDisabled" :style="infoIconStyles" :class="infoIconClasses"
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</div>
-		<div :style="sepSweptAreaStyles" :class="sepSweptAreaHideEdgeClass" ref="sepSweptArea">
+		<div :style="sepSweptAreaStyles" :class="sepSweptAreaHideEdgeClass">
 			<div v-if="layoutNode.sepSweptArea?.sweptLeft === false"
 				:style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 				@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
@@ -162,7 +162,7 @@ export default defineComponent({
 			}
 		},
 		fontSz(): number {
-			return 0.75 * this.lytOpts.headerSz;
+			return 0.8 * this.lytOpts.headerSz;
 		},
 		styles(): Record<string,string> {
 			let layoutStyles = {
@@ -234,10 +234,11 @@ export default defineComponent({
 					break;
 				}
 			}
+			let screenSz = this.uiOpts.breakpoint;
 			return {
 				height: this.lytOpts.headerSz + 'px',
-				padding: ((this.lytOpts.headerSz - this.fontSz) / 2) + 'px',
-				lineHeight: this.fontSz + 'px',
+				padding: `0 ${(this.lytOpts.headerSz - this.fontSz)}px`,
+				lineHeight: this.lytOpts.headerSz + 'px',
 				fontSize: this.fontSz + 'px',
 				color: textColor,
 				// For ellipsis
@@ -288,8 +289,7 @@ export default defineComponent({
 		},
 		nonleafHeaderTextStyles(): Record<string,string> {
 			return {
-				margin: 'auto 0',
-				lineHeight: this.fontSz + 'px',
+				lineHeight: this.lytOpts.headerSz + 'px',
 				fontSize: this.fontSz + 'px',
 				textAlign: 'center',
 				color: this.uiOpts.textColor,

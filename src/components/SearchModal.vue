@@ -1,17 +1,17 @@
 <template>
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
-	<div class="absolute left-1/2 -translate-x-1/2 top-1/4 w-3/4 max-w-[12cm] -translate-y-1/2 flex" :style="styles">
-		<input type="text" class="block border p-1 rounded-l-[inherit] grow" ref="searchInput"
+	<div class="absolute left-1/2 -translate-x-1/2 top-1/4 -translate-y-1/2 min-w-3/4 md:min-w-[12cm] flex"
+		:style="styles">
+		<input type="text" class="block border p-1 px-2 rounded-l-[inherit] grow" ref="searchInput"
 			@keyup.enter="onSearch" @keyup.esc="onClose"
 			@input="onInput" @keydown.down.prevent="onDownKey" @keydown.up.prevent="onUpKey"/>
 		<div class="p-1 hover:cursor-pointer">
 			<search-icon @click.stop="onSearch" class="block w-8 h-8"/>
 		</div>
-		<div class="absolute top-[100%] w-full"
-			:style="{backgroundColor: uiOpts.bgColorAlt, color: uiOpts.textColorAlt}">
+		<div class="absolute top-[100%] w-full overflow-hidden" :style="suggContainerStyles">
 			<div v-for="(sugg, idx) of searchSuggs"
 				:style="{backgroundColor: idx == focusedSuggIdx ? uiOpts.bgColorAltDark : uiOpts.bgColorAlt}"
-				class="border p-1 hover:underline hover:cursor-pointer flex"
+				class="border-b p-1 px-2 hover:underline hover:cursor-pointer flex"
 				@click="resolveSearch(sugg.canonicalName || sugg.name)">
 				<div class="grow overflow-hidden whitespace-nowrap text-ellipsis">
 					<span>{{suggDisplayStrings[idx][0]}}</span>
@@ -21,11 +21,10 @@
 				<info-icon class="hover:cursor-pointer my-auto w-5 h-5"
 					@click.stop="onInfoIconClick(sugg.canonicalName || sugg.name)"/>
 			</div>
-			<div v-if="searchHadMoreSuggs" class="text-center border">...</div>
+			<div v-if="searchHadMoreSuggs" class="text-center">&#x2022; &#x2022; &#x2022;</div>
 		</div>
 		<label :style="animateLabelStyles" class="flex gap-1">
-			<input type="checkbox" v-model="uiOpts.searchJumpMode"
-				@change="$emit('setting-chg', 'searchJumpMode')"/>
+			<input type="checkbox" v-model="uiOpts.searchJumpMode" @change="$emit('setting-chg', 'searchJumpMode')"/>
 			<div class="text-sm">Jump to result</div>
 		</label>
 	</div>
@@ -43,7 +42,7 @@ import {getServerResponse, SearchSugg, SearchSuggResponse, UiOptions} from '../l
 
 export default defineComponent({
 	props: {
-		tolMap: {type: Object as PropType<TolMap>, required: true}, // Added to from a search response
+		tolMap: {type: Object as PropType<TolMap>, required: true}, // Upon a search response, gets new nodes added
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
@@ -69,6 +68,14 @@ export default defineComponent({
 				backgroundColor: this.uiOpts.bgColorAlt,
 				borderRadius: this.searchSuggs.length == 0 ? `${br}px` : `${br}px ${br}px 0 0`,
 				boxShadow: this.uiOpts.shadowNormal,
+			};
+		},
+		suggContainerStyles(): Record<string,string> {
+			let br = this.uiOpts.borderRadius;
+			return {
+				backgroundColor: this.uiOpts.bgColorAlt,
+				color: this.uiOpts.textColorAlt,
+				borderRadius: `0 0 ${br}px ${br}px`,
 			};
 		},
 		animateLabelStyles(): Record<string,string> {
@@ -167,7 +174,7 @@ export default defineComponent({
 		onUpKey(){
 			if (this.focusedSuggIdx != null){
 				this.focusedSuggIdx = (this.focusedSuggIdx - 1 + this.searchSuggs.length) % this.searchSuggs.length;
-					// The addition after -1 is to avoid becoming negative
+					// The addition after '-1' is to avoid becoming negative
 			}
 		},
 		// Search events

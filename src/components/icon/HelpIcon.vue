@@ -1,9 +1,8 @@
 <template>
-<svg viewBox="0 0 24 24" fill="none"
-	stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-	<circle cx="12" cy="12" r="10"/>
-	<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-	<line x1="12" y1="17" x2="12.01" y2="17"/>
+<svg viewBox="0 0 512 512">
+	<path d="M160 164s1.44-33 33.54-59.46C212.6 88.83 235.49 84.28 256 84c18.73-.23 35.47 2.94 45.48 7.82C318.59 100.2 352 120.6 352 164c0 45.67-29.18 66.37-62.35 89.18S248 298.36 248 324"
+		fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="45"/>
+	<circle cx="248" cy="430" r="32" fill="currentColor"/>
 </svg>
 </template>
 

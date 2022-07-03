@@ -21,7 +21,7 @@
 		</icon-button>
 	</div>
 	<!-- Content area -->
-	<div :style="tutPaneContainerStyles"> <!-- Used to slide-in/out the tutorial pane -->
+	<div :style="tutPaneContainerStyles" class="z-10"> <!-- Used to slide-in/out the tutorial pane -->
 		<transition name="fade" @after-enter="tutPaneInTransition = false" @after-leave="tutPaneInTransition = false">
 			<tutorial-pane v-if="tutPaneOpen" :style="tutPaneStyles"
 				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!tutWelcome"
@@ -58,12 +58,12 @@
 			:uiOpts="uiOpts" class="z-10" @close="infoModalNodeName = null"/>
 	</transition>
 	<transition name="fade">
-		<help-modal v-if="helpOpen" :uiOpts="uiOpts" class="z-10"
+		<help-modal v-if="helpOpen" :tutOpen="tutPaneOpen" :uiOpts="uiOpts" class="z-10"
 			@close="helpOpen = false" @start-tutorial="onStartTutorial"/>
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
 		@close="settingsOpen = false" @reset="onResetSettings" @setting-chg="onSettingChg"/>
-	<!-- Overlay used to prevent interaction and capture clicks -->
+	<!-- Overlay used to capture clicks during auto mode, etc -->
 	<div :style="{visibility: modeRunning != null ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = null"></div>
 </div>
@@ -87,7 +87,7 @@ import PauseIcon from './components/icon/PauseIcon.vue';
 import SettingsIcon from './components/icon/SettingsIcon.vue';
 import HelpIcon from './components/icon/HelpIcon.vue';
 // Other
-	// Note: Import paths lack a .ts or .js extension because .ts makes vue-tsc complain, and .js makes vite complain
+	// Note: Import paths lack a .ts or .js because .ts makes vue-tsc complain, and .js makes vite complain
 import {TolNode, TolMap} from './tol';
 import {LayoutNode, LayoutOptions, LayoutTreeChg,
 	initLayoutTree, initLayoutMap, tryLayout} from './layout';
@@ -97,7 +97,7 @@ import {arraySum, randWeightedChoice, timeout} from './util';
 
 // Type representing auto-mode actions
 type AutoAction = 'move across' | 'move down' | 'move up' | Action;
-// Function used in auto-mode to help avoid action cycles
+// Function used in auto-mode to reduce action cycles
 function getReverseAction(action: AutoAction): AutoAction | null {
 	const reversePairs: AutoAction[][] = [
 		['move down', 'move up'],
@@ -111,11 +111,10 @@ function getReverseAction(action: AutoAction): AutoAction | null {
 		return null;
 	}
 }
-// For options
 
 export default defineComponent({
 	data(){
-		// Initial tree-of-life data
+		// Create initial tree-of-life data
 		let initialTolMap: TolMap = new Map();
 		initialTolMap.set("", new TolNode());
 		let layoutTree = initLayoutTree(initialTolMap, "", 0);
@@ -160,7 +159,7 @@ export default defineComponent({
 			ancestryBarInTransition: false,
 			tutPaneInTransition: false,
 			// Other
-			justInitialised: false, // Used to skip transition for tile initially loaded from server
+			justInitialised: false, // Used to skip transition for the tile initially loaded from server
 			changedSweepToParent: false, // Set during search animation for efficiency
 			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries get removed
 		};
@@ -187,11 +186,10 @@ export default defineComponent({
 			return {
 				color: this.uiOpts.textColor,
 				backgroundColor: this.uiOpts.altColorDark,
-				aspectRatio: '1/1',
 			};
 		},
 		tutPaneContainerStyles(): Record<string,string> {
-			if (this.uiOpts.breakpoint != 'lg'){
+			if (this.uiOpts.breakpoint == 'sm'){
 				return {
 					minHeight: (this.tutPaneOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
 					maxHeight: (this.tutPaneOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
@@ -204,7 +202,6 @@ export default defineComponent({
 					position: 'absolute',
 					bottom: '0.5cm',
 					right: '0.5cm',
-					zIndex: '1',
 					visibility: this.tutPaneOpen ? 'visible' : 'hidden',
 					transitionProperty: 'visibility',
 					transitionDuration: this.uiOpts.transitionDuration + 'ms',
@@ -212,7 +209,7 @@ export default defineComponent({
 			}
 		},
 		tutPaneStyles(): Record<string,string>  {
-			if (this.uiOpts.breakpoint != 'lg'){
+			if (this.uiOpts.breakpoint == 'sm'){
 				return {
 					height: this.uiOpts.tutPaneSz + 'px',
 				}
@@ -344,7 +341,7 @@ export default defineComponent({
 			}
 			this.handleActionForTutorial('collapse');
 			this.setLastFocused(null);
-			//
+			// Relayout
 			let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, {
 				allowCollapse: false,
 				chg: {type: 'collapse', node: layoutNode, tolMap: this.tolMap},
@@ -730,16 +727,16 @@ export default defineComponent({
 			this.settingsOpen = true;
 		},
 		async onSettingChg(optionType: OptionType, option: string,
-			{save = true, relayout = false, reinit = false} = {}){
-			if (save){
-				if (optionType == 'LYT'){
-					localStorage.setItem(`${optionType} ${option}`,
-						String(this.lytOpts[option as keyof LayoutOptions]));
-				} else if (optionType == 'UI') {
-					localStorage.setItem(`${optionType} ${option}`,
-						String(this.uiOpts[option as keyof UiOptions]));
-				}
+			{relayout = false, reinit = false} = {}){
+			// Save setting
+			if (optionType == 'LYT'){
+				localStorage.setItem(`${optionType} ${option}`,
+					String(this.lytOpts[option as keyof LayoutOptions]));
+			} else if (optionType == 'UI') {
+				localStorage.setItem(`${optionType} ${option}`,
+					String(this.uiOpts[option as keyof UiOptions]));
 			}
+			// Possibly relayout/reinitialise
 			if (reinit){
 				this.reInit();
 			} else if (relayout){
@@ -776,7 +773,6 @@ export default defineComponent({
 			this.tutTriggerAction = triggerAction;
 		},
 		onTutorialSkip(): void {
-			// Remember to skip in future sessions
 			localStorage.setItem('UI tutorialSkip', String(true));
 		},
 		onStartTutorial(): void {
@@ -947,6 +943,30 @@ export default defineComponent({
 			}
 			return opts;
 		},
+		// For relayout
+		relayoutWithCollapse(secondPass = true): boolean {
+			let success;
+			if (this.overflownRoot){
+				success = tryLayout(this.activeRoot, this.tileAreaDims,
+					{...this.lytOpts, layoutType: 'sqr-overflow'}, {allowCollapse: false, layoutMap: this.layoutMap});
+			} else {
+				success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
+					{allowCollapse: true, layoutMap: this.layoutMap});
+				if (secondPass){
+					// Relayout again, which can help allocate remaining tiles 'evenly'
+					success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
+						{allowCollapse: false, layoutMap: this.layoutMap});
+				}
+			}
+			return success;
+		},
+		async updateAreaDims(){
+			let mainAreaEl = this.$refs.mainArea as HTMLElement;
+			this.mainAreaDims = [mainAreaEl.offsetWidth, mainAreaEl.offsetHeight];
+			await this.$nextTick(); // Wait until ancestor-bar is laid-out
+			let tileAreaEl = this.$refs.tileArea as HTMLElement;
+			this.tileAreaDims = [tileAreaEl.offsetWidth, tileAreaEl.offsetHeight];
+		},
 		// For transitions
 		relayoutDuringAncestryBarTransition(): void {
 			let timerId = setInterval(async () => {
@@ -979,30 +999,6 @@ export default defineComponent({
 					console.log('Reached timeout waiting for tutorial-pane transition-end event');
 				}
 			}, this.uiOpts.transitionDuration + 300);
-		},
-		// For relayout
-		relayoutWithCollapse(secondPass = true): boolean {
-			let success;
-			if (this.overflownRoot){
-				success = tryLayout(this.activeRoot, this.tileAreaDims,
-					{...this.lytOpts, layoutType: 'sqr-overflow'}, {allowCollapse: false, layoutMap: this.layoutMap});
-			} else {
-				success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
-					{allowCollapse: true, layoutMap: this.layoutMap});
-				if (secondPass){
-					// Relayout again, which can help allocate remaining tiles 'evenly'
-					success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
-						{allowCollapse: false, layoutMap: this.layoutMap});
-				}
-			}
-			return success;
-		},
-		async updateAreaDims(){
-			let mainAreaEl = this.$refs.mainArea as HTMLElement;
-			this.mainAreaDims = [mainAreaEl.offsetWidth, mainAreaEl.offsetHeight];
-			await this.$nextTick(); // Wait until ancestor-bar is laid-out
-			let tileAreaEl = this.$refs.tileArea as HTMLElement;
-			this.tileAreaDims = [tileAreaEl.offsetWidth, tileAreaEl.offsetHeight];
 		},
 		// Other
 		resetMode(): void {

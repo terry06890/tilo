@@ -26,6 +26,7 @@ export default defineComponent({
 	computed: {
 		imgSz(){
 			return this.breadth - this.lytOpts.tileSpacing - this.uiOpts.scrollGap;
+				// Intentionally omitting extra tileSpacing, to allow for scrollGap with less image shrinkage
 		},
 		dummyNodes(){ // Childless versions of 'nodes' used to parameterise <tile>s
 			return this.nodes.map(n => {
@@ -53,10 +54,10 @@ export default defineComponent({
 	watch: {
 		// Used to scroll to end of bar upon node/screen changes
 		nodes(){
-			this.$nextTick(() => this.scrollToEnd()); // Without timeout, seems to run before new tiles are added
+			this.$nextTick(() => this.scrollToEnd());
 		},
 		vert(){
-			setTimeout(() => this.scrollToEnd(), 0);
+			this.$nextTick(() => this.scrollToEnd());
 		},
 	},
 	methods: {
@@ -67,7 +68,7 @@ export default defineComponent({
 		onInfoIconClick(data: string){
 			this.$emit('info-click', data);
 		},
-		// For converting vertical scroll to horizontal
+		// For converting vertical scrolling to horizontal
 		onWheelEvt(evt: WheelEvent){
 			if (!this.vert && Math.abs(evt.deltaX) < Math.abs(evt.deltaY)){
 				this.$el.scrollLeft -= (evt.deltaY > 0 ? -30 : 30);

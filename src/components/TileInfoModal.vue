@@ -1,64 +1,96 @@
 <template>
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
-	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-4/5 max-h-[80%] p-4" :style="styles">
-		<close-icon @click.stop="onClose" ref="closeIcon"
-			class="block absolute top-2 right-2 w-6 h-6 hover:cursor-pointer"/>
-		<h1 class="text-center text-xl font-bold mb-2">
-			{{getDisplayName(nodeName, tolNode)}}
-			<div v-if="tolNode != null">
-				({{tolNode.children.length}} children, {{tolNode.tips}} tips,
-					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId"
-						target="_blank">{{tolNode.otolId}}</a>)
+	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
+		max-w-[80%] min-w-[8cm] md:min-w-[15cm] max-h-[80%]"
+		:style="styles">
+		<div class="pb-1 md:pb-2">
+			<div class="flex">
+				<h1 class="text-center text-xl font-bold grow pt-2 pb-1 md:text-2xl md:pt-3 md:pb-1">
+					{{getDisplayName(nodeName, tolNode)}}
+				</h1>
+				<close-icon @click.stop="onClose" ref="closeIcon"
+					class="block m-1 md:m-2 w-8 h-8 hover:cursor-pointer"/>
 			</div>
-		</h1>
-		<hr class="mb-4 border-stone-400"/>
-		<div v-if="nodes.length > 1">This is a compound node</div>
-		<div v-for="idx in (nodes.length == 1 ? [0] : [0, 1])">
-			<h1 v-if="nodes.length > 1" class="text-center font-bold">
+			<div class="flex justify-evenly text-sm md:text-base">
+				<div> Children: {{tolNode.children.length}} </div>
+				<div> Tips: {{tolNode.tips}} </div>
+				<div>
+					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId"
+						target="_blank">OTOL <external-link-icon class="inline-block w-3 h-3"/></a>
+				</div>
+			</div>
+			<div v-if="nodes.length > 1" class="text-center text-sm px-2">
+				<div> (This is a compound node. The details below describe two descendants) </div>
+			</div>
+		</div>
+		<div v-for="idx in (nodes.length == 1 ? [0] : [0, 1])" class="border-t border-stone-400 p-2 md:p-3 clear-both">
+			<h1 v-if="nodes.length > 1" class="text-center font-bold mb-1">
 				{{getDisplayName(subNames![idx], nodes[idx])}}
 			</h1>
 			<div v-if="nodes[idx] == null" class="text-center">
-				(This node has been trimmed away)
+				(This node was trimmed away duing tree simplification)
 			</div>
-			<div v-else class="flex gap-1">
-				<div class="w-1/2">
-					<div v-if="imgInfos[idx] == null" :style="getImgStyles(nodes[idx])"/>
-					<a v-else :href="imgInfos[idx]!.url" target="_blank">
+			<div v-else>
+				<div v-if="imgInfos[idx] != null" class="mt-1 mr-2 md:mb-2 md:mr-4 md:float-left">
+					<a :href="imgInfos[idx]!.url" target="_blank" class="block w-fit mx-auto">
 						<div :style="getImgStyles(nodes[idx])"/>
 					</a>
-					<ul v-if="imgInfos[idx]! != null">
-						<li>Obtained via: {{imgInfos[idx]!.src}}</li>
-						<li>License:
-							<a :href="licenseToUrl(imgInfos[idx]!.license)" target="_blank">
-								<span class="underline">{{imgInfos[idx]!.license}}</span>
-								<external-link-icon class="inline-block w-3 h-3 ml-1"/>
-							</a>
-						</li>
-						<li v-if="imgInfos[idx]!.url != ''">
-							<a :href="imgInfos[idx]!.url" target="_blank">
-								<span class="underline">Source URL</span>
-								<external-link-icon class="inline-block w-3 h-3 ml-1"/>
-							</a>
-						</li>
-						<li v-if="imgInfos[idx]!.artist != ''">Artist: {{imgInfos[idx]!.artist}}</li>
-						<li v-if="imgInfos[idx]!.credit != ''" class="overflow-auto">
-							Credit: {{imgInfos[idx]!.credit}}
-						</li>
-					</ul>
+					<div class="relative">
+						<details class="w-fit mx-auto text-sm hover:cursor-pointer"
+							@click="onDetailsClick($event, idx)" ref="srcInfoDetails">
+							<summary>Source information</summary>
+							<transition name="fade" @after-leave="onSrcInfoHideTransition(idx)">
+								<div v-if="srcInfoShow[idx]" class="absolute left-1/2 -translate-x-1/2 w-max max-w-full
+									md:left-0 md:translate-x-0 md:max-w-[14cm] pb-2"> <!-- Provides bottom-padding -->
+									<ul class="rounded shadow p-1 overflow-auto"
+										:style="{backgroundColor: uiOpts.bgColor, color: uiOpts.textColor}">
+										<li v-if="imgInfos[idx]!.url != ''">
+											<span :style="{color: uiOpts.altColor}">Source: </span>
+											<a :href="imgInfos[idx]!.url" target="_blank">Link</a>
+											<external-link-icon class="inline-block w-3 h-3 ml-1"/>
+										</li>
+										<li v-if="imgInfos[idx]!.artist != ''">
+											<span :style="{color: uiOpts.altColor}">Artist: </span>
+											{{imgInfos[idx]!.artist}}
+										</li>
+										<li v-if="imgInfos[idx]!.credit != ''">
+											<span :style="{color: uiOpts.altColor}">Credits: </span>
+											{{imgInfos[idx]!.credit}}
+										</li>
+										<li>
+											<span :style="{color: uiOpts.altColor}">License: </span>
+											<a :href="licenseToUrl(imgInfos[idx]!.license)" target="_blank">
+												{{imgInfos[idx]!.license}}
+											</a>
+											<external-link-icon class="inline-block w-3 h-3 ml-1"/>
+										</li>
+										<li v-if="imgInfos[idx]!.src != 'picked'">
+											<span :style="{color: uiOpts.altColor}">Obtained via: </span>
+											<a v-if="imgInfos[idx]!.src == 'eol'" href="https://eol.org/">EoL</a>
+											<a v-else href="https://www.wikipedia.org/">Wikipedia</a>
+											<external-link-icon class="inline-block w-3 h-3 ml-1"/>
+										</li>
+										<li>
+											<span :style="{color: uiOpts.altColor}">Changes: </span>
+											Cropped and resized
+										</li>
+									</ul>
+								</div>
+							</transition>
+						</details>
+					</div>
 				</div>
 				<div v-if="descInfos[idx]! != null">
-					<div>
-						Redirected: {{descInfos[idx]!.fromRedirect}} <br/>
-						Short-description from {{descInfos[idx]!.fromDbp ? 'DBpedia' : 'Wikipedia'}} <br/>
-						<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId" target="_blank">
-							<span class="underline">Wikipedia Link</span>
-							<external-link-icon class="inline-block w-3 h-3 ml-1"/>
-						</a>
-					</div>
-					<hr/>
 					<div>{{descInfos[idx]!.text}}</div>
+					<div class="text-sm text-right">
+						From
+						<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId" target="_blank">
+							Wikipedia
+						</a>
+						<external-link-icon class="inline-block w-3 h-3"/>
+					</div>
 				</div>
-				<div v-else>
+				<div v-else class="text-center">
 					(No description found)
 				</div>
 			</div>
@@ -84,6 +116,11 @@ export default defineComponent({
 		// Options
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
+	},
+	data(){
+		return {
+			srcInfoShow: [false, false], // For transitioning source-info panes when enclosing <details> are clicked
+		};
 	},
 	computed: {
 		tolNode(): TolNode {
@@ -138,8 +175,8 @@ export default defineComponent({
 				imgName = tolNode.imgName;
 			}
 			return {
-				width: this.lytOpts.maxTileSz + 'px',
-				height: this.lytOpts.maxTileSz + 'px',
+				width: '200px',
+				height: '200px',
 				backgroundImage: imgName != null ?
 					`url('${getImagePath(imgName as string)}')` :
 					'none',
@@ -183,6 +220,17 @@ export default defineComponent({
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
 				this.$emit('close');
 			}
+		},
+		onDetailsClick(evt: Event, idx: number){
+			this.srcInfoShow[idx] = !this.srcInfoShow[idx];
+			if (this.srcInfoShow[idx] == false){
+				evt.preventDefault(); // Delay <details> closure, to allow for transition
+			}
+		},
+		onSrcInfoHideTransition(idx: number){
+			// Close <details>, now that it's content has transitioned away
+			let details = this.$refs.srcInfoDetails[idx];
+			details.removeAttribute('open');
 		},
 	},
 	components: {CloseIcon, ExternalLinkIcon, },

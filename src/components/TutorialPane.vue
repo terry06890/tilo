@@ -1,12 +1,10 @@
 <template>
-<div :style="styles" class="p-2 flex flex-col justify-between">
-	<div class="flex">
-		<h2 class="text-center mb-2 mx-auto">
-			{{stage == 0 ? 'Welcome' : `Tutorial (Step ${stage} of ${lastStage})`}}
-		</h2>
-		<close-icon @click.stop="onClose"
-			class="block w-6 h-6 hover:cursor-pointer"/>
-	</div>
+<div :style="styles" class="relative flex flex-col justify-between">
+	<close-icon @click.stop="onClose"
+		class="block absolute top-2 right-2 w-8 h-8 hover:cursor-pointer"/>
+	<h1 class="text-center text-lg font-bold pt-3 pb-2">
+		{{stage == 0 ? 'Welcome' : `Tutorial (Step ${stage} of ${lastStage})`}}
+	</h1>
 	<transition name="fade" mode="out-in">
 		<div v-if="stage == 0" :style="contentStyles">
 			This is a visualiser for the biological Tree of Life. For more information,
@@ -31,7 +29,7 @@
 			{{touchDevice ? 'Tap' : 'Click'}} the icon on a tile's bottom-right to
 			bring up more information
 			<span class="block text-sm brightness-50">
-				For an expanded tile, it's at the header's right
+				For an expanded tile, it's on the header's right
 			</span>
 		</div>
 		<div v-else-if="stage == 6" :style="contentStyles">
@@ -47,11 +45,11 @@
 			{{touchDevice ? 'Tap' : 'Click'}} the settings icon
 		</div>
 		<div v-else-if="stage == 9" :style="contentStyles">
-			And finally, tap the help icon for more information
+			And finally, {{touchDevice ? 'tap' : 'click'}} the help icon for more information
 		</div>
 	</transition>
 	<!-- Buttons -->
-	<div class="w-full flex justify-evenly mt-2">
+	<div class="w-full my-2 flex justify-evenly">
 		<template v-if="stage == 0">
 			<s-button :style="buttonStyles" @click="onStartTutorial">Start Tutorial</s-button>
 			<s-button :style="buttonStyles" @click="onSkipTutorial">Skip</s-button>
@@ -88,12 +86,12 @@ export default defineComponent({
 			stage: 0, // Indicates the current step of the tutorial (stage 0 is the welcome message)
 			lastStage: 9,
 			disabledOnce: false, // Set to true after disabling features at stage 1
-			hidNextPrevOnce: false, // Used to hide prev/next buttons when initially at stage 1
 			stageActions: [
 				// Specifies, for stages 1+, what action to enable (can repeat an action to enable nothing new)
 				'expand', 'collapse', 'expandToView', 'unhideAncestor',
 				'tileInfo', 'search', 'autoMode', 'settings', 'help',
 			] as Action[],
+			hidNextPrevOnce: false, // Used to hide prev/next buttons when initially at stage 1
 		};
 	},
 	computed: {
@@ -106,8 +104,6 @@ export default defineComponent({
 		 contentStyles(): Record<string,string> {
 			return {
 				padding: '0 0.5cm',
-				maxWidth: '15cm',
-				margin: '0 auto',
 				overflow: 'auto',
 				textAlign: 'center',
 			};
