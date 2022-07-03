@@ -277,12 +277,6 @@ export default defineComponent({
 				this.handleActionForTutorial('settings');
 			}
 		},
-		helpOpen(newVal, oldVal){
-			// Possibly trigger tutorial advance
-			if (newVal == false){
-				this.handleActionForTutorial('help');
-			}
-		},
 	},
 	methods: {
 		// For tile expand/collapse events
@@ -758,6 +752,7 @@ export default defineComponent({
 			}
 			this.resetMode();
 			this.helpOpen = true;
+			this.handleActionForTutorial('help');
 		},
 		// For tutorial-pane events
 		onTutPaneClose(): void {

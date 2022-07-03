@@ -11,6 +11,7 @@
     -   TutorialPane.vue:  Displays tutorial content.
     -   SButton.vue:       Simple button component.
     -   IconButton.vue:    Simple button component containing an SVG icon.
+    -   SCollapsible.vue:  Simple collapsible-content component.
     -   icon:              Contains components that display SVG icons.
 -   lib.ts:    Contains classes/types and utility functions.
 -   layout.ts: Contains code for laying out Tiles.

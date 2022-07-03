@@ -6,24 +6,35 @@
 			class="block absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
 		<h1 class="text-center text-xl font-bold py-2 border-b border-stone-400">Help</h1>
 		<div class="p-2 border-b border-stone-400">
-			<div>
-				Lorem ipsum dolor sit amet, consectetur adipiscing
-				elit, sed do eiusmod tempor incididunt ut labore
-				et dolore magna aliqua.
-			</div>
+			<s-collapsible class="border border-stone-400 rounded">
+				<template v-slot:summary="slotProps">
+					<div class="p-1 text-center"
+						:style="{backgroundColor: !slotProps.collapsed ? 'gray' : 'transparent'}">
+						<down-icon class="inline-block w-5 h-5 transition-transform duration-300"
+							:class="{'-rotate-90': slotProps.collapsed}"/>
+						Summary text
+					</div>
+				</template>
+				<template v-slot:content>
+					<div class="p-1">
+						Lorem ipsum dolor sit amet, consectetur adipiscing
+						elit, sed do eiusmod tempor incididunt ut labore
+						et dolore magna aliqua. Ut enim ad minim veniam,
+						quis nostrud exercitation ullamco laboris nisi ut
+						aliquip ex ea commodo consequat. 
+					</div>
+				</template>
+			</s-collapsible>
 			<ul class="list-disc ml-3">
 				<li>What is the Tree of Life? ('tips', )</li>
-				<li>Representing the Tree
-					(OneZoom, iTol)
-					(tile layout, overflown-root, )
-					(leaf header colors, asterisk, compound nodes/names/images, )
-				</li>
-				<li>Data sources (OTOL, EOL, Wikipedia) (imprecision: tree, names, images, descs, )</li>
-				<li>Using tilo
+				<li>Visualising the Tree (OneZoom, iTol) (tile layout, )</li>
+				<li>Using Tilo
 					(tutorial)
+					(leaf header colors, asterisk, compound nodes/names/images, overflown-root, )
 					(settings: layout methods, reduced trees, click-label-to-reset)
 					(keyboard shortcuts)
 				</li>
+				<li>Data sources (OTOL, EOL, Wikipedia) (imprecision: tree, names, images, descs, )</li>
 				<li>Project page, error contact, other credits (feathericons, ionicons), </li>
 			</ul>
 		</div>
@@ -38,7 +49,9 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 import SButton from './SButton.vue';
+import SCollapsible from './SCollapsible.vue';
 import CloseIcon from './icon/CloseIcon.vue';
+import DownIcon from './icon/DownIcon.vue';
 import {UiOptions} from '../lib';
 
 export default defineComponent({
@@ -66,7 +79,7 @@ export default defineComponent({
 			this.$emit('close');
 		},
 	},
-	components: {SButton, CloseIcon, },
+	components: {SButton, SCollapsible, CloseIcon, DownIcon, },
 	emits: ['close', 'start-tutorial', ],
 });
 </script>

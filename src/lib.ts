@@ -137,7 +137,7 @@ export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 	let bgColor = '#292524',
 		bgColorLight = '#44403c', bgColorDark = '#1c1917',
 		bgColorLight2 = '#57534e', bgColorDark2 = '#0e0c0b',
-		bgColorAlt = '#fafaf9', bgColorAltDark = '#a8a29e';
+		bgColorAlt = '#f5f5f4', bgColorAltDark = '#a8a29e';
 	let altColor = '#a3e623', altColorDark = '#65a30d';
 	let accentColor = '#f59e0b';
 	let scrollGap = getScrollBarWidth();
