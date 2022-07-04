@@ -1,7 +1,7 @@
 <template>
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
-		w-4/5 max-w-[16cm] max-h-[80%] overflow-auto" :style="styles">
+		w-[90%] max-w-[16cm] max-h-[80%] overflow-auto" :style="styles">
 		<close-icon @click.stop="onClose" ref="closeIcon"
 			class="block absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
 		<h1 class="text-center text-xl font-bold pt-2 pb-1">Help</h1>
@@ -19,13 +19,14 @@
 							In theory, the Tree of Life represents all living organisms, along with their parents,
 							grandparents, and so on, all the way up to a single common ancestor.
 						</p>
-						<div class="my-2 w-4/5 mx-auto flex flex-col items-center gap-1 md:flex-row md:gap-2 md:w-fit">
-							<img src="data:," width="240" height="180" alt="Simple Tree of Life"
-								class="border border-black block mx-auto md:mx-0 md:shrink-0"/>
-							<p class="text-sm md:max-w-[4cm]">
-								Each dot is a <strong>node</strong>, and represents a <strong>taxon</strong>,
-								which might be a species, genus, or otherwise. The top node is the
-								<strong>root</strong>, and those at the bottom are <strong>leaves</strong>.
+						<div class="my-2 flex flex-col items-center gap-1 md:flex-row md:gap-2">
+							<img src="/basicTol.svg" alt="Simple Tree of Life"
+								class="border border-stone-300 rounded mx-auto md:mx-0 md:shrink-0"/>
+							<p class="text-xs md:text-sm text-stone-500 md:text-current">
+								Each name labels a <strong>node</strong>, and represents a biological
+								<strong>taxon</strong>, such as a species or genus.
+								The top node is the <strong>root</strong>, and those at the bottom are
+								<strong>leaves</strong>.
 							</p>
 						</div>
 						<p>
@@ -35,8 +36,8 @@
 						</p>
 						<br/>
 						<p>
-							Determining the structure of the tree is an ongoing area
-							of work, but much of it has been traced out using genetic information,
+							Determining the structure of the tree is an ongoing area of work,
+							but much of it has been traced out using genetic information,
 							statistical analysis, and human inference.
 						</p>
 					</div>
@@ -55,9 +56,8 @@
 							Tilo attempts to display the Tree of Life by representing nodes with tiles,
 							and placing tiles within other tiles to show structure.
 						</p>
-						<img src="data:," width="400" height="200" alt="Tree with Tile layout"
-							class="border border-black block mx-auto mt-2"/>
-						<br/>
+						<img src="/treeWithTiles.jpg" alt="Tree and tile-layout comparison"
+							class="border border-stone-300 mx-auto my-2"/>
 						<p>
 							Within a tile's header:
 							<ul class="list-disc pl-4">
@@ -83,15 +83,25 @@
 							There are many other methods of visualisation, which can enable viewing
 							many more nodes as text, or for exploring a more natural tree-like diagram.
 							Examples include
-							<a href="https://itol.embl.de/">iTOL</a>
+							<a href="https://itol.embl.de/" :style="anchorStyles">iTOL</a>
 								<external-link-icon :class="linkIconClasses"/>
-							and <a href="https://www.onezoom.org/">OneZoom</a>
+							and <a href="https://www.onezoom.org/" :style="anchorStyles">OneZoom</a>
 								<external-link-icon :class="linkIconClasses"/>.
-							<div class="flex gap-2 justify-evenly mt-1 md:mt-2">
-								<img src="data:," width="200" height="200" alt="iTOL"
-									class="border border-black block"/>
-								<img src="data:," width="200" height="200" alt="OneZoom"
-									class="border border-black block"/>
+							<div class="flex gap-2 mt-1 md:mt-2">
+								<div class="flex flex-col items-center">
+									<img src="/itol.jpg" alt="iTOL screenshot"
+										class="border border-stone-300"/>
+									<div class="text-xs text-center">
+										iTOL screenshot taken 05/07/2022
+									</div>
+								</div>
+								<div class="flex flex-col items-center">
+									<img src="/onezoom.jpg" alt="OneZoom screenshot"
+										class="border border-stone-300"/>
+									<div class="text-xs text-center">
+										OneZoom screenshot taken 05/07/2022
+									</div>
+								</div>
 							</div>
 						</p>
 					</div>
@@ -115,11 +125,12 @@
 							<li>
 								<h2 class="font-bold">Sweep leaves left</h2>
 								<p>
-									If disabled, an expanded tile's children are simply laid out in order.
+									If disabled, an expanded tile's children are simply laid out in order,
+									fromleft to right, then top to bottom.
 									This can leave a lot of empty space when large children are next to small ones.
 									Moving the unexpanded children (the 'leaves') to the left helps avoid this.
-									<img src="data:," width="400" height="200" alt="Sweep leaves setting effect"
-										class="border border-black block mx-auto my-1"/>
+									<img src="/sweepCmp.jpg" alt="Sweep-leaves on/off comparison"
+										class="border border-stone-300 mx-auto my-1"/>
 								</p>
 							</li>
 							<li>
@@ -127,8 +138,8 @@
 								<p>
 									If enabled, leaves being swept left can be moved beyond the tile's
 									rectangle, into leftover space in the parent.
-									<img src="data:," width="400" height="200" alt="Sweep into parent setting effect"
-										class="border border-black block mx-auto my-1"/>
+									<img src="/sweepPCmp.jpg" alt="Sweep-into-parent on/off comparison"
+										class="border border-stone-300 mx-auto my-1"/>
 								</p>
 							</li>
 							<li>
@@ -188,8 +199,9 @@
 							<li>
 								<h2 class="font-bold">Disambiguation Nodes</h2>
 								<p>
-									These have names like 'Iris [2]'. When multiple nodes have the same
-									name, all but one gets an '[N]' appended, where N is 2 or above.
+									These have names like 'Iris [2]'. When multiple nodes are found to
+									have the same name, all but one gets an '[N]' appended, where N
+									is 2 or higher.
 								</p>
 							</li>
 							<li>
@@ -404,7 +416,8 @@ export default defineComponent({
 			return this.downIconClasses + ' -rotate-90';
 		},
 		contentClasses(): string {
-			return 'p-2 text-sm md:text-base';
+			return 'py-2 mx-2 md:mx-4 text-sm md:text-base';
+				// For some reason, a smaller margin sometimes results in the collapsible not fully expanding
 		},
 		anchorStyles(): Record<string,string> {
 			return {

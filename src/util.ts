@@ -135,6 +135,7 @@ export function randWeightedChoice(weights: number[]): number | null {
 export function capitalizeWords(str: string){
 	str = str.replace(/\b\w/g, x => x.toUpperCase()); // '\b' matches word boundary, '\w' is like [a-zA-Z0-9_]
 	str = str.replace(/(\w)'S/, '$1\'s'); // Avoid cases like "traveler's tree" -> "Traveler'S Tree"
+	str = str.replace(/ And\b/, ' and'); // Avoid cases like "frogs and toads" -> "Frogs And Toads"
 	return str;
 }
 // Used to async-await for until after a timeout
