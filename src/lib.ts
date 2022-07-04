@@ -117,7 +117,7 @@ export type UiOptions = {
 export function getDefaultLytOpts(): LayoutOptions {
 	let screenSz = getBreakpoint();
 	return {
-		tileSpacing: screenSz == 'sm' ? 6 : 10, //px
+		tileSpacing: screenSz == 'sm' ? 6 : 9, //px
 		headerSz: screenSz == 'sm' ? 18 : 22, // px
 		minTileSz: 50, // px
 		maxTileSz: 200, // px

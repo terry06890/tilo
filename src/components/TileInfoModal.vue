@@ -4,13 +4,11 @@
 		max-w-[80%] min-w-[8cm] md:min-w-[14cm] max-h-[80%]"
 		:style="styles">
 		<div class="pb-1 md:pb-2">
-			<div class="flex">
-				<h1 class="text-center text-xl font-bold grow pt-2 pb-1 md:text-2xl md:pt-3 md:pb-1">
-					{{getDisplayName(nodeName, tolNode)}}
-				</h1>
-				<close-icon @click.stop="onClose" ref="closeIcon"
-					class="block m-1 md:m-2 w-8 h-8 hover:cursor-pointer"/>
-			</div>
+			<close-icon @click.stop="onClose" ref="closeIcon"
+				class="block absolute top-1 right-1 md:m-2 w-8 h-8 hover:cursor-pointer"/>
+			<h1 class="text-center text-xl font-bold pt-2 pb-1 mx-10 md:text-2xl md:pt-3 md:pb-1">
+				{{getDisplayName(nodeName, tolNode)}}
+			</h1>
 			<div class="flex justify-evenly text-sm md:text-base">
 				<div> Children: {{tolNode.children.length}} </div>
 				<div> Tips: {{tolNode.tips}} </div>
@@ -85,10 +83,10 @@
 					<div>{{descInfos[idx]!.text}}</div>
 					<div class="text-sm text-right">
 						From
-						<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId" target="_blank">
-							Wikipedia
-						</a>
-						<external-link-icon class="inline-block w-3 h-3"/>
+						<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId"
+							target="_blank">Wikipedia</a>
+						<external-link-icon class="inline-block w-3 h-3 ml-1"/>
+						{{descInfos[idx]!.fromDbp ? '(via DBpedia)' : ''}}
 					</div>
 				</div>
 				<div v-else class="text-center">

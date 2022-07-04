@@ -4,8 +4,8 @@
 		min-w-[8cm] max-w-[80%] max-h-[80%] overflow-auto" :style="styles">
 		<close-icon @click.stop="onClose" ref="closeIcon"
 			class="block absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer" />
-		<h1 class="text-xl md:text-2xl font-bold text-center py-2 border-b border-stone-400">Settings</h1>
-		<div class="border-b border-stone-400 pb-2">
+		<h1 class="text-xl md:text-2xl font-bold text-center py-2" :class="borderBClasses">Settings</h1>
+		<div class="pb-2" :class="borderBClasses">
 			<h2 class="font-bold md:text-xl text-center pt-1 md:pt-2 md:pb-1">Timing</h2>
 			<div class="grid grid-cols-[130px_minmax(0,1fr)_65px] gap-1 px-2 md:px-3">
 				<!-- Row 1 -->
@@ -24,7 +24,7 @@
 				<div class="my-auto text-right">{{uiOpts.autoActionDelay}} ms</div>
 			</div>
 		</div>
-		<div class="border-b border-stone-400 pb-2">
+		<div class="pb-2" :class="borderBClasses">
 			<h2 class="font-bold md:text-xl text-center pt-1 md:pt-2 md:pb-1">Layout</h2>
 			<div class="flex gap-2 justify-around px-2 pb-1">
 				<div>
@@ -76,7 +76,7 @@
 				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.tileSpacing)}}</div>
 			</div>
 		</div>
-		<div class="border-b border-stone-400 pb-2 px-2 md:px-3">
+		<div class="pb-2 px-2 md:px-3" :class="borderBClasses">
 			<h2 class="font-bold md:text-xl text-center pt-1 md:pt-2 -mb-2 ">Other</h2>
 			<div>
 				Tree to use
@@ -138,6 +138,9 @@ export default defineComponent({
 				borderRadius: this.uiOpts.borderRadius + 'px',
 				boxShadow: this.uiOpts.shadowNormal,
 			};
+		},
+		borderBClasses(): string {
+			return 'border-b border-stone-400';
 		},
 		rLabelClasses(): string { // For reset-upon-click labels
 			return "w-fit hover:cursor-pointer hover:text-lime-600";
