@@ -7,8 +7,7 @@
 	</h1>
 	<transition name="fade" mode="out-in">
 		<div v-if="stage == 0" :style="contentStyles">
-			This is a visualiser for the biological Tree of Life. For more information,
-			<a href="#" :style="{color: uiOpts.altColor}">{{touchDevice ? 'tap' : 'click'}} here</a>.
+			This site provides a visualisation for the biological Tree of Life.
 		</div>
 		<div v-else-if="stage == 1" :style="contentStyles">
 			{{touchDevice ? 'Tap' : 'Click'}} a tile to expand it and show it's children

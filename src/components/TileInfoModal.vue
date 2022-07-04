@@ -36,10 +36,9 @@
 					</a>
 					<s-collapsible class="text-sm text-center max-w-full md:max-w-[200px] mx-auto">
 						<template v-slot:summary="slotProps">
-							<div class="py-1">
-								<down-icon class="inline-block w-4 h-4 transition-transform duration-300"
-									:class="{'-rotate-90': !slotProps.collapsed}"/>
-								Source Information
+							<div class="py-1 hover:underline">
+								<down-icon class="inline-block w-4 h-4 mr-1 transition-transform duration-300"
+									:class="{'-rotate-90': !slotProps.collapsed}"/>Source Information
 							</div>
 						</template>
 						<template v-slot:content>
@@ -82,9 +81,8 @@
 				<div v-if="descInfos[idx]! != null">
 					<div>{{descInfos[idx]!.text}}</div>
 					<div class="text-sm text-right">
-						From
 						<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId"
-							target="_blank">Wikipedia</a>
+							target="_blank">From Wikipedia</a>
 						<external-link-icon class="inline-block w-3 h-3 ml-1"/>
 						{{descInfos[idx]!.fromDbp ? '(via DBpedia)' : ''}}
 					</div>

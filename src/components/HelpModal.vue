@@ -25,7 +25,7 @@
 							<p class="text-sm md:max-w-[4cm]">
 								Each dot is a <strong>node</strong>, and represents a <strong>taxon</strong>,
 								which might be a species, genus, or otherwise. The top node is the
-								<strong>root</strong>, and those without children are <strong>leaves</strong>.
+								<strong>root</strong>, and those at the bottom are <strong>leaves</strong>.
 							</p>
 						</div>
 						<p>
@@ -53,7 +53,7 @@
 					<div :class="contentClasses">
 						<p>
 							Tilo attempts to display the Tree of Life by representing nodes with tiles,
-							and placing tiles within other tiles to show tree structure.
+							and placing tiles within other tiles to show structure.
 						</p>
 						<img src="data:," width="400" height="200" alt="Tree with Tile layout"
 							class="border border-black block mx-auto mt-2"/>
