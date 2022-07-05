@@ -154,7 +154,7 @@ export default defineComponent({
 			mainAreaDims: [0, 0] as [number, number],
 			tileAreaDims: [0, 0] as [number, number],
 			lastResizeHdlrTime: 0, // Used to throttle resize handling
-			pendingResizeHdlr: 0, // Set via setTimeout() for a non-initial resize event
+			afterResizeHdlr: 0, // Set via setTimeout() to execute after a run of resize events
 			// For transitions
 			ancestryBarInTransition: false,
 			tutPaneInTransition: false,
@@ -793,53 +793,51 @@ export default defineComponent({
 		},
 		// For other events
 		async onResize(){
-			// Handle event, delaying/ignoring if this was recently done
-			if (this.pendingResizeHdlr == 0){
-				let handleResize = async () => {
-					// Update layout/ui options with defaults, excluding user-modified ones
-					let lytOpts = getDefaultLytOpts();
-					let uiOpts = getDefaultUiOpts(lytOpts);
-					let changedTree = false;
-					for (let prop of Object.getOwnPropertyNames(lytOpts) as (keyof LayoutOptions)[]){
-						let item = localStorage.getItem('LYT ' + prop);
-						if (item == null && this.lytOpts[prop] != lytOpts[prop]){
-							this.lytOpts[prop] = lytOpts[prop];
-						}
+			// Handle event if not recently done
+			let handleResize = async () => {
+				// Update layout/ui options with defaults, excluding user-modified ones
+				let lytOpts = getDefaultLytOpts();
+				let uiOpts = getDefaultUiOpts(lytOpts);
+				console.log(uiOpts.touchDevice)
+				let changedTree = false;
+				for (let prop of Object.getOwnPropertyNames(lytOpts) as (keyof LayoutOptions)[]){
+					let item = localStorage.getItem('LYT ' + prop);
+					if (item == null && this.lytOpts[prop] != lytOpts[prop]){
+						this.lytOpts[prop] = lytOpts[prop];
 					}
-					for (let prop of Object.getOwnPropertyNames(uiOpts) as (keyof UiOptions)[]){
-						let item = localStorage.getItem('UI ' + prop);
-						//Note: Using JSON.stringify here to roughly deep-compare values
-						if (item == null && JSON.stringify(this.uiOpts[prop]) != JSON.stringify(uiOpts[prop])){
-							this.uiOpts[prop] = uiOpts[prop];
-							if (prop == 'tree'){
-								changedTree = true;
-							}
-						}
-					}
-					// Relayout
-					this.overflownRoot = false;
-					if (!changedTree){
-						await this.updateAreaDims();
-						this.relayoutWithCollapse();
-					} else {
-						this.reInit();
-					}
-				};
-				//
-				let currentTime = new Date().getTime();
-				if (currentTime - this.lastResizeHdlrTime > this.uiOpts.animationDelay){
-					this.lastResizeHdlrTime = currentTime;
-					await handleResize();
-					this.lastResizeHdlrTime = new Date().getTime();
-				} else {
-					let remainingDelay = this.uiOpts.animationDelay - (currentTime - this.lastResizeHdlrTime);
-					this.pendingResizeHdlr = setTimeout(async () => {
-						this.pendingResizeHdlr = 0;
-						await handleResize();
-						this.lastResizeHdlrTime = new Date().getTime();
-					}, remainingDelay);
 				}
+				for (let prop of Object.getOwnPropertyNames(uiOpts) as (keyof UiOptions)[]){
+					let item = localStorage.getItem('UI ' + prop);
+					//Note: Using JSON.stringify here to roughly deep-compare values
+					if (item == null && JSON.stringify(this.uiOpts[prop]) != JSON.stringify(uiOpts[prop])){
+						this.uiOpts[prop] = uiOpts[prop];
+						if (prop == 'tree'){
+							changedTree = true;
+						}
+					}
+				}
+				// Relayout
+				this.overflownRoot = false;
+				if (!changedTree){
+					await this.updateAreaDims();
+					this.relayoutWithCollapse();
+				} else {
+					this.reInit();
+				}
+			};
+			let currentTime = new Date().getTime();
+			if (currentTime - this.lastResizeHdlrTime > this.uiOpts.animationDelay){
+				this.lastResizeHdlrTime = currentTime;
+				await handleResize();
+				this.lastResizeHdlrTime = new Date().getTime();
 			}
+			// Also setup a handler to execute after a run of resize events
+			clearTimeout(this.afterResizeHdlr);
+			this.afterResizeHdlr = setTimeout(async () => {
+				this.afterResizeHdlr = 0;
+				await handleResize();
+				this.lastResizeHdlrTime = new Date().getTime();
+			}, 200); // If too small, touch-device detection when swapping to/from mobile-mode gets unreliable
 		},
 		onKeyUp(evt: KeyboardEvent): void {
 			if (this.uiOpts.disableShortcuts){
