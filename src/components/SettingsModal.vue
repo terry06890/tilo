@@ -3,7 +3,7 @@
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
 		min-w-[8cm] max-w-[80%] max-h-[80%] overflow-auto" :style="styles">
 		<close-icon @click.stop="onClose" ref="closeIcon"
-			class="block absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer" />
+			class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer" />
 		<h1 class="text-xl md:text-2xl font-bold text-center py-2" :class="borderBClasses">Settings</h1>
 		<div class="pb-2" :class="borderBClasses">
 			<h2 class="font-bold md:text-xl text-center pt-1 md:pt-2 md:pb-1">Timing</h2>

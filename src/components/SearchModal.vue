@@ -6,7 +6,7 @@
 			@keyup.enter="onSearch" @keyup.esc="onClose"
 			@input="onInput" @keydown.down.prevent="onDownKey" @keydown.up.prevent="onUpKey"/>
 		<div class="p-1 hover:cursor-pointer">
-			<search-icon @click.stop="onSearch" class="block w-8 h-8"/>
+			<search-icon @click.stop="onSearch" class="w-8 h-8"/>
 		</div>
 		<div class="absolute top-[100%] w-full overflow-hidden" :style="suggContainerStyles">
 			<div v-for="(sugg, idx) of searchSuggs"

@@ -5,7 +5,7 @@
 		:style="styles">
 		<div class="pb-1 md:pb-2">
 			<close-icon @click.stop="onClose" ref="closeIcon"
-				class="block absolute top-1 right-1 md:m-2 w-8 h-8 hover:cursor-pointer"/>
+				class="absolute top-1 right-1 md:m-2 w-8 h-8 hover:cursor-pointer"/>
 			<h1 class="text-center text-xl font-bold pt-2 pb-1 mx-10 md:text-2xl md:pt-3 md:pb-1">
 				{{getDisplayName(nodeName, tolNode)}}
 			</h1>

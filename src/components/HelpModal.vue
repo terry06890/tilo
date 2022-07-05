@@ -3,7 +3,7 @@
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
 		w-[90%] max-w-[16cm] max-h-[80%] overflow-auto" :style="styles">
 		<close-icon @click.stop="onClose" ref="closeIcon"
-			class="block absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
+			class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
 		<h1 class="text-center text-xl font-bold pt-2 pb-1">Help</h1>
 		<div class="flex flex-col gap-2 p-2">
 			<s-collapsible :class="scClasses">
@@ -444,7 +444,7 @@ export default defineComponent({
 			return "relative text-center p-1 bg-stone-300 hover:brightness-90 hover:bg-lime-200 md:p-2";
 		},
 		downIconClasses(): string {
-			return 'block absolute w-6 h-6 my-auto mx-1 transition-transform duration-300';
+			return 'absolute w-6 h-6 my-auto mx-1 transition-transform duration-300';
 		},
 		downIconExpandedClasses(): string {
 			return this.downIconClasses + ' -rotate-90';

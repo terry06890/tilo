@@ -1,7 +1,7 @@
 <template>
 <div :style="styles" class="relative flex flex-col justify-between">
 	<close-icon @click.stop="onClose"
-		class="block absolute top-2 right-2 w-8 h-8 hover:cursor-pointer"/>
+		class="absolute top-2 right-2 w-8 h-8 hover:cursor-pointer"/>
 	<h1 class="text-center text-lg font-bold pt-3 pb-2">
 		{{stage == 0 ? 'Welcome' : `Tutorial (Step ${stage} of ${lastStage})`}}
 	</h1>

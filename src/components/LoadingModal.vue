@@ -2,7 +2,7 @@
 <div class="fixed left-0 top-0 w-full h-full bg-black/40">
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
 		flex items-center py-3 px-3 gap-2" :style="styles">
-		<loader-icon class="block w-12 h-12 animate-[spin_6s_linear_infinite]"/>
+		<loader-icon class="w-12 h-12 animate-[spin_6s_linear_infinite]"/>
 		<div class="whitespace-nowrap">Querying server ...</div>
 	</div>
 </div>
