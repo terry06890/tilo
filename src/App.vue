@@ -798,7 +798,6 @@ export default defineComponent({
 				// Update layout/ui options with defaults, excluding user-modified ones
 				let lytOpts = getDefaultLytOpts();
 				let uiOpts = getDefaultUiOpts(lytOpts);
-				console.log(uiOpts.touchDevice)
 				let changedTree = false;
 				for (let prop of Object.getOwnPropertyNames(lytOpts) as (keyof LayoutOptions)[]){
 					let item = localStorage.getItem('LYT ' + prop);

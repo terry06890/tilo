@@ -57,7 +57,7 @@
 					min="15" :max="uiOpts.breakpoint == 'sm' ? 150 : 200" v-model.number="lytOpts.minTileSz"
 					@input="onSettingChgThrottled('LYT', 'minTileSz')" @change="onSettingChg('LYT', 'minTileSz')"
 					name="minTileSizeInput" ref="minTileSzInput"/>
-				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.minTileSz)}}</div>
+				<div class="my-auto text-right">{{lytOpts.minTileSz}} px</div>
 				<!-- Row 2 -->
 				<label for="maxTileSizeInput" @click="onReset('LYT', 'maxTileSz')" :class="rLabelClasses">
 					Max Tile Size
@@ -65,7 +65,7 @@
 				<input type="range" min="15" max="400" v-model.number="lytOpts.maxTileSz"
 					@input="onSettingChgThrottled('LYT', 'maxTileSz')" @change="onSettingChg('LYT', 'maxTileSz')"
 					name="maxTileSizeInput" ref="maxTileSzInput"/>
-				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.maxTileSz)}}</div>
+				<div class="my-auto text-right">{{lytOpts.maxTileSz}} px</div>
 				<!-- Row 3 -->
 				<label for="tileSpacingInput" @click="onReset('LYT', 'tileSpacing')" :class="rLabelClasses">
 					Tile Spacing
@@ -73,7 +73,7 @@
 				<input type="range" min="0" max="20" v-model.number="lytOpts.tileSpacing"
 					@input="onSettingChgThrottled('LYT', 'tileSpacing')" @change="onSettingChg('LYT', 'tileSpacing')"
 					name="tileSpacingInput"/>
-				<div class="my-auto text-right">{{pxToDisplayStr(lytOpts.tileSpacing)}}</div>
+				<div class="my-auto text-right">{{lytOpts.tileSpacing}} px</div>
 			</div>
 		</div>
 		<div class="pb-2 px-2 md:px-3" :class="borderBClasses">
@@ -226,9 +226,6 @@ export default defineComponent({
 			// Clear saved-indicator
 			this.saved = false;
 		},
-		pxToDisplayStr(px: number): string {
-			return (px / 3.78).toFixed() + ' mm';
-		}
 	},
 	components: {SButton, CloseIcon, },
 	emits: ['close', 'setting-chg', 'reset', ],
