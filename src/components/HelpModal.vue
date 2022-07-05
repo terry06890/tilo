@@ -336,15 +336,27 @@
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
 						<down-icon :class="slotProps.collapsed ? downIconClasses : downIconExpandedClasses"/>
-						Other Credits
+						Project Information
 					</div>
 				</template>
 				<template #content>
 					<div :class="contentClasses">
+						<h1 class="text-lg font-bold">Other Credits</h1>
 						<ul class="list-disc pl-4">
 							<li>
-								The UI was built using the
+								The UI was largely coded in
+								<a href="https://www.typescriptlang.org/" :style="anchorStyles">Typescript</a>
+									<external-link-icon :class="linkIconClasses"/>,
+								and built using the
 								<a href="https://vuejs.org/" :style="anchorStyles">Vue framework</a>
+									<external-link-icon :class="linkIconClasses"/>
+							</li>
+							<li>
+								Tree data was processed using
+								<a href="https://www.python.org/" :style="anchorStyles">Python</a>
+									<external-link-icon :class="linkIconClasses"/>,
+								and stored using
+								<a href="https://www.sqlite.org/index.html" :style="anchorStyles">Sqlite</a>
 									<external-link-icon :class="linkIconClasses"/>
 							</li>
 							<li>
@@ -366,6 +378,28 @@
 							<li>
 								Images were cropped using
 								<a href="https://github.com/jwagner/smartcrop.js" :style="anchorStyles">Smartcrop</a>
+									<external-link-icon :class="linkIconClasses"/>
+							</li>
+						</ul>
+						<br/>
+						<h1 class="text-lg font-bold">Licensing</h1>
+						<ul class="list-disc pl-4">
+							<li>The project's code is licensed under the MIT license</li>
+							<li>
+								Tree data from the Open Tree of Life is licensed under the
+								<a href="https://raw.githubusercontent.com/OpenTreeOfLife/opentree/master/LICENSE.txt"
+									:style="anchorStyles">BSD 2-Clause License</a>
+									<external-link-icon :class="linkIconClasses"/>
+							</li>
+							<li>
+								Image licensing information is available from a tile's info pane,
+								under 'Source information'
+							</li>
+							<li>
+								The short descriptions are extracted from Wikipedia's page content,
+								which is available under the
+								<a href="https://creativecommons.org/licenses/by-sa/3.0/" :style="anchorStyles"
+									>CC BY-SA 3.0 license</a>
 									<external-link-icon :class="linkIconClasses"/>
 							</li>
 						</ul>
