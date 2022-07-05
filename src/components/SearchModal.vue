@@ -37,11 +37,12 @@ import SearchIcon from './icon/SearchIcon.vue';
 import LogInIcon from './icon/LogInIcon.vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {TolNode, TolMap} from '../tol';
-import {LayoutNode, LayoutOptions} from '../layout';
-import {getServerResponse, SearchSugg, SearchSuggResponse, UiOptions} from '../lib';
+import {LayoutNode, LayoutMap, LayoutOptions} from '../layout';
+import {queryServer, SearchSugg, SearchSuggResponse, UiOptions} from '../lib';
 
 export default defineComponent({
 	props: {
+		lytMap: {type: Object as PropType<LayoutMap>, required: true}, // Used to check if a searched-for node exists
 		tolMap: {type: Object as PropType<TolMap>, required: true}, // Upon a search response, gets new nodes added
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
@@ -131,7 +132,7 @@ export default defineComponent({
 			let doReq = async () => {
 				let suggInput = this.pendingSuggInput;
 				let responseObj: SearchSuggResponse =
-					await getServerResponse(this.pendingSuggReqParams);
+					await queryServer(this.pendingSuggReqParams);
 				if (responseObj == null){
 					return;
 				}
@@ -191,10 +192,17 @@ export default defineComponent({
 			if (tolNodeName == ''){
 				return;
 			}
+			// Check if the node has already been retrieved
+			if (this.lytMap.has(tolNodeName)){
+				this.$emit('search', tolNodeName);
+				return;
+			}
 			// Ask server for nodes in parent-chain, updates tolMap, then emits search event
 			let urlParams = 'type=node&toroot=true&name=' + encodeURIComponent(tolNodeName);
 			urlParams += '&tree=' + this.uiOpts.tree;
-			let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
+			this.$emit('net-wait'); // Allows the parent component to show a loading-indicator
+			let responseObj: {[x: string]: TolNode} = await queryServer(urlParams);
+			this.$emit('net-get');
 			if (responseObj == null){
 				return;
 			}
@@ -232,6 +240,6 @@ export default defineComponent({
 		(this.$refs.searchInput as HTMLInputElement).focus();
 	},
 	components: {SearchIcon, InfoIcon, LogInIcon, },
-	emits: ['search', 'close', 'info-click', 'setting-chg', ],
+	emits: ['search', 'close', 'info-click', 'setting-chg', 'net-wait', 'net-get', ],
 });
 </script>

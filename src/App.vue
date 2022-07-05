@@ -48,9 +48,9 @@
 	</div>
 	<!-- Modals -->
 	<transition name="fade">
-		<search-modal v-if="searchOpen" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
+		<search-modal v-if="searchOpen" :tolMap="tolMap" :lytMap="layoutMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 			@close="onSearchClose" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg"
-			ref="searchModal"/>
+			@net-wait="primeLoadInd" @net-get="endLoadInd" class="z-10" ref="searchModal"/>
 	</transition>
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null && infoModalData != null"
@@ -63,6 +63,9 @@
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
 		@close="settingsOpen = false" @reset="onResetSettings" @setting-chg="onSettingChg"/>
+	<transition name="fade">
+		<loading-modal v-if="loadingOpen" :uiOpts="uiOpts" class="z-10"/>
+	</transition>
 	<!-- Overlay used to capture clicks during auto mode, etc -->
 	<div :style="{visibility: modeRunning != null ? 'visible' : 'hidden'}"
 		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = null"></div>
@@ -79,6 +82,7 @@ import SettingsModal from './components/SettingsModal.vue';
 import HelpModal from './components/HelpModal.vue';
 import AncestryBar from './components/AncestryBar.vue';
 import TutorialPane from './components/TutorialPane.vue';
+import LoadingModal from './components/LoadingModal.vue';
 import IconButton from './components/IconButton.vue';
 // Icons
 import SearchIcon from './components/icon/SearchIcon.vue';
@@ -91,7 +95,7 @@ import HelpIcon from './components/icon/HelpIcon.vue';
 import {TolNode, TolMap} from './tol';
 import {LayoutNode, LayoutOptions, LayoutTreeChg,
 	initLayoutTree, initLayoutMap, tryLayout} from './layout';
-import {getServerResponse, InfoResponse, Action,
+import {queryServer, InfoResponse, Action,
 	UiOptions, getDefaultLytOpts, getDefaultUiOpts, OptionType} from './lib';
 import {arraySum, randWeightedChoice, timeout} from './util';
 
@@ -136,6 +140,7 @@ export default defineComponent({
 			searchOpen: false,
 			settingsOpen: false,
 			helpOpen: false,
+			loadingOpen: false,
 			// For search and auto-mode
 			modeRunning: null as null | 'search' | 'autoMode',
 			lastFocused: null as LayoutNode | null, // Used to un-focus 
@@ -160,6 +165,7 @@ export default defineComponent({
 			tutPaneInTransition: false,
 			// Other
 			justInitialised: false, // Used to skip transition for the tile initially loaded from server
+			pendingLoadingRevealHdlr: 0, // Used to delay showing the loading modal
 			changedSweepToParent: false, // Set during search animation for efficiency
 			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries get removed
 		};
@@ -319,7 +325,7 @@ export default defineComponent({
 			if (!this.tolMap.has(tolNode.children[0])){
 				let urlParams = 'type=node&name=' + encodeURIComponent(layoutNode.name);
 				urlParams += '&tree=' + this.uiOpts.tree;
-				let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
+				let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
 				if (responseObj == null){
 					return false;
 				}
@@ -414,7 +420,7 @@ export default defineComponent({
 			if (!this.tolMap.has(tolNode.children[0])){
 				let urlParams = 'type=node&name=' + encodeURIComponent(layoutNode.name);
 				urlParams += '&tree=' + this.uiOpts.tree;
-				let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
+				let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
 				if (responseObj == null){
 					return false;
 				}
@@ -483,7 +489,7 @@ export default defineComponent({
 			// Query server for tol-node info
 			let urlParams = 'type=info&name=' + encodeURIComponent(nodeName);
 			urlParams += '&tree=' + this.uiOpts.tree;
-			let responseObj: InfoResponse = await getServerResponse(urlParams);
+			let responseObj: InfoResponse = await this.loadFromServer(urlParams);
 			if (responseObj == null){
 				return;
 			}
@@ -791,6 +797,27 @@ export default defineComponent({
 				this.tutTriggerFlag = !this.tutTriggerFlag;
 			}
 		},
+		// For the loading-indicator
+		async loadFromServer(urlParams: string){ // Like queryServer(), but enables the loading indicator
+			this.primeLoadInd();
+			let responseObj = await queryServer(urlParams);
+			this.endLoadInd();
+			return responseObj;
+		},
+		primeLoadInd(){
+			if (this.pendingLoadingRevealHdlr == 0){
+				this.pendingLoadingRevealHdlr = setTimeout(() => {
+					this.loadingOpen = true;
+				}, 300);
+			}
+		},
+		endLoadInd(){
+			clearTimeout(this.pendingLoadingRevealHdlr);
+			this.pendingLoadingRevealHdlr = 0;
+			if (this.loadingOpen){
+				this.loadingOpen = false;
+			}
+		},
 		// For other events
 		async onResize(){
 			// Handle event if not recently done
@@ -865,7 +892,7 @@ export default defineComponent({
 			// Query server
 			let urlParams = 'type=node';
 			urlParams += '&tree=' + this.uiOpts.tree;
-			let responseObj: {[x: string]: TolNode} = await getServerResponse(urlParams);
+			let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
 			if (responseObj == null){
 				return;
 			}
@@ -1027,7 +1054,7 @@ export default defineComponent({
 	components: {
 		Tile, TutorialPane, AncestryBar,
 		IconButton, SearchIcon, PlayIcon, PauseIcon, SettingsIcon, HelpIcon,
-		TileInfoModal, SearchModal, SettingsModal, HelpModal,
+		TileInfoModal, SearchModal, SettingsModal, HelpModal, LoadingModal,
 	},
 });
 </script>
