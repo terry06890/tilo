@@ -450,8 +450,7 @@ export default defineComponent({
 			return this.downIconClasses + ' -rotate-90';
 		},
 		contentClasses(): string {
-			return 'py-2 mx-2 md:mx-4 text-sm md:text-base';
-				// For some reason, a smaller margin sometimes results in the collapsible not fully expanding
+			return 'py-2 px-2 text-sm md:text-base';
 		},
 		anchorStyles(): Record<string,string> {
 			return {
