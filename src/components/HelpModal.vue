@@ -53,7 +53,7 @@
 				<template #content>
 					<div :class="contentClasses">
 						<p>
-							Tilo attempts to display the Tree of Life by representing nodes with tiles,
+							Tilo displays the Tree of Life by representing nodes with tiles,
 							and placing tiles within other tiles to show structure.
 						</p>
 						<img src="/treeWithTiles.jpg" alt="Tree and tile-layout comparison"
@@ -62,7 +62,7 @@
 							Within a tile's header:
 							<ul class="list-disc pl-4">
 								<li>
-									The color denotes the number of children.
+									The color denotes the number of child tiles.
 									White means zero,
 									<span style="color: limegreen">green</span> means 1+,
 									<span style="color: darkorange">orange</span> means 10+,
@@ -407,8 +407,8 @@
 				</template>
 			</s-collapsible>
 		</div>
-		<s-button v-if="!tutOpen" class="mx-auto mb-2"
-			:style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}" @click.stop="onStartTutorial">
+		<s-button class="mx-auto mb-2" :style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}"
+			:disabled="tutOpen" @click.stop="onStartTutorial">
 			Start Tutorial
 		</s-button>
 	</div>

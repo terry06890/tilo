@@ -24,7 +24,7 @@
 	<div :style="tutPaneContainerStyles" class="z-10"> <!-- Used to slide-in/out the tutorial pane -->
 		<transition name="fade" @after-enter="tutPaneInTransition = false" @after-leave="tutPaneInTransition = false">
 			<tutorial-pane v-if="tutPaneOpen" :style="tutPaneStyles"
-				:uiOpts="uiOpts" :triggerFlag="tutTriggerFlag" :skipWelcome="!tutWelcome"
+				:actionsDone="actionsDone" :triggerFlag="tutTriggerFlag" :skipWelcome="!tutWelcome" :uiOpts="uiOpts"
 				@close="onTutPaneClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
 		</transition>
 	</div>
@@ -68,7 +68,7 @@
 	</transition>
 	<!-- Overlay used to capture clicks during auto mode, etc -->
 	<div :style="{visibility: modeRunning != null ? 'visible' : 'hidden'}"
-		class="absolute left-0 top-0 w-full h-full" @click="modeRunning = null"></div>
+		class="absolute left-0 top-0 w-full h-full z-20" @click="modeRunning = null"></div>
 </div>
 </template>
 
@@ -152,6 +152,7 @@ export default defineComponent({
 			tutWelcome: !uiOpts.tutorialSkip,
 			tutTriggerAction: null as Action | null, // Used to advance tutorial upon user-actions
 			tutTriggerFlag: false,
+			actionsDone: new Set() as Set<Action>, // Used to avoid disabling actions the user has already seen
 			// Options
 			lytOpts: lytOpts,
 			uiOpts: uiOpts,
@@ -509,9 +510,9 @@ export default defineComponent({
 				console.log('WARNING: Unexpected search event while search/auto mode is running')
 				return;
 			}
-			if (this.isDisabled('expand') || this.isDisabled('expandToView') || this.isDisabled('unhideAncestor')){
-				console.log('INFO: Ignored search action due to disabled expand/expandToView');
-				return;
+			const prereqActions = ['expand', 'expandToView', 'unhideAncestor'];
+			if (this.isDisabled(...prereqActions)){
+				prereqActions.forEach(a => this.uiOpts.disabledActions.delete(a));
 			}
 			//
 			this.searchOpen = false;
@@ -602,10 +603,9 @@ export default defineComponent({
 			if (this.isDisabled('autoMode')){
 				return;
 			}
-			if (this.isDisabled('expand') || this.isDisabled('collapse') ||
-				this.isDisabled('expandToView') || this.isDisabled('unhideAncestor')){
-				console.log('INFO: Ignored auto-mode action due to disabled expand/collapse/etc');
-				return;
+			const prereqActions = ['expand', 'collapse', 'expandToView', 'unhideAncestor'];
+			if (this.isDisabled(...prereqActions)){
+				prereqActions.forEach(a => this.uiOpts.disabledActions.delete(a));
 			}
 			//
 			this.resetMode();
@@ -782,16 +782,16 @@ export default defineComponent({
 			}
 		},
 		handleActionForTutorial(action: Action): void {
-			if (!this.tutPaneOpen){
-				return;
-			}
-			// Close welcome message on first action
-			if (this.tutWelcome){
-				this.onTutPaneClose();
-			}
-			// Tell TutorialPane if trigger-action was done
-			if (this.tutTriggerAction == action){
-				this.tutTriggerFlag = !this.tutTriggerFlag;
+			this.actionsDone.add(action);
+			if (this.tutPaneOpen){
+				// Close welcome message on first action
+				if (this.tutWelcome){
+					this.onTutPaneClose();
+				}
+				// Tell TutorialPane if trigger-action was done
+				if (this.tutTriggerAction == action){
+					this.tutTriggerFlag = !this.tutTriggerFlag;
+				}
 			}
 		},
 		// For the loading-indicator

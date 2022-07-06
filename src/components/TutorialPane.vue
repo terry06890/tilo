@@ -38,7 +38,7 @@
 			</span>
 		</div>
 		<div v-else-if="stage == 7" :style="contentStyles">
-			{{touchDevice ? 'Tap' : 'Click'}} the play icon to start Auto Mode
+			{{touchDevice ? 'Tap' : 'Click'}} the play icon to traverse the tree automatically
 		</div>
 		<div v-else-if="stage == 8" :style="contentStyles">
 			{{touchDevice ? 'Tap' : 'Click'}} the settings icon
@@ -75,9 +75,10 @@ import {Action, UiOptions} from '../lib';
 
 export default defineComponent({
 	props: {
-		skipWelcome: {type: Boolean, default: false},
+		actionsDone: {type: Object as PropType<Set<Action>>, required: true}, // Used to avoid disabling actions already seen
 		triggerFlag: {type: Boolean, required: true},
 			// Used to indicate that a tutorial-requested 'trigger' action has been done
+		skipWelcome: {type: Boolean, default: false},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
 	data(){
@@ -122,7 +123,7 @@ export default defineComponent({
 			// If starting tutorial, disable 'all' actions
 			if (newVal == 1 && !this.disabledOnce){
 				for (let action of this.stageActions){
-					if (action != null){
+					if (action != null && !this.actionsDone.has(action)){
 						this.uiOpts.disabledActions.add(action);
 					}
 				}

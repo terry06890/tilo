@@ -33,7 +33,7 @@
 					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 			</div>
 			<transition name="fadein">
-				<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 bg-amber-500/70 z-20"></div>
+				<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 rounded-[inherit] bg-amber-500/70 z-20"/>
 			</transition>
 		</div>
 		<tile v-for="child in visibleChildren" :key="child.name"
@@ -43,7 +43,7 @@
 			@info-click="onInnerInfoIconClick"/>
 	</div>
 	<transition name="fadein">
-		<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 bg-amber-500/70"></div>
+		<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 rounded-[inherit] bg-amber-500/70"/>
 	</transition>
 </div>
 </template>
@@ -355,7 +355,7 @@ export default defineComponent({
 			};
 		},
 		infoIconClasses(): string {
-			return 'text-white/20 hover:text-white hover:cursor-pointer';
+			return 'text-white/30 hover:text-white hover:cursor-pointer';
 		},
 		// For watching layoutNode data
 		pos(){
