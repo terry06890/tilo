@@ -8,10 +8,10 @@ import {getBreakpoint, Breakpoint, getScrollBarWidth, onTouchDevice} from './uti
 
 // For server requests
 const SERVER_URL = 'http://localhost:8000/cgi-bin/data.py'
-export async function queryServer(params: string){
+export async function queryServer(params: URLSearchParams){
 	// Construct URL
 	let url = new URL(SERVER_URL);
-	url.search = params;
+	url.search = params.toString();
 	// Query server
 	let responseObj;
 	try {

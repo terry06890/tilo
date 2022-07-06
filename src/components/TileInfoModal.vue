@@ -8,7 +8,7 @@
 				class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
 			<div class="absolute top-1 left-1 md:top-2 md:left-2 flex items-center">
 				<a :href="'/?node=' + encodeURIComponent(nodeName)" class="block w-8 h-8 p-[2px] hover:cursor-pointer"
-					@click.prevent="onLinkIconClick">
+					@click.prevent="onLinkIconClick" title="Copy link to this node">
 					<link-icon/>
 				</a>
 				<transition name="fadeslow">

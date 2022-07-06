@@ -323,8 +323,7 @@ export default defineComponent({
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				let urlParams = 'type=node&name=' + encodeURIComponent(layoutNode.name);
-				urlParams += '&tree=' + this.uiOpts.tree;
+				let urlParams = new URLSearchParams({type: 'node', name: layoutNode.name, tree: this.uiOpts.tree});
 				let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
 				if (responseObj == null){
 					return false;
@@ -418,8 +417,7 @@ export default defineComponent({
 			// Check if data for node-to-expand exists, getting from server if needed
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
-				let urlParams = 'type=node&name=' + encodeURIComponent(layoutNode.name);
-				urlParams += '&tree=' + this.uiOpts.tree;
+				let urlParams = new URLSearchParams({type: 'node', name: layoutNode.name, tree: this.uiOpts.tree});
 				let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
 				if (responseObj == null){
 					return false;
@@ -487,8 +485,7 @@ export default defineComponent({
 				this.resetMode();
 			}
 			// Query server for tol-node info
-			let urlParams = 'type=info&name=' + encodeURIComponent(nodeName);
-			urlParams += '&tree=' + this.uiOpts.tree;
+			let urlParams = new URLSearchParams({type: 'info', name: nodeName, tree: this.uiOpts.tree});
 			let responseObj: InfoResponse = await this.loadFromServer(urlParams);
 			if (responseObj == null){
 				return;
@@ -798,7 +795,7 @@ export default defineComponent({
 			}
 		},
 		// For the loading-indicator
-		async loadFromServer(urlParams: string){ // Like queryServer(), but enables the loading indicator
+		async loadFromServer(urlParams: URLSearchParams){ // Like queryServer(), but enables the loading indicator
 			this.primeLoadInd();
 			let responseObj = await queryServer(urlParams);
 			this.endLoadInd();
@@ -892,11 +889,11 @@ export default defineComponent({
 			// Get possible target node from URL
 			let nodeName = (new URL(window.location.href)).searchParams.get('node');
 			// Query server
-			let urlParams = 'type=node';
+			let urlParams = new URLSearchParams({type: 'node', tree: this.uiOpts.tree});
 			if (nodeName != null){
-				urlParams += '&name=' + encodeURIComponent(nodeName) + '&toroot=true';
+				urlParams.append('name', encodeURIComponent(nodeName));
+				urlParams.append('toroot', 'true');
 			}
-			urlParams += '&tree=' + this.uiOpts.tree;
 			let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
 			if (responseObj == null){
 				return;

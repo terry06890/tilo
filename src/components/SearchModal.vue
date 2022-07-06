@@ -55,7 +55,8 @@ export default defineComponent({
 			suggsInput: '', // The input that resulted in the current suggestions (used to highlight matching text)
 			// For search-suggestion requests
 			lastSuggReqTime: 0, // Set when a search-suggestions request is initiated
-			pendingSuggReqParams: '', // Used by a search-suggestion requester to request with the latest user input
+			pendingSuggReqParams: null as null | URLSearchParams,
+				// Used by a search-suggestion requester to request with the latest user input
 			pendingDelayedSuggReq: 0, // Set via setTimeout() for a non-initial search-suggestions request
 			pendingSuggInput: '', // Used to remember what input triggered a suggestions request
 			// Other
@@ -123,16 +124,19 @@ export default defineComponent({
 				return;
 			}
 			// Get URL params to use for querying search-suggestions
-			let urlParams = 'type=sugg&name=' + encodeURIComponent(input.value);
-			urlParams += '&limit=' + this.uiOpts.searchSuggLimit;
-			urlParams += '&tree=' + this.uiOpts.tree;
+			let urlParams = new URLSearchParams({
+				type: 'sugg',
+				name: input.value,
+				limit: String(this.uiOpts.searchSuggLimit),
+				tree: this.uiOpts.tree,
+			});
 			// Query server, delaying/skipping if a request was recently sent
 			this.pendingSuggReqParams = urlParams;
 			this.pendingSuggInput = input.value;
 			let doReq = async () => {
 				let suggInput = this.pendingSuggInput;
 				let responseObj: SearchSuggResponse =
-					await queryServer(this.pendingSuggReqParams);
+					await queryServer(this.pendingSuggReqParams!);
 				if (responseObj == null){
 					return;
 				}
@@ -198,8 +202,12 @@ export default defineComponent({
 				return;
 			}
 			// Ask server for nodes in parent-chain, updates tolMap, then emits search event
-			let urlParams = 'type=node&toroot=true&name=' + encodeURIComponent(tolNodeName);
-			urlParams += '&tree=' + this.uiOpts.tree;
+			let urlParams = new URLSearchParams({
+				type: 'node',
+				name: tolNodeName,
+				toroot: 'true',
+				tree: this.uiOpts.tree,
+			});
 			this.$emit('net-wait'); // Allows the parent component to show a loading-indicator
 			let responseObj: {[x: string]: TolNode} = await queryServer(urlParams);
 			this.$emit('net-get');
