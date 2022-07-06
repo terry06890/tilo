@@ -891,7 +891,7 @@ export default defineComponent({
 			// Query server
 			let urlParams = new URLSearchParams({type: 'node', tree: this.uiOpts.tree});
 			if (nodeName != null){
-				urlParams.append('name', encodeURIComponent(nodeName));
+				urlParams.append('name', nodeName);
 				urlParams.append('toroot', 'true');
 			}
 			let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
@@ -914,9 +914,24 @@ export default defineComponent({
 			// Initialise tree
 			this.tolMap.clear();
 			nodeNames.forEach(n => {this.tolMap.set(n, responseObj[n])});
-			this.layoutTree = initLayoutTree(this.tolMap, rootName, 0);
-			this.activeRoot = this.layoutTree;
-			this.layoutMap = initLayoutMap(this.layoutTree);
+			if (nodeName == null){
+				this.layoutTree = initLayoutTree(this.tolMap, rootName, 0);
+				this.layoutMap = initLayoutMap(this.layoutTree);
+				this.activeRoot = this.layoutTree;
+			} else {
+				this.layoutTree = initLayoutTree(this.tolMap, rootName, -1);
+				this.layoutMap = initLayoutMap(this.layoutTree);
+				// Set active root
+				let targetNode = this.layoutMap.get(nodeName)!;
+				let newRoot = targetNode.parent == null ? targetNode : targetNode.parent;
+				LayoutNode.hideUpward(newRoot, this.layoutMap);
+				if (targetNode.parent != null){ // Account for ancestry-bar transition
+					this.ancestryBarInTransition = true;
+					this.relayoutDuringAncestryBarTransition();
+				}
+				this.activeRoot = newRoot;
+				setTimeout(() => this.setLastFocused(targetNode!), this.uiOpts.transitionDuration);
+			}
 			// Skip initial transition
 			if (firstInit){
 				this.justInitialised = true;
@@ -925,13 +940,6 @@ export default defineComponent({
 			// Relayout
 			await this.updateAreaDims();
 			this.relayoutWithCollapse(false);
-			// Possibly jump to a target node
-			if (nodeName != null){
-				let oldSetting = this.uiOpts.searchJumpMode;
-				this.uiOpts.searchJumpMode = true;
-				await this.onSearch(nodeName);
-				this.uiOpts.searchJumpMode = oldSetting;
-			}
 		},
 		async reInit(){
 			if (this.activeRoot != this.layoutTree){

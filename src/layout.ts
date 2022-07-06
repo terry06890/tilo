@@ -221,7 +221,7 @@ function removeFromLayoutMap(node: LayoutNode, map: LayoutMap): void {
 	node.children.forEach(n => removeFromLayoutMap(n, map));
 }
 
-// Creates a LayoutNode representing a TolNode tree, up to a given depth (0 means just the root)
+// Creates a LayoutNode representing a TolNode tree, up to a given depth (0 means just the root, -1 means no limit)
 export function initLayoutTree(tolMap: TolMap, rootName: string, depth: number): LayoutNode {
 	function initHelper(tolMap: TolMap, nodeName: string, depthLeft: number, atDepth: number = 0): LayoutNode {
 		if (depthLeft == 0){
@@ -233,7 +233,8 @@ export function initLayoutTree(tolMap: TolMap, rootName: string, depth: number):
 			if (childNames.length == 0 || !tolMap.has(childNames[0])){
 				return new LayoutNode(nodeName, []);
 			} else {
-				let children = childNames.map((name: string) => initHelper(tolMap, name, depthLeft-1, atDepth+1));
+				let children = childNames.map((name: string) =>
+					initHelper(tolMap, name, depthLeft != -1 ? depthLeft-1 : -1, atDepth+1));
 				let node = new LayoutNode(nodeName, children);
 				children.forEach(n => n.parent = node);
 				return node;
