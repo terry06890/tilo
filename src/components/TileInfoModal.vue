@@ -5,7 +5,16 @@
 		:style="styles">
 		<div class="pb-1 md:pb-2">
 			<close-icon @click.stop="onClose" ref="closeIcon"
-				class="absolute top-1 right-1 md:m-2 w-8 h-8 hover:cursor-pointer"/>
+				class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
+			<div class="absolute top-1 left-1 md:top-2 md:left-2 flex items-center">
+				<a :href="'/?node=' + encodeURIComponent(nodeName)" class="block w-8 h-8 p-[2px] hover:cursor-pointer"
+					@click.prevent="onLinkIconClick">
+					<link-icon/>
+				</a>
+				<transition name="fadeslow">
+					<div v-if="linkCopied" class="text-sm p-1 ml-2" :style="linkCopyLabelStyles">Link Copied</div>
+				</transition>
+			</div>
 			<h1 class="text-center text-xl font-bold pt-2 pb-1 mx-10 md:text-2xl md:pt-3 md:pb-1">
 				{{getDisplayName(nodeName, tolNode)}}
 			</h1>
@@ -102,6 +111,7 @@ import SCollapsible from './SCollapsible.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import ExternalLinkIcon from './icon/ExternalLinkIcon.vue';
 import DownIcon from './icon/DownIcon.vue';
+import LinkIcon from './icon/LinkIcon.vue';
 import {TolNode, TolMap} from '../tol';
 import {LayoutNode, LayoutOptions} from '../layout';
 import {getImagePath, DescInfo, ImgInfo, NodeInfo, InfoResponse, UiOptions} from '../lib';
@@ -115,6 +125,11 @@ export default defineComponent({
 		// Options
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
+	},
+	data(){
+		return {
+			linkCopied: false, // Used to temporarily show a 'link copied' label
+		};
 	},
 	computed: {
 		tolNode(): TolNode {
@@ -152,6 +167,13 @@ export default defineComponent({
 				borderRadius: this.uiOpts.borderRadius + 'px',
 				boxShadow: this.uiOpts.shadowNormal,
 				overflow: 'visible auto',
+			};
+		},
+		linkCopyLabelStyles(): Record<string,string> {
+			return {
+				color: this.uiOpts.textColor,
+				backgroundColor: this.uiOpts.bgColor,
+				borderRadius: this.uiOpts.borderRadius + 'px',
 			};
 		},
 	},
@@ -215,8 +237,17 @@ export default defineComponent({
 				this.$emit('close');
 			}
 		},
+		onLinkIconClick(evt: Event){
+			// Copy link to clipboard
+			let url = new URL(window.location.href);
+			url.search = 'node=' + encodeURIComponent(this.nodeName);
+			navigator.clipboard.writeText(url.toString());
+			// Show visual indicator
+			this.linkCopied = true;
+			setTimeout(() => {this.linkCopied = false}, 1500);
+		},
 	},
-	components: {SCollapsible, CloseIcon, ExternalLinkIcon, DownIcon, },
+	components: {SCollapsible, CloseIcon, ExternalLinkIcon, DownIcon, LinkIcon, },
 	emits: ['close', ],
 });
 </script>

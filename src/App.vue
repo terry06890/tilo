@@ -889,8 +889,13 @@ export default defineComponent({
 		},
 		// For initialisation
 		async initTreeFromServer(firstInit = true){
+			// Get possible target node from URL
+			let nodeName = (new URL(window.location.href)).searchParams.get('node');
 			// Query server
 			let urlParams = 'type=node';
+			if (nodeName != null){
+				urlParams += '&name=' + encodeURIComponent(nodeName) + '&toroot=true';
+			}
 			urlParams += '&tree=' + this.uiOpts.tree;
 			let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
 			if (responseObj == null){
@@ -915,13 +920,20 @@ export default defineComponent({
 			this.layoutTree = initLayoutTree(this.tolMap, rootName, 0);
 			this.activeRoot = this.layoutTree;
 			this.layoutMap = initLayoutMap(this.layoutTree);
-			// Relayout
-			await this.updateAreaDims();
-			this.relayoutWithCollapse(false);
 			// Skip initial transition
 			if (firstInit){
 				this.justInitialised = true;
 				setTimeout(() => {this.justInitialised = false}, this.uiOpts.transitionDuration);
+			}
+			// Relayout
+			await this.updateAreaDims();
+			this.relayoutWithCollapse(false);
+			// Possibly jump to a target node
+			if (nodeName != null){
+				let oldSetting = this.uiOpts.searchJumpMode;
+				this.uiOpts.searchJumpMode = true;
+				await this.onSearch(nodeName);
+				this.uiOpts.searchJumpMode = oldSetting;
 			}
 		},
 		async reInit(){

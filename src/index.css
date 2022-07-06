@@ -23,6 +23,19 @@ a {
 	transition-duration: 300ms;
 	transition-timing-function: ease-out;
 }
+.fadeslow-enter-from, .fadeslow-leave-to {
+	opacity: 0;
+}
+.fadeslow-enter-active {
+	transition-property: opacity;
+	transition-duration: 300ms;
+	transition-timing-function: ease-out;
+}
+.fadeslow-leave-active {
+	transition-property: opacity;
+	transition-duration: 1000ms;
+	transition-timing-function: linear;
+}
 .fadein-leave-to {
 	opacity: 0;
 }
