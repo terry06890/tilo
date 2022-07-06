@@ -7,18 +7,18 @@
 	</h1>
 	<transition name="fade" mode="out-in">
 		<div v-if="stage == 0" :style="contentStyles">
-			This site provides a visualisation for the biological Tree of Life.
+			This is a visualiser for exploring the biological Tree of Life.
 		</div>
 		<div v-else-if="stage == 1" :style="contentStyles">
-			{{touchDevice ? 'Tap' : 'Click'}} a tile to expand it and show it's children
+			{{touchDevice ? 'Tap' : 'Click'}} a tile to expand it, showing it's children
 		</div>
 		<div v-else-if="stage == 2" :style="contentStyles">
-			{{touchDevice ? 'Tap' : 'Click'}} an expanded tile's header to shrink it
+			{{touchDevice ? 'Tap' : 'Click'}} an expanded tile's title to shrink it
 		</div>
 		<div v-else-if="stage == 3" :style="contentStyles">
 			{{touchDevice ? 'Double tap' : 'Click and hold'}} a tile to hide it's ancestors
 			<span class="block text-sm brightness-50">
-				For an expanded tile, use the header
+				For an expanded tile, {{touchDevice ? 'double tap' : 'click and hold'}} it's title
 			</span>
 		</div>
 		<div v-else-if="stage == 4" :style="contentStyles">
@@ -28,7 +28,7 @@
 			{{touchDevice ? 'Tap' : 'Click'}} the icon on a tile's bottom-right to
 			bring up more information
 			<span class="block text-sm brightness-50">
-				For an expanded tile, it's on the header's right
+				For an expanded tile, it's to the right of the title
 			</span>
 		</div>
 		<div v-else-if="stage == 6" :style="contentStyles">

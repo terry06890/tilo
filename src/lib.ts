@@ -118,7 +118,7 @@ export function getDefaultLytOpts(): LayoutOptions {
 	let screenSz = getBreakpoint();
 	return {
 		tileSpacing: screenSz == 'sm' ? 6 : 9, //px
-		headerSz: screenSz == 'sm' ? 18 : 22, // px
+		headerSz: 22, // px
 		minTileSz: 50, // px
 		maxTileSz: 200, // px
 		// Layout-algorithm related
@@ -127,7 +127,7 @@ export function getDefaultLytOpts(): LayoutOptions {
 		rectSensitivity: 0.9, // Between 0 and 1
 		sweepMode: 'left', // 'left' | 'top' | 'shorter' | 'auto'
 		sweptNodesPrio: 'sqrt', // 'linear' | 'sqrt' | 'pow-2/3'
-		sweepToParent: 'fallback', // 'none' | 'prefer' | 'fallback'
+		sweepToParent: screenSz == 'sm' ? 'prefer' : 'fallback', // 'none' | 'prefer' | 'fallback'
 	};
 }
 export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {

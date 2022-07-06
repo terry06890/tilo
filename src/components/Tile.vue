@@ -162,7 +162,14 @@ export default defineComponent({
 			}
 		},
 		fontSz(): number {
-			return 0.8 * this.lytOpts.headerSz;
+			// These values are a compromise between dynamic font size and code simplicity
+			if (this.layoutNode.dims[0] >= 150){
+				return this.lytOpts.headerSz * 0.8;
+			} else if (this.layoutNode.dims[0] >= 80){
+				return this.lytOpts.headerSz * 0.7;
+			} else {
+				return this.lytOpts.headerSz * 0.6;
+			}
 		},
 		styles(): Record<string,string> {
 			let layoutStyles = {
@@ -234,12 +241,10 @@ export default defineComponent({
 					break;
 				}
 			}
-			let screenSz = this.uiOpts.breakpoint;
 			return {
-				height: this.lytOpts.headerSz + 'px',
-				padding: `0 ${(this.lytOpts.headerSz - this.fontSz)}px`,
-				lineHeight: this.lytOpts.headerSz + 'px',
+				lineHeight: (this.fontSz * 1.3) + 'px',
 				fontSize: this.fontSz + 'px',
+				paddingLeft: (this.fontSz * 0.2) + 'px',
 				color: textColor,
 				// For ellipsis
 				overflow: 'hidden',
@@ -289,8 +294,9 @@ export default defineComponent({
 		},
 		nonleafHeaderTextStyles(): Record<string,string> {
 			return {
-				lineHeight: this.lytOpts.headerSz + 'px',
+				lineHeight: (this.fontSz * 1.3) + 'px',
 				fontSize: this.fontSz + 'px',
+				paddingLeft: (this.fontSz * 0.2) + 'px',
 				textAlign: 'center',
 				color: this.uiOpts.textColor,
 				// For ellipsis
@@ -351,7 +357,7 @@ export default defineComponent({
 				height: size + 'px',
 				minWidth: size + 'px',
 				minHeight: size + 'px',
-				margin: this.isLeaf ? `auto ${marginSz}px ${marginSz}px auto` : `auto ${marginSz}px`,
+				margin: this.isLeaf ? `auto ${marginSz}px ${marginSz}px auto` : `auto ${marginSz}px auto 0`,
 			};
 		},
 		infoIconClasses(): string {
