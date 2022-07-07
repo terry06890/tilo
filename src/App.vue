@@ -977,18 +977,15 @@ export default defineComponent({
 		},
 		// For relayout
 		relayoutWithCollapse(secondPass = true): boolean {
-			let success;
 			if (this.overflownRoot){
-				success = tryLayout(this.activeRoot, this.tileAreaDims,
-					{...this.lytOpts, layoutType: 'sqr-overflow'}, {allowCollapse: false, layoutMap: this.layoutMap});
-			} else {
+				this.overflownRoot = false;
+			}
+			let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
+				{allowCollapse: true, layoutMap: this.layoutMap});
+			if (secondPass){
+				// Relayout again, which can help allocate remaining tiles 'evenly'
 				success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
-					{allowCollapse: true, layoutMap: this.layoutMap});
-				if (secondPass){
-					// Relayout again, which can help allocate remaining tiles 'evenly'
-					success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
-						{allowCollapse: false, layoutMap: this.layoutMap});
-				}
+					{allowCollapse: false, layoutMap: this.layoutMap});
 			}
 			return success;
 		},
