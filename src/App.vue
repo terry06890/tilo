@@ -21,29 +21,30 @@
 		</icon-button>
 	</div>
 	<!-- Content area -->
-	<div :style="tutPaneContainerStyles" class="z-10"> <!-- Used to slide-in/out the tutorial pane -->
-		<transition name="fade" @after-enter="tutPaneInTransition = false" @after-leave="tutPaneInTransition = false">
-			<tutorial-pane v-if="tutPaneOpen" :style="tutPaneStyles"
-				:actionsDone="actionsDone" :triggerFlag="tutTriggerFlag" :skipWelcome="!tutWelcome" :uiOpts="uiOpts"
-				@close="onTutPaneClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
-		</transition>
-	</div>
-	<div :class="['flex', wideArea ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']" ref="mainArea">
-		<div :style="ancestryBarContainerStyles"> <!-- Used to slide-in/out the ancestry-bar -->
-			<transition name="fade"
-				@after-enter="ancestryBarInTransition = false" @after-leave="ancestryBarInTransition = false">
-				<ancestry-bar v-if="detachedAncestors != null" class="w-full h-full"
-					:nodes="detachedAncestors" :vert="wideArea" :breadth="uiOpts.ancestryBarBreadth"
-					:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-					@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
+	<div class="grow min-h-0 flex flex-col" ref="contentArea">
+		<div :style="tutPaneContainerStyles" class="z-10"> <!-- Used to slide-in/out the tutorial pane -->
+			<transition name="fade">
+				<tutorial-pane v-if="tutPaneOpen" :style="tutPaneStyles"
+					:actionsDone="actionsDone" :triggerFlag="tutTriggerFlag" :skipWelcome="!tutWelcome"
+					:uiOpts="uiOpts" @close="onTutPaneClose" @skip="onTutorialSkip" @stage-chg="onTutStageChg"/>
 			</transition>
 		</div>
-		<div class="relative grow" :style="{margin: lytOpts.tileSpacing + 'px'}" ref="tileArea">
-			<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
-				:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
-				@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
-				@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
-				@info-click="onInfoClick"/>
+		<div :class="['flex', wideMainArea ? 'flex-row' : 'flex-col', 'grow', 'min-h-0']"> <!-- 'Main area' -->
+			<div :style="ancestryBarContainerStyles"> <!-- Used to slide-in/out the ancestry-bar -->
+				<transition name="fade">
+					<ancestry-bar v-if="detachedAncestors != null" class="w-full h-full"
+						:nodes="detachedAncestors" :vert="wideMainArea" :breadth="uiOpts.ancestryBarBreadth"
+						:tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+						@ancestor-click="onDetachedAncestorClick" @info-click="onInfoClick"/>
+				</transition>
+			</div>
+			<div class="relative grow" :style="{margin: lytOpts.tileSpacing + 'px'}"> <!-- 'Tile area' -->
+				<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+					:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
+					@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
+					@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
+					@info-click="onInfoClick"/>
+			</div>
 		</div>
 	</div>
 	<!-- Modals -->
@@ -161,9 +162,6 @@ export default defineComponent({
 			tileAreaDims: [0, 0] as [number, number],
 			lastResizeHdlrTime: 0, // Used to throttle resize handling
 			afterResizeHdlr: 0, // Set via setTimeout() to execute after a run of resize events
-			// For transitions
-			ancestryBarInTransition: false,
-			tutPaneInTransition: false,
 			// Other
 			justInitialised: false, // Used to skip transition for the tile initially loaded from server
 			pendingLoadingRevealHdlr: 0, // Used to delay showing the loading modal
@@ -172,7 +170,7 @@ export default defineComponent({
 		};
 	},
 	computed: {
-		wideArea(): boolean {
+		wideMainArea(): boolean {
 			return this.mainAreaDims[0] > this.mainAreaDims[1];
 		},
 		// Nodes to show in ancestry-bar (ordered from root downwards)
@@ -241,7 +239,7 @@ export default defineComponent({
 				transitionProperty: '',
 				overflow: 'hidden',
 			};
-			if (this.wideArea){
+			if (this.wideMainArea){
 				styles.minWidth = ancestryBarBreadth + 'px';
 				styles.maxWidth = ancestryBarBreadth + 'px';
 				styles.transitionProperty = 'min-width, max-width';
@@ -387,13 +385,9 @@ export default defineComponent({
 			let doExpansion = async () => {
 				// Hide ancestors
 				LayoutNode.hideUpward(layoutNode, this.layoutMap);
-				if (this.detachedAncestors == null){ // Account for ancestry-bar transition
-					this.ancestryBarInTransition = true;
-					this.relayoutDuringAncestryBarTransition();
-				}
 				this.activeRoot = layoutNode;
 				// Relayout
-				await this.updateAreaDims();
+				this.updateAreaDims();
 				this.overflownRoot = false;
 				let lytFnOpts = {
 					allowCollapse: false,
@@ -443,13 +437,9 @@ export default defineComponent({
 			this.setLastFocused(null);
 			// Hide ancestors
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
-			if (this.detachedAncestors == null){ // Account for ancestry-bar transition
-				this.ancestryBarInTransition = true;
-				this.relayoutDuringAncestryBarTransition();
-			}
 			this.activeRoot = layoutNode;
 			// Relayout
-			await this.updateAreaDims();
+			this.updateAreaDims();
 			return this.relayoutWithCollapse();
 		},
 		async onDetachedAncestorClick(layoutNode: LayoutNode, {collapseAndNoRelayout = false} = {}): Promise<boolean> {
@@ -461,10 +451,6 @@ export default defineComponent({
 			// Unhide ancestors
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
-			if (layoutNode.parent == null){ // Account for ancestry-bar transition
-				this.ancestryBarInTransition = true;
-				this.relayoutDuringAncestryBarTransition();
-			}
 			//
 			let success: boolean;
 			if (collapseAndNoRelayout){
@@ -474,7 +460,7 @@ export default defineComponent({
 				}
 				success = await this.onNonleafClick(layoutNode, {skipClean: true});
 			} else {
-				await this.updateAreaDims();
+				this.updateAreaDims();
 				success = this.relayoutWithCollapse();
 			}
 			LayoutNode.showDownward(layoutNode);
@@ -510,7 +496,7 @@ export default defineComponent({
 				console.log('WARNING: Unexpected search event while search/auto mode is running')
 				return;
 			}
-			const prereqActions = ['expand', 'expandToView', 'unhideAncestor'];
+			const prereqActions = ['expand', 'expandToView', 'unhideAncestor'] as Action[];
 			if (this.isDisabled(...prereqActions)){
 				prereqActions.forEach(a => this.uiOpts.disabledActions.delete(a));
 			}
@@ -603,7 +589,7 @@ export default defineComponent({
 			if (this.isDisabled('autoMode')){
 				return;
 			}
-			const prereqActions = ['expand', 'collapse', 'expandToView', 'unhideAncestor'];
+			const prereqActions = ['expand', 'collapse', 'expandToView', 'unhideAncestor'] as Action[];
 			if (this.isDisabled(...prereqActions)){
 				prereqActions.forEach(a => this.uiOpts.disabledActions.delete(a));
 			}
@@ -762,9 +748,8 @@ export default defineComponent({
 			this.tutPaneOpen = false;
 			this.tutWelcome = false;
 			this.uiOpts.disabledActions.clear();
-			// Account for tutorial-pane transition
-			this.tutPaneInTransition = true;
-			this.relayoutDuringTutPaneTransition();
+			this.updateAreaDims();
+			this.relayoutWithCollapse();
 		},
 		onTutStageChg(triggerAction: Action | null): void {
 			this.tutWelcome = false;
@@ -776,9 +761,8 @@ export default defineComponent({
 		onStartTutorial(): void {
 			if (!this.tutPaneOpen){
 				this.tutPaneOpen = true;
-				// Account for tutorial-pane transition
-				this.tutPaneInTransition = true;
-				this.relayoutDuringTutPaneTransition();
+				this.updateAreaDims();
+				this.relayoutWithCollapse();
 			}
 		},
 		handleActionForTutorial(action: Action): void {
@@ -842,7 +826,7 @@ export default defineComponent({
 				// Relayout
 				this.overflownRoot = false;
 				if (!changedTree){
-					await this.updateAreaDims();
+					this.updateAreaDims();
 					this.relayoutWithCollapse();
 				} else {
 					this.reInit();
@@ -925,10 +909,6 @@ export default defineComponent({
 				let targetNode = this.layoutMap.get(nodeName)!;
 				let newRoot = targetNode.parent == null ? targetNode : targetNode.parent;
 				LayoutNode.hideUpward(newRoot, this.layoutMap);
-				if (targetNode.parent != null){ // Account for ancestry-bar transition
-					this.ancestryBarInTransition = true;
-					this.relayoutDuringAncestryBarTransition();
-				}
 				this.activeRoot = newRoot;
 				setTimeout(() => this.setLastFocused(targetNode!), this.uiOpts.transitionDuration);
 			}
@@ -938,7 +918,7 @@ export default defineComponent({
 				setTimeout(() => {this.justInitialised = false}, this.uiOpts.transitionDuration);
 			}
 			// Relayout
-			await this.updateAreaDims();
+			this.updateAreaDims();
 			this.relayoutWithCollapse(false);
 		},
 		async reInit(){
@@ -996,45 +976,26 @@ export default defineComponent({
 			}
 			return success;
 		},
-		async updateAreaDims(){
-			let mainAreaEl = this.$refs.mainArea as HTMLElement;
-			this.mainAreaDims = [mainAreaEl.offsetWidth, mainAreaEl.offsetHeight];
-			await this.$nextTick(); // Wait until ancestor-bar is laid-out
-			let tileAreaEl = this.$refs.tileArea as HTMLElement;
-			this.tileAreaDims = [tileAreaEl.offsetWidth, tileAreaEl.offsetHeight];
-		},
-		// For transitions
-		relayoutDuringAncestryBarTransition(): void {
-			let timerId = setInterval(async () => {
-				await this.updateAreaDims();
-				this.relayoutWithCollapse();
-				if (!this.ancestryBarInTransition){
-					clearTimeout(timerId);
+		updateAreaDims(){
+			// Set mainAreaDims and tileAreaDims
+				// Note: Tried setting these by querying tut_pane+ancestry_bar dimensions repeatedly,
+				// throughout their transitions, relayouting each time, but this makes the tile movements jerky
+			let contentAreaEl = this.$refs.contentArea as HTMLElement;
+			let w = contentAreaEl.offsetWidth, h = contentAreaEl.offsetHeight;
+			if (this.tutPaneOpen && this.uiOpts.breakpoint == 'sm'){
+				h -= this.uiOpts.tutPaneSz;
+			}
+			this.mainAreaDims = [w, h];
+			if (this.detachedAncestors != null){
+				if (w > h){
+					w -= this.uiOpts.ancestryBarBreadth;
+				} else {
+					h -= this.uiOpts.ancestryBarBreadth;
 				}
-			}, this.uiOpts.animationDelay);
-			setTimeout(() => {
-				if (this.ancestryBarInTransition){
-					this.ancestryBarInTransition = false;
-					clearTimeout(timerId);
-					console.log('Reached timeout waiting for ancestry-bar transition-end event');
-				}
-			}, this.uiOpts.transitionDuration + 300);
-		},
-		relayoutDuringTutPaneTransition(): void {
-			let timerId = setInterval(async () => {
-				await this.updateAreaDims();
-				this.relayoutWithCollapse();
-				if (!this.tutPaneInTransition){
-					clearTimeout(timerId);
-				}
-			}, this.uiOpts.animationDelay);
-			setTimeout(() => {
-				if (this.tutPaneInTransition){
-					this.tutPaneInTransition = false;
-					clearTimeout(timerId);
-					console.log('Reached timeout waiting for tutorial-pane transition-end event');
-				}
-			}, this.uiOpts.transitionDuration + 300);
+			}
+			w -= this.lytOpts.tileSpacing * 2;
+			h -= this.lytOpts.tileSpacing * 2;
+			this.tileAreaDims = [w, h];
 		},
 		// Other
 		resetMode(): void {
