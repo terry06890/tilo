@@ -51,15 +51,6 @@ export default defineComponent({
 			};
 		},
 	},
-	watch: {
-		// Used to scroll to end of bar upon node/screen changes
-		nodes(){
-			this.$nextTick(() => this.scrollToEnd());
-		},
-		vert(){
-			this.$nextTick(() => this.scrollToEnd());
-		},
-	},
 	methods: {
 		// Click events
 		onTileClick(node: LayoutNode){
@@ -81,6 +72,15 @@ export default defineComponent({
 			} else {
 				this.$el.scrollLeft = this.$el.scrollWidth;
 			}
+		},
+	},
+	watch: {
+		// Used to scroll to end of bar upon node/screen changes
+		nodes(){
+			this.$nextTick(() => this.scrollToEnd());
+		},
+		vert(){
+			this.$nextTick(() => this.scrollToEnd());
 		},
 	},
 	mounted(){

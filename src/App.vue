@@ -251,38 +251,6 @@ export default defineComponent({
 			return styles;
 		},
 	},
-	watch: {
-		infoModalNodeName(newVal, oldVal){
-			// Possibly trigger tutorial advance
-			if (newVal == null){
-				this.handleActionForTutorial('tileInfo');
-			}
-		},
-		modeRunning(newVal, oldVal){
-			// For sweepToParent setting 'fallback', temporarily change to 'prefer' for efficiency
-			if (newVal != null){
-				if (this.lytOpts.sweepToParent == 'fallback'){
-					this.lytOpts.sweepToParent = 'prefer';
-					this.changedSweepToParent = true;
-				}
-			} else {
-				if (this.changedSweepToParent){
-					this.lytOpts.sweepToParent = 'fallback';
-					this.changedSweepToParent = false;
-				}
-			}
-			// Possibly trigger tutorial advance
-			if (newVal == null){
-				this.handleActionForTutorial(oldVal);
-			}
-		},
-		settingsOpen(newVal, oldVal){
-			// Possibly trigger tutorial advance
-			if (newVal == false){
-				this.handleActionForTutorial('settings');
-			}
-		},
-	},
 	methods: {
 		// For tile expand/collapse events
 		async onLeafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
@@ -1031,6 +999,38 @@ export default defineComponent({
 		isDisabled(...actions: Action[]): boolean {
 			let disabledActions = this.uiOpts.disabledActions;
 			return actions.some(a => disabledActions.has(a));
+		},
+	},
+	watch: {
+		infoModalNodeName(newVal, oldVal){
+			// Possibly trigger tutorial advance
+			if (newVal == null){
+				this.handleActionForTutorial('tileInfo');
+			}
+		},
+		modeRunning(newVal, oldVal){
+			// For sweepToParent setting 'fallback', temporarily change to 'prefer' for efficiency
+			if (newVal != null){
+				if (this.lytOpts.sweepToParent == 'fallback'){
+					this.lytOpts.sweepToParent = 'prefer';
+					this.changedSweepToParent = true;
+				}
+			} else {
+				if (this.changedSweepToParent){
+					this.lytOpts.sweepToParent = 'fallback';
+					this.changedSweepToParent = false;
+				}
+			}
+			// Possibly trigger tutorial advance
+			if (newVal == null){
+				this.handleActionForTutorial(oldVal);
+			}
+		},
+		settingsOpen(newVal, oldVal){
+			// Possibly trigger tutorial advance
+			if (newVal == false){
+				this.handleActionForTutorial('settings');
+			}
 		},
 	},
 	created(){

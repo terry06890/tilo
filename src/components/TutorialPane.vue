@@ -118,6 +118,24 @@ export default defineComponent({
 			return this.uiOpts.touchDevice;
 		},
 	},
+	methods: {
+		onStartTutorial(){
+			this.stage = 1;
+		},
+		onSkipTutorial(){
+			this.$emit('skip');
+			this.$emit('close');
+		},
+		onPrevClick(){
+			this.stage = Math.max(1, this.stage - 1);
+		},
+		onNextClick(){
+			this.stage = Math.min(this.stage + 1, this.lastStage);
+		},
+		onClose(){
+			this.$emit('close');
+		},
+	},
 	watch: {
 		stage(newVal, oldVal){
 			// If starting tutorial, disable 'all' actions
@@ -145,24 +163,6 @@ export default defineComponent({
 			} else {
 				this.onClose();
 			}
-		},
-	},
-	methods: {
-		onStartTutorial(){
-			this.stage = 1;
-		},
-		onSkipTutorial(){
-			this.$emit('skip');
-			this.$emit('close');
-		},
-		onPrevClick(){
-			this.stage = Math.max(1, this.stage - 1);
-		},
-		onNextClick(){
-			this.stage = Math.min(this.stage + 1, this.lastStage);
-		},
-		onClose(){
-			this.$emit('close');
 		},
 	},
 	created(){

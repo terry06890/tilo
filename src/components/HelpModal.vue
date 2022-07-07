@@ -9,7 +9,7 @@
 			<s-collapsible :class="scClasses">
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
-						<down-icon :class="slotProps.collapsed ? downIconClasses : downIconExpandedClasses"/>
+						<down-icon :class="slotProps.open ? downIconExpandedClasses : downIconClasses"/>
 						What is the Tree of Life?
 					</div>
 				</template>
@@ -46,7 +46,7 @@
 			<s-collapsible :class="scClasses">
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
-						<down-icon :class="slotProps.collapsed ? downIconClasses : downIconExpandedClasses"/>
+						<down-icon :class="slotProps.open ? downIconExpandedClasses : downIconClasses"/>
 						Visualising the Tree
 					</div>
 				</template>
@@ -110,7 +110,7 @@
 			<s-collapsible :class="scClasses">
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
-						<down-icon :class="slotProps.collapsed ? downIconClasses : downIconExpandedClasses"/>
+						<down-icon :class="slotProps.open ? downIconExpandedClasses : downIconClasses"/>
 						Using Tilo
 					</div>
 				</template>
@@ -228,7 +228,7 @@
 			<s-collapsible :class="scClasses">
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
-						<down-icon :class="slotProps.collapsed ? downIconClasses : downIconExpandedClasses"/>
+						<down-icon :class="slotProps.open ? downIconExpandedClasses : downIconClasses"/>
 						Data Sources
 					</div>
 				</template>
@@ -336,7 +336,7 @@
 			<s-collapsible :class="scClasses">
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
-						<down-icon :class="slotProps.collapsed ? downIconClasses : downIconExpandedClasses"/>
+						<down-icon :class="slotProps.open ? downIconExpandedClasses : downIconClasses"/>
 						Project Information
 					</div>
 				</template>

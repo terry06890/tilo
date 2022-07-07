@@ -150,11 +150,6 @@ export default defineComponent({
 			return "w-fit hover:cursor-pointer hover:text-lime-600";
 		},
 	},
-	watch: {
-		sweepLeaves(newVal: boolean, oldVal: boolean){
-			this.lytOpts.layoutType = newVal ? 'sweep' : 'rect';
-		},
-	},
 	methods: {
 		onClose(evt: Event){
 			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
@@ -229,6 +224,11 @@ export default defineComponent({
 			this.$emit('reset', needReinit);
 			// Clear saved-indicator
 			this.saved = false;
+		},
+	},
+	watch: {
+		sweepLeaves(newVal: boolean, oldVal: boolean){
+			this.lytOpts.layoutType = newVal ? 'sweep' : 'rect';
 		},
 	},
 	components: {SButton, CloseIcon, },

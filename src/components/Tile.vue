@@ -380,56 +380,6 @@ export default defineComponent({
 			return this.layoutNode.failFlag;
 		},
 	},
-	watch: {
-		// For setting transition state (allows external triggering, like via search and auto-mode)
-		pos: {
-			handler(newVal: [number, number], oldVal: [number, number]){
-				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
-				if (valChanged && this.uiOpts.transitionDuration > 100 && !this.inTransition){
-					this.inTransition = true;
-					setTimeout(this.onTransitionEnd, this.uiOpts.transitionDuration);
-				}
-			},
-			deep: true,
-		},
-		dims: {
-			handler(newVal: [number, number], oldVal: [number, number]){
-				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
-				if (valChanged && this.uiOpts.transitionDuration > 100 && !this.inTransition){
-					this.inTransition = true;
-					setTimeout(this.onTransitionEnd, this.uiOpts.transitionDuration);
-				}
-			},
-			deep: true,
-		},
-		// For externally triggering fail animations (used by search and auto-mode)
-		failFlag(){
-			this.triggerAnimation(this.isLeaf ? 'animate-expand-shrink' : 'animate-shrink-expand');
-		},
-		// Scroll to focused child if overflownRoot
-		hasFocusedChild(newVal: boolean, oldVal: boolean){
-			if (newVal && this.isOverflownRoot){
-				let focusedChild = this.layoutNode.children.find(n => n.hasFocus)!
-				let bottomY = focusedChild.pos[1] + focusedChild.dims[1] + this.lytOpts.tileSpacing;
-				let scrollTop = Math.max(0, bottomY - (this.overflownDim / 2)); // No need to manually cap at max
-				this.$el.scrollTop = scrollTop;
-			}
-		},
-		// Allow overflow temporarily after being unhidden
-		hidden(newVal: boolean, oldVal: boolean){
-			if (oldVal && !newVal){
-				this.justUnhidden = true;
-				setTimeout(() => {this.justUnhidden = false;}, this.uiOpts.transitionDuration + 100);
-			}
-		},
-		// Used to 'flash' the tile when focused
-		hasFocus(newVal: boolean, oldVal: boolean){
-			if (newVal != oldVal && newVal){
-				this.inFlash = true;
-				setTimeout(() => {this.inFlash = false;}, this.uiOpts.transitionDuration);
-			}
-		},
-	},
 	methods: {
 		// Click handling
 		onMouseDown(): void {
@@ -548,6 +498,56 @@ export default defineComponent({
 			this.$el.classList.remove(animation);
 			this.$el.offsetWidth; // Triggers reflow
 			this.$el.classList.add(animation);
+		},
+	},
+	watch: {
+		// For setting transition state (allows external triggering, like via search and auto-mode)
+		pos: {
+			handler(newVal: [number, number], oldVal: [number, number]){
+				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
+				if (valChanged && this.uiOpts.transitionDuration > 100 && !this.inTransition){
+					this.inTransition = true;
+					setTimeout(this.onTransitionEnd, this.uiOpts.transitionDuration);
+				}
+			},
+			deep: true,
+		},
+		dims: {
+			handler(newVal: [number, number], oldVal: [number, number]){
+				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
+				if (valChanged && this.uiOpts.transitionDuration > 100 && !this.inTransition){
+					this.inTransition = true;
+					setTimeout(this.onTransitionEnd, this.uiOpts.transitionDuration);
+				}
+			},
+			deep: true,
+		},
+		// For externally triggering fail animations (used by search and auto-mode)
+		failFlag(){
+			this.triggerAnimation(this.isLeaf ? 'animate-expand-shrink' : 'animate-shrink-expand');
+		},
+		// Scroll to focused child if overflownRoot
+		hasFocusedChild(newVal: boolean, oldVal: boolean){
+			if (newVal && this.isOverflownRoot){
+				let focusedChild = this.layoutNode.children.find(n => n.hasFocus)!
+				let bottomY = focusedChild.pos[1] + focusedChild.dims[1] + this.lytOpts.tileSpacing;
+				let scrollTop = Math.max(0, bottomY - (this.overflownDim / 2)); // No need to manually cap at max
+				this.$el.scrollTop = scrollTop;
+			}
+		},
+		// Allow overflow temporarily after being unhidden
+		hidden(newVal: boolean, oldVal: boolean){
+			if (oldVal && !newVal){
+				this.justUnhidden = true;
+				setTimeout(() => {this.justUnhidden = false;}, this.uiOpts.transitionDuration + 100);
+			}
+		},
+		// Used to 'flash' the tile when focused
+		hasFocus(newVal: boolean, oldVal: boolean){
+			if (newVal != oldVal && newVal){
+				this.inFlash = true;
+				setTimeout(() => {this.inFlash = false;}, this.uiOpts.transitionDuration);
+			}
 		},
 	},
 	name: 'tile', // Note: Need this to use self in template
