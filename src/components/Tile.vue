@@ -1,5 +1,5 @@
 <template>
-<div :style="styles" @transitionend="onTransitionEnd" @scroll="onScroll"> <!-- Need enclosing div for transitions -->
+<div :style="styles" @scroll="onScroll"> <!-- Need enclosing div for transitions -->
 	<div v-if="isLeaf" :class="[hasOneImage ? 'flex' : 'grid', {'hover:cursor-pointer': isExpandableLeaf}]"
 		class="w-full h-full flex-col grid-cols-1" :style="leafStyles"
 		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
@@ -387,6 +387,7 @@ export default defineComponent({
 				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
 				if (valChanged && this.uiOpts.transitionDuration > 100 && !this.inTransition){
 					this.inTransition = true;
+					setTimeout(this.onTransitionEnd, this.uiOpts.transitionDuration);
 				}
 			},
 			deep: true,
@@ -396,6 +397,7 @@ export default defineComponent({
 				let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
 				if (valChanged && this.uiOpts.transitionDuration > 100 && !this.inTransition){
 					this.inTransition = true;
+					setTimeout(this.onTransitionEnd, this.uiOpts.transitionDuration);
 				}
 			},
 			deep: true,

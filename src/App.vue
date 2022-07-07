@@ -285,18 +285,21 @@ export default defineComponent({
 	},
 	methods: {
 		// For tile expand/collapse events
-		async onLeafClick(layoutNode: LayoutNode): Promise<boolean> {
-			if (this.isDisabled('expand')){
-				return false;
+		async onLeafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+			if (!subAction){
+				if (this.isDisabled('expand')){
+					return false;
+				}
+				this.handleActionForTutorial('expand');
+				this.setLastFocused(null);
 			}
 			// If clicking child of overflowing active-root, fail
 			if (this.overflownRoot){
-				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+				if (!subAction){
+					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+				}
 				return false;
 			}
-			//
-			this.handleActionForTutorial('expand');
-			this.setLastFocused(null);
 			// Function for expanding tile
 			let doExpansion = () => {
 				let lytFnOpts = {
@@ -314,7 +317,7 @@ export default defineComponent({
 					}
 				}
 				//
-				if (!success){
+				if (!subAction && !success){
 					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 				}
 				return success;
@@ -333,27 +336,29 @@ export default defineComponent({
 				return doExpansion();
 			}
 		},
-		async onNonleafClick(layoutNode: LayoutNode, {skipClean = false} = {}): Promise<boolean> {
-			if (this.isDisabled('collapse')){
-				return false;
+		async onNonleafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+			if (!subAction){
+				if (this.isDisabled('collapse')){
+					return false;
+				}
+				this.handleActionForTutorial('collapse');
+				this.setLastFocused(null);
 			}
-			this.handleActionForTutorial('collapse');
-			this.setLastFocused(null);
 			// Relayout
 			let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, {
 				allowCollapse: false,
 				chg: {type: 'collapse', node: layoutNode, tolMap: this.tolMap},
 				layoutMap: this.layoutMap
 			});
-			if (!success){
-				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
-			} else {
-				// Update overflownRoot to indicate root was collapsed
-				if (this.overflownRoot){
-					this.overflownRoot = false;
-				}
-				// Possibly clear out excess nodes when a threshold is reached
-				if (!skipClean){
+			// Update overflownRoot if root was collapsed
+			if (success && this.overflownRoot){
+				this.overflownRoot = false;
+			}
+			if (!subAction){
+				if (!success){
+					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+				} else {
+					// Possibly clear out excess nodes when a threshold is reached
 					let numNodes = this.tolMap.size;
 					let extraNodes = numNodes - this.layoutMap.size;
 					if (extraNodes > this.excessTolNodeThreshold){
@@ -369,18 +374,18 @@ export default defineComponent({
 			return success;
 		},
 		// For expand-to-view and ancestry-bar events
-		async onLeafClickHeld(layoutNode: LayoutNode): Promise<boolean> {
-			if (this.isDisabled('expandToView')){
-				return false;
+		async onLeafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+			if (!subAction){
+				if (this.isDisabled('expandToView')){
+					return false;
+				}
+				this.handleActionForTutorial('expandToView');
+				this.setLastFocused(null);
 			}
 			// Special case for active root
 			if (layoutNode == this.activeRoot){
-				this.onLeafClick(layoutNode);
-				return true;
+				return await this.onLeafClick(layoutNode, subAction);
 			}
-			//
-			this.handleActionForTutorial('expandToView');
-			this.setLastFocused(null);
 			// Function for expanding tile
 			let doExpansion = async () => {
 				// Hide ancestors
@@ -404,7 +409,7 @@ export default defineComponent({
 					}
 				}
 				//
-				if (!success){
+				if (!success && !subAction){
 					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 				}
 				return success;
@@ -423,18 +428,19 @@ export default defineComponent({
 				return doExpansion();
 			}
 		},
-		async onNonleafClickHeld(layoutNode: LayoutNode): Promise<boolean> {
-			if (this.isDisabled('expandToView')){
-				return false;
+		async onNonleafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+			if (!subAction){
+				if (this.isDisabled('expandToView')){
+					return false;
+				}
+				this.handleActionForTutorial('expandToView');
+				this.setLastFocused(null);
 			}
 			// Special case for active root
 			if (layoutNode == this.activeRoot){
 				console.log('Ignored expand-to-view on active-root node');
 				return false;
 			}
-			//
-			this.handleActionForTutorial('expandToView');
-			this.setLastFocused(null);
 			// Hide ancestors
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			this.activeRoot = layoutNode;
@@ -442,26 +448,24 @@ export default defineComponent({
 			this.updateAreaDims();
 			return this.relayoutWithCollapse();
 		},
-		async onDetachedAncestorClick(layoutNode: LayoutNode, {collapseAndNoRelayout = false} = {}): Promise<boolean> {
-			if (this.isDisabled('unhideAncestor')){
-				return false;
+		async onDetachedAncestorClick(layoutNode: LayoutNode, subAction = false, collapse = false): Promise<boolean> {
+			if (!subAction){
+				if (this.isDisabled('unhideAncestor')){
+					return false;
+				}
+				this.handleActionForTutorial('unhideAncestor');
+				this.setLastFocused(null);
 			}
-			this.handleActionForTutorial('unhideAncestor');
-			this.setLastFocused(null);
 			// Unhide ancestors
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
 			//
 			let success: boolean;
-			if (collapseAndNoRelayout){
-				if (this.isDisabled('collapse')){
-					console.log('INFO: Ignored unhide-ancestor due to disabled collapse');
-					return false;
-				}
-				success = await this.onNonleafClick(layoutNode, {skipClean: true});
-			} else {
-				this.updateAreaDims();
+			this.updateAreaDims();
+			if (!collapse){
 				success = this.relayoutWithCollapse();
+			} else {
+				success = await this.onNonleafClick(layoutNode, true); // For reducing tile-flashing on-screen
 			}
 			LayoutNode.showDownward(layoutNode);
 			return success;
@@ -496,11 +500,6 @@ export default defineComponent({
 				console.log('WARNING: Unexpected search event while search/auto mode is running')
 				return;
 			}
-			const prereqActions = ['expand', 'expandToView', 'unhideAncestor'] as Action[];
-			if (this.isDisabled(...prereqActions)){
-				prereqActions.forEach(a => this.uiOpts.disabledActions.delete(a));
-			}
-			//
 			this.searchOpen = false;
 			this.modeRunning = 'search';
 			this.expandToNode(name);
@@ -529,10 +528,10 @@ export default defineComponent({
 					nodeInAncestryBar = nodeInAncestryBar.parent!;
 				}
 				if (!this.uiOpts.searchJumpMode){
-					await this.onDetachedAncestorClick(nodeInAncestryBar!);
+					await this.onDetachedAncestorClick(nodeInAncestryBar!, true);
 					setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 				} else{
-					await this.onDetachedAncestorClick(nodeInAncestryBar, {collapseAndNoRelayout: true});
+					await this.onDetachedAncestorClick(nodeInAncestryBar!, true, true);
 					this.expandToNode(name);
 				}
 				return;
@@ -550,17 +549,17 @@ export default defineComponent({
 				layoutNode.addDescendantChain(nodesToAdd, this.tolMap, this.layoutMap);
 				// Expand-to-view on target-node's parent
 				targetNode = this.layoutMap.get(name);
-				await this.onLeafClickHeld(targetNode!.parent!);
+				await this.onLeafClickHeld(targetNode!.parent!, true);
 				setTimeout(() => this.setLastFocused(targetNode!), this.uiOpts.transitionDuration);
 				this.modeRunning = null;
 				return;
 			}
 			if (this.overflownRoot){
-				await this.onLeafClickHeld(layoutNode);
+				await this.onLeafClickHeld(layoutNode, true);
 				setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 				return;
 			}
-			let success = await this.onLeafClick(layoutNode);
+			let success = await this.onLeafClick(layoutNode, true);
 			if (success){
 				setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 				return;
@@ -577,7 +576,7 @@ export default defineComponent({
 				ancestorChain.push(layoutNode);
 			}
 			layoutNode = ancestorChain[Math.floor((ancestorChain.length - 1) / 2)]
-			await this.onNonleafClickHeld(layoutNode);
+			await this.onNonleafClickHeld(layoutNode, true);
 			setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 		},
 		onSearchClose(){
@@ -589,11 +588,6 @@ export default defineComponent({
 			if (this.isDisabled('autoMode')){
 				return;
 			}
-			const prereqActions = ['expand', 'collapse', 'expandToView', 'unhideAncestor'] as Action[];
-			if (this.isDisabled(...prereqActions)){
-				prereqActions.forEach(a => this.uiOpts.disabledActions.delete(a));
-			}
-			//
 			this.resetMode();
 			this.modeRunning = 'autoMode';
 			this.autoAction();
@@ -681,16 +675,16 @@ export default defineComponent({
 							this.setLastFocused(node.parent!);
 							break;
 						case 'expand':
-							success = await this.onLeafClick(node);
+							success = await this.onLeafClick(node, true);
 							break;
 						case 'collapse':
-							success = await this.onNonleafClick(node);
+							success = await this.onNonleafClick(node, true);
 							break;
 						case 'expandToView':
-							success = await this.onNonleafClickHeld(node);
+							success = await this.onNonleafClickHeld(node, true);
 							break;
 						case 'unhideAncestor':
-							success = await this.onDetachedAncestorClick(node.parent!);
+							success = await this.onDetachedAncestorClick(node.parent!, true);
 							break;
 					}
 				} catch (error) {
@@ -924,9 +918,9 @@ export default defineComponent({
 		async reInit(){
 			if (this.activeRoot != this.layoutTree){
 				// Collapse tree to root
-				await this.onDetachedAncestorClick(this.layoutTree);
+				await this.onDetachedAncestorClick(this.layoutTree, true);
 			}
-			await this.onNonleafClick(this.layoutTree);
+			await this.onNonleafClick(this.layoutTree, true);
 			await this.initTreeFromServer(false);
 		},
 		getLytOpts(): LayoutOptions {
