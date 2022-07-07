@@ -293,21 +293,37 @@ export default defineComponent({
 				this.handleActionForTutorial('expand');
 				this.setLastFocused(null);
 			}
-			// If clicking child of overflowing active-root, fail
+			// If clicking child of overflowing active-root
 			if (this.overflownRoot){
-				if (!subAction){
-					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+				if (!this.uiOpts.autoHide){
+					if (!subAction){
+						layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+					}
+					return false;
+				} else {
+					return await this.onLeafClickHeld(layoutNode);
 				}
-				return false;
 			}
 			// Function for expanding tile
-			let doExpansion = () => {
+			let doExpansion = async () => {
 				let lytFnOpts = {
 					allowCollapse: false,
 					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
 					layoutMap: this.layoutMap
 				};
 				let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, lytFnOpts);
+				// Handle auto-hide
+				if (!success && this.uiOpts.autoHide){
+					while (!success && layoutNode != this.activeRoot){
+						let node = layoutNode;
+						while (node.parent != this.activeRoot){
+							node = node.parent!;
+						}
+						await this.onNonleafClickHeld(node, true);
+						this.updateAreaDims();
+						success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, lytFnOpts);
+					}
+				}
 				// If expanding active-root with too many children to fit, allow overflow
 				if (!success && layoutNode == this.activeRoot){
 					success = tryLayout(this.activeRoot, this.tileAreaDims,
@@ -375,16 +391,18 @@ export default defineComponent({
 		},
 		// For expand-to-view and ancestry-bar events
 		async onLeafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+			// Special case for active root
+			if (layoutNode == this.activeRoot){
+				console.log('Ignored expand-to-view on active-root node');
+				return false;
+			}
+			//
 			if (!subAction){
 				if (this.isDisabled('expandToView')){
 					return false;
 				}
 				this.handleActionForTutorial('expandToView');
 				this.setLastFocused(null);
-			}
-			// Special case for active root
-			if (layoutNode == this.activeRoot){
-				return await this.onLeafClick(layoutNode, subAction);
 			}
 			// Function for expanding tile
 			let doExpansion = async () => {
@@ -429,17 +447,18 @@ export default defineComponent({
 			}
 		},
 		async onNonleafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+			// Special case for active root
+			if (layoutNode == this.activeRoot){
+				console.log('Ignored expand-to-view on active-root node');
+				return false;
+			}
+			//
 			if (!subAction){
 				if (this.isDisabled('expandToView')){
 					return false;
 				}
 				this.handleActionForTutorial('expandToView');
 				this.setLastFocused(null);
-			}
-			// Special case for active root
-			if (layoutNode == this.activeRoot){
-				console.log('Ignored expand-to-view on active-root node');
-				return false;
 			}
 			// Hide ancestors
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
@@ -463,7 +482,13 @@ export default defineComponent({
 			let success: boolean;
 			this.updateAreaDims();
 			if (!collapse){
-				success = this.relayoutWithCollapse();
+				// Relayout, attempting to have the ancestor expanded
+				this.relayoutWithCollapse(false);
+				if (layoutNode.children.length > 0){
+					this.relayoutWithCollapse(false); // Second pass for regularity
+				} else {
+					await this.onLeafClick(layoutNode, true);
+				}
 			} else {
 				success = await this.onNonleafClick(layoutNode, true); // For reducing tile-flashing on-screen
 			}
@@ -818,7 +843,6 @@ export default defineComponent({
 					}
 				}
 				// Relayout
-				this.overflownRoot = false;
 				if (!changedTree){
 					this.updateAreaDims();
 					this.relayoutWithCollapse();

@@ -93,6 +93,10 @@
 				<label> <input type="checkbox" v-model="uiOpts.searchJumpMode"
 					@change="onSettingChg('UI', 'searchJumpMode')"/> Skip search animation </label>
 			</div>
+			<div>
+				<label> <input type="checkbox" v-model="uiOpts.autoHide"
+					@change="onSettingChg('UI', 'autoHide')"/> Auto-hide ancestors </label>
+			</div>
 			<div v-if="uiOpts.touchDevice == false">
 				<label> <input type="checkbox" v-model="uiOpts.disableShortcuts"
 					@change="onSettingChg('UI', 'disableShortcuts')"/> Disable keyboard shortcuts </label>

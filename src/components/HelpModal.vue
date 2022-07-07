@@ -179,7 +179,16 @@
 								</ul>
 							</li>
 							<li>
-								<h2 class="font-bold">Slider Resets</h2>
+								<h2 class="font-bold">Auto-hide ancestors</h2>
+								<p>
+									Normally, if there isn't enough space to expand a tile,
+									an ancestor is hidden, and expansion is tried again.
+									With this setting disabled, no such attempt is made.
+									This makes tile movements more predictable.
+								</p>
+							</li>
+							<li>
+								<h2 class="font-bold">Slider resets</h2>
 								<p>
 									You can {{touchDevice ? 'tap' : 'click'}} on
 									a slider's label to reset it to the default value.
@@ -213,14 +222,6 @@
 								</p>
 							</li>
 						</ul>
-						<br/>
-						<h1 class="text-lg font-bold">Overflowing Tiles</h1>
-						<p>
-							Some tiles have too many children to fit on-screen at once, and are displayed
-							with a scroll bar. For layout reasons, this is only done if they are the
-							outermost tile, so you may need to {{touchDevice ? 'double tap' : 'click and hold'}}
-							the tile to expand it.
-						</p>
 					</div>
 				</template>
 			</s-collapsible>

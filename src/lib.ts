@@ -111,6 +111,7 @@ export type UiOptions = {
 	searchJumpMode: boolean,
 	tutorialSkip: boolean,
 	disabledActions: Set<Action>,
+	autoHide: boolean, // Upon a leaf-click fail, hide an ancestor and try again
 	disableShortcuts: boolean,
 };
 // Option defaults
@@ -174,6 +175,7 @@ export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 		searchJumpMode: false,
 		tutorialSkip: false,
 		disabledActions: new Set() as Set<Action>,
+		autoHide: true,
 		disableShortcuts: false,
 	};
 }
