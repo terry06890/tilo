@@ -51,7 +51,7 @@
 	<transition name="fade">
 		<search-modal v-if="searchOpen" :tolMap="tolMap" :lytMap="layoutMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 			@close="onSearchClose" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg"
-			@net-wait="primeLoadInd" @net-get="endLoadInd" class="z-10" ref="searchModal"/>
+			@net-wait="primeLoadInd('Loading data')" @net-get="endLoadInd" class="z-10" ref="searchModal"/>
 	</transition>
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null && infoModalData != null"
@@ -65,7 +65,7 @@
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
 		@close="settingsOpen = false" @reset="onResetSettings" @setting-chg="onSettingChg"/>
 	<transition name="fade">
-		<loading-modal v-if="loadingOpen" :uiOpts="uiOpts" class="z-10"/>
+		<loading-modal v-if="loadingMsg != null" :msg="loadingMsg" :uiOpts="uiOpts" class="z-10"/>
 	</transition>
 	<!-- Overlay used to capture clicks during auto mode, etc -->
 	<div :style="{visibility: modeRunning != null ? 'visible' : 'hidden'}"
@@ -141,7 +141,7 @@ export default defineComponent({
 			searchOpen: false,
 			settingsOpen: false,
 			helpOpen: false,
-			loadingOpen: false,
+			loadingMsg: null as null | string, // Message to display in loading-indicator
 			// For search and auto-mode
 			modeRunning: null as null | 'search' | 'autoMode',
 			lastFocused: null as LayoutNode | null, // Used to un-focus 
@@ -164,7 +164,7 @@ export default defineComponent({
 			afterResizeHdlr: 0, // Set via setTimeout() to execute after a run of resize events
 			// Other
 			justInitialised: false, // Used to skip transition for the tile initially loaded from server
-			pendingLoadingRevealHdlr: 0, // Used to delay showing the loading modal
+			pendingLoadingRevealHdlr: 0, // Used to delay showing the loading-indicator modal
 			changedSweepToParent: false, // Set during search animation for efficiency
 			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries get removed
 		};
@@ -485,9 +485,9 @@ export default defineComponent({
 				// Relayout, attempting to have the ancestor expanded
 				this.relayoutWithCollapse(false);
 				if (layoutNode.children.length > 0){
-					this.relayoutWithCollapse(false); // Second pass for regularity
+					success = this.relayoutWithCollapse(false); // Second pass for regularity
 				} else {
-					await this.onLeafClick(layoutNode, true);
+					success = await this.onLeafClick(layoutNode, true);
 				}
 			} else {
 				success = await this.onNonleafClick(layoutNode, true); // For reducing tile-flashing on-screen
@@ -799,23 +799,21 @@ export default defineComponent({
 		},
 		// For the loading-indicator
 		async loadFromServer(urlParams: URLSearchParams){ // Like queryServer(), but enables the loading indicator
-			this.primeLoadInd();
+			this.primeLoadInd('Loading data');
 			let responseObj = await queryServer(urlParams);
 			this.endLoadInd();
 			return responseObj;
 		},
-		primeLoadInd(){
-			if (this.pendingLoadingRevealHdlr == 0){
-				this.pendingLoadingRevealHdlr = setTimeout(() => {
-					this.loadingOpen = true;
-				}, 300);
-			}
+		primeLoadInd(msg: string){
+			this.pendingLoadingRevealHdlr = setTimeout(() => {
+				this.loadingMsg = msg;
+			}, 300);
 		},
 		endLoadInd(){
 			clearTimeout(this.pendingLoadingRevealHdlr);
 			this.pendingLoadingRevealHdlr = 0;
-			if (this.loadingOpen){
-				this.loadingOpen = false;
+			if (this.loadingMsg != null){
+				this.loadingMsg = null;
 			}
 		},
 		// For other events

@@ -3,7 +3,7 @@
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
 		flex items-center py-3 px-3 gap-2" :style="styles">
 		<loader-icon class="w-12 h-12 animate-[spin_6s_linear_infinite]"/>
-		<div class="whitespace-nowrap">Querying server ...</div>
+		<div class="whitespace-nowrap">{{msg}}</div>
 	</div>
 </div>
 </template>
@@ -15,6 +15,7 @@ import {UiOptions} from '../lib';
 
 export default defineComponent({
 	props: {
+		msg: {type: String, required: true},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	},
 	computed: {
