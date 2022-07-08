@@ -9,6 +9,7 @@ dbFile = "data/data.db"
 DEFAULT_SUGG_LIM = 5
 MAX_SUGG_LIM = 50
 CORS_ANY_ORIGIN = True # Used during development to avoid Cross-Origin Resource Sharing restrictions
+ROOT_NAME = 'cellular organisms'
 
 usageInfo = f"""
 Usage: {sys.argv[0]}
@@ -242,8 +243,9 @@ def handleReq(dbCur):
 	# Set vars from params
 	name = queryDict["name"][0] if "name" in queryDict else None
 	if name == None: # Get root node
-		query = "SELECT name FROM nodes LEFT JOIN edges ON nodes.name = edges.child WHERE edges.parent IS NULL LIMIT 1"
-		(name,) = dbCur.execute(query).fetchone()
+		name = ROOT_NAME # Hard-coding this is significantly faster (in testing, querying could take 0.5 seconds)
+		#query = "SELECT name FROM nodes LEFT JOIN edges ON nodes.name = edges.child WHERE edges.parent IS NULL LIMIT 1"
+		#(name,) = dbCur.execute(query).fetchone()
 	reqType = queryDict["type"][0] if "type" in queryDict else None
 	tree = queryDict["tree"][0] if "tree" in queryDict else "images"
 	# Check for valid 'tree'
