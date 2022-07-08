@@ -8,8 +8,7 @@ import gzip, jsonpickle
 dbFile = "data/data.db"
 DEFAULT_SUGG_LIM = 5
 MAX_SUGG_LIM = 50
-CORS_ANY_ORIGIN = True # Used during development to avoid Cross-Origin Resource Sharing restrictions
-ROOT_NAME = 'cellular organisms'
+ROOT_NAME = "cellular organisms"
 
 usageInfo = f"""
 Usage: {sys.argv[0]}
@@ -230,8 +229,6 @@ def respondJson(val):
 			content = gzip.compress(content, compresslevel=5)
 			print(f"Content-length: {len(content)}")
 			print(f"Content-encoding: gzip")
-	if CORS_ANY_ORIGIN:
-		print("Access-Control-Allow-Origin: *")
 	print()
 	sys.stdout.flush()
 	sys.stdout.buffer.write(content)
