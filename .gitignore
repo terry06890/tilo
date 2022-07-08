@@ -30,3 +30,4 @@
 /backend/data/pickedEnwikiLabels.txt
 /backend/data/pickedNodes.txt
 /backend/data/pickedNames.txt
+/backend/__pycache__

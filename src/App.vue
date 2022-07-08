@@ -780,7 +780,7 @@ export default defineComponent({
 		primeLoadInd(msg: string){
 			this.pendingLoadingRevealHdlr = setTimeout(() => {
 				this.loadingMsg = msg;
-			}, 300);
+			}, 500);
 		},
 		endLoadInd(){
 			clearTimeout(this.pendingLoadingRevealHdlr);

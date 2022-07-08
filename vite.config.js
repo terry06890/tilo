@@ -6,7 +6,7 @@ export default defineConfig({
 	plugins: [vue()],
 	server: {
 		proxy: {
-			'/cgi-bin/data.py': 'http://localhost:8000'
+			'/data': 'http://localhost:8000'
 		},
 		watch: {
 			ignored: ['**/backend', '**/public']

@@ -7,7 +7,7 @@ import {LayoutOptions} from './layout';
 import {getBreakpoint, Breakpoint, getScrollBarWidth, onTouchDevice} from './util';
 
 // For server requests
-const SERVER_URL = window.location.href + 'cgi-bin/data.py'
+const SERVER_URL = window.location.href + 'data'
 export async function queryServer(params: URLSearchParams){
 	// Construct URL
 	let url = new URL(SERVER_URL);

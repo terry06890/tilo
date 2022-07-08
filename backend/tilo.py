@@ -13,9 +13,9 @@ ROOT_NAME = "cellular organisms"
 usageInfo = f"""
 Usage: {sys.argv[0]}
 
-CGI script that provides tree-of-life data, in JSON form.
+WSGI script that serves tree-of-life data, in JSON form.
 
-Query parameters:
+Expected HTTP query parameters:
 - name: Provides a name, or partial name, of a tree-of-life node. If absent, the root node is used.
 - type: Specifies what data to reply with.
     If 'node', reply with a name-to-TolNode map, describing the named node and it's children.
@@ -219,22 +219,12 @@ def lookupInfo(name, tree, dbCur):
 		) if n != None else None for n in [name] + subNames
 	]
 	return InfoResponse(nodeInfoObjs[0], nodeInfoObjs[1:])
+def getTableSuffix(tree):
+	return "t" if tree == "trimmed" else "i" if tree == "images" else "p"
 
-# For handling request
-def respondJson(val):
-	content = jsonpickle.encode(val, unpicklable=False).encode("utf-8")
-	print("Content-type: application/json")
-	if "HTTP_ACCEPT_ENCODING" in os.environ and "gzip" in os.environ["HTTP_ACCEPT_ENCODING"]:
-		if len(content) > 100:
-			content = gzip.compress(content, compresslevel=5)
-			print(f"Content-length: {len(content)}")
-			print(f"Content-encoding: gzip")
-	print()
-	sys.stdout.flush()
-	sys.stdout.buffer.write(content)
-def handleReq(dbCur):
+def handleReq(dbCur, environ):
 	# Get query params
-	queryStr = os.environ["QUERY_STRING"] if "QUERY_STRING" in os.environ else ""
+	queryStr = environ["QUERY_STRING"] if "QUERY_STRING" in environ else ""
 	queryDict = urllib.parse.parse_qs(queryStr)
 	# Set vars from params
 	name = queryDict["name"][0] if "name" in queryDict else None
@@ -246,8 +236,7 @@ def handleReq(dbCur):
 	tree = queryDict["tree"][0] if "tree" in queryDict else "images"
 	# Check for valid 'tree'
 	if tree != None and re.fullmatch(r"trimmed|images|picked", tree) == None:
-		respondJson(None)
-		return
+		return None
 	# Get data of requested type
 	if reqType == "node":
 		toroot = queryDict["toroot"][0] if "toroot" in queryDict else None
@@ -257,8 +246,7 @@ def handleReq(dbCur):
 				tolNode = tolNodes[name]
 				childNodeObjs = lookupNodes(tolNode.children, tree, dbCur)
 				childNodeObjs[name] = tolNode
-				respondJson(childNodeObjs)
-				return
+				return childNodeObjs
 		else:
 			# Get ancestors to skip inclusion of
 			nodesToSkip = set()
@@ -279,8 +267,7 @@ def handleReq(dbCur):
 				tolNodes = lookupNodes([name], tree, dbCur)
 				if len(tolNodes) == 0:
 					if not ranOnce:
-						respondJson(results)
-						return
+						return results
 					print(f"ERROR: Parent-chain node {name} not found", file=sys.stderr)
 					break
 				tolNode = tolNodes[name]
@@ -297,8 +284,7 @@ def handleReq(dbCur):
 					results.update(childNodeObjs)
 				# Check if root
 				if tolNode.parent == None or tolNode.parent in nodesToSkip:
-					respondJson(results)
-					return
+					return results
 				else:
 					name = tolNode.parent
 	elif reqType == "sugg":
@@ -314,20 +300,27 @@ def handleReq(dbCur):
 			print(f"INFO: Invalid limit {suggLimit}", file=sys.stderr)
 		# Get search suggestions
 		if not invalidLimit:
-			respondJson(lookupSuggs(name, suggLimit, tree, dbCur))
-			return
+			return lookupSuggs(name, suggLimit, tree, dbCur)
 	elif reqType == "info":
 		infoResponse = lookupInfo(name, tree, dbCur)
 		if infoResponse != None:
-			respondJson(infoResponse)
-			return
+			return infoResponse
 	# On failure, provide empty response
-	respondJson(None)
-def getTableSuffix(tree):
-	return "t" if tree == "trimmed" else "i" if tree == "images" else "p"
-
-# Open db
-dbCon = sqlite3.connect(dbFile)
-dbCur = dbCon.cursor()
-# Handle request
-handleReq(dbCur)
+	return None
+def application(environ, start_response):
+	global dbFile
+	# Open db
+	dbCon = sqlite3.connect(dbFile)
+	dbCur = dbCon.cursor()
+	# Get response object
+	val = handleReq(dbCur, environ)
+	# Construct response
+	data = jsonpickle.encode(val, unpicklable=False).encode()
+	headers = [("Content-type", "application/json")]
+	if "HTTP_ACCEPT_ENCODING" in environ and "gzip" in environ["HTTP_ACCEPT_ENCODING"]:
+		if len(data) > 100:
+			data = gzip.compress(data, compresslevel=5)
+			headers.append(("Content-encoding", "gzip"))
+	headers.append(('Content-Length', str(len(data))))
+	start_response('200 OK', headers)
+	return [data]
