@@ -542,7 +542,11 @@ export default defineComponent({
 				layoutNode.addDescendantChain(nodesToAdd, this.tolMap, this.layoutMap);
 				// Expand-to-view on target-node's parent
 				targetNode = this.layoutMap.get(name);
-				await this.onLeafClickHeld(targetNode!.parent!, true);
+				if (targetNode.parent != this.activeRoot){
+					await this.onLeafClickHeld(targetNode!.parent!, true);
+				} else {
+					await this.onLeafClick(targetNode!.parent!, true);
+				}
 				setTimeout(() => this.setLastFocused(targetNode!), this.uiOpts.transitionDuration);
 				this.modeRunning = null;
 				return;
