@@ -49,7 +49,8 @@
 	</div>
 	<!-- Modals -->
 	<transition name="fade">
-		<search-modal v-if="searchOpen" :tolMap="tolMap" :lytMap="layoutMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+		<search-modal v-if="searchOpen"
+			:tolMap="tolMap" :lytMap="layoutMap" :activeRoot="activeRoot" :lytOpts="lytOpts" :uiOpts="uiOpts"
 			@close="onSearchClose" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg"
 			@net-wait="primeLoadInd('Loading data')" @net-get="endLoadInd" class="z-10" ref="searchModal"/>
 	</transition>
@@ -542,7 +543,7 @@ export default defineComponent({
 				layoutNode.addDescendantChain(nodesToAdd, this.tolMap, this.layoutMap);
 				// Expand-to-view on target-node's parent
 				targetNode = this.layoutMap.get(name);
-				if (targetNode.parent != this.activeRoot){
+				if (targetNode!.parent != this.activeRoot){
 					await this.onLeafClickHeld(targetNode!.parent!, true);
 				} else {
 					await this.onLeafClick(targetNode!.parent!, true);
@@ -864,7 +865,7 @@ export default defineComponent({
 			let urlParams = new URLSearchParams({type: 'node', tree: this.uiOpts.tree});
 			if (nodeName != null){
 				urlParams.append('name', nodeName);
-				urlParams.append('toroot', 'true');
+				urlParams.append('toroot', this.activeRoot.name);
 			}
 			let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
 			if (responseObj == null){

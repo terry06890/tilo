@@ -22,8 +22,8 @@ Query parameters:
     If 'node', reply with a name-to-TolNode map, describing the named node and it's children.
     If 'sugg', reply with a SearchSuggResponse, describing search suggestions for the possibly-partial name.
     If 'info', reply with an InfoResponse, describing the named node.
-- toroot: Used with type=node, and causes inclusion of nodes upward to the root, and their children.
-    If specified, the value should be 'true'.
+- toroot: Used with type=node, and causes inclusion of ancestors, and their children.
+    The value names a node whose ancestors need not be included.
 - limit: Used with type=sugg to specify the max number of suggestions.
 - tree: Specifies which tree should be used.
     May be 'trimmed', 'images', or 'picked', corresponding to the
@@ -88,7 +88,7 @@ def lookupNodes(names, tree, dbCur):
 	" For a set of node names, returns a name-to-TolNode map that describes those nodes "
 	# Get node info
 	nameToNodes = {}
-	tblSuffix = "t" if tree == "trimmed" else "i" if tree == "images" else "p"
+	tblSuffix = getTableSuffix(tree)
 	nodesTable = f"nodes_{tblSuffix}"
 	edgesTable = f"edges_{tblSuffix}"
 	queryParamStr = ",".join(["?"] * len(names))
@@ -143,8 +143,7 @@ def lookupSuggs(searchStr, suggLimit, tree, dbCur):
 	hasMore = False
 	# Get node names and alt-names
 	query1, query2 = (None, None)
-	tblSuffix = "t" if tree == "trimmed" else "i" if tree == "images" else "p"
-	nodesTable = f"nodes_{tblSuffix}"
+	nodesTable = f"nodes_{getTableSuffix(tree)}"
 	query1 = f"SELECT DISTINCT name FROM {nodesTable}" \
 		f" WHERE name LIKE ? AND name NOT LIKE '[%' ORDER BY length(name) LIMIT ?"
 	query2 = f"SELECT DISTINCT alt_name, names.name FROM" \
@@ -254,8 +253,8 @@ def handleReq(dbCur):
 		return
 	# Get data of requested type
 	if reqType == "node":
-		toroot = "toroot" in queryDict and queryDict["toroot"][0] == "true"
-		if not toroot:
+		toroot = queryDict["toroot"][0] if "toroot" in queryDict else None
+		if toroot == None:
 			tolNodes = lookupNodes([name], tree, dbCur)
 			if len(tolNodes) > 0:
 				tolNode = tolNodes[name]
@@ -264,6 +263,18 @@ def handleReq(dbCur):
 				respondJson(childNodeObjs)
 				return
 		else:
+			# Get ancestors to skip inclusion of
+			nodesToSkip = set()
+			nodeName = toroot
+			edgesTable = f"edges_{getTableSuffix(tree)}"
+			while True:
+				row = dbCur.execute(f"SELECT parent FROM {edgesTable} WHERE child = ?", (nodeName,)).fetchone()
+				if row == None:
+					break
+				parent = row[0]
+				nodesToSkip.add(parent)
+				nodeName = parent
+			#
 			results = {}
 			ranOnce = False
 			while True:
@@ -288,7 +299,7 @@ def handleReq(dbCur):
 					childNodeObjs = lookupNodes(childNamesToAdd, tree, dbCur)
 					results.update(childNodeObjs)
 				# Check if root
-				if tolNode.parent == None:
+				if tolNode.parent == None or tolNode.parent in nodesToSkip:
 					respondJson(results)
 					return
 				else:
@@ -315,6 +326,8 @@ def handleReq(dbCur):
 			return
 	# On failure, provide empty response
 	respondJson(None)
+def getTableSuffix(tree):
+	return "t" if tree == "trimmed" else "i" if tree == "images" else "p"
 
 # Open db
 dbCon = sqlite3.connect(dbFile)

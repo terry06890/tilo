@@ -43,6 +43,7 @@ import {queryServer, SearchSugg, SearchSuggResponse, UiOptions} from '../lib';
 export default defineComponent({
 	props: {
 		lytMap: {type: Object as PropType<LayoutMap>, required: true}, // Used to check if a searched-for node exists
+		activeRoot: {type: Object as PropType<LayoutNode>, required: true}, // Sent to server to reduce response size
 		tolMap: {type: Object as PropType<TolMap>, required: true}, // Upon a search response, gets new nodes added
 		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
 		uiOpts: {type: Object as PropType<UiOptions>, required: true},
@@ -205,7 +206,7 @@ export default defineComponent({
 			let urlParams = new URLSearchParams({
 				type: 'node',
 				name: tolNodeName,
-				toroot: 'true',
+				toroot: this.activeRoot.name,
 				tree: this.uiOpts.tree,
 			});
 			this.$emit('net-wait'); // Allows the parent component to show a loading-indicator
