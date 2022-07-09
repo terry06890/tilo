@@ -3,7 +3,7 @@
 	:style="{backgroundColor: uiOpts.bgColor}">
 	<!-- Title bar -->
 	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: uiOpts.bgColorDark2, color: uiOpts.altColor}">
-		<h1 class="my-auto ml-2 text-4xl">Tilo</h1>
+		<h1 class="my-auto ml-2 text-4xl hover:cursor-pointer" @click="collapseTree">Tilo</h1>
 		<div class="mx-auto"/> <!-- Spacer -->
 		<!-- Icons -->
 		<icon-button :disabled="isDisabled('help')" :size="45" :style="buttonStyles" @click="onHelpIconClick">
@@ -921,6 +921,14 @@ export default defineComponent({
 			}
 			await this.onNonleafClick(this.layoutTree, true);
 			await this.initTreeFromServer(false);
+		},
+		async collapseTree(){
+			if (this.activeRoot != this.layoutTree){
+				await this.onDetachedAncestorClick(this.layoutTree, true);
+			}
+			if (this.layoutTree.children.length > 0){
+				await this.onNonleafClick(this.layoutTree);
+			}
 		},
 		getLytOpts(): LayoutOptions {
 			let opts = getDefaultLytOpts();
