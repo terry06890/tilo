@@ -92,7 +92,7 @@ export default defineComponent({
 		},
 		suggDisplayStrings(): [string, string, string][] {
 			let result: [string, string, string][] = [];
-			let input = this.suggsInput;
+			let input = this.suggsInput.toLowerCase();
 			// For each SearchSugg
 			for (let sugg of this.searchSuggs){
 				let idx = sugg.name.indexOf(input);
