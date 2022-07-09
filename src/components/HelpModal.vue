@@ -302,7 +302,7 @@
 							</li>
 						</ul>
 						<br/>
-						<h1 class="text-lg font-bold">Some Possible Points of Confusion</h1>
+						<h1 class="text-lg font-bold">Possible Points of Confusion</h1>
 						<ul class="list-disc pl-4">
 							<li>
 								<h2 class="font-bold">Unexpected Images</h2>
@@ -317,15 +317,16 @@
 								<h2 class="font-bold">Unexpected Search Results</h2>
 								<ul class="list-[circle] pl-4">
 									<li>
+										Some search results might not include what you're looking for.
+										An example is 'dinosaur', which doesn't correspond to a single node,
+										but to multiple nodes within Sauria.
+										And dog breeds are absent because they aren't considered
+										separate species, but as variant descendants of Canis familiaris.
+									</li>
+									<li>
 										In the Complex tree, searching for 'orange', then pressing enter, brings up
 										a kind of butterfly, instead of a citrus plant. This is because suggestions
 										are not yet ordered by how well known the taxon is.
-									</li>
-									<li>
-										In some cases, a search might unexpectedly have no results. For example,
-										searching for 'golden retriever' brings up nothing. This is because
-										breeds of domestic dog are not considered separate species, but as
-										variant descendants of Canis familiaris.
 									</li>
 								</ul>
 							</li>
