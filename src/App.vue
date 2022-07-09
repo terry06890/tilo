@@ -52,7 +52,7 @@
 		<search-modal v-if="searchOpen"
 			:tolMap="tolMap" :lytMap="layoutMap" :activeRoot="activeRoot" :lytOpts="lytOpts" :uiOpts="uiOpts"
 			@close="onSearchClose" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg"
-			@net-wait="primeLoadInd('Loading data')" @net-get="endLoadInd" class="z-10" ref="searchModal"/>
+			@net-wait="onSearchNetWait" @net-get="endLoadInd" class="z-10" ref="searchModal"/>
 	</transition>
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null && infoModalData != null"
@@ -117,6 +117,9 @@ function getReverseAction(action: AutoAction): AutoAction | null {
 		return null;
 	}
 }
+// Constants
+const SERVER_WAIT_MSG = 'Loading data';
+const PROCESSING_WAIT_MSG = 'Processing';
 
 export default defineComponent({
 	data(){
@@ -165,7 +168,7 @@ export default defineComponent({
 			afterResizeHdlr: 0, // Set via setTimeout() to execute after a run of resize events
 			// Other
 			justInitialised: false, // Used to skip transition for the tile initially loaded from server
-			pendingLoadingRevealHdlr: 0, // Used to delay showing the loading-indicator modal
+			pendingLoadingRevealHdlr: 0, // Used to delay showing the loading-indicator
 			changedSweepToParent: false, // Set during search animation for efficiency
 			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries get removed
 		};
@@ -260,6 +263,7 @@ export default defineComponent({
 			}
 			// Function for expanding tile
 			let doExpansion = async () => {
+				this.primeLoadInd(PROCESSING_WAIT_MSG);
 				let lytFnOpts = {
 					allowCollapse: false,
 					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
@@ -290,6 +294,7 @@ export default defineComponent({
 				if (!subAction && !success){
 					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 				}
+				this.$nextTick(this.endLoadInd);
 				return success;
 			};
 			//
@@ -329,6 +334,7 @@ export default defineComponent({
 				return false;
 			}
 			// Relayout
+			this.primeLoadInd(PROCESSING_WAIT_MSG);
 			let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, {
 				allowCollapse: false,
 				chg: {type: 'collapse', node: layoutNode, tolMap: this.tolMap},
@@ -358,6 +364,7 @@ export default defineComponent({
 			if (!subAction){
 				this.onActionEnd('collapse');
 			}
+			this.$nextTick(this.endLoadInd);
 			return success;
 		},
 		// For expand-to-view and ancestry-bar events
@@ -373,6 +380,7 @@ export default defineComponent({
 			}
 			// Function for expanding tile
 			let doExpansion = async () => {
+				this.primeLoadInd(PROCESSING_WAIT_MSG);
 				// Hide ancestors
 				LayoutNode.hideUpward(layoutNode, this.layoutMap);
 				this.activeRoot = layoutNode;
@@ -397,6 +405,7 @@ export default defineComponent({
 				if (!success && !subAction){
 					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
 				}
+				this.$nextTick(this.endLoadInd);
 				return success;
 			};
 			// Check if data for node-to-expand exists, getting from server if needed
@@ -429,21 +438,25 @@ export default defineComponent({
 			if (!subAction && !this.onActionStart('expandToView')){
 				return false;
 			}
+			this.primeLoadInd(PROCESSING_WAIT_MSG);
 			// Hide ancestors
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			this.activeRoot = layoutNode;
 			// Relayout
 			this.updateAreaDims();
 			let success = this.relayoutWithCollapse();
+			//
 			if (!subAction){
 				this.onActionEnd('expandToView');
 			}
+			this.$nextTick(this.endLoadInd);
 			return success;
 		},
 		async onDetachedAncestorClick(layoutNode: LayoutNode, subAction = false, collapse = false): Promise<boolean> {
 			if (!subAction && !this.onActionStart('unhideAncestor')){
 				return false;
 			}
+			this.primeLoadInd(PROCESSING_WAIT_MSG);
 			// Unhide ancestors
 			this.activeRoot = layoutNode;
 			this.overflownRoot = false;
@@ -462,9 +475,11 @@ export default defineComponent({
 				success = await this.onNonleafClick(layoutNode, true); // For reducing tile-flashing on-screen
 			}
 			LayoutNode.showDownward(layoutNode);
+			//
 			if (!subAction){
 				this.onActionEnd('unhideAncestor');
 			}
+			this.$nextTick(this.endLoadInd);
 			return success;
 		},
 		// For tile-info events
@@ -593,6 +608,9 @@ export default defineComponent({
 			this.modeRunning = null;
 			this.searchOpen = false;
 			this.onActionEnd('search');
+		},
+		onSearchNetWait(){
+			this.primeLoadInd(SERVER_WAIT_MSG);
 		},
 		// For auto-mode events
 		onAutoIconClick(){
@@ -893,23 +911,23 @@ export default defineComponent({
 			}
 		},
 		// For the loading-indicator
-		async loadFromServer(urlParams: URLSearchParams){ // Like queryServer(), but enables the loading indicator
-			this.primeLoadInd('Loading data');
-			let responseObj = await queryServer(urlParams);
-			this.endLoadInd();
-			return responseObj;
-		},
-		primeLoadInd(msg: string){
+		primeLoadInd(msg: string){ // Sets up a loading message to display after a timeout
 			this.pendingLoadingRevealHdlr = setTimeout(() => {
 				this.loadingMsg = msg;
 			}, 500);
 		},
-		endLoadInd(){
+		endLoadInd(){ // Cancels or closes a loading message
 			clearTimeout(this.pendingLoadingRevealHdlr);
 			this.pendingLoadingRevealHdlr = 0;
 			if (this.loadingMsg != null){
 				this.loadingMsg = null;
 			}
+		},
+		async loadFromServer(urlParams: URLSearchParams){ // Like queryServer(), but enables the loading indicator
+			this.primeLoadInd(SERVER_WAIT_MSG);
+			let responseObj = await queryServer(urlParams);
+			this.endLoadInd();
+			return responseObj;
 		},
 		// For initialisation
 		async initTreeFromServer(firstInit = true){

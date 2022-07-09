@@ -9,6 +9,7 @@
     -   HelpModal.vue:     Modal displaying help info.
     -   AncestryBar.vue:   Displays ancestors of the outermost Tile.
     -   TutorialPane.vue:  Displays tutorial content.
+    -   LoadingModal.vue:  Displays a loading indicator.
     -   SButton.vue:       Simple button component.
     -   IconButton.vue:    Simple button component containing an SVG icon.
     -   SCollapsible.vue:  Simple collapsible-content component.
