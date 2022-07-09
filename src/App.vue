@@ -57,20 +57,20 @@
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null && infoModalData != null"
 			:nodeName="infoModalNodeName" :infoResponse="infoModalData" :tolMap="tolMap" :lytOpts="lytOpts"
-			:uiOpts="uiOpts" class="z-10" @close="infoModalNodeName = null"/>
+			:uiOpts="uiOpts" class="z-10" @close="onInfoClose"/>
 	</transition>
 	<transition name="fade">
 		<help-modal v-if="helpOpen" :tutOpen="tutPaneOpen" :uiOpts="uiOpts" class="z-10"
-			@close="helpOpen = false" @start-tutorial="onStartTutorial"/>
+			@close="onHelpClose" @start-tutorial="onStartTutorial"/>
 	</transition>
 	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
-		@close="settingsOpen = false" @reset="onResetSettings" @setting-chg="onSettingChg"/>
+		@close="onSettingsClose" @reset="onResetSettings" @setting-chg="onSettingChg"/>
 	<transition name="fade">
 		<loading-modal v-if="loadingMsg != null" :msg="loadingMsg" :uiOpts="uiOpts" class="z-10"/>
 	</transition>
 	<!-- Overlay used to capture clicks during auto mode, etc -->
 	<div :style="{visibility: modeRunning != null ? 'visible' : 'hidden'}"
-		class="absolute left-0 top-0 w-full h-full z-20" @click="modeRunning = null"></div>
+		class="absolute left-0 top-0 w-full h-full z-20" @click="resetMode"></div>
 </div>
 </template>
 
@@ -255,23 +255,8 @@ export default defineComponent({
 	methods: {
 		// For tile expand/collapse events
 		async onLeafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
-			if (!subAction){
-				if (this.isDisabled('expand')){
-					return false;
-				}
-				this.handleActionForTutorial('expand');
-				this.setLastFocused(null);
-			}
-			// If clicking child of overflowing active-root
-			if (this.overflownRoot){
-				if (!this.uiOpts.autoHide){
-					if (!subAction){
-						layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
-					}
-					return false;
-				} else {
-					return await this.onLeafClickHeld(layoutNode);
-				}
+			if (!subAction && !this.onActionStart('expand')){
+				return false;
 			}
 			// Function for expanding tile
 			let doExpansion = async () => {
@@ -307,27 +292,41 @@ export default defineComponent({
 				}
 				return success;
 			};
-			// Check if data for node-to-expand exists, getting from server if needed
-			let tolNode = this.tolMap.get(layoutNode.name)!;
-			if (!this.tolMap.has(tolNode.children[0])){
-				let urlParams = new URLSearchParams({type: 'node', name: layoutNode.name, tree: this.uiOpts.tree});
-				let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
-				if (responseObj == null){
-					return false;
+			//
+			let success: boolean;
+			if (this.overflownRoot){ // If clicking child of overflowing active-root
+				if (!this.uiOpts.autoHide){
+					if (!subAction){
+						layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+					}
+					success = false;
+				} else {
+					success = await this.onLeafClickHeld(layoutNode);
 				}
-				Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
-				return doExpansion();
 			} else {
-				return doExpansion();
+				// Check if data for node-to-expand exists, getting from server if needed
+				let tolNode = this.tolMap.get(layoutNode.name)!;
+				if (!this.tolMap.has(tolNode.children[0])){
+					let urlParams = new URLSearchParams({type: 'node', name: layoutNode.name, tree: this.uiOpts.tree});
+					let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
+					if (responseObj == null){
+						success = false;
+					} else {
+						Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
+						success = await doExpansion();
+					}
+				} else {
+					success = await doExpansion();
+				}
 			}
+			if (!subAction){
+				this.onActionEnd('expand');
+			}
+			return success;
 		},
 		async onNonleafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
-			if (!subAction){
-				if (this.isDisabled('collapse')){
-					return false;
-				}
-				this.handleActionForTutorial('collapse');
-				this.setLastFocused(null);
+			if (!subAction && !this.onActionStart('collapse')){
+				return false;
 			}
 			// Relayout
 			let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, {
@@ -356,6 +355,9 @@ export default defineComponent({
 					}
 				}
 			}
+			if (!subAction){
+				this.onActionEnd('collapse');
+			}
 			return success;
 		},
 		// For expand-to-view and ancestry-bar events
@@ -366,12 +368,8 @@ export default defineComponent({
 				return false;
 			}
 			//
-			if (!subAction){
-				if (this.isDisabled('expandToView')){
-					return false;
-				}
-				this.handleActionForTutorial('expandToView');
-				this.setLastFocused(null);
+			if (!subAction && !this.onActionStart('expandToView')){
+				return false;
 			}
 			// Function for expanding tile
 			let doExpansion = async () => {
@@ -402,18 +400,24 @@ export default defineComponent({
 				return success;
 			};
 			// Check if data for node-to-expand exists, getting from server if needed
+			let success: boolean;
 			let tolNode = this.tolMap.get(layoutNode.name)!;
 			if (!this.tolMap.has(tolNode.children[0])){
 				let urlParams = new URLSearchParams({type: 'node', name: layoutNode.name, tree: this.uiOpts.tree});
 				let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
 				if (responseObj == null){
-					return false;
+					success = false;
+				} else {
+					Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
+					success = await doExpansion();
 				}
-				Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
-				return doExpansion();
 			} else {
-				return doExpansion();
+				success = await doExpansion();
 			}
+			if (!subAction){
+				this.onActionEnd('expandToView');
+			}
+			return success;
 		},
 		async onNonleafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
 			// Special case for active root
@@ -422,27 +426,23 @@ export default defineComponent({
 				return false;
 			}
 			//
-			if (!subAction){
-				if (this.isDisabled('expandToView')){
-					return false;
-				}
-				this.handleActionForTutorial('expandToView');
-				this.setLastFocused(null);
+			if (!subAction && !this.onActionStart('expandToView')){
+				return false;
 			}
 			// Hide ancestors
 			LayoutNode.hideUpward(layoutNode, this.layoutMap);
 			this.activeRoot = layoutNode;
 			// Relayout
 			this.updateAreaDims();
-			return this.relayoutWithCollapse();
+			let success = this.relayoutWithCollapse();
+			if (!subAction){
+				this.onActionEnd('expandToView');
+			}
+			return success;
 		},
 		async onDetachedAncestorClick(layoutNode: LayoutNode, subAction = false, collapse = false): Promise<boolean> {
-			if (!subAction){
-				if (this.isDisabled('unhideAncestor')){
-					return false;
-				}
-				this.handleActionForTutorial('unhideAncestor');
-				this.setLastFocused(null);
+			if (!subAction && !this.onActionStart('unhideAncestor')){
+				return false;
 			}
 			// Unhide ancestors
 			this.activeRoot = layoutNode;
@@ -462,26 +462,35 @@ export default defineComponent({
 				success = await this.onNonleafClick(layoutNode, true); // For reducing tile-flashing on-screen
 			}
 			LayoutNode.showDownward(layoutNode);
+			if (!subAction){
+				this.onActionEnd('unhideAncestor');
+			}
 			return success;
 		},
 		// For tile-info events
 		async onInfoClick(nodeName: string){
+			if (!this.onActionStart('tileInfo')){
+				return;
+			}
 			if (!this.searchOpen){ // Close an active non-search mode
 				this.resetMode();
 			}
 			// Query server for tol-node info
 			let urlParams = new URLSearchParams({type: 'info', name: nodeName, tree: this.uiOpts.tree});
 			let responseObj: InfoResponse = await this.loadFromServer(urlParams);
-			if (responseObj == null){
-				return;
+			if (responseObj != null){
+				// Set fields from response
+				this.infoModalNodeName = nodeName;
+				this.infoModalData = responseObj;
 			}
-			// Set fields from response
-			this.infoModalNodeName = nodeName;
-			this.infoModalData = responseObj;
+		},
+		onInfoClose(){
+			this.infoModalNodeName = null;
+			this.onActionEnd('tileInfo');
 		},
 		// For search events
-		onSearchIconClick(): void {
-			if (this.isDisabled('search')){
+		onSearchIconClick(){
+			if (!this.onActionStart('search')){
 				return;
 			}
 			if (!this.searchOpen){
@@ -489,7 +498,7 @@ export default defineComponent({
 				this.searchOpen = true;
 			}
 		},
-		onSearch(name: string): void {
+		onSearch(name: string){
 			if (this.modeRunning != null){
 				console.log('WARNING: Unexpected search event while search/auto mode is running')
 				return;
@@ -506,7 +515,7 @@ export default defineComponent({
 			let targetNode = this.layoutMap.get(name);
 			if (targetNode != null && !targetNode.hidden){
 				this.setLastFocused(targetNode);
-				this.modeRunning = null;
+				this.onSearchClose();
 				return;
 			}
 			// Get nearest in-layout-tree ancestor
@@ -545,15 +554,14 @@ export default defineComponent({
 				targetNode = this.layoutMap.get(name);
 				if (targetNode!.parent != this.activeRoot){
 					// Hide ancestors
-					LayoutNode.hideUpward(targetNode.parent, this.layoutMap);
-					this.activeRoot = targetNode.parent;
+					LayoutNode.hideUpward(targetNode!.parent!, this.layoutMap);
+					this.activeRoot = targetNode!.parent!;
 					await this.onNonleafClick(this.activeRoot, true);
 					await this.onLeafClick(this.activeRoot, true);
 				} else {
 					await this.onLeafClick(this.activeRoot, true);
 				}
-				setTimeout(() => this.setLastFocused(this.layoutMap.get(name)), this.uiOpts.transitionDuration);
-				this.modeRunning = null;
+				setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 				return;
 			}
 			if (this.overflownRoot){
@@ -569,7 +577,7 @@ export default defineComponent({
 			// Attempt expand-to-view on an ancestor halfway to the active root
 			if (layoutNode == this.activeRoot){
 				console.log('Screen too small to expand active root');
-				this.modeRunning = null;
+				this.onSearchClose();
 				return;
 			}
 			let ancestorChain = [layoutNode];
@@ -582,12 +590,13 @@ export default defineComponent({
 			setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
 		},
 		onSearchClose(){
+			this.modeRunning = null;
 			this.searchOpen = false;
-			this.handleActionForTutorial('search');
+			this.onActionEnd('search');
 		},
 		// For auto-mode events
-		onAutoIconClick(): void {
-			if (this.isDisabled('autoMode')){
+		onAutoIconClick(){
+			if (!this.onActionStart('autoMode')){
 				return;
 			}
 			this.resetMode();
@@ -596,7 +605,6 @@ export default defineComponent({
 		},
 		async autoAction(){
 			if (this.modeRunning == null){
-				this.setLastFocused(null);
 				return;
 			}
 			if (this.lastFocused == null){
@@ -691,15 +699,20 @@ export default defineComponent({
 					}
 				} catch (error) {
 					this.autoPrevActionFail = true;
+					this.onAutoClose();
 					return;
 				}
 				this.autoPrevActionFail = !success;
 				setTimeout(this.autoAction, this.uiOpts.transitionDuration + this.uiOpts.autoActionDelay);
 			}
 		},
+		onAutoClose(){
+			this.modeRunning = null;
+			this.onActionEnd('autoMode');
+		},
 		// For settings events
-		onSettingsIconClick(): void {
-			if (this.isDisabled('settings')){
+		onSettingsIconClick(){
+			if (!this.onActionStart('settings')){
 				return;
 			}
 			this.resetMode();
@@ -722,7 +735,7 @@ export default defineComponent({
 				this.relayoutWithCollapse();
 			}
 		},
-		onResetSettings(reinit: boolean): void {
+		onResetSettings(reinit: boolean){
 			localStorage.clear();
 			if (reinit){
 				this.reInit();
@@ -730,38 +743,54 @@ export default defineComponent({
 				this.relayoutWithCollapse();
 			}
 		},
+		onSettingsClose(){
+			this.settingsOpen = false;
+			this.onActionEnd('settings');
+		},
 		// For help events
-		onHelpIconClick(): void {
-			if (this.isDisabled('help')){
+		onHelpIconClick(){
+			if (!this.onActionStart('help')){
 				return;
 			}
 			this.resetMode();
 			this.helpOpen = true;
-			this.handleActionForTutorial('help');
+		},
+		onHelpClose(){
+			this.helpOpen = false;
+			this.onActionEnd('help');
 		},
 		// For tutorial-pane events
-		onTutPaneClose(): void {
-			this.tutPaneOpen = false;
-			this.tutWelcome = false;
-			this.uiOpts.disabledActions.clear();
-			this.updateAreaDims();
-			this.relayoutWithCollapse(true, true);
-		},
-		onTutStageChg(triggerAction: Action | null): void {
-			this.tutWelcome = false;
-			this.tutTriggerAction = triggerAction;
-		},
-		onTutorialSkip(): void {
-			localStorage.setItem('UI tutorialSkip', String(true));
-		},
-		onStartTutorial(): void {
+		onStartTutorial(){
 			if (!this.tutPaneOpen){
 				this.tutPaneOpen = true;
 				this.updateAreaDims();
 				this.relayoutWithCollapse();
 			}
 		},
-		handleActionForTutorial(action: Action): void {
+		onTutorialSkip(){
+			localStorage.setItem('UI tutorialSkip', String(true));
+		},
+		onTutStageChg(triggerAction: Action | null){
+			this.tutWelcome = false;
+			this.tutTriggerAction = triggerAction;
+		},
+		onTutPaneClose(){
+			this.tutPaneOpen = false;
+			this.tutWelcome = false;
+			this.uiOpts.disabledActions.clear();
+			this.updateAreaDims();
+			this.relayoutWithCollapse(true, true);
+		},
+		// For general action handling
+		onActionStart(action: Action): boolean {
+			if (this.isDisabled(action)){
+				return false;
+			}
+			this.setLastFocused(null);
+			return true;
+		},
+		onActionEnd(action: Action){
+			// Update info used by tutorial pane
 			this.actionsDone.add(action);
 			if (this.tutPaneOpen){
 				// Close welcome message on first action
@@ -774,23 +803,25 @@ export default defineComponent({
 				}
 			}
 		},
-		// For the loading-indicator
-		async loadFromServer(urlParams: URLSearchParams){ // Like queryServer(), but enables the loading indicator
-			this.primeLoadInd('Loading data');
-			let responseObj = await queryServer(urlParams);
-			this.endLoadInd();
-			return responseObj;
+		isDisabled(...actions: Action[]): boolean {
+			let disabledActions = this.uiOpts.disabledActions;
+			return actions.some(a => disabledActions.has(a));
 		},
-		primeLoadInd(msg: string){
-			this.pendingLoadingRevealHdlr = setTimeout(() => {
-				this.loadingMsg = msg;
-			}, 500);
-		},
-		endLoadInd(){
-			clearTimeout(this.pendingLoadingRevealHdlr);
-			this.pendingLoadingRevealHdlr = 0;
-			if (this.loadingMsg != null){
-				this.loadingMsg = null;
+		resetMode(){
+			if (this.infoModalNodeName != null){
+				this.onInfoClose();
+			}
+			if (this.searchOpen){
+				this.onSearchClose();
+			}
+			if (this.modeRunning == 'autoMode'){
+				this.onAutoClose();
+			}
+			if (this.settingsOpen){
+				this.onSettingsClose();
+			}
+			if (this.helpOpen){
+				this.onHelpClose();
 			}
 		},
 		// For other events
@@ -839,7 +870,7 @@ export default defineComponent({
 				this.lastResizeHdlrTime = new Date().getTime();
 			}, 200); // If too small, touch-device detection when swapping to/from mobile-mode gets unreliable
 		},
-		onKeyUp(evt: KeyboardEvent): void {
+		onKeyUp(evt: KeyboardEvent){
 			if (this.uiOpts.disableShortcuts){
 				return;
 			}
@@ -859,6 +890,25 @@ export default defineComponent({
 					this.uiOpts.searchJumpMode = !this.uiOpts.searchJumpMode;
 					this.onSettingChg('UI', 'searchJumpMode');
 				}
+			}
+		},
+		// For the loading-indicator
+		async loadFromServer(urlParams: URLSearchParams){ // Like queryServer(), but enables the loading indicator
+			this.primeLoadInd('Loading data');
+			let responseObj = await queryServer(urlParams);
+			this.endLoadInd();
+			return responseObj;
+		},
+		primeLoadInd(msg: string){
+			this.pendingLoadingRevealHdlr = setTimeout(() => {
+				this.loadingMsg = msg;
+			}, 500);
+		},
+		endLoadInd(){
+			clearTimeout(this.pendingLoadingRevealHdlr);
+			this.pendingLoadingRevealHdlr = 0;
+			if (this.loadingMsg != null){
+				this.loadingMsg = null;
 			}
 		},
 		// For initialisation
@@ -921,14 +971,6 @@ export default defineComponent({
 			}
 			await this.onNonleafClick(this.layoutTree, true);
 			await this.initTreeFromServer(false);
-		},
-		async collapseTree(){
-			if (this.activeRoot != this.layoutTree){
-				await this.onDetachedAncestorClick(this.layoutTree, true);
-			}
-			if (this.layoutTree.children.length > 0){
-				await this.onNonleafClick(this.layoutTree);
-			}
 		},
 		getLytOpts(): LayoutOptions {
 			let opts = getDefaultLytOpts();
@@ -1002,15 +1044,7 @@ export default defineComponent({
 			this.tileAreaDims = [w, h];
 		},
 		// Other
-		resetMode(): void {
-			this.infoModalNodeName = null;
-			this.searchOpen = false;
-			this.settingsOpen = false;
-			this.helpOpen = false;
-			this.modeRunning = null;
-			this.setLastFocused(null);
-		},
-		setLastFocused(node: LayoutNode | null): void {
+		setLastFocused(node: LayoutNode | null){
 			if (this.lastFocused != null){
 				this.lastFocused.hasFocus = false;
 			}
@@ -1019,18 +1053,16 @@ export default defineComponent({
 				node.hasFocus = true;
 			}
 		},
-		isDisabled(...actions: Action[]): boolean {
-			let disabledActions = this.uiOpts.disabledActions;
-			return actions.some(a => disabledActions.has(a));
+		async collapseTree(){
+			if (this.activeRoot != this.layoutTree){
+				await this.onDetachedAncestorClick(this.layoutTree, true);
+			}
+			if (this.layoutTree.children.length > 0){
+				await this.onNonleafClick(this.layoutTree);
+			}
 		},
 	},
 	watch: {
-		infoModalNodeName(newVal, oldVal){
-			// Possibly trigger tutorial advance
-			if (newVal == null){
-				this.handleActionForTutorial('tileInfo');
-			}
-		},
 		modeRunning(newVal, oldVal){
 			// For sweepToParent setting 'fallback', temporarily change to 'prefer' for efficiency
 			if (newVal != null){
@@ -1043,16 +1075,6 @@ export default defineComponent({
 					this.lytOpts.sweepToParent = 'fallback';
 					this.changedSweepToParent = false;
 				}
-			}
-			// Possibly trigger tutorial advance
-			if (newVal == null){
-				this.handleActionForTutorial(oldVal);
-			}
-		},
-		settingsOpen(newVal, oldVal){
-			// Possibly trigger tutorial advance
-			if (newVal == false){
-				this.handleActionForTutorial('settings');
 			}
 		},
 	},
