@@ -22,7 +22,8 @@ Expected HTTP query parameters:
     If 'sugg', reply with a SearchSuggResponse, describing search suggestions for the possibly-partial name.
     If 'info', reply with an InfoResponse, describing the named node.
 - toroot: Used with type=node, and causes inclusion of ancestors, and their children.
-    The value names a node whose ancestors need not be included.
+    A value of 1 indicates true, and other indicate false
+- excl: Used with toroot, and names a node whose ancestors need not be included.
 - limit: Used with type=sugg to specify the max number of suggestions.
 - tree: Specifies which tree should be used.
     May be 'trimmed', 'images', or 'picked', corresponding to the
@@ -239,8 +240,8 @@ def handleReq(dbCur, environ):
 		return None
 	# Get data of requested type
 	if reqType == "node":
-		toroot = queryDict["toroot"][0] if "toroot" in queryDict else None
-		if toroot == None:
+		toroot = queryDict["toroot"][0] == '1' if "toroot" in queryDict else False
+		if not toroot:
 			tolNodes = lookupNodes([name], tree, dbCur)
 			if len(tolNodes) > 0:
 				tolNode = tolNodes[name]
@@ -250,15 +251,16 @@ def handleReq(dbCur, environ):
 		else:
 			# Get ancestors to skip inclusion of
 			nodesToSkip = set()
-			nodeName = toroot
-			edgesTable = f"edges_{getTableSuffix(tree)}"
-			while True:
-				row = dbCur.execute(f"SELECT parent FROM {edgesTable} WHERE child = ?", (nodeName,)).fetchone()
-				if row == None:
-					break
-				parent = row[0]
-				nodesToSkip.add(parent)
-				nodeName = parent
+			nodeName = queryDict["excl"][0] if "excl" in queryDict else None
+			if nodeName != None:
+				edgesTable = f"edges_{getTableSuffix(tree)}"
+				while True:
+					row = dbCur.execute(f"SELECT parent FROM {edgesTable} WHERE child = ?", (nodeName,)).fetchone()
+					if row == None:
+						break
+					parent = row[0]
+					nodesToSkip.add(parent)
+					nodeName = parent
 			#
 			results = {}
 			ranOnce = False

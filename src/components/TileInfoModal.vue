@@ -240,7 +240,7 @@ export default defineComponent({
 		onLinkIconClick(evt: Event){
 			// Copy link to clipboard
 			let url = new URL(window.location.href);
-			url.search = 'node=' + encodeURIComponent(this.nodeName);
+			url.search = new URLSearchParams({node: this.nodeName});
 			navigator.clipboard.writeText(url.toString());
 			// Show visual indicator
 			this.linkCopied = true;

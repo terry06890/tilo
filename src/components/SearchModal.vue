@@ -206,7 +206,8 @@ export default defineComponent({
 			let urlParams = new URLSearchParams({
 				type: 'node',
 				name: tolNodeName,
-				toroot: this.activeRoot.name,
+				toroot: '1',
+				excl: this.activeRoot.name,
 				tree: this.uiOpts.tree,
 			});
 			this.$emit('net-wait'); // Allows the parent component to show a loading-indicator

@@ -865,7 +865,7 @@ export default defineComponent({
 			let urlParams = new URLSearchParams({type: 'node', tree: this.uiOpts.tree});
 			if (nodeName != null){
 				urlParams.append('name', nodeName);
-				urlParams.append('toroot', this.activeRoot.name);
+				urlParams.append('toroot', '1');
 			}
 			let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
 			if (responseObj == null){
