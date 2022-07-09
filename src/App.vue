@@ -544,11 +544,15 @@ export default defineComponent({
 				// Expand-to-view on target-node's parent
 				targetNode = this.layoutMap.get(name);
 				if (targetNode!.parent != this.activeRoot){
-					await this.onLeafClickHeld(targetNode!.parent!, true);
+					// Hide ancestors
+					LayoutNode.hideUpward(targetNode.parent, this.layoutMap);
+					this.activeRoot = targetNode.parent;
+					await this.onNonleafClick(this.activeRoot, true);
+					await this.onLeafClick(this.activeRoot, true);
 				} else {
-					await this.onLeafClick(targetNode!.parent!, true);
+					await this.onLeafClick(this.activeRoot, true);
 				}
-				setTimeout(() => this.setLastFocused(targetNode!), this.uiOpts.transitionDuration);
+				setTimeout(() => this.setLastFocused(this.layoutMap.get(name)), this.uiOpts.transitionDuration);
 				this.modeRunning = null;
 				return;
 			}
@@ -741,7 +745,7 @@ export default defineComponent({
 			this.tutWelcome = false;
 			this.uiOpts.disabledActions.clear();
 			this.updateAreaDims();
-			this.relayoutWithCollapse();
+			this.relayoutWithCollapse(true, true);
 		},
 		onTutStageChg(triggerAction: Action | null): void {
 			this.tutWelcome = false;
@@ -949,11 +953,17 @@ export default defineComponent({
 			return opts;
 		},
 		// For relayout
-		relayoutWithCollapse(secondPass = true): boolean {
+		relayoutWithCollapse(secondPass = true, keepOverflow = false): boolean {
+			let success: boolean;
 			if (this.overflownRoot){
+				if (keepOverflow){
+					success = tryLayout(this.activeRoot, this.tileAreaDims,
+						{...this.lytOpts, layoutType: 'sqr-overflow'}, {layoutMap: this.layoutMap});
+					return success;
+				}
 				this.overflownRoot = false;
 			}
-			let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
+			success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
 				{allowCollapse: true, layoutMap: this.layoutMap});
 			if (secondPass){
 				// Relayout again, which can help allocate remaining tiles 'evenly'
