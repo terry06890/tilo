@@ -47,7 +47,7 @@
 						<template v-slot:summary="slotProps">
 							<div class="py-1 hover:underline">
 								<down-icon class="inline-block w-4 h-4 mr-1 transition-transform duration-300"
-									:class="{'-rotate-90': slotProps.open}"/>Source Information
+									:class="{'-rotate-90': slotProps.open}"/>Image Source
 							</div>
 						</template>
 						<template v-slot:content>

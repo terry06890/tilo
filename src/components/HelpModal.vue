@@ -47,11 +47,15 @@
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
 						<down-icon :class="slotProps.open ? downIconExpandedClasses : downIconClasses"/>
-						Visualising the Tree
+						Using Tilo
 					</div>
 				</template>
 				<template #content>
 					<div :class="contentClasses">
+						<p class="text-xs md:text-sm text-center text-stone-500 pb-2">
+							(More info can be found in the tutorial)
+						</p>
+						<h1 class="text-lg font-bold">Visualising the Tree</h1>
 						<p>
 							Tilo displays the Tree of Life by representing nodes with tiles,
 							and placing tiles within other tiles to show structure.
@@ -69,24 +73,20 @@
 									and <span style="color: crimson">red</span> means 100+.
 								</li>
 								<li>
-									An asterisk indicates that the node's placement lack evidence, or is disputed.
+									An asterisk indicates uncertain placement.
 									<span class="text-xs md:text-sm text-stone-500">
-										(In the Open Tree of Life, each node has zero or more associated hypothetical
-										trees that either support or conflict with it. The asterisk is added if
-										there are no supporting trees, or if there is a single conflicting tree.)
+										(In the Open Tree of Life, a node can have supporting or conflicting
+										hypothesized trees. The asterisk means no supporting trees,
+										or at least one conflicting tree.)
 									</span>
 								</li>
 							</ul>
 						</p>
 						<br/>
 						<p>
-							There are many other methods of visualisation, which can enable viewing
-							many more nodes as text, or for exploring a more natural tree-like diagram.
-							Examples include
-							<a href="https://itol.embl.de/" :style="anchorStyles">iTOL</a>
-								<external-link-icon :class="linkIconClasses"/>
-							and <a href="https://www.onezoom.org/" :style="anchorStyles">OneZoom</a>
-								<external-link-icon :class="linkIconClasses"/>.
+							There are many other methods of visualisation.
+							Examples include <a href="https://itol.embl.de/" :style="aStyles">iTOL</a>
+							and <a href="https://www.onezoom.org/" :style="aStyles">OneZoom</a>
 							<div class="flex gap-2 mt-1 md:mt-2">
 								<div class="flex flex-col items-center">
 									<img src="/itol.jpg" alt="iTOL screenshot"
@@ -104,30 +104,15 @@
 								</div>
 							</div>
 						</p>
-					</div>
-				</template>
-			</s-collapsible>
-			<s-collapsible :class="scClasses">
-				<template #summary="slotProps">
-					<div :class="scSummaryClasses">
-						<down-icon :class="slotProps.open ? downIconExpandedClasses : downIconClasses"/>
-						Using Tilo
-					</div>
-				</template>
-				<template #content>
-					<div :class="contentClasses">
-						<p>
-							This section provides some details not included in the tutorial.
-						</p>
 						<br/>
 						<h1 class="text-lg font-bold">Settings</h1>
 						<ul class="list-disc pl-4">
 							<li>
 								<h2 class="font-bold">Sweep leaves left</h2>
 								<p>
-									If disabled, an expanded tile's children are simply laid out in order,
-									fromleft to right, then top to bottom.
-									This can leave a lot of empty space when large children are next to small ones.
+									If disabled, an expanded tile's children are simply laid out left to right,
+									top to bottom.
+									This can leave a lot of empty space when large children are near small ones.
 									Moving the unexpanded children (the 'leaves') to the left helps avoid this.
 									<img src="/sweepCmp.jpg" alt="Sweep-leaves on/off comparison"
 										class="border border-stone-300 mx-auto my-1"/>
@@ -136,8 +121,8 @@
 							<li>
 								<h2 class="font-bold">Sweep into parent</h2>
 								<p>
-									If enabled, leaves being swept left can be moved beyond the tile's
-									rectangle, into leftover space in the parent.
+									Allows leaves being swept left to be moved beyond the tile's
+									rectangle, into empty space in the parent.
 									<img src="/sweepPCmp.jpg" alt="Sweep-into-parent on/off comparison"
 										class="border border-stone-300 mx-auto my-1"/>
 								</p>
@@ -145,35 +130,34 @@
 							<li>
 								<h2 class="font-bold">Trees to use</h2>
 								<p>
-									Three choices are available, and all are simplified versions of
-									the tree from the Open Tree of Life.
+									These are simplified versions of the tree from the Open Tree of Life.
 									<span class="text-xs md:text-sm text-stone-500">
-										(Without this, some nodes would have over 10,000 children, and
-										significantly slow the browser down during rendering)
+										(In the original, some nodes have over 10k children,
+										which can be quite slow to render)
 									</span>
 								</p>
 								<ul class="list-[circle] pl-4">
 									<li>
 										<span class="font-bold">Complex:</span>
-										The least simplified choice. In short, it only includes
-										nodes that have an image or description, with a soft limit of 600 children.
+										The least simplified. In short, only keeps nodes with an
+										image or description, with a soft limit of 600 children.
 										<span class="text-xs md:text-sm text-stone-500">
-											(Has about 450,000 nodes)
+											(Has about 450k nodes)
 										</span>
 									</li>
 									<li>
 										<span class="font-bold">Visual:</span>
 										Only keeps nodes with images, with a soft limit of 300 children.
 										<span class="text-xs md:text-sm text-stone-500">
-											(Has about 140,000 nodes)
+											(About 140k)
 										</span>
 									</li>
 									<li>
 										<span class="font-bold">Minimal:</span>
-										Created using a rough list of 'well known'
-										taxons, and adding a few more at random.
+										Created using a rough list of 'well known' taxons,
+										and adding a few more at random.
 										<span class="text-xs md:text-sm text-stone-500">
-											(Has about 3,300 nodes)
+											(About 3k)
 										</span>
 									</li>
 								</ul>
@@ -183,15 +167,14 @@
 								<p>
 									Normally, if there isn't enough space to expand a tile,
 									an ancestor is hidden, and expansion is tried again.
-									With this setting disabled, no such attempt is made.
-									This makes tile movements more predictable.
+									Disabling this can make tile movements more predictable.
 								</p>
 							</li>
 							<li>
 								<h2 class="font-bold">Slider resets</h2>
 								<p>
-									You can {{touchDevice ? 'tap' : 'click'}} on
-									a slider's label to reset it to the default value.
+									{{touchDevice ? 'Tapping' : 'Clicking'}} on
+									a slider's label resets it to the default value.
 								</p>
 							</li>
 						</ul>
@@ -209,8 +192,7 @@
 								<h2 class="font-bold">Disambiguation Nodes</h2>
 								<p>
 									These have names like 'Iris [2]'. When multiple nodes are found to
-									have the same name, all but one gets an '[N]' appended, where N
-									is 2 or higher.
+									have the same name, numbers are added to disambiguate.
 								</p>
 							</li>
 							<li>
@@ -234,44 +216,65 @@
 				</template>
 				<template #content>
 					<div :class="contentClasses">
-						<h1 class="text-lg font-bold">Sources</h1>
 						<ul class="list-disc pl-4">
 							<li>
-								The tree structure was obtained from the Open Tree of Life
-								<a href="https://tree.opentreeoflife.org/about/synthesis-release"
-									:style="anchorStyles">synthesis release</a>
-									<external-link-icon :class="linkIconClasses"/>
-								 version 13.4, accessed 23/04/2022.
+								The tree structure was obtained from the
+								<a href="https://tree.opentreeoflife.org" :style="aStyles">Open Tree of Life</a>,
+								in <a href="https://tree.opentreeoflife.org/about/synthesis-release"
+									:style="aStyles">synthesis release</a>
+								 version 13.4, accessed 23/04/2022. The data is licensed under
+								<a href="https://creativecommons.org/publicdomain/zero/1.0/" :style="aStyles">CC0</a>.
 							</li>
 							<li>
 								The images and alternative-names data was partly obtained from the
-								Encyclopedia of Life. Name data was obtained from
-								<a href="https://opendata.eol.org/dataset/vernacular-names" :style="anchorStyles"
-									>here</a><external-link-icon :class="linkIconClasses"/>,
+								<a href="https://eol.org" :style="aStyles">Encyclopedia of Life</a>.
+								Name data was obtained from
+								<a href="https://opendata.eol.org/dataset/vernacular-names" :style="aStyles">here</a>,
 								and image metadata from
-								<a href="https://opendata.eol.org/dataset/images-list" :style="anchorStyles"
-									>here</a><external-link-icon :class="linkIconClasses"/>,
+								<a href="https://opendata.eol.org/dataset/images-list" :style="aStyles">here</a>,
 								accessed 24/04/2022.
+								<br/>
+								For the source of a specific tile's image, look in it's info pane.
 							</li>
 							<li>
-								The short descriptions, along with the remaining images and name data,
-								were obtained from Wikipedia. Descriptions were extracted from the
-								<a href="https://dumps.wikimedia.org/enwiki/" :style="anchorStyles">Wikipedia dump</a>
-									<external-link-icon :class="linkIconClasses"/> for 01/05/22,
-								and also obtained from the
+								The short descriptions, along with most of the remaining images and name data,
+								were obtained from <a href="https://wikipedia.org" :style="aStyles">Wikipedia</a>.
+								<br/>
+								Descriptions were extracted from the
+								<a href="https://dumps.wikimedia.org/enwiki/" :style="aStyles">Wikipedia dump</a>
+								for 01/05/22, and also obtained from the
 								<a href="https://databus.dbpedia.org/dbpedia/collections/latest-core"
-									:style="anchorStyles">DBpedia knowledge base</a>
-									<external-link-icon :class="linkIconClasses"/>
-								for 01/03/22. Images were downloaded from Wikipedia during Jun 2022.
+									:style="aStyles">DBpedia knowledge base</a>
+								for 01/03/22. The page content is available under
+								<a href="https://creativecommons.org/licenses/by-sa/3.0/" :style="aStyles"
+									>CC BY-SA 3.0</a>.
+								Images were downloaded during June 2022.
 							</li>
 						</ul>
-						<br/>
-						<h1 class="text-lg font-bold">Data Inconsistencies</h1>
+					</div>
+				</template>
+			</s-collapsible>
+			<s-collapsible :class="scClasses">
+				<template #summary="slotProps">
+					<div :class="scSummaryClasses">
+						<down-icon :class="slotProps.open ? downIconExpandedClasses : downIconClasses"/>
+						FAQs
+					</div>
+				</template>
+				<template #content>
+					<div :class="contentClasses">
+						<h1 class="text-lg font-bold">How Accurate is the Information?</h1>
 						<p>
-							When handling datasets this large, these are almost unavoidable. Significant effort
-							was expended to minimise them, but, inevitably, there are always more. The most prominent
-							types are listed below. If you find a major error, feel free to let me know at
-							<a href="mailto:terry06890@gmail.com" :style="anchorStyles">terry06890@gmail.com</a>.
+							This is hard to answer precisely. The datasets are from large projects with
+							many contributors, trying to track a constantly changing field of knowledge.
+							And the process of merging them was inherently imprecise. Significant effort
+							has been expended to minimise errors, but, inevitably, there are always more of them.
+						</p>
+						<br/>
+						<p>
+							Here's a list of the most common kinds. If you find any major errors,
+							feel free to let me know at
+							<a href="mailto:terry06890@gmail.com" :style="aStyles">terry06890@gmail.com</a>.
 						</p>
 						<ul class="list-disc pl-4">
 							<li>
@@ -285,12 +288,11 @@
 								</p>
 							</li>
 							<li>
-								<h2 class="font-bold">Errors Within the Datasets</h2>
+								<h2 class="font-bold">Errors within the Datasets</h2>
 								<p>
 									Some issues are internal to the datasets themselves. For example, an image from
-									EOL might display a plant that is in the wrong taxon. As most of the datasets are
-									large projects distributed over many people over a long period of time, these
-									errors are difficult to avoid, and may require specialised knowledge to resolve.
+									EOL might display a plant that is in the wrong taxon. Some of these can be
+									quite difficult to recognise, or may require specialised knowledge.
 								</p>
 							</li>
 							<li>
@@ -302,35 +304,48 @@
 							</li>
 						</ul>
 						<br/>
-						<h1 class="text-lg font-bold">Possible Points of Confusion</h1>
-						<ul class="list-disc pl-4">
-							<li>
-								<h2 class="font-bold">Unexpected Images</h2>
-								<p>
-									Not all the images are well-suited for display. For example, many
-									birds have their heads cropped out. And some fish are shown in a
-									preserved form that is hard to recognise. And some moths are shown
-									alongside a more prominent plant, and are hard to see.
-								</p>
-							</li>
-							<li>
-								<h2 class="font-bold">Unexpected Search Results</h2>
-								<ul class="list-[circle] pl-4">
-									<li>
-										Some search results might not include what you're looking for.
-										An example is 'dinosaur', which doesn't correspond to a single node,
-										but to multiple nodes within Sauria.
-										And dog breeds are absent because they aren't considered
-										separate species, but as variant descendants of Canis familiaris.
-									</li>
-									<li>
-										In the Complex tree, searching for 'orange', then pressing enter, brings up
-										a kind of butterfly, instead of a citrus plant. This is because suggestions
-										are not yet ordered by how well known the taxon is.
-									</li>
-								</ul>
-							</li>
-						</ul>
+						<h1 class="text-lg font-bold">Where are the Dogs?</h1>
+						<p>
+							Generally, the nodes in the tree don't go below the species level.
+							And dog breeds aren't considered separate species, but as variant
+							descendants of Canis familiaris.
+						</p>
+						<br/>
+						<h1 class="text-lg font-bold">Why is there no Tile for the Dinosaurs?</h1>
+						<p>
+							Some names don't correspond to a single node, but to multiple nodes
+							from different ancestors. Many dinosaurs are under Sauria, but share
+							that parent with non-dinosaurs, such as turtles.
+						</p>
+						<br/>
+						<h1 class="text-lg font-bold">Shouldn't there be more Bacteria?</h1>
+						<p>
+							Many of the bacteria don't have images, and were excluded from the default
+							Visual tree.
+						</p>
+						<br/>
+						<h1 class="text-lg font-bold">Why do some Tiles share the same Description?</h1>
+						<p>
+							Nodes are largely matched with Wikipedia descriptions using wiki page names.
+							So, if there are two names for which Wikipedia redirects to a shared page that
+							provides a generic description, they will both get the same description.
+						</p>
+						<br/>
+						<h1 class="text-lg font-bold">Some Search Suggestions are Unusual</h1>
+						<p>
+							As an example, in the Complex tree, searching for 'orange', then pressing enter,
+							brings up a kind of butterfly, instead of a citrus plant. This is because, currently,
+							suggestions are not ordered by how well-known the taxons are.
+						</p>
+						<br/>
+						<h1 class="text-lg font-bold">Some of the Images are Weird</h1>
+						<p>
+							Selection and extraction of the images was done semi-automatically, and sometimes
+							this hasn't worked well. For example, many birds have their heads cropped out.
+							And some images were selected despite being non-ideal. Some fish are shown in a
+							preserved form that is hard to recognise. And some moths are shown alongside
+							a more prominent plant, and are hard to see.
+						</p>
 					</div>
 				</template>
 			</s-collapsible>
@@ -343,66 +358,36 @@
 				</template>
 				<template #content>
 					<div :class="contentClasses">
+						<li>Tilo's code is licensed under the MIT license.</li>
+						<br/>
 						<h1 class="text-lg font-bold">Other Credits</h1>
 						<ul class="list-disc pl-4">
 							<li>
 								The UI was largely coded in
-								<a href="https://www.typescriptlang.org/" :style="anchorStyles">Typescript</a>
-									<external-link-icon :class="linkIconClasses"/>,
-								and built using the
-								<a href="https://vuejs.org/" :style="anchorStyles">Vue framework</a>
-									<external-link-icon :class="linkIconClasses"/>
+								<a href="https://www.typescriptlang.org/" :style="aStyles">Typescript</a>,
+								and built using the <a href="https://vuejs.org/" :style="aStyles">Vue framework</a>
 							</li>
 							<li>
 								Tree data was processed using
-								<a href="https://www.python.org/" :style="anchorStyles">Python</a>
-									<external-link-icon :class="linkIconClasses"/>,
+								<a href="https://www.python.org/" :style="aStyles">Python</a>,
 								and stored using
-								<a href="https://www.sqlite.org/index.html" :style="anchorStyles">Sqlite</a>
-									<external-link-icon :class="linkIconClasses"/>
+								<a href="https://www.sqlite.org/index.html" :style="aStyles">Sqlite</a>
 							</li>
 							<li>
 								Styling was enhanced using
-								<a href="https://tailwindcss.com/" :style="anchorStyles">Tailwind</a>
-									<external-link-icon :class="linkIconClasses"/>
+								<a href="https://tailwindcss.com/" :style="aStyles">Tailwind</a>
 							</li>
 							<li>
 								The font is called
-								<a href="https://design.ubuntu.com/font/" :style="anchorStyles">Ubuntu Font</a>
-									<external-link-icon :class="linkIconClasses"/>
+								<a href="https://design.ubuntu.com/font/" :style="aStyles">Ubuntu Font</a>
 							</li>
 							<li>Icons were obtained from
-								<a href="https://feathericons.com/" :style="anchorStyles">Feathericons</a>
-									<external-link-icon :class="linkIconClasses"/>
-								and <a href="https://ionic.io/ionicons" :style="anchorStyles">Ionicons</a>
-									<external-link-icon :class="linkIconClasses"/>
+								<a href="https://feathericons.com/" :style="aStyles">Feathericons</a>
+								and <a href="https://ionic.io/ionicons" :style="aStyles">Ionicons</a>
 							</li>
 							<li>
 								Images were cropped using
-								<a href="https://github.com/jwagner/smartcrop.js" :style="anchorStyles">Smartcrop</a>
-									<external-link-icon :class="linkIconClasses"/>
-							</li>
-						</ul>
-						<br/>
-						<h1 class="text-lg font-bold">Licensing</h1>
-						<ul class="list-disc pl-4">
-							<li>The project's code is licensed under the MIT license</li>
-							<li>
-								Tree data from the Open Tree of Life is licensed under the
-								<a href="https://raw.githubusercontent.com/OpenTreeOfLife/opentree/master/LICENSE.txt"
-									:style="anchorStyles">BSD 2-Clause License</a>
-									<external-link-icon :class="linkIconClasses"/>
-							</li>
-							<li>
-								Image licensing information is available from a tile's info pane,
-								under 'Source information'
-							</li>
-							<li>
-								The short descriptions are extracted from Wikipedia's page content,
-								which is available under the
-								<a href="https://creativecommons.org/licenses/by-sa/3.0/" :style="anchorStyles"
-									>CC BY-SA 3.0 license</a>
-									<external-link-icon :class="linkIconClasses"/>
+								<a href="https://github.com/jwagner/smartcrop.js" :style="aStyles">Smartcrop</a>
 							</li>
 						</ul>
 					</div>
@@ -454,7 +439,7 @@ export default defineComponent({
 		contentClasses(): string {
 			return 'py-2 px-2 text-sm md:text-base';
 		},
-		anchorStyles(): Record<string,string> {
+		aStyles(): Record<string,string> {
 			return {
 				color: this.uiOpts.altColorDark,
 			};

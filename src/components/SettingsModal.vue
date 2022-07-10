@@ -19,7 +19,7 @@
 				<label for="autoDelayInput" @click="onReset('UI', 'autoActionDelay')" :class="rLabelClasses">
 					Auto-mode Delay
 				</label>
-				<input type="range" min="0" max="1000" v-model.number="uiOpts.autoActionDelay"
+				<input type="range" min="100" max="1000" v-model.number="uiOpts.autoActionDelay"
 					@change="onSettingChg('UI', 'autoActionDelay')" class="my-auto" name="autoDelayInput"/>
 				<div class="my-auto text-right">{{uiOpts.autoActionDelay}} ms</div>
 			</div>

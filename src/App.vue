@@ -912,6 +912,7 @@ export default defineComponent({
 		},
 		// For the loading-indicator
 		primeLoadInd(msg: string){ // Sets up a loading message to display after a timeout
+			clearTimeout(this.pendingLoadingRevealHdlr);
 			this.pendingLoadingRevealHdlr = setTimeout(() => {
 				this.loadingMsg = msg;
 			}, 500);
