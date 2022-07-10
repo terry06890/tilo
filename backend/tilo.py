@@ -5,7 +5,7 @@ import urllib.parse
 import sqlite3
 import gzip, jsonpickle
 
-dbFile = "data/data.db"
+dbFile = "tolData/data.db"
 DEFAULT_SUGG_LIM = 5
 MAX_SUGG_LIM = 50
 ROOT_NAME = "cellular organisms"

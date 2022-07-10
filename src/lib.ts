@@ -7,11 +7,11 @@ import {LayoutOptions} from './layout';
 import {getBreakpoint, Breakpoint, getScrollBarWidth, onTouchDevice} from './util';
 
 // For server requests
-const SERVER_URL = (new URL(window.location.href)).origin + '/data'
-const SERVER_IMG_PATH = '/img/'
+const SERVER_DATA_URL = (new URL(window.location.href)).origin + '/data/'
+const SERVER_IMG_PATH = '/tolData/img/'
 export async function queryServer(params: URLSearchParams){
 	// Construct URL
-	let url = new URL(SERVER_URL);
+	let url = new URL(SERVER_DATA_URL);
 	url.search = params.toString();
 	// Query server
 	let responseObj;

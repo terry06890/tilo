@@ -5,7 +5,7 @@ export default defineConfig({
 	base: '/',
 	plugins: [vue()],
 	server: {
-		proxy: {'/data': 'http://localhost:8000'},
+		proxy: {'/data': 'http://localhost:8000', '/tolData': 'http://localhost:8000', },
 		watch: {
 			ignored: ['**/backend', '**/public']
 		},
