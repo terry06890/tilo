@@ -134,6 +134,7 @@ export function getDefaultLytOpts(): LayoutOptions {
 export function getDefaultUiOpts(lytOpts: LayoutOptions): UiOptions {
 	let screenSz = getBreakpoint();
 	// Reused option values
+		// Note: For scrollbar colors on chrome, edit ./index.css
 	let textColor = '#fafaf9', textColorAlt = '#1c1917';
 	let bgColor = '#292524',
 		bgColorLight = '#44403c', bgColorDark = '#1c1917',

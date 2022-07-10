@@ -1,6 +1,6 @@
 <template>
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
-	:style="{backgroundColor: uiOpts.bgColor}">
+	:style="{backgroundColor: uiOpts.bgColor, scrollbarColor: uiOpts.altColorDark + ' ' + uiOpts.bgColorDark}">
 	<!-- Title bar -->
 	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: uiOpts.bgColorDark2, color: uiOpts.altColor}">
 		<h1 class="my-auto ml-2 text-4xl hover:cursor-pointer" @click="collapseTree">Tilo</h1>

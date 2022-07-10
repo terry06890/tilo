@@ -13,6 +13,16 @@ body {
 a {
 	@apply hover:underline hover:cursor-pointer;
 }
+::-webkit-scrollbar {
+	background-color: #1c1917;
+	width: 12px;
+	height: 12px;
+}
+::-webkit-scrollbar-thumb {
+	background: #65a30d;
+	border-radius: 5px;
+	border: 3px solid #1c1917;
+}
 
 /* For transitions/animations */
 .fade-enter-from, .fade-leave-to {
