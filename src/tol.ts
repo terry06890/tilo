@@ -1,5 +1,5 @@
 /*
- * Used to represent tree-of-life data
+ * Types for representing tree-of-life data
  */
 
 // Represents a tree-of-life node
@@ -8,10 +8,10 @@ export class TolNode {
 	children: string[];
 	parent: string | null;
 	tips: number;
-	pSupport: boolean;
+	pSupport: boolean; // Indicates phylogenetic support
 	commonName: null | string;
 	imgName: null | string |
-		[string, string] | [null, string] | [string, null]; // Pairs represent compound-images
+		[string, string] | [null, string] | [string, null]; // Pairs represent compound images
 	constructor(children: string[] = [], parent = null, tips = 0, pSupport = false){
 		this.otolId = null;
 		this.children = children;

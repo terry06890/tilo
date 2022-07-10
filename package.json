@@ -1,8 +1,8 @@
 {
-	"name": "grid-of-life",
+	"name": "tilo",
 	"private": true,
 	"version": "0.0.0",
-	"description": "An interactive visualisation of the biological tree of life",
+	"description": "A visual explorer for the biological Tree of Life",
 	"scripts": {
 		"dev": "vite",
 		"build": "vue-tsc --noEmit && vite build",
@@ -12,16 +12,16 @@
 	"author": "Terry Truong",
 	"license": "MIT",
 	"dependencies": {
-		"smartcrop-cli": "^2.0.3",
-		"vue": "^3.2.25"
+		"vue": "^3.2.25",
+		"smartcrop-cli": "^2.0.3"
 	},
 	"devDependencies": {
+		"vite": "^2.8.0",
 		"@vitejs/plugin-vue": "^2.2.0",
+		"tailwindcss": "^3.0.23",
 		"autoprefixer": "^10.4.2",
 		"postcss": "^8.4.7",
-		"tailwindcss": "^3.0.23",
 		"typescript": "^4.6.2",
-		"vite": "^2.8.0",
 		"vue-tsc": "^0.32.1"
 	}
 }

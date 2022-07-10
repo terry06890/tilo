@@ -1,5 +1,5 @@
 /*
- * Project-wide types/classes
+ * Project-wide globals
  */
 
 import {TolNode} from './tol';
@@ -8,6 +8,7 @@ import {getBreakpoint, Breakpoint, getScrollBarWidth, onTouchDevice} from './uti
 
 // For server requests
 const SERVER_URL = (new URL(window.location.href)).origin + '/data'
+const SERVER_IMG_PATH = '/img/'
 export async function queryServer(params: URLSearchParams){
 	// Construct URL
 	let url = new URL(SERVER_URL);
@@ -23,7 +24,6 @@ export async function queryServer(params: URLSearchParams){
 	}
 	return responseObj;
 }
-const SERVER_IMG_PATH = '/img/'
 export function getImagePath(imgName: string): string {
 	return SERVER_IMG_PATH + imgName.replaceAll('\'', '\\\'');
 }

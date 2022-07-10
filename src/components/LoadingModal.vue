@@ -28,8 +28,6 @@ export default defineComponent({
 			};
 		},
 	},
-	components: {
-		LoaderIcon,
-	},
+	components: {LoaderIcon, },
 });
 </script>

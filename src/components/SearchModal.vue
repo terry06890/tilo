@@ -61,7 +61,7 @@ export default defineComponent({
 			pendingDelayedSuggReq: 0, // Set via setTimeout() for a non-initial search-suggestions request
 			pendingSuggInput: '', // Used to remember what input triggered a suggestions request
 			// Other
-			focusedSuggIdx: null as null | number, // Denotes a search-suggestion selected using the arrow keys
+			focusedSuggIdx: null as null | number, // Index of a search-suggestion selected using the arrow keys
 		};
 	},
 	computed: {
@@ -197,7 +197,7 @@ export default defineComponent({
 			if (tolNodeName == ''){
 				return;
 			}
-			// Check if the node has already been retrieved
+			// Check if the node data is already here
 			if (this.lytMap.has(tolNodeName)){
 				this.$emit('search', tolNodeName);
 				return;

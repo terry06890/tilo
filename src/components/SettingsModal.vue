@@ -107,9 +107,7 @@
 			Reset
 		</s-button>
 		<transition name="fade">
-			<div v-if="saved" class="absolute right-1 bottom-1" ref="saveIndicator">
-				Saved
-			</div>
+			<div v-if="saved" class="absolute right-1 bottom-1" ref="saveIndicator"> Saved </div>
 		</transition>
 	</div>
 </div>

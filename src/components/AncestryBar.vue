@@ -75,7 +75,7 @@ export default defineComponent({
 		},
 	},
 	watch: {
-		// Used to scroll to end of bar upon node/screen changes
+		// For scrolling-to-end upon node/screen changes
 		nodes(){
 			this.$nextTick(() => this.scrollToEnd());
 		},

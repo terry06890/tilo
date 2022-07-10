@@ -358,14 +358,14 @@
 				</template>
 				<template #content>
 					<div :class="contentClasses">
-						<li>Tilo's code is licensed under the MIT license.</li>
+						<li>Tilo's code is licensed under the MIT licence.</li>
 						<br/>
 						<h1 class="text-lg font-bold">Other Credits</h1>
 						<ul class="list-disc pl-4">
 							<li>
 								The UI was largely coded in
 								<a href="https://www.typescriptlang.org/" :style="aStyles">Typescript</a>,
-								and built using the <a href="https://vuejs.org/" :style="aStyles">Vue framework</a>
+								and built using the <a href="https://vuejs.org/" :style="aStyles">Vue</a> framework.
 							</li>
 							<li>
 								Tree data was processed using

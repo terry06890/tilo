@@ -1,5 +1,5 @@
 <template>
-<div :style="styles" @scroll="onScroll"> <!-- Need enclosing div for transitions -->
+<div :style="styles" @scroll="onScroll">
 	<div v-if="isLeaf" :class="[hasOneImage ? 'flex' : 'grid', {'hover:cursor-pointer': isExpandableLeaf}]"
 		class="w-full h-full flex-col grid-cols-1" :style="leafStyles"
 		@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
@@ -557,6 +557,7 @@ export default defineComponent({
 </script>
 
 <style>
+/* For making a parent-swept-area div look continuous with the tile div */
 .hide-right-edge::before {
 	content: '';
 	position: absolute;

@@ -1,28 +1,7 @@
+/* From Tailwind */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@font-face {
-	font-family: Ubuntu;
-	src: url('/fonts/Ubuntu-Regular.woff2');
-}
-body {
-	font-family: Ubuntu, system-ui, sans-serif;
-	touch-action: manipulation; /* Prevents non-standard gestures such as double-tap to zoom */
-}
-a {
-	@apply hover:underline hover:cursor-pointer;
-}
-::-webkit-scrollbar {
-	background-color: #1c1917;
-	width: 12px;
-	height: 12px;
-}
-::-webkit-scrollbar-thumb {
-	background: #65a30d;
-	border-radius: 5px;
-	border: 3px solid #1c1917;
-}
 
 /* For transitions/animations */
 .fade-enter-from, .fade-leave-to {
@@ -113,4 +92,27 @@ a {
 	to {
 		color: inherit;
 	}
+}
+
+/* Other */
+@font-face {
+	font-family: Ubuntu;
+	src: url('/fonts/Ubuntu-Regular.woff2');
+}
+body {
+	font-family: Ubuntu, system-ui, sans-serif;
+	touch-action: manipulation; /* Prevents non-standard gestures such as double-tap to zoom */
+}
+a {
+	@apply hover:underline hover:cursor-pointer;
+}
+::-webkit-scrollbar {
+	background-color: #1c1917;
+	width: 12px;
+	height: 12px;
+}
+::-webkit-scrollbar-thumb {
+	background: #65a30d;
+	border-radius: 5px;
+	border: 3px solid #1c1917;
 }

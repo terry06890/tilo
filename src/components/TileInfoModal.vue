@@ -1,8 +1,7 @@
 <template>
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
-		max-w-[80%] min-w-[8cm] md:min-w-[14cm] max-h-[80%]"
-		:style="styles">
+		max-w-[80%] min-w-[8cm] md:min-w-[14cm] max-h-[80%]" :style="styles">
 		<div class="pb-1 md:pb-2">
 			<close-icon @click.stop="onClose" ref="closeIcon"
 				class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>

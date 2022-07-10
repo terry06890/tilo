@@ -1,13 +1,12 @@
 <template>
 <div :style="styles" class="relative flex flex-col justify-between">
-	<close-icon @click.stop="onClose"
-		class="absolute top-2 right-2 w-8 h-8 hover:cursor-pointer"/>
+	<close-icon @click.stop="onClose" class="absolute top-2 right-2 w-8 h-8 hover:cursor-pointer"/>
 	<h1 class="text-center text-lg font-bold pt-3 pb-2">
 		{{stage == 0 ? 'Welcome' : `Tutorial (Step ${stage} of ${lastStage})`}}
 	</h1>
 	<transition name="fade" mode="out-in">
 		<div v-if="stage == 0" :style="contentStyles">
-			This is a visualiser for exploring the biological Tree of Life.
+			This is a visual explorer for the biological Tree of Life.
 		</div>
 		<div v-else-if="stage == 1" :style="contentStyles">
 			{{touchDevice ? 'Tap' : 'Click'}} a tile to expand it, showing it's children
@@ -75,7 +74,8 @@ import {Action, UiOptions} from '../lib';
 
 export default defineComponent({
 	props: {
-		actionsDone: {type: Object as PropType<Set<Action>>, required: true}, // Used to avoid disabling actions already seen
+		actionsDone: {type: Object as PropType<Set<Action>>, required: true},
+			// Used to avoid disabling actions already done
 		triggerFlag: {type: Boolean, required: true},
 			// Used to indicate that a tutorial-requested 'trigger' action has been done
 		skipWelcome: {type: Boolean, default: false},

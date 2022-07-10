@@ -1,21 +1,22 @@
 # Files
--   main.ts: Included by ../index.html. Creates the main Vue component.
--   App.vue: The main Vue component.
--   components:
-    -   Tile.vue:          Displays a tree-of-life node.
-    -   TileInfoModal.vue: Modal displaying info about a Tile's node.
-    -   SearchModal.vue:   Modal providing a search bar.
-    -   SettingsModal:     Modal displaying configurable settings.
-    -   HelpModal.vue:     Modal displaying help info.
-    -   AncestryBar.vue:   Displays ancestors of the outermost Tile.
-    -   TutorialPane.vue:  Displays tutorial content.
-    -   LoadingModal.vue:  Displays a loading indicator.
-    -   SButton.vue:       Simple button component.
-    -   IconButton.vue:    Simple button component containing an SVG icon.
-    -   SCollapsible.vue:  Simple collapsible-content component.
-    -   icon:              Contains components that display SVG icons.
--   lib.ts:    Contains classes/types and utility functions.
--   layout.ts: Contains code for laying out Tiles.
--   util.ts:   Contains utility functions.
--   index.css: Included by main.ts. Provides Tailwind's CSS classes.
--   env.d.ts:  From Vite's template files.
+-   **main.ts**: Included by ../index.html. Creates the main Vue component.
+-   **App.vue**: The main Vue component.
+-   **components**:
+    -   **Tile.vue**:          Displays a tree-of-life node.
+    -   **TileInfoModal.vue**: Modal displaying info about a Tile's node.
+    -   **SearchModal.vue**:   Modal providing a search bar.
+    -   **SettingsModal**:     Modal displaying configurable settings.
+    -   **HelpModal.vue**:     Modal displaying help info.
+    -   **AncestryBar.vue**:   Displays ancestors of the outermost Tile.
+    -   **TutorialPane.vue**:  Displays tutorial content.
+    -   **LoadingModal.vue**:  Displays a loading indicator.
+    -   **SButton.vue**:       Simple button component.
+    -   **IconButton.vue**:    Simple button component containing an SVG icon.
+    -   **SCollapsible.vue**:  Simple collapsible-content component.
+    -   **icon**:              Contains components that display SVG icons.
+-   **tol.ts**:    Holds types for tree-of-life data.
+-   **layout.ts**: Holds code for laying out tiles.
+-   **lib.ts**:    Holds project-wide globals.
+-   **util.ts**:   Holds utility functions.
+-   **index.css**: Included by main.ts. Provides Tailwind's CSS classes.
+-   **env.d.ts**:  From Vite's template files.

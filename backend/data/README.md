@@ -49,7 +49,7 @@ This directory holds files used to generate data.db, which contains tree-of-life
 For the most part, these steps should be done in order.
 
 As a warning, the whole process takes a lot of time and file space. The tree will probably
-have about 2.5 billion nodes. Downloading the images will take several days, and occupy over
+have about 2.5 billion nodes. Downloading the images takes several days, and occupies over
 200 GB. And if you want good data, you'll need to do some manual review, which can take weeks.
 
 ## Environment

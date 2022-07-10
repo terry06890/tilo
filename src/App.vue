@@ -101,6 +101,9 @@ import {queryServer, InfoResponse, Action,
 	UiOptions, getDefaultLytOpts, getDefaultUiOpts, OptionType} from './lib';
 import {arraySum, randWeightedChoice, timeout} from './util';
 
+// Constants
+const SERVER_WAIT_MSG = 'Loading data';
+const PROCESSING_WAIT_MSG = 'Processing';
 // Type representing auto-mode actions
 type AutoAction = 'move across' | 'move down' | 'move up' | Action;
 // Function used in auto-mode to reduce action cycles
@@ -117,9 +120,6 @@ function getReverseAction(action: AutoAction): AutoAction | null {
 		return null;
 	}
 }
-// Constants
-const SERVER_WAIT_MSG = 'Loading data';
-const PROCESSING_WAIT_MSG = 'Processing';
 
 export default defineComponent({
 	data(){
