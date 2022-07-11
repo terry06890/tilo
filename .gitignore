@@ -1,9 +1,9 @@
 /package-lock.json
 /node_modules/
 /dist/
-/public/img/
+/backend/__pycache__
 
-# Backend files
+# Database files
 /backend/tolData/data.db
 /backend/tolData/otol/*.tgz
 /backend/tolData/otol/*.json
@@ -30,4 +30,3 @@
 /backend/tolData/pickedEnwikiLabels.txt
 /backend/tolData/pickedNodes.txt
 /backend/tolData/pickedNames.txt
-/backend/__pycache__
