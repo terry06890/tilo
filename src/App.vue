@@ -526,6 +526,9 @@ export default defineComponent({
 			}
 			this.searchOpen = false;
 			this.modeRunning = 'search';
+			if (this.tutWelcome){ // Don't keep welcome message up during an initial search
+				this.onActionEnd('search');
+			}
 			this.expandToNode(name);
 		},
 		async expandToNode(name: string){
@@ -625,6 +628,9 @@ export default defineComponent({
 			}
 			this.resetMode();
 			this.modeRunning = 'autoMode';
+			if (this.tutWelcome){ // Don't keep welcome message up during an initial auto-mode
+				this.onActionEnd('autoMode');
+			}
 			this.autoAction();
 		},
 		async autoAction(){
