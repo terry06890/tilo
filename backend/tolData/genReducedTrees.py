@@ -98,7 +98,7 @@ def genImagesOnlyTree(dbCur, nodesWithImgOrPicked, pickedNames, rootName):
 	removeCompositeNodes(nodeMap)
 	print(f"Result has {len(nodeMap)} nodes")
 	print("Removing 'collapsible' nodes")
-	removeCollapsibleNodes(nodeMap, {})
+	removeCollapsibleNodes(nodeMap, pickedNames)
 	print(f"Result has {len(nodeMap)} nodes")
 	print(f"Updating 'tips' values") # Needed for next trimming step
 	updateTips(rootName, nodeMap)
