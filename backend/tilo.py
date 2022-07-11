@@ -157,21 +157,25 @@ def lookupSuggs(searchStr, suggLimit, tree, dbCur):
 		suggs.append(SearchSugg(altName, nodeName))
 	# If insufficient results, try substring-search
 	foundNames = {n.name for n in suggs}
+	suggs2 = []
 	if len(suggs) < suggLimit:
 		newLim = suggLimit + 1 - len(suggs)
 		for (nodeName,) in dbCur.execute(query1, ("%" + searchStr + "%", newLim)):
 			if nodeName not in foundNames:
-				suggs.append(SearchSugg(nodeName))
+				suggs2.append(SearchSugg(nodeName))
 				foundNames.add(nodeName)
-	if len(suggs) < suggLimit:
-		newLim = suggLimit + 1 - len(suggs)
+	if len(suggs) + len(suggs2) < suggLimit:
+		newLim = suggLimit + 1 - len(suggs) - len(suggs2)
 		for (altName, nodeName) in dbCur.execute(query2, ("%" + searchStr + "%", suggLimit + 1)):
 			if altName not in foundNames:
-				suggs.append(SearchSugg(altName, nodeName))
+				suggs2.append(SearchSugg(altName, nodeName))
 				foundNames.add(altName)
 	# Sort results
 	suggs.sort(key=lambda x: x.name)
 	suggs.sort(key=lambda x: len(x.name))
+	suggs2.sort(key=lambda x: x.name)
+	suggs2.sort(key=lambda x: len(x.name))
+	suggs.extend(suggs2)
 	# Apply suggestion-quantity limit
 	results = suggs[:suggLimit]
 	if len(suggs) > suggLimit:
