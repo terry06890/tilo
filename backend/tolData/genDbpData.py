@@ -19,7 +19,7 @@ namesToSkipFile = "pickedEnwikiNamesToSkip.txt"
 pickedLabelsFile = "pickedDbpLabels.txt"
 dbFile = "data.db"
 rootNodeName = "cellular organisms"
-rootLabel = "organism" # Will be associated with root node
+rootLabel = "Organism" # Will be associated with root node
 # Got about 400k descriptions when testing
 
 print("Opening databases")
@@ -85,7 +85,7 @@ nodeToLabel[rootNodeName] = rootLabel
 if rootNodeName in nameToVariants:
 	del nameToVariants["cellular organisms"]
 
-print("Trying to resolve {len(nameToVariants)} conflicts")
+print(f"Trying to resolve {len(nameToVariants)} conflicts")
 def resolveWithPickedLabels():
 	" Attempts to resolve conflicts using a picked-names file "
 	with open(pickedLabelsFile) as file:
@@ -134,7 +134,7 @@ def resolveWithCategoryList():
 		found = False
 		for label in variants:
 			match = nameVariantRegex.match(label)
-			if match != None and match.group(2) in generalCategories:
+			if match != None and match.group(2).lower() in generalCategories:
 				nodeToLabel[name] = label
 				namesToRemove.add(name)
 				found = True
@@ -142,7 +142,7 @@ def resolveWithCategoryList():
 		if not found:
 			for label in variants:
 				match = nameVariantRegex.match(label)
-				if match != None and match.group(2) in specificCategories:
+				if match != None and match.group(2).lower() in specificCategories:
 					nodeToLabel[name] = label
 					namesToRemove.add(name)
 					break
@@ -196,7 +196,7 @@ def resolveWithTypeData():
 			else:
 				match = nameVariantRegex.fullmatch(name)
 				if match != None:
-					name = match.group(1)
+					name = match.group(1).lower()
 					if name in nameToVariants:
 						nodeToLabel[name] = label
 						del nameToVariants[name]
@@ -208,7 +208,7 @@ print(f"Remaining number of conflicts: {len(nameToVariants)}")
 print("Getting node IRIs")
 nodeToIri = {}
 for (name, label) in nodeToLabel.items():
-	(iri,) = dbpCur.execute("SELECT iri FROM labels where label = ? COLLATE NOCASE", (label,)).fetchone()
+	(iri,) = dbpCur.execute("SELECT iri FROM labels where label = ?", (label,)).fetchone()
 	nodeToIri[name] = iri
 
 print("Resolving redirects")
