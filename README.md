@@ -9,8 +9,9 @@ framework, with [Vite](https://vitejs.dev) as the build tool. Much of
 the styling is done using [Tailwind](https://tailwindcss.com). Packages
 are managed using [npm](https://www.npmjs.com) and [Node.js](https://nodejs.org).
 
-On the server side, tree data is served and generated using Python, with packages
-managed using [Pip](https://pypi.org/project/pip). Tree data is stored using [Sqlite](https://www.sqlite.org).
+On the server side, tree data is served and generated using Python, with
+packages managed using [Pip](https://pypi.org/project/pip). Tree data is
+stored using [Sqlite](https://www.sqlite.org).
 
 ## Files
 
@@ -32,9 +33,9 @@ managed using [Pip](https://pypi.org/project/pip). Tree data is stored using [Sq
 
 ## Setup Instructions
 
-Note: Running your own version of the client and server should be
-straightforward, but generating the database will take a long time.
-More details are in backend/data/README.md.
+Note: Running your own version of the client and server should be straightforward,
+but generating the database that they use takes a long time. More details are
+in backend/data/README.md.
 
 ### Client Side
 1.  If you don't have npm or Node.js installed, you can download a Node installer from

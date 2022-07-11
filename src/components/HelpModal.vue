@@ -264,7 +264,7 @@
 				</template>
 				<template #content>
 					<div :class="contentClasses">
-						<h1 class="text-lg font-bold">How Accurate is the Information?</h1>
+						<h1 class="text-lg font-bold">How accurate is the information?</h1>
 						<p>
 							This is hard to answer precisely. The datasets are from large projects with
 							many contributors, trying to track a constantly changing field of knowledge.
@@ -279,7 +279,7 @@
 						</p>
 						<ul class="list-disc pl-4">
 							<li>
-								<h2 class="font-bold">Errors in Node Linkage</h2>
+								<h2 class="font-bold">Errors in node linkage</h2>
 								<p>
 									The datasets don't share the same set of node identifiers. So, in order to
 									link nodes from one dataset with another, their plain names were used.
@@ -289,7 +289,7 @@
 								</p>
 							</li>
 							<li>
-								<h2 class="font-bold">Errors within the Datasets</h2>
+								<h2 class="font-bold">Errors within the datasets</h2>
 								<p>
 									Some issues are internal to the datasets themselves. For example, an image from
 									EOL might display a plant that is in the wrong taxon. Some of these can be
@@ -297,7 +297,7 @@
 								</p>
 							</li>
 							<li>
-								<h2 class="font-bold">Errors in Descriptions</h2>
+								<h2 class="font-bold">Errors in descriptions</h2>
 								<p>
 									The short descriptions were extracted using imprecise heuristics.
 									There are many cases of leftover wikitext markup, or cut-off sentences.
@@ -305,47 +305,62 @@
 							</li>
 						</ul>
 						<br/>
-						<h1 class="text-lg font-bold">Where are the Dogs?</h1>
+						<h1 class="text-lg font-bold">Where are the dogs?</h1>
 						<p>
 							Generally, the nodes in the tree don't go below the species level.
 							And dog breeds aren't considered separate species, but as variant
 							descendants of Canis familiaris.
 						</p>
 						<br/>
-						<h1 class="text-lg font-bold">Why is there no Tile for the Dinosaurs?</h1>
+						<h1 class="text-lg font-bold">Why is there no tile for the dinosaurs?</h1>
 						<p>
 							Some names don't correspond to a single node, but to multiple nodes
 							from different ancestors. Many dinosaurs are under Sauria, but share
 							that parent with non-dinosaurs, such as turtles.
 						</p>
 						<br/>
-						<h1 class="text-lg font-bold">Shouldn't there be more Bacteria?</h1>
+						<h1 class="text-lg font-bold">Shouldn't there be more bacteria?</h1>
 						<p>
 							Many of the bacteria don't have images, and were excluded from the default
 							Visual tree.
 						</p>
 						<br/>
-						<h1 class="text-lg font-bold">Why do some Tiles share the same Description?</h1>
+						<h1 class="text-lg font-bold">Why do some grasses share the same description?</h1>
 						<p>
-							Nodes are largely matched with Wikipedia descriptions using wiki page names.
-							So, if there are two names for which Wikipedia redirects to a shared page that
-							provides a generic description, they will both get the same description.
+							Nodes are largely matched with descriptions using Wikipedia page names.
+							And, if two names redirect to a page that provides a generic description,
+							they will both get the same description. Unfortunately, this can result in
+							two species of grass being described like a third closely-related species.
 						</p>
 						<br/>
-						<h1 class="text-lg font-bold">Some Search Suggestions are Unusual</h1>
+						<h1 class="text-lg font-bold">Why did searching for 'goat' send me to the moths?</h1>
 						<p>
-							As an example, in the Complex tree, searching for 'orange', then pressing enter,
-							brings up a kind of butterfly, instead of a citrus plant. This is because, currently,
-							suggestions are not ordered by how well-known the taxons are.
+							When you search for a name, then press enter, the first result is used.
+							Currently, search suggestions are not ordered by well-known the taxons are,
+							so the first result might mean 'Goat Moth' instead of 'Domestic Goat'.
 						</p>
 						<br/>
-						<h1 class="text-lg font-bold">Some of the Images are Weird</h1>
+						<h1 class="text-lg font-bold">Why do a lot of fish have their heads clipped out?</h1>
 						<p>
-							Selection and extraction of the images was done semi-automatically, and sometimes
-							this hasn't worked well. For example, many birds have their heads cropped out.
-							And some images were selected despite being non-ideal. Some fish are shown in a
-							preserved form that is hard to recognise. And some moths are shown alongside
-							a more prominent plant, and are hard to see.
+							Cropping images into squares was done semi-automatically, and sometimes this
+							doesn't work well, especially for animals with long bodies. It's not always
+							straightforward to figure out which end is the head, and should be kept in frame.
+						</p>
+						<br/>
+						<h1 class="text-lg font-bold">Why do some snail images just look like documents?</h1>
+						<p>
+							Not all organisms are easy to get live images of. Some of them only have
+							small parts shown, or are in a preserved form, with nearby documentation
+							appearing more prominent.
+						</p>
+						<br/>
+						<h1 class="text-lg font-bold">I'm an arachnophobe. How do I avoid spider images?</h1>
+						<p>
+							Spiders are placed under Araneae, so don't go there. You might want to avoid
+							Chelicerata in general, as it contains pseudo-spiders like harvestmen and tickspiders.
+							Actually, maybe avoid the arthropods altogether, as they include spider crabs.
+							Come to think of it, some of the bird images show them eating spiders, so maybe
+							that won't work either ...
 						</p>
 					</div>
 				</template>
