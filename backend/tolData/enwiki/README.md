@@ -1,4 +1,4 @@
-This directory holds files obtained from/using [English Wikipedia](https://en.wikipedia.org/wiki/Main_Page).
+This directory holds files obtained/derived from [English Wikipedia](https://en.wikipedia.org/wiki/Main_Page).
 
 # Downloaded Files
 -   enwiki-20220501-pages-articles-multistream.xml.bz2 <br>
@@ -49,4 +49,3 @@ This directory holds files obtained from/using [English Wikipedia](https://en.wi
 -   lookupPage.py <br>
     Running `lookupPage.py title1` looks in the dump for a page with a given title,
     and prints the contents to stdout. Uses dumpIndex.db.
-

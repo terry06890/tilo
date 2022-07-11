@@ -32,7 +32,7 @@ print(f"Found {len(resolvedNodes)}")
 print("Iterating through nodes, trying to resolve images for ancestors")
 nodesToResolve = {} # Maps a node name to a list of objects that represent possible child images
 processedNodes = {} # Map a node name to an OTOL ID, representing a child node whose image is to be used
-parentToChosenTips = {} # used to prefer images from children with more tips
+parentToChosenTips = {} # Used to prefer images from children with more tips
 iterNum = 0
 while len(resolvedNodes) > 0:
 	iterNum += 1

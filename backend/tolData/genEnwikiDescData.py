@@ -7,8 +7,8 @@ usageInfo = f"""
 Usage: {sys.argv[0]}
 
 Reads a database containing data from Wikipedia, and tries to associate
-wiki pages with nodes in the database, and add descriptions for nodes
-that don't have them.
+wiki pages with nodes in the tree-of-life database, and add descriptions for
+nodes that don't have them.
 """
 if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)

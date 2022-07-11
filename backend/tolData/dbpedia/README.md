@@ -1,4 +1,4 @@
-This directory holds files obtained from/using [Dbpedia](https://www.dbpedia.org).
+This directory holds files obtained/derived from [Dbpedia](https://www.dbpedia.org).
 
 # Downloaded Files
 -   `labels_lang=en.ttl.bz2` <br>

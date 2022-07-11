@@ -3,7 +3,7 @@ This directory holds files obtained from/using the [Encyclopedia of Life](https:
 # Name Data Files
 -   vernacularNames.csv <br>
     Obtained from <https://opendata.eol.org/dataset/vernacular-names> on 24/04/2022 (last updated on 27/10/2020).
-    Contains alternative-name data from EOL.
+    Contains alternative-node-names data from EOL.
 
 # Image Metadata Files
 -   imagesList.tgz <br>
@@ -11,10 +11,10 @@ This directory holds files obtained from/using the [Encyclopedia of Life](https:
     Contains metadata for images from EOL.
 -   imagesList/ <br>
     Extracted from imagesList.tgz.
--   genImagesListDb.sh <br>
+-   genImagesListDb.py <br>
     Creates a database, and imports imagesList/*.csv files into it.
 -   imagesList.db <br>
-    Created by running genImagesListDb.sh <br>
+    Created by running genImagesListDb.py <br>
     Tables: <br>
     -   `images`:
         `content_id INT PRIMARY KEY, page_id INT, source_url TEXT, copy_url TEXT, license TEXT, copyright_owner TEXT`

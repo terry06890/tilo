@@ -7,7 +7,7 @@ usageInfo = f"""
 Usage: {sys.argv[0]}
 
 Reads files describing a tree-of-life from an 'Open Tree of Life' release,
-and stores tree information in a database.
+and stores tree info in a database.
 
 Reads a labelled_supertree_ottnames.tre file, which is assumed to have this format:
     The tree-of-life is represented in Newick format, which looks like: (n1,n2,(n3,n4)n5)n6

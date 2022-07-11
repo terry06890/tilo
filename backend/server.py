@@ -14,6 +14,7 @@ if len(sys.argv) > 1:
 	print(usageInfo, file=sys.stderr)
 	sys.exit(1)
 
+# WSGI handler that uses 'application', but also serves image files
 def wrappingApp(environ, start_response):
 	urlPath = environ["PATH_INFO"]
 	if urlPath.startswith("/data/"):
@@ -32,7 +33,7 @@ def wrappingApp(environ, start_response):
 	else:
 		start_response("404 Not Found", [("Content-type", "text/plain")])
 		return [b"Unrecognised path"]
-
+# Start server
 with simple_server.make_server('', 8000, wrappingApp) as httpd:
     print("Serving HTTP on port 8000...")
     httpd.serve_forever()

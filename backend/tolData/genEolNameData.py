@@ -7,8 +7,8 @@ usageInfo = f"""
 Usage: {sys.argv[0]}
 
 Reads files describing name data from the 'Encyclopedia of Life' site,
-tries to associate names with nodes in the database, and adds tables
-to represent associated names.
+tries to associate names with nodes in the tree-of-life database,
+and adds tables to represent associated names.
 
 Reads a vernacularNames.csv file:
 	Starts with a header line containing:

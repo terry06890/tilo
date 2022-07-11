@@ -223,6 +223,7 @@ def lookupInfo(name, tree, dbCur):
 def getTableSuffix(tree):
 	return "t" if tree == "trimmed" else "i" if tree == "images" else "p"
 
+# Queries the database, and constructs a response object
 def handleReq(dbCur, environ):
 	# Get query params
 	queryStr = environ["QUERY_STRING"] if "QUERY_STRING" in environ else ""
@@ -309,6 +310,7 @@ def handleReq(dbCur, environ):
 			return infoResponse
 	# On failure, provide empty response
 	return None
+# Entry point for the WSGI script
 def application(environ, start_response):
 	global dbFile
 	# Open db
