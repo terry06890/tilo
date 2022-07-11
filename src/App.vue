@@ -580,6 +580,7 @@ export default defineComponent({
 					// Hide ancestors
 					LayoutNode.hideUpward(targetNode!.parent!, this.layoutMap);
 					this.activeRoot = targetNode!.parent!;
+					this.updateAreaDims();
 					await this.onNonleafClick(this.activeRoot, true);
 					await this.onLeafClick(this.activeRoot, true);
 				} else {
