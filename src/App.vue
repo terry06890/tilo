@@ -279,7 +279,11 @@ export default defineComponent({
 						while (node.parent != this.activeRoot){
 							node = node.parent!;
 						}
-						await this.onNonleafClickHeld(node, true);
+						// Hide ancestor
+							// Note: Not using onNonleafClickHeld() here to avoid a relayoutWithCollapse()
+						LayoutNode.hideUpward(node, this.layoutMap);
+						this.activeRoot = node;
+						// Try relayout
 						this.updateAreaDims();
 						success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, lytFnOpts);
 					}
