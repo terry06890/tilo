@@ -942,7 +942,7 @@ export default defineComponent({
 			let nodeName = (new URL(window.location.href)).searchParams.get('node');
 			// Query server
 			let urlParams = new URLSearchParams({type: 'node', tree: this.uiOpts.tree});
-			if (nodeName != null){
+			if (nodeName != null && firstInit){
 				urlParams.append('name', nodeName);
 				urlParams.append('toroot', '1');
 			}
@@ -1103,7 +1103,7 @@ export default defineComponent({
 			}
 		},
 	},
-	created(){
+	mounted(){
 		window.addEventListener('resize', this.onResize);
 		window.addEventListener('keydown', this.onKeyUp);
 		this.initTreeFromServer();
