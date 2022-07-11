@@ -1,5 +1,6 @@
 <template>
-<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
+<div class="fixed left-0 top-0 w-full h-full bg-black/20" @click="onClose">
+	<!-- Outer div is slightly less dark to make scrollbar more distinguishable -->
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
 		w-[90%] max-w-[16cm] max-h-[80%] overflow-auto" :style="styles">
 		<close-icon @click.stop="onClose" ref="closeIcon"

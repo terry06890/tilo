@@ -63,8 +63,10 @@
 		<help-modal v-if="helpOpen" :tutOpen="tutPaneOpen" :uiOpts="uiOpts" class="z-10"
 			@close="onHelpClose" @start-tutorial="onStartTutorial"/>
 	</transition>
-	<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
-		@close="onSettingsClose" @reset="onResetSettings" @setting-chg="onSettingChg"/>
+	<transition name="fade">
+		<settings-modal v-if="settingsOpen" :lytOpts="lytOpts" :uiOpts="uiOpts" class="z-10"
+			@close="onSettingsClose" @reset="onResetSettings" @setting-chg="onSettingChg"/>
+	</transition>
 	<transition name="fade">
 		<loading-modal v-if="loadingMsg != null" :msg="loadingMsg" :uiOpts="uiOpts" class="z-10"/>
 	</transition>
@@ -829,7 +831,7 @@ export default defineComponent({
 			if (this.infoModalNodeName != null){
 				this.onInfoClose();
 			}
-			if (this.searchOpen){
+			if (this.searchOpen || this.modeRunning == 'search'){
 				this.onSearchClose();
 			}
 			if (this.modeRunning == 'autoMode'){
