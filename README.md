@@ -1,6 +1,7 @@
 # Tilo
 
 A visual explorer for the biological Tree of Life.
+[Available online](https://terryt.dev/tilo/).
 
 ## Project Overview
 

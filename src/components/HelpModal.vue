@@ -385,7 +385,7 @@
 							<li>
 								The UI was largely coded in
 								<a href="https://www.typescriptlang.org/" :style="aStyles">Typescript</a>,
-								and built using the <a href="https://vuejs.org/" :style="aStyles">Vue</a> framework.
+								and built using the <a href="https://vuejs.org/" :style="aStyles">Vue</a> framework
 							</li>
 							<li>
 								Tree data was processed using
@@ -412,7 +412,7 @@
 							<li>
 								Thanks to
 								<a href="https://twitter.com/JosephusPaye" :style="aStyles">Josephus Paye II</a>
-								for helpful suggestions and clarifications.
+								for helpful suggestions and clarifications
 							</li>
 						</ul>
 					</div>
