@@ -212,11 +212,19 @@
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
 						<down-icon :class="slotProps.open ? downIconExpandedClasses : downIconClasses"/>
-						Data Sources
+						Licensing and Credits
 					</div>
 				</template>
 				<template #content>
 					<div :class="contentClasses">
+						<p>
+							Tilo's source code is available on
+							<a href="https://github.com/terry06890/tilo" :style="aStyles">GitHub</a>, under the
+							<a href="https://github.com/terry06890/tilo/blob/main/LICENCE.txt"
+								:style="aStyles">MIT Licence</a>.
+						</p>
+						<br/>
+						<h1 class="text-lg font-bold">Data Sources</h1>
 						<ul class="list-disc pl-4">
 							<li>
 								The tree structure was obtained from the
@@ -250,6 +258,45 @@
 								<a href="https://creativecommons.org/licenses/by-sa/3.0/" :style="aStyles"
 									>CC BY-SA 3.0</a>.
 								Images were downloaded during June 2022.
+							</li>
+						</ul>
+						<br/>
+						<h1 class="text-lg font-bold">Other Credits</h1>
+						<ul class="list-disc pl-4">
+							<li>
+								The UI was largely coded in
+								<a href="https://www.typescriptlang.org/" :style="aStyles">Typescript</a>,
+								and built using the <a href="https://vuejs.org/" :style="aStyles">Vue</a> framework
+							</li>
+							<li>
+								Tree data was processed using
+								<a href="https://www.python.org/" :style="aStyles">Python</a>,
+								and stored using
+								<a href="https://www.sqlite.org/index.html" :style="aStyles">Sqlite</a>
+							</li>
+							<li>
+								Styling was enhanced using
+								<a href="https://tailwindcss.com/" :style="aStyles">Tailwind</a>
+							</li>
+							<li>
+								The font is <a href="https://design.ubuntu.com/font/" :style="aStyles">Ubuntu Font</a>,
+								licensed under
+								<a href="https://ubuntu.com/legal/font-licence"
+									:style="aStyles">Ubuntu font licence</a>
+							</li>
+							<li>Icons were used from
+								<a href="https://feathericons.com/" :style="aStyles">Feathericons</a>
+								and <a href="https://ionic.io/ionicons" :style="aStyles">Ionicons</a>,
+								both under MIT License
+							</li>
+							<li>
+								Images were cropped using
+								<a href="https://github.com/jwagner/smartcrop.js" :style="aStyles">Smartcrop</a>
+							</li>
+							<li>
+								Thanks to
+								<a href="https://twitter.com/JosephusPaye" :style="aStyles">Josephus Paye II</a>
+								for helpful suggestions and clarifications
 							</li>
 						</ul>
 					</div>
@@ -362,59 +409,6 @@
 							Come to think of it, some of the bird images show them eating spiders, so maybe
 							that won't work either ...
 						</p>
-					</div>
-				</template>
-			</s-collapsible>
-			<s-collapsible :class="scClasses">
-				<template #summary="slotProps">
-					<div :class="scSummaryClasses">
-						<down-icon :class="slotProps.open ? downIconExpandedClasses : downIconClasses"/>
-						Project Information
-					</div>
-				</template>
-				<template #content>
-					<div :class="contentClasses">
-						<li>Tilo's source code is available on
-							<a href="https://github.com/terry06890/tilo" :style="aStyles">GitHub</a>, under the
-							<a href="https://github.com/terry06890/tilo/blob/main/LICENCE.txt"
-								:style="aStyles">MIT Licence</a>.
-						</li>
-						<br/>
-						<h1 class="text-lg font-bold">Other Credits</h1>
-						<ul class="list-disc pl-4">
-							<li>
-								The UI was largely coded in
-								<a href="https://www.typescriptlang.org/" :style="aStyles">Typescript</a>,
-								and built using the <a href="https://vuejs.org/" :style="aStyles">Vue</a> framework
-							</li>
-							<li>
-								Tree data was processed using
-								<a href="https://www.python.org/" :style="aStyles">Python</a>,
-								and stored using
-								<a href="https://www.sqlite.org/index.html" :style="aStyles">Sqlite</a>
-							</li>
-							<li>
-								Styling was enhanced using
-								<a href="https://tailwindcss.com/" :style="aStyles">Tailwind</a>
-							</li>
-							<li>
-								The font is called
-								<a href="https://design.ubuntu.com/font/" :style="aStyles">Ubuntu Font</a>
-							</li>
-							<li>Icons were obtained from
-								<a href="https://feathericons.com/" :style="aStyles">Feathericons</a>
-								and <a href="https://ionic.io/ionicons" :style="aStyles">Ionicons</a>
-							</li>
-							<li>
-								Images were cropped using
-								<a href="https://github.com/jwagner/smartcrop.js" :style="aStyles">Smartcrop</a>
-							</li>
-							<li>
-								Thanks to
-								<a href="https://twitter.com/JosephusPaye" :style="aStyles">Josephus Paye II</a>
-								for helpful suggestions and clarifications
-							</li>
-						</ul>
 					</div>
 				</template>
 			</s-collapsible>

@@ -46,6 +46,7 @@ in `backend/data/README.md`.
     <https://nodejs.org/en/download>, which includes npm. This project was coded using version 16.
 1.  In this directory, run the command `npm install`, which install packages listed in
     package.json, creating a `node_modules` directory to hold them.
+1.  Running `npm run dev` starts the dev server.
 
 ### Server Side
 1.  If you don't have Python 3 installed, see <https://www.python.org/downloads>.
@@ -53,10 +54,12 @@ in `backend/data/README.md`.
 1.  The database used by the server is generated using scripts in `backend/data/`.
     See it's README for instructions. You'll likely need to install a few
     packages using Pip.
-1.  To run the dev server, you'll need to install jsonpickle. This can be done
-    using `python -m pip install jsonpickle`. If you want to keep the installed
-    package separate from your system's packages, it's common practice to use
-    [venv](https://docs.python.org/3/tutorial/venv.html).
+1.  The dev server is started by running `./server.py` in the `backend/` directory.
+    To run it, you'll need to install jsonpickle. This can be done using
+    `python -m pip install jsonpickle`.
+
+    If you want to keep the installed package separate from your system's packages,
+    it's common practice to use [venv](https://docs.python.org/3/tutorial/venv.html).
 
 ### Running Tilo
 1.  In `backend/`, run `./server.py`, which starts a basic HTTP server that provides
