@@ -29,7 +29,8 @@
 				<div> (This is a compound node. The details below describe two descendants) </div>
 			</div>
 		</div>
-		<div v-for="idx in (nodes.length == 1 ? [0] : [0, 1])" class="border-t border-stone-400 p-2 md:p-3 clear-both">
+		<div v-for="idx in (nodes.length == 1 ? [0] : [0, 1])" :key="nodes[idx]!.otolId!"
+			class="border-t border-stone-400 p-2 md:p-3 clear-both">
 			<h1 v-if="nodes.length > 1" class="text-center font-bold mb-1">
 				{{getDisplayName(subNames![idx], nodes[idx])}}
 			</h1>

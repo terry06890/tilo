@@ -10,5 +10,8 @@ export default defineConfig({
 			ignored: ['**/backend', '**/public']
 		},
 	},
+	build: {
+		sourcemap: true,
+	},
 	//server: {open: true} //open browser when dev server starts
 })

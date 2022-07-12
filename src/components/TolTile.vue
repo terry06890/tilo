@@ -36,7 +36,7 @@
 				<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 rounded-[inherit] bg-amber-500/70 z-20"/>
 			</transition>
 		</div>
-		<tile v-for="child in visibleChildren" :key="child.name"
+		<tol-tile v-for="child in visibleChildren" :key="child.name"
 			:layoutNode="child" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" :overflownDim="overflownDim"
 			@leaf-click="onInnerLeafClick" @nonleaf-click="onInnerNonleafClick"
 			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
@@ -550,13 +550,13 @@ export default defineComponent({
 			}
 		},
 	},
-	name: 'tile', // Note: Need this to use self in template
+	name: 'tol-tile', // Note: Need this to use self in template
 	components: {InfoIcon, },
 	emits: ['leaf-click', 'nonleaf-click', 'leaf-click-held', 'nonleaf-click-held', 'info-click', ],
 });
 </script>
 
-<style>
+<style scoped>
 /* For making a parent-swept-area div look continuous with the tile div */
 .hide-right-edge::before {
 	content: '';

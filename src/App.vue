@@ -39,7 +39,7 @@
 				</transition>
 			</div>
 			<div class="relative grow" :style="{margin: lytOpts.tileSpacing + 'px'}"> <!-- 'Tile area' -->
-				<tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
+				<tol-tile :layoutNode="layoutTree" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts"
 					:overflownDim="overflownRoot ? tileAreaDims[1] : 0" :skipTransition="justInitialised"
 					@leaf-click="onLeafClick" @nonleaf-click="onNonleafClick"
 					@leaf-click-held="onLeafClickHeld" @nonleaf-click-held="onNonleafClickHeld"
@@ -79,7 +79,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
 // Components
-import Tile from './components/Tile.vue';
+import TolTile from './components/TolTile.vue';
 import TileInfoModal from './components/TileInfoModal.vue';
 import SearchModal from './components/SearchModal.vue';
 import SettingsModal from './components/SettingsModal.vue';
@@ -1120,7 +1120,7 @@ export default defineComponent({
 		window.removeEventListener('keydown', this.onKeyUp);
 	},
 	components: {
-		Tile, TutorialPane, AncestryBar,
+		TolTile, TutorialPane, AncestryBar,
 		IconButton, SearchIcon, PlayIcon, PauseIcon, SettingsIcon, HelpIcon,
 		TileInfoModal, SearchModal, SettingsModal, HelpModal, LoadingModal,
 	},

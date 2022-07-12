@@ -1,6 +1,6 @@
 <template>
 <div :style="styles" @wheel.stop="onWheelEvt">
-	<tile v-for="(node, idx) in dummyNodes" :key="node.name" class="shrink-0"
+	<tol-tile v-for="(node, idx) in dummyNodes" :key="node.name" class="shrink-0"
 		:layoutNode="node" :tolMap="tolMap" :nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
 		@leaf-click="onTileClick(nodes[idx])" @info-click="onInfoIconClick"/>
 </div>
@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
-import Tile from './Tile.vue';
+import TolTile from './TolTile.vue';
 import {TolMap} from '../tol';
 import {LayoutNode, LayoutOptions} from '../layout';
 import {UiOptions} from '../lib';
@@ -28,7 +28,7 @@ export default defineComponent({
 			return this.breadth - this.lytOpts.tileSpacing - this.uiOpts.scrollGap;
 				// Intentionally omitting extra tileSpacing, to allow for scrollGap with less image shrinkage
 		},
-		dummyNodes(){ // Childless versions of 'nodes' used to parameterise <tile>s
+		dummyNodes(){ // Childless versions of 'nodes' used to parameterise <tol-tile>s
 			return this.nodes.map(n => {
 				let newNode = new LayoutNode(n.name, []);
 				newNode.dims = [this.imgSz, this.imgSz];
@@ -86,7 +86,7 @@ export default defineComponent({
 	mounted(){
 		this.scrollToEnd();
 	},
-	components: {Tile, },
+	components: {TolTile, },
 	emits: ['ancestor-click', 'info-click', ],
 });
 </script>

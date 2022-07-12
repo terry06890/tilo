@@ -9,7 +9,7 @@
 			<search-icon @click.stop="onSearch" class="w-8 h-8"/>
 		</div>
 		<div class="absolute top-[100%] w-full overflow-hidden" :style="suggContainerStyles">
-			<div v-for="(sugg, idx) of searchSuggs"
+			<div v-for="(sugg, idx) of searchSuggs" :key="sugg.name + '|' + sugg.canonicalName"
 				:style="{backgroundColor: idx == focusedSuggIdx ? uiOpts.bgColorAltDark : uiOpts.bgColorAlt}"
 				class="border-b p-1 px-2 hover:underline hover:cursor-pointer flex"
 				@click="resolveSearch(sugg.canonicalName || sugg.name)">
