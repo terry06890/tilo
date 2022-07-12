@@ -374,7 +374,8 @@
 				</template>
 				<template #content>
 					<div :class="contentClasses">
-						<li>Tilo's code is licensed under the
+						<li>Tilo's source code is available on
+							<a href="https://github.com/terry06890/tilo" :style="aStyles">GitHub</a>, under the
 							<a href="https://github.com/terry06890/tilo/blob/main/LICENCE.txt"
 								:style="aStyles">MIT Licence</a>.
 						</li>
@@ -407,6 +408,11 @@
 							<li>
 								Images were cropped using
 								<a href="https://github.com/jwagner/smartcrop.js" :style="aStyles">Smartcrop</a>
+							</li>
+							<li>
+								Thanks to
+								<a href="https://twitter.com/JosephusPaye" :style="aStyles">Josephus Paye II</a>
+								for helpful suggestions and clarifications.
 							</li>
 						</ul>
 					</div>
