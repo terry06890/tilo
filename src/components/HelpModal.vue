@@ -374,7 +374,10 @@
 				</template>
 				<template #content>
 					<div :class="contentClasses">
-						<li>Tilo's code is licensed under the MIT licence.</li>
+						<li>Tilo's code is licensed under the
+							<a href="https://github.com/terry06890/tilo/blob/main/LICENCE.txt"
+								:style="aStyles">MIT Licence</a>.
+						</li>
 						<br/>
 						<h1 class="text-lg font-bold">Other Credits</h1>
 						<ul class="list-disc pl-4">

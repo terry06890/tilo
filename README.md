@@ -38,7 +38,7 @@ stored using [Sqlite](https://www.sqlite.org).
 
 Note: Running your own version of the client and server should be straightforward,
 but generating the database that they use takes a long time. More details are
-in backend/data/README.md.
+in `backend/data/README.md`.
 
 ### Client Side
 1.  If you don't have npm or Node.js installed, you can download a Node installer from
@@ -55,7 +55,7 @@ in backend/data/README.md.
 1.  To run the dev server, you'll need to install jsonpickle. This can be done
     using `python -m pip install jsonpickle`. If you want to keep the installed
     package separate from your system's packages, it's common practice to use
-    the 'venv' module.
+    [venv](https://docs.python.org/3/tutorial/venv.html).
 
 ### Running Tilo
 1.  In `backend/`, run `./server.py`, which starts a basic HTTP server that provides
@@ -70,4 +70,4 @@ instructions for deployment on an Apache server on an Ubuntu system.
 
 ## Licence
 
-Tilo is licensed under the MIT licence, provided in `LICENSE.txt`
+Tilo is licensed under the [MIT Licence](https://github.com/terry06890/tilo/blob/main/LICENCE.txt).
