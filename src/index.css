@@ -97,7 +97,7 @@
 /* Other */
 @font-face {
 	font-family: Ubuntu;
-	src: url('/fonts/Ubuntu-Regular.woff2');
+	src: url('/font/Ubuntu-Regular.woff2');
 }
 body {
 	font-family: Ubuntu, system-ui, sans-serif;

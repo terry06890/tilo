@@ -1,7 +1,7 @@
 {
 	"name": "tilo",
 	"private": true,
-	"version": "0.0.0",
+	"version": "1.0.0",
 	"description": "A visual explorer for the biological Tree of Life",
 	"scripts": {
 		"dev": "vite",

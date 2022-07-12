@@ -43,11 +43,12 @@
 						:target="imgInfos[idx]!.url != '' ? '_blank' : ''" class="block w-fit mx-auto">
 						<div :style="getImgStyles(nodes[idx])"/>
 					</a>
-					<s-collapsible class="text-sm text-center max-w-full md:max-w-[200px] mx-auto">
+					<s-collapsible class="text-sm text-center w-fit max-w-full md:max-w-[200px] mx-auto">
 						<template v-slot:summary="slotProps">
 							<div class="py-1 hover:underline">
 								<down-icon class="inline-block w-4 h-4 mr-1 transition-transform duration-300"
-									:class="{'-rotate-90': slotProps.open}"/>Image Source
+									:class="{'-rotate-90': slotProps.open}"/>
+								Image Source
 							</div>
 						</template>
 						<template v-slot:content>
