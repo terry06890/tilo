@@ -49,7 +49,8 @@ For the most part, these steps should be done in order.
 
 As a warning, the whole process takes a lot of time and file space. The tree will probably
 have about 2.5 billion nodes. Downloading the images takes several days, and occupies over
-200 GB. And if you want good data, you'll need to do some manual review, which can take weeks.
+200 GB. And if you want good data, you'll likely need to make additional corrections,
+which can take several weeks.
 
 ## Environment
 Some of the scripts use third-party packages:

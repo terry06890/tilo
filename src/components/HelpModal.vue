@@ -346,7 +346,7 @@
 							<li>
 								<h2 class="font-bold">Errors in descriptions</h2>
 								<p>
-									The short descriptions were extracted using imprecise heuristics.
+									Many of the short descriptions were extracted using imprecise heuristics.
 									There are many cases of leftover wikitext markup, or cut-off sentences.
 								</p>
 							</li>

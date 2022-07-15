@@ -39,7 +39,7 @@ stored using [Sqlite](https://www.sqlite.org).
 
 Note: Running your own version of the client and server should be straightforward,
 but generating the database that they use takes a long time. More details are
-in `backend/data/README.md`.
+in `backend/tolData/README.md`.
 
 ### Client Side
 1.  If you don't have npm or Node.js installed, you can download a Node installer from
