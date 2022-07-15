@@ -21,7 +21,7 @@
 		</icon-button>
 	</div>
 	<!-- Content area -->
-	<div class="grow min-h-0 flex flex-col" ref="contentArea">
+	<div class="grow min-h-0 flex flex-col relative" ref="contentArea">
 		<div :style="tutPaneContainerStyles" class="z-10"> <!-- Used to slide-in/out the tutorial pane -->
 			<transition name="fade">
 				<tutorial-pane v-if="tutPaneOpen" :style="tutPaneStyles"
@@ -46,6 +46,12 @@
 					@info-click="onInfoClick"/>
 			</div>
 		</div>
+		<transition name="fade">
+			<icon-button v-if="!tutPaneOpen && !uiOpts.tutorialSkip" @click="onStartTutorial"
+				:size="45" :style="buttonStyles" class="absolute bottom-2 right-2 z-10 shadow-[0_0_2px_black]">
+				<edu-icon/>
+			</icon-button>
+		</transition>
 	</div>
 	<!-- Modals -->
 	<transition name="fade">
@@ -94,6 +100,7 @@ import PlayIcon from './components/icon/PlayIcon.vue';
 import PauseIcon from './components/icon/PauseIcon.vue';
 import SettingsIcon from './components/icon/SettingsIcon.vue';
 import HelpIcon from './components/icon/HelpIcon.vue';
+import EduIcon from './components/icon/EduIcon.vue';
 // Other
 	// Note: Import paths lack a .ts or .js because .ts makes vue-tsc complain, and .js makes vite complain
 import {TolNode, TolMap} from './tol';
@@ -799,7 +806,8 @@ export default defineComponent({
 			}
 		},
 		onTutorialSkip(){
-			localStorage.setItem('UI tutorialSkip', String(true));
+			this.uiOpts.tutorialSkip = true;
+			this.onSettingChg('UI', 'tutorialSkip');
 		},
 		onTutStageChg(triggerAction: Action | null){
 			this.tutWelcome = false;
@@ -807,7 +815,12 @@ export default defineComponent({
 		},
 		onTutPaneClose(){
 			this.tutPaneOpen = false;
-			this.tutWelcome = false;
+			if (this.tutWelcome){
+				this.tutWelcome = false;
+			} else if (this.uiOpts.tutorialSkip == false){
+				this.uiOpts.tutorialSkip = true;
+				this.onSettingChg('UI', 'tutorialSkip');
+			}
 			this.uiOpts.disabledActions.clear();
 			this.updateAreaDims();
 			this.relayoutWithCollapse(true, true);
@@ -1121,7 +1134,7 @@ export default defineComponent({
 	},
 	components: {
 		TolTile, TutorialPane, AncestryBar,
-		IconButton, SearchIcon, PlayIcon, PauseIcon, SettingsIcon, HelpIcon,
+		IconButton, SearchIcon, PlayIcon, PauseIcon, SettingsIcon, HelpIcon, EduIcon,
 		TileInfoModal, SearchModal, SettingsModal, HelpModal, LoadingModal,
 	},
 });
