@@ -9,15 +9,15 @@
 			This is a visual explorer for the biological Tree of Life.
 		</div>
 		<div v-else-if="stage == 1" :style="contentStyles">
-			{{touchDevice ? 'Tap' : 'Click'}} a tile to expand it, showing it's children
+			{{touchDevice ? 'Tap' : 'Click'}} a tile to expand it, showing its children
 		</div>
 		<div v-else-if="stage == 2" :style="contentStyles">
 			{{touchDevice ? 'Tap' : 'Click'}} an expanded tile's title to shrink it
 		</div>
 		<div v-else-if="stage == 3" :style="contentStyles">
-			{{touchDevice ? 'Double tap' : 'Click and hold'}} a tile to hide it's ancestors
+			{{touchDevice ? 'Double tap' : 'Click and hold'}} a tile to hide its ancestors
 			<span class="block text-sm brightness-50">
-				For an expanded tile, {{touchDevice ? 'double tap' : 'click and hold'}} it's title
+				For an expanded tile, {{touchDevice ? 'double tap' : 'click and hold'}} its title
 			</span>
 		</div>
 		<div v-else-if="stage == 4" :style="contentStyles">

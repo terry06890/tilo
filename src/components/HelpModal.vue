@@ -243,7 +243,7 @@
 								<a href="https://opendata.eol.org/dataset/images-list" :style="aStyles">here</a>,
 								accessed 24/04/2022.
 								<br/>
-								For the source of a specific tile's image, look in it's info pane.
+								For the source of a specific tile's image, look in its info pane.
 							</li>
 							<li>
 								The short descriptions, along with most of the remaining images and name data,
