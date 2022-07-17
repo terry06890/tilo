@@ -31,7 +31,7 @@
 			</span>
 		</div>
 		<div v-else-if="stage == 6" :style="contentStyles">
-			{{touchDevice ? 'Tap' : 'Click'}} the icon at the top-right to search
+			{{touchDevice ? 'Tap' : 'Click'}} the icon at the top right of screen to search
 			<span class="block text-sm brightness-50">
 				Or press Ctrl-F
 			</span>

@@ -18,11 +18,11 @@
 				{{getDisplayName(nodeName, tolNode)}}
 			</h1>
 			<div class="flex justify-evenly text-sm md:text-base">
-				<div> Children: {{tolNode.children.length}} </div>
-				<div> Tips: {{tolNode.tips}} </div>
+				<div> Children: {{(tolNode.children.length).toLocaleString()}} </div>
+				<div> Tips: {{(tolNode.tips).toLocaleString()}} </div>
 				<div>
 					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId"
-						target="_blank">OTOL <external-link-icon class="inline-block w-3 h-3"/></a>
+						target="_blank" title="Look up in Open Tree of Life">OTOL <external-link-icon class="inline-block w-3 h-3"/></a>
 				</div>
 			</div>
 			<div v-if="nodes.length > 1" class="text-center text-sm px-2">

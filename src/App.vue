@@ -3,20 +3,24 @@
 	:style="{backgroundColor: uiOpts.bgColor, scrollbarColor: uiOpts.altColorDark + ' ' + uiOpts.bgColorDark}">
 	<!-- Title bar -->
 	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: uiOpts.bgColorDark2, color: uiOpts.altColor}">
-		<h1 class="my-auto ml-2 text-4xl hover:cursor-pointer" @click="collapseTree">Tilo</h1>
+		<h1 class="my-auto ml-2 text-4xl hover:cursor-pointer" @click="collapseTree" title="Reset tree">Tilo</h1>
 		<div class="mx-auto"/> <!-- Spacer -->
 		<!-- Icons -->
-		<icon-button :disabled="isDisabled('help')" :size="45" :style="buttonStyles" @click="onHelpIconClick">
+		<icon-button :disabled="isDisabled('help')" :size="45" :style="buttonStyles"
+			@click="onHelpIconClick" title="Show help info">
 			<help-icon/>
 		</icon-button>
-		<icon-button :disabled="isDisabled('settings')" :size="45" :style="buttonStyles" @click="onSettingsIconClick">
+		<icon-button :disabled="isDisabled('settings')" :size="45" :style="buttonStyles"
+			@click="onSettingsIconClick" title="Show settings">
 			<settings-icon/>
 		</icon-button>
-		<icon-button :disabled="isDisabled('autoMode')" :size="45" :style="buttonStyles" @click="onAutoIconClick">
+		<icon-button :disabled="isDisabled('autoMode')" :size="45" :style="buttonStyles"
+			@click="onAutoIconClick" title="Auto mode">
 			<play-icon v-if="modeRunning != 'autoMode'"/>
 			<pause-icon v-else/>
 		</icon-button>
-		<icon-button :disabled="isDisabled('search')" :size="45" :style="buttonStyles" @click="onSearchIconClick">
+		<icon-button :disabled="isDisabled('search')" :size="45" :style="buttonStyles"
+			@click="onSearchIconClick" title="Search">
 			<search-icon/>
 		</icon-button>
 	</div>
@@ -47,7 +51,7 @@
 			</div>
 		</div>
 		<transition name="fade">
-			<icon-button v-if="!tutPaneOpen && !uiOpts.tutorialSkip" @click="onStartTutorial"
+			<icon-button v-if="!tutPaneOpen && !uiOpts.tutorialSkip" @click="onStartTutorial" title="Start Tutorial"
 				:size="45" :style="buttonStyles" class="absolute bottom-2 right-2 z-10 shadow-[0_0_2px_black]">
 				<edu-icon/>
 			</icon-button>
