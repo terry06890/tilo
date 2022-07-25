@@ -905,7 +905,7 @@ export default defineComponent({
 				}
 			};
 			let currentTime = new Date().getTime();
-			if (currentTime - this.lastResizeHdlrTime > this.uiOpts.animationDelay){
+			if (currentTime - this.lastResizeHdlrTime > this.uiOpts.transitionDuration){
 				this.lastResizeHdlrTime = currentTime;
 				await handleResize();
 				this.lastResizeHdlrTime = new Date().getTime();
