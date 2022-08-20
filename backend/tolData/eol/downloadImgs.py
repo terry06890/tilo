@@ -7,9 +7,8 @@ import time
 from threading import Thread
 import signal
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 For some set of EOL IDs, downloads associated images from URLs in
 an image-list database. Uses multiple downloading threads.
 
@@ -20,11 +19,10 @@ SIGINT causes the program to finish ongoing downloads and exit.
 The program can be re-run to continue downloading. It looks for
 already-downloaded files, and continues after the one with
 highest EOL ID.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
-# In testing, this downloaded about 70k images, over a few days
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
+
+# In testing, this script downloaded about 70k images, over a few days
 
 imagesListDb = "imagesList.db"
 def getInputEolIds():

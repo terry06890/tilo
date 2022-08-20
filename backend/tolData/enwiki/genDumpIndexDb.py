@@ -4,14 +4,11 @@ import sys, os, re
 import bz2
 import sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
-Adds data from the wiki dump index-file into a database.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+import argparse
+parser = argparse.ArgumentParser(description="""
+Adds data from the wiki dump index-file into a database
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 indexFile = "enwiki-20220501-pages-articles-multistream-index.txt.bz2" # Had about 22e6 lines
 indexDb = "dumpIndex.db"

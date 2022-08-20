@@ -3,16 +3,13 @@
 import sys, re, os
 import sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Reads a database containing data from Wikipedia, and tries to associate
 wiki pages with nodes in the tree-of-life database, and add descriptions for
 nodes that don't have them.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 enwikiDb = "enwiki/descData.db"
 dbFile = "data.db"

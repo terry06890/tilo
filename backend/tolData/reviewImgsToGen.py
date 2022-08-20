@@ -7,9 +7,8 @@ from tkinter import ttk
 import PIL
 from PIL import ImageTk, Image, ImageOps
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Provides a GUI that displays, for each node in the database, associated
 images from EOL and Wikipedia, and allows choosing which to use. Writes
 choice data to a text file with lines of the form 'otolId1 imgPath1', or
@@ -18,10 +17,8 @@ choice data to a text file with lines of the form 'otolId1 imgPath1', or
 The program can be closed, and run again to continue from the last choice.
 The program looks for an existing output file to determine what choices
 have already been made.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 eolImgDir = "eol/imgs/"
 enwikiImgDir = "enwiki/imgs/"

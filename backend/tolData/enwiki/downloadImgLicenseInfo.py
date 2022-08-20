@@ -5,19 +5,16 @@ import sqlite3, urllib.parse, html
 import requests
 import time, signal
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Reads image names from a database, and uses enwiki's online API to obtain
 licensing information for them, adding the info to the database.
 
 SIGINT causes the program to finish an ongoing download and exit.
 The program can be re-run to continue downloading, and looks
 at already-processed names to decide what to skip.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 imgDb = "imgData.db"
 apiUrl = "https://en.wikipedia.org/w/api.php"

@@ -3,24 +3,21 @@
 import sys, re, os
 import html, csv, sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Reads files describing name data from the 'Encyclopedia of Life' site,
 tries to associate names with nodes in the tree-of-life database,
 and adds tables to represent associated names.
 
 Reads a vernacularNames.csv file:
-	Starts with a header line containing:
-		page_id, canonical_form, vernacular_string, language_code,
-		resource_name, is_preferred_by_resource, is_preferred_by_eol
-	The canonical_form and vernacular_string fields contain names
-		associated with the page ID. Names are not always unique to
-		particular page IDs.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+    Starts with a header line containing:
+        page_id, canonical_form, vernacular_string, language_code,
+        resource_name, is_preferred_by_resource, is_preferred_by_eol
+    The canonical_form and vernacular_string fields contain names
+        associated with the page ID. Names are not always unique to
+        particular page IDs.
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 vnamesFile = "eol/vernacularNames.csv" # Had about 2.8e6 entries
 dbFile = "data.db"

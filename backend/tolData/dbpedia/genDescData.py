@@ -3,14 +3,11 @@
 import sys, re
 import bz2, sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
-Adds DBpedia labels/types/abstracts/etc data into a database.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+import argparse
+parser = argparse.ArgumentParser(description="""
+Adds DBpedia labels/types/abstracts/etc data into a database
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 labelsFile = "labels_lang=en.ttl.bz2" # Had about 16e6 entries
 idsFile = "page_lang=en_ids.ttl.bz2"

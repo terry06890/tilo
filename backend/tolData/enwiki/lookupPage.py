@@ -4,19 +4,17 @@ import sys, re
 import bz2
 import sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]} title1
-
-Looks up a page with title title1 in the wiki dump, using
-the dump-index db, and prints the corresponding <page>.
-"""
-if len(sys.argv) != 2:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+import argparse
+parser = argparse.ArgumentParser(description="""
+Looks up a page with title title1 in the wiki dump, using the dump-index
+db, and prints the corresponding <page>.
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("title", help="The title to look up")
+args = parser.parse_args()
 
 dumpFile = "enwiki-20220501-pages-articles-multistream.xml.bz2"
 indexDb = "dumpIndex.db"
-pageTitle = sys.argv[1].replace("_", " ")
+pageTitle = args.title.replace("_", " ")
 
 print("Looking up offset in index db")
 dbCon = sqlite3.connect(indexDb)

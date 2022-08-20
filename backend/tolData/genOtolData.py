@@ -3,31 +3,28 @@
 import sys, re, os
 import json, sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Reads files describing a tree-of-life from an 'Open Tree of Life' release,
 and stores tree info in a database.
 
 Reads a labelled_supertree_ottnames.tre file, which is assumed to have this format:
     The tree-of-life is represented in Newick format, which looks like: (n1,n2,(n3,n4)n5)n6
-		The root node is named n6, and has children n1, n2, and n5.
+        The root node is named n6, and has children n1, n2, and n5.
     Name examples include: Homo_sapiens_ott770315, mrcaott6ott22687, 'Oxalis san-miguelii ott5748753', 
-		'ott770315' and 'mrcaott6ott22687' are node IDs. The latter is for a 'compound node'.
-		The node with ID 'ott770315' will get the name 'homo sapiens'.
-		A compound node will get a name composed from it's sub-nodes (eg: [name1 + name2]).
-	It is possible for multiple nodes to have the same name.
-		In these cases, extra nodes will be named sequentially, as 'name1 [2]', 'name1 [3]', etc.
+        'ott770315' and 'mrcaott6ott22687' are node IDs. The latter is for a 'compound node'.
+        The node with ID 'ott770315' will get the name 'homo sapiens'.
+        A compound node will get a name composed from it's sub-nodes (eg: [name1 + name2]).
+    It is possible for multiple nodes to have the same name.
+        In these cases, extra nodes will be named sequentially, as 'name1 [2]', 'name1 [3]', etc.
 Reads an annotations.json file, which is assumed to have this format:
     Holds a JSON object, whose 'nodes' property maps node IDs to objects holding information about that node,
     such as the properties 'supported_by' and 'conflicts_with', which list phylogenetic trees that
-	support/conflict with the node's placement.
+    support/conflict with the node's placement.
 Reads from a picked-names file, if present, which specifies name and node ID pairs.
-	These help resolve cases where multiple nodes share the same name.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+    These help resolve cases where multiple nodes share the same name.
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 treeFile = "otol/labelled_supertree_ottnames.tre" # Had about 2.5e9 nodes
 annFile = "otol/annotations.json"

@@ -5,15 +5,12 @@ import bz2
 import html, mwxml, mwparserfromhell
 import sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
-Reads through the wiki dump, and attempts to
-parse short-descriptions, and add them to a database.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+import argparse
+parser = argparse.ArgumentParser(description="""
+Reads through the wiki dump, and attempts to parse short-descriptions,
+and add them to a database
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 dumpFile = "enwiki-20220501-pages-articles-multistream.xml.bz2" # Had about 22e6 pages
 enwikiDb = "descData.db"

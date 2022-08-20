@@ -3,14 +3,11 @@
 import sys
 import sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
-Reads alt-name data from a file, and adds it to the database's 'names' table.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+import argparse
+parser = argparse.ArgumentParser(description="""
+Reads alt-name data from a file, and adds it to the database's 'names' table
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 dbFile = "data.db"
 pickedNamesFile = "pickedNames.txt"

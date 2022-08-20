@@ -5,14 +5,7 @@ import urllib.parse
 import sqlite3
 import gzip, jsonpickle
 
-dbFile = "tolData/data.db"
-DEFAULT_SUGG_LIM = 5
-MAX_SUGG_LIM = 50
-ROOT_NAME = "cellular organisms"
-
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+HELP_INFO = """
 WSGI script that serves tree-of-life data, in JSON form.
 
 Expected HTTP query parameters:
@@ -30,9 +23,15 @@ Expected HTTP query parameters:
     weakly-trimmed, images-only, and picked-nodes trees. The default
     is 'images'.
 """
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+if __name__ == '__main__':
+	import argparse
+	parser = argparse.ArgumentParser(description=HELP_INFO, formatter_class=argparse.RawDescriptionHelpFormatter)
+	parser.parse_args()
+
+DB_FILE = "tolData/data.db"
+DEFAULT_SUGG_LIM = 5
+MAX_SUGG_LIM = 50
+ROOT_NAME = "cellular organisms"
 
 # Classes for objects sent as responses (matches lib.ts types in client-side code)
 class TolNode:
@@ -316,9 +315,8 @@ def handleReq(dbCur, environ):
 	return None
 # Entry point for the WSGI script
 def application(environ, start_response):
-	global dbFile
 	# Open db
-	dbCon = sqlite3.connect(dbFile)
+	dbCon = sqlite3.connect(DB_FILE)
 	dbCur = dbCon.cursor()
 	# Get response object
 	val = handleReq(dbCur, environ)

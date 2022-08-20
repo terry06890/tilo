@@ -3,16 +3,13 @@
 import sys, re
 import sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Reads from a database containing data from Wikipdia, along with
 node and wiki-id information from the database, and use wikipedia
 page-redirect information to add additional alt-name data.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 enwikiDb = "enwiki/descData.db"
 dbFile = "data.db"

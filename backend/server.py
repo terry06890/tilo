@@ -5,14 +5,11 @@ from wsgiref import simple_server, util
 import mimetypes
 from tilo import application
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Runs a basic dev server that serves a WSGI script and image files
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""")
+parser.parse_args()
 
 # WSGI handler that uses 'application', but also serves image files
 def wrappingApp(environ, start_response):

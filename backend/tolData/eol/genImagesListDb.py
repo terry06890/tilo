@@ -4,14 +4,11 @@ import sys, os, re
 import csv
 import sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Generates a sqlite db from a directory of CSV files holding EOL image data
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 imagesListDir = "imagesList/"
 dbFile = "imagesList.db"

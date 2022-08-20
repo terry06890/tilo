@@ -7,17 +7,14 @@ from tkinter import ttk
 import PIL
 from PIL import ImageTk, Image, ImageOps
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Provides a GUI for reviewing images. Looks in a for-review directory for
 images named 'eolId1 contentId1.ext1', and, for each EOL ID, enables the user to
 choose an image to keep, or reject all. Also provides image rotation.
 Chosen images are placed in another directory, and rejected ones are deleted.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 imgDir = "imgsForReview/"
 outDir = "imgs/"

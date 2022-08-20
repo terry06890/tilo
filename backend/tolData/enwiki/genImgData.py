@@ -4,18 +4,15 @@ import sys, re
 import bz2, html, urllib.parse
 import sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 For some set of page IDs, looks up their content in the wiki dump,
 and tries to parse infobox image names, storing them into a database.
 
 The program can be re-run with an updated set of page IDs, and
 will skip already-processed page IDs.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 def getInputPageIds():
 	pageIds = set()

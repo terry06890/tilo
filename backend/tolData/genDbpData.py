@@ -3,16 +3,13 @@
 import sys, os, re
 import sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Reads a database containing data from DBpedia, and tries to associate
 DBpedia IRIs with nodes in the tree-of-life database, adding
 short-descriptions for them.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 dbpediaDb = "dbpedia/descData.db"
 namesToSkipFile = "pickedEnwikiNamesToSkip.txt"

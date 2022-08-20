@@ -3,9 +3,8 @@
 import sys, os.path, re
 import json, sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]} [tree1]
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Creates reduced versions of the tree in the database:
 - A 'picked nodes' tree:
     Created from a minimal set of node names read from a file,
@@ -17,15 +16,11 @@ Creates reduced versions of the tree in the database:
     Created by removing nodes that lack an image or description, or
     presence in the 'picked' tree. And, for nodes with 'many' children,
     removing some more, despite any node descriptions.
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("--tree", choices=["picked", "images", "trimmed"], help="Only generate the specified tree")
+args = parser.parse_args()
 
-If tree1 is specified, as 'picked', 'images', or 'trimmed', only that
-tree is generated.
-"""
-if len(sys.argv) > 2 or len(sys.argv) == 2 and re.fullmatch(r"picked|images|trimmed", sys.argv[1]) == None:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
-
-tree = sys.argv[1] if len(sys.argv) > 1 else None
+tree = args.tree
 dbFile = "data.db"
 pickedNodesFile = "pickedNodes.txt"
 COMP_NAME_REGEX = re.compile(r"\[.+ \+ .+]") # Used to recognise composite nodes

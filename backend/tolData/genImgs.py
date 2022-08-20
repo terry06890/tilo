@@ -4,9 +4,8 @@ import sys, os, subprocess
 import sqlite3, urllib.parse
 import signal
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Reads node IDs and image paths from a file, and possibly from a directory,
 and generates cropped/resized versions of those images into a directory,
 with names of the form 'nodeId1.jpg'. Also adds image metadata to the
@@ -15,10 +14,8 @@ database.
 SIGINT can be used to stop, and the program can be re-run to continue
 processing. It uses already-existing database entries to decide what
 to skip.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 imgListFile = "imgList.txt"
 outDir = "img/"

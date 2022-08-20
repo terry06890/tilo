@@ -5,19 +5,16 @@ import sqlite3
 import urllib.parse, requests
 import time, signal
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Downloads images from URLs in an image database, into an output directory,
 with names of the form 'pageId1.ext1'.
 
 SIGINT causes the program to finish an ongoing download and exit.
 The program can be re-run to continue downloading, and looks
 in the output directory do decide what to skip.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 imgDb = "imgData.db" # About 130k image names
 outDir = "imgs"

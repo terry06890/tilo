@@ -3,15 +3,12 @@
 import sys, re
 import sqlite3
 
-usageInfo = f"""
-Usage: {sys.argv[0]}
-
+import argparse
+parser = argparse.ArgumentParser(description="""
 Look for nodes without images in the database, and tries to
-associate them with images from their children.
-"""
-if len(sys.argv) > 1:
-	print(usageInfo, file=sys.stderr)
-	sys.exit(1)
+associate them with images from their children
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.parse_args()
 
 dbFile = "data.db"
 compoundNameRegex = re.compile(r"\[(.+) \+ (.+)]")
