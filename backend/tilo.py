@@ -36,7 +36,7 @@ ROOT_NAME = "cellular organisms"
 # Classes for objects sent as responses (matches lib.ts types in client-side code)
 class TolNode:
 	" Used when responding to 'node' and 'chain' requests "
-	def __init__(self, otolId, children, parent=None, tips=0, pSupport=False, commonName=None, imgName=None):
+	def __init__(self, otolId, children, parent=None, tips=0, pSupport=False, commonName=None, imgName=None, iucn=None):
 		self.otolId = otolId         # string | null
 		self.children = children     # string[]
 		self.parent = parent         # string | null
@@ -44,6 +44,7 @@ class TolNode:
 		self.pSupport = pSupport     # boolean
 		self.commonName = commonName # null | string
 		self.imgName = imgName       # null | string | [string,string] | [null, string] | [string, null]
+		self.iucn = iucn             # null | string
 class SearchSugg:
 	" Represents a search suggestion "
 	def __init__(self, name, canonicalName=None):
@@ -133,6 +134,10 @@ def lookupNodes(names, tree, dbCur):
 	query = f"SELECT name, alt_name FROM names WHERE pref_alt = 1 AND name IN ({queryParamStr})"
 	for (name, altName) in dbCur.execute(query, names):
 		nameToNodes[name].commonName = altName
+	# Get IUCN status
+	query = f"SELECT name, iucn FROM node_iucn WHERE name IN ({queryParamStr})"
+	for (name, iucn) in dbCur.execute(query, names):
+		nameToNodes[name].iucn = iucn
 	#
 	return nameToNodes
 def lookupSuggs(searchStr, suggLimit, tree, dbCur):

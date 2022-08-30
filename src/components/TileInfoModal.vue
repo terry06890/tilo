@@ -20,6 +20,11 @@
 			<div class="flex justify-evenly text-sm md:text-base">
 				<div> Children: {{(tolNode.children.length).toLocaleString()}} </div>
 				<div> Tips: {{(tolNode.tips).toLocaleString()}} </div>
+				<div v-if="tolNode.iucn != null">
+					<a href="https://en.wikipedia.org/wiki/Endangered_species_(IUCN_status)"
+						target="_blank" title="IUCN Conservation Status">IUCN</a>:
+					<span :style="iucnStyles">{{getDisplayIucn(tolNode.iucn)}}</span>
+				</div>
 				<div>
 					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId"
 						target="_blank" title="Look up in Open Tree of Life">OTOL <external-link-icon class="inline-block w-3 h-3"/></a>
@@ -170,6 +175,21 @@ export default defineComponent({
 				overflow: 'visible auto',
 			};
 		},
+		iucnStyles(): Record<string,string> {
+			let col = 'currentcolor';
+			switch (this.tolNode.iucn){
+				case 'least concern': col = 'green'; break;
+				case 'near threatened': col = 'limegreen'; break;
+				case 'vulnerable': col = 'goldenrod'; break;
+				case 'endangered': col = 'darkorange'; break;
+				case 'critically endangered': col = 'red'; break;
+				case 'extinct in the wild':
+				case 'extinct species': col = 'gray'; break;
+			}
+			return {
+				color: col,
+			};
+		},
 		linkCopyLabelStyles(): Record<string,string> {
 			return {
 				color: this.uiOpts.textColor,
@@ -184,6 +204,18 @@ export default defineComponent({
 				return capitalizeWords(name);
 			} else {
 				return `${capitalizeWords(tolNode.commonName)} (aka ${capitalizeWords(name)})`;
+			}
+		},
+		getDisplayIucn(iucn: string){
+			switch (this.tolNode.iucn){
+				case 'least concern': return 'LC';
+				case 'near threatened': return 'NT';
+				case 'vulnerable': return 'VN';
+				case 'endangered': return 'EN';
+				case 'critically endangered': return 'CR';
+				case 'extinct in the wild': return 'EX';
+				case 'extinct species': return 'ES';
+				case 'data deficient': return 'DD';
 			}
 		},
 		getImgStyles(tolNode: TolNode | null): Record<string,string> {

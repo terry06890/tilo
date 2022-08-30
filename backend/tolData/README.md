@@ -74,8 +74,8 @@ Some of the scripts use third-party packages:
     files in wikidata/, and 'dump-index files' in enwiki/, as specified
     in their READMEs.
 2.  Run genMappingData.py, which adds the `eol_ids` and `wiki_ids` tables,
-    using the files obtained above, and the `nodes` table. It also uses
-    'picked mappings' files, if they exist.
+    as well as `node_iucn`. It uses the files obtained above, the `nodes` table,
+    and 'picked mappings' files, if they exist.
     -   pickedEolIds.txt contains lines like `3785967|405349`, specifying
         an otol ID and an eol ID to map it to. The eol ID can be empty,
         in which case the otol ID won't be mapped.
