@@ -41,6 +41,7 @@ with bz2.open(labelsFile, mode='rt') as file:
 
 print("Reading/storing wiki page ids")
 dbCur.execute("CREATE TABLE ids (iri TEXT PRIMARY KEY, id INT)")
+dbCur.execute("CREATE INDEX ids_idx ON ids(id)")
 idLineRegex = re.compile(r'<([^>]+)> <[^>]+> "(\d+)".*\n')
 lineNum = 0
 with bz2.open(idsFile, mode='rt') as file:

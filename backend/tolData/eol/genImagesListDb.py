@@ -18,6 +18,7 @@ dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 dbCur.execute("CREATE TABLE images" \
 	" (content_id INT PRIMARY KEY, page_id INT, source_url TEXT, copy_url TEXT, license TEXT, copyright_owner TEXT)")
+dbCur.execute("CREATE INDEX images_pid_idx ON images(page_id)")
 print("Reading CSV files")
 csvFilenames = os.listdir(imagesListDir)
 for filename in csvFilenames:

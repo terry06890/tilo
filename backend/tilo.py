@@ -56,10 +56,9 @@ class SearchSuggResponse:
 		self.hasMore = hasMore   # boolean
 class DescInfo:
 	" Represents a node's associated description "
-	def __init__(self, text, wikiId, fromRedirect, fromDbp):
+	def __init__(self, text, wikiId, fromDbp):
 		self.text = text                 # string
 		self.wikiId = wikiId             # number
-		self.fromRedirect = fromRedirect # boolean
 		self.fromDbp = fromDbp           # boolean
 class ImgInfo:
 	" Represents a node's associated image "
@@ -199,11 +198,11 @@ def lookupInfo(name, tree, dbCur):
 	namesToLookup = [name] if len(subNames) == 0 else [n for n in subNames if n != None]
 	# Get desc info
 	nameToDescInfo = {}
-	query = "SELECT name, desc, wiki_id, redirected, from_dbp FROM" \
+	query = "SELECT name, desc, wiki_id, from_dbp FROM" \
 		" wiki_ids INNER JOIN descs ON wiki_ids.id = descs.wiki_id" \
 		" WHERE wiki_ids.name IN ({})".format(",".join(["?"] * len(namesToLookup)))
-	for (nodeName, desc, wikiId, redirected, fromDbp) in dbCur.execute(query, namesToLookup):
-		nameToDescInfo[nodeName] = DescInfo(desc, wikiId, redirected == 1, fromDbp == 1)
+	for (nodeName, desc, wikiId, fromDbp) in dbCur.execute(query, namesToLookup):
+		nameToDescInfo[nodeName] = DescInfo(desc, wikiId, fromDbp == 1)
 	# Get image info
 	nameToImgInfo = {}
 	idsToNames = {nameToNodes[n].imgName[:-4]: n for n in namesToLookup if nameToNodes[n].imgName != None}

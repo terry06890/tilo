@@ -30,7 +30,6 @@ imageLineRegex = re.compile(r".*\| *image *= *([^|]*)")
 bracketImageRegex = re.compile(r"\[\[(File:[^|]*).*]]")
 imageNameRegex = re.compile(r".*\.(jpg|jpeg|png|gif|tiff|tif)", flags=re.IGNORECASE)
 cssImgCropRegex = re.compile(r"{{css image crop\|image *= *(.*)", flags=re.IGNORECASE)
-# In testing, got about 360k image names
 
 print("Getting input page-ids")
 pageIds = getInputPageIds()

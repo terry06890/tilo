@@ -66,6 +66,7 @@ if os.path.exists(enwikiImgDir):
 			print(f"WARNING: No node found for {enwikiImgDir}{filename}")
 print(f"Result: {len(nodeToImgs)} nodes with images")
 print("Filtering out already-made image choices")
+
 oldSz = len(nodeToImgs)
 if os.path.exists(outFile):
 	with open(outFile) as file:

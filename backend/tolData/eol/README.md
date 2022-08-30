@@ -1,4 +1,9 @@
-This directory holds files obtained from/using the [Encyclopedia of Life](https://eol.org/).
+This directory holds files obtained via the [Encyclopedia of Life](https://eol.org/).
+
+# Mapping Files
+-   `provider_ids.csv.gz` <br>
+    Obtained from <https://opendata.eol.org/dataset/identifier-map> on 22/08/22 (says last updated 27/07/22).
+    Associates EOL IDs with taxon IDs from sources like NCBI and Index Fungorium.
 
 # Name Data Files
 -   vernacularNames.csv <br>

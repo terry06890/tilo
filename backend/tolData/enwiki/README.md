@@ -11,7 +11,7 @@ This directory holds files obtained/derived from [English Wikipedia](https://en.
     providing, for each page, an offset into the dump file of a chunk of
     100 pages that includes it.
 
-# Generated Dump-Index Files
+# Dump-Index Files
 -   genDumpIndexDb.py <br>
     Creates an sqlite-database version of the enwiki-dump index file.
 -   dumpIndex.db <br>

@@ -22,8 +22,6 @@ highest EOL ID.
 """, formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.parse_args()
 
-# In testing, this script downloaded about 70k images, over a few days
-
 imagesListDb = "imagesList.db"
 def getInputEolIds():
 	eolIds = set()
@@ -95,7 +93,6 @@ def downloadImg(url, outFile):
 for idx in range(nextIdx, len(eolIds)):
 	eolId = eolIds[idx]
 	# Get image urls
-	imgDataList = []
 	ownerSet = set() # Used to get images from different owners, for variety
 	exitLoop = False
 	query = "SELECT content_id, copy_url, license, copyright_owner FROM images WHERE page_id = ?"
