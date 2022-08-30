@@ -45,7 +45,10 @@ This directory holds files used to generate the tree-of-life database data.db.
 ## Other
 -   `node_iucn` <br>
     Format: `name TEXT PRIMARY KEY, iucn TEXT` <br>
-    Associated nodes with IUCN conservation status strings (eg: 'endangered')
+    Associates nodes with IUCN conservation status strings (eg: 'endangered')
+-   `node_pop` <br>
+    Format: `name TEXT PRIMARY KEY, pop INT` <br>
+    Associates nodes with popularity values (higher means more popular)
 
 # Generating the Database
 
@@ -135,7 +138,12 @@ Some of the scripts use third-party packages:
     images of it's children. Adds the `linked_imgs` table, and uses the
     `nodes`, `edges`, and `node_imgs` tables.
 
-## Do some Post-Processing
+## Generate Reduced Trees
 1.  Run genReducedTrees.py, which generates multiple reduced versions of the tree,
     adding the `nodes_*` and `edges_*` tables, using `nodes` and `names`. Reads from
     pickedNodes.txt, which lists names of nodes that must be included (1 per line).
+
+## Generate Node Popularity Data
+1.  Obtain 'page view files' in enwiki/Run genPopData.py, as specified in it's README.
+2.  Run genPopData.py, which adds the `node_pop` table, using data in enwiki/,
+    and the `wiki_ids` table.

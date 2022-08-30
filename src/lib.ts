@@ -31,6 +31,7 @@ export function getImagePath(imgName: string): string {
 export type SearchSugg = { // Represents a search-string suggestion
 	name: string,
 	canonicalName: string | null,
+	pop: number,
 };
 export type SearchSuggResponse = { // Holds search suggestions and an indication of if there was more
 	suggs: SearchSugg[],

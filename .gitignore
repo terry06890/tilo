@@ -21,6 +21,7 @@
 /backend/tolData/enwiki/*.gz
 /backend/tolData/enwiki/*.db
 /backend/tolData/enwiki/imgs/
+/backend/tolData/enwiki/pageviews/
 /backend/tolData/dbpedia/*.bz2
 /backend/tolData/dbpedia/*.db
 /backend/tolData/wikidata/*.bz2

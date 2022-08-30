@@ -47,9 +47,10 @@ class TolNode:
 		self.iucn = iucn             # null | string
 class SearchSugg:
 	" Represents a search suggestion "
-	def __init__(self, name, canonicalName=None):
+	def __init__(self, name, canonicalName=None, pop=0):
 		self.name = name                   # string
 		self.canonicalName = canonicalName # string | null
+		self.pop = pop                     # number
 class SearchSuggResponse:
 	" Sent as responses to 'sugg' requests "
 	def __init__(self, searchSuggs, hasMore):
@@ -144,40 +145,42 @@ def lookupSuggs(searchStr, suggLimit, tree, dbCur):
 	" For a search string, returns a SearchSuggResponse describing search suggestions "
 	results = []
 	hasMore = False
-	# Get node names and alt-names
+	# Get node names and alt-names, ordering by popularity
 	query1, query2 = (None, None)
 	nodesTable = f"nodes_{getTableSuffix(tree)}"
-	query1 = f"SELECT DISTINCT name FROM {nodesTable}" \
-		f" WHERE name LIKE ? AND name NOT LIKE '[%' ORDER BY length(name) LIMIT ?"
-	query2 = f"SELECT DISTINCT alt_name, names.name FROM" \
+	query1 = f"SELECT DISTINCT {nodesTable}.name, node_pop.pop FROM {nodesTable}" \
+		f" LEFT JOIN node_pop ON {nodesTable}.name = node_pop.name" \
+		f" WHERE node_pop.name LIKE ? AND node_pop.name NOT LIKE '[%'" \
+		f" ORDER BY node_pop.pop DESC LIMIT ?"
+	query2 = f"SELECT DISTINCT alt_name, names.name, node_pop.pop FROM" \
 		f" names INNER JOIN {nodesTable} ON names.name = {nodesTable}.name" \
-		f" WHERE alt_name LIKE ? ORDER BY length(alt_name) LIMIT ?"
-	# Join results, and get shortest
+		f" LEFT JOIN node_pop ON {nodesTable}.name = node_pop.name" \
+		f" WHERE alt_name LIKE ? ORDER BY node_pop.pop DESC LIMIT ?"
 	suggs = []
-	for (nodeName,) in dbCur.execute(query1, (searchStr + "%", suggLimit + 1)):
-		suggs.append(SearchSugg(nodeName))
-	for (altName, nodeName) in dbCur.execute(query2, (searchStr + "%", suggLimit + 1)):
-		suggs.append(SearchSugg(altName, nodeName))
+	for nodeName, pop in dbCur.execute(query1, (searchStr + "%", suggLimit + 1)):
+		suggs.append(SearchSugg(nodeName, pop=pop))
+	for altName, nodeName, pop in dbCur.execute(query2, (searchStr + "%", suggLimit + 1)):
+		suggs.append(SearchSugg(altName, nodeName, pop))
 	# If insufficient results, try substring-search
 	foundNames = {n.name for n in suggs}
 	suggs2 = []
 	if len(suggs) < suggLimit:
 		newLim = suggLimit + 1 - len(suggs)
-		for (nodeName,) in dbCur.execute(query1, ("%" + searchStr + "%", newLim)):
+		for nodeName, pop in dbCur.execute(query1, ("%" + searchStr + "%", newLim)):
 			if nodeName not in foundNames:
-				suggs2.append(SearchSugg(nodeName))
+				suggs2.append(SearchSugg(nodeName, pop=pop))
 				foundNames.add(nodeName)
 	if len(suggs) + len(suggs2) < suggLimit:
 		newLim = suggLimit + 1 - len(suggs) - len(suggs2)
-		for (altName, nodeName) in dbCur.execute(query2, ("%" + searchStr + "%", suggLimit + 1)):
+		for altName, nodeName, pop in dbCur.execute(query2, ("%" + searchStr + "%", suggLimit + 1)):
 			if altName not in foundNames:
-				suggs2.append(SearchSugg(altName, nodeName))
+				suggs2.append(SearchSugg(altName, nodeName, pop))
 				foundNames.add(altName)
 	# Sort results
 	suggs.sort(key=lambda x: x.name)
-	suggs.sort(key=lambda x: len(x.name))
+	suggs.sort(key=lambda x: x.pop, reverse=True)
 	suggs2.sort(key=lambda x: x.name)
-	suggs2.sort(key=lambda x: len(x.name))
+	suggs2.sort(key=lambda x: x.pop, reverse=True)
 	suggs.extend(suggs2)
 	# Apply suggestion-quantity limit
 	results = suggs[:suggLimit]
