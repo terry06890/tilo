@@ -15,8 +15,9 @@
 				@click="resolveSearch(sugg.canonicalName || sugg.name)">
 				<div class="grow overflow-hidden whitespace-nowrap text-ellipsis">
 					<span>{{suggDisplayStrings[idx][0]}}</span>
-					<span class="font-bold">{{suggDisplayStrings[idx][1]}}</span>
+					<span class="font-bold text-lime-600">{{suggDisplayStrings[idx][1]}}</span>
 					<span>{{suggDisplayStrings[idx][2]}}</span>
+					<span class="text-stone-500">{{suggDisplayStrings[idx][3]}}</span>
 				</div>
 				<info-icon class="hover:cursor-pointer my-auto w-5 h-5"
 					@click.stop="onInfoIconClick(sugg.canonicalName || sugg.name)"/>
@@ -90,22 +91,22 @@ export default defineComponent({
 				color: this.uiOpts.textColor,
 			};
 		},
-		suggDisplayStrings(): [string, string, string][] {
-			let result: [string, string, string][] = [];
+		suggDisplayStrings(): [string, string, string, string][] {
+			let result: [string, string, string, string][] = [];
 			let input = this.suggsInput.toLowerCase();
 			// For each SearchSugg
 			for (let sugg of this.searchSuggs){
 				let idx = sugg.name.indexOf(input);
 				// Split suggestion text into parts before/within/after an input match
-				let strings: [string, string, string];
+				let strings: [string, string, string, string];
 				if (idx != -1){
-					strings = [sugg.name.substring(0, idx), input, sugg.name.substring(idx + input.length)];
+					strings = [sugg.name.substring(0, idx), input, sugg.name.substring(idx + input.length), ''];
 				} else {
-					strings = [input, '', ''];
+					strings = [input, '', '', ''];
 				}
 				// Indicate any distinct canonical-name
 				if (sugg.canonicalName != null){
-					strings[2] += ` (aka ${sugg.canonicalName})`;
+					strings[3] = ` (aka ${sugg.canonicalName})`;
 				}
 				//
 				result.push(strings);
