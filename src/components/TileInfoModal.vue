@@ -1,7 +1,7 @@
 <template>
 <div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
-		max-w-[80%] min-w-[8cm] md:min-w-[14cm] max-h-[80%]" :style="styles">
+		max-w-[80%] w-2/3 min-w-[8cm] md:w-[14cm] lg:w-[16cm] max-h-[80%]" :style="styles">
 		<div class="pb-1 md:pb-2">
 			<close-icon @click.stop="onClose" ref="closeIcon"
 				class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
@@ -34,19 +34,19 @@
 				<div> (This is a compound node. The details below describe two descendants) </div>
 			</div>
 		</div>
-		<div v-for="idx in (nodes.length == 1 ? [0] : [0, 1])" :key="nodes[idx]!.otolId!"
+		<div v-for="(node, idx) in nodes" :key="node == null ? -1 : node.otolId!"
 			class="border-t border-stone-400 p-2 md:p-3 clear-both">
 			<h1 v-if="nodes.length > 1" class="text-center font-bold mb-1">
-				{{getDisplayName(subNames![idx], nodes[idx])}}
+				{{getDisplayName(subNames![idx], node)}}
 			</h1>
-			<div v-if="nodes[idx] == null" class="text-center">
+			<div v-if="node == null" class="text-center text-sm text-stone-500">
 				(This node was trimmed away duing tree simplification)
 			</div>
 			<div v-else>
 				<div v-if="imgInfos[idx] != null" class="mt-1 mr-2 md:mb-2 md:mr-4 md:float-left">
 					<a :href="imgInfos[idx]!.url != '' ? imgInfos[idx]!.url : 'javascript:;'"
 						:target="imgInfos[idx]!.url != '' ? '_blank' : ''" class="block w-fit mx-auto">
-						<div :style="getImgStyles(nodes[idx])"/>
+						<div :style="getImgStyles(node)"/>
 					</a>
 					<s-collapsible class="text-sm text-center w-fit max-w-full md:max-w-[200px] mx-auto">
 						<template v-slot:summary="slotProps">
@@ -102,7 +102,7 @@
 						{{descInfos[idx]!.fromDbp ? '(via DBpedia)' : ''}}
 					</div>
 				</div>
-				<div v-else class="text-center">
+				<div v-else class="text-center text-stone-500 text-sm">
 					(No description found)
 				</div>
 			</div>
