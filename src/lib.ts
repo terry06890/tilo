@@ -121,7 +121,7 @@ export function getDefaultLytOpts(): LayoutOptions {
 	return {
 		tileSpacing: screenSz == 'sm' ? 6 : 9, //px
 		headerSz: 22, // px
-		minTileSz: 50, // px
+		minTileSz: screenSz == 'sm' ? 50 : 80, // px
 		maxTileSz: 200, // px
 		// Layout-algorithm related
 		layoutType: 'sweep', // 'sqr' | 'rect' | 'sweep'
