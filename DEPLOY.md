@@ -31,13 +31,13 @@
         -   Set `SERVER_IMG_PATH` to the URL path where images will be served (eg: `'/img/tilo'`).
             If you place it within the `base` directory, you'll need to remember to move it when deploying
             a newer production build.
-    -   In `backend/tilo.py`: Set `dbFile` to where the database will be placed (eg: `'/usr/local/www/db/tilo.db'`)
+    -   In `backend/tilo.py`: Set `DB_FILE` to where the database will be placed (eg: `'/usr/local/www/db/tilo.db'`)
 1.  Generate the client-side production build <br>
     Run `npm run build`. This generates a directory `dist/`.
 1.  Copy files to the server (using ssh, sftp, or otherwise)
     1.  Copy `dist/` into Apache's document root, into the directory where Tilo will be served.
         The created directory should match up with the `base` value above (eg: `/var/www/terryt.dev/tilo/`).
-    1.  Copy over `backend/tolData/data.db`. The result should be denoted by the `dbFile` value above.
+    1.  Copy over `backend/tolData/data.db`. The result should be denoted by the `DB_FILE` value above.
         Remember to set ownership and permissions as needed.
     1.  Copy over the images in `backend/tolData/img/`. There are a lot of them, so compressing them
         before transfer is advisable (eg: `tar czf imgs.tar.gz backend/tolData/img/`). The location should
