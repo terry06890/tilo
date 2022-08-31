@@ -235,29 +235,28 @@
 								<a href="https://creativecommons.org/publicdomain/zero/1.0/" :style="aStyles">CC0</a>.
 							</li>
 							<li>
-								The images and alternative-names data was partly obtained from the
-								<a href="https://eol.org" :style="aStyles">Encyclopedia of Life</a>.
-								Name data was obtained from
-								<a href="https://opendata.eol.org/dataset/vernacular-names" :style="aStyles">here</a>,
-								and image metadata from
-								<a href="https://opendata.eol.org/dataset/images-list" :style="aStyles">here</a>,
-								accessed 24/04/2022.
+								The images, along with name and node&#8209;mapping data, was partly obtained from the
+								<a href="https://eol.org" :style="aStyles">Encyclopedia of Life</a>, using their
+								<a href="https://opendata.eol.org/dataset/images-list" :style="aStyles">images list</a>,
+								<a href="https://opendata.eol.org/dataset/vernacular-names" :style="aStyles">
+									vernacular names</a>, and
+								<a href="https://opendata.eol.org/dataset/identifier-map" :style="aStyles">
+									identifier map</a> data sets, accessed 22/08/2022.
 								<br/>
 								For the source of a specific tile's image, look in its info pane.
 							</li>
 							<li>
-								The short descriptions, along with most of the remaining images and name data,
-								were obtained from <a href="https://wikipedia.org" :style="aStyles">Wikipedia</a>.
-								<br/>
-								Descriptions were extracted from the
-								<a href="https://dumps.wikimedia.org/enwiki/" :style="aStyles">Wikipedia dump</a>
-								for 01/05/22, and also obtained from the
+								The short descriptions, the remaining images, and other data,
+								were obtained from the
+								<a href="https://dumps.wikimedia.org/enwiki/" :style="aStyles">Wikimedia dump</a>
+								for 01/05/22, the
 								<a href="https://databus.dbpedia.org/dbpedia/collections/latest-core"
 									:style="aStyles">DBpedia knowledge base</a>
-								for 01/03/22. The page content is available under
+								for 01/03/22, and the Wikidata dump for 23/08/22.
+								Wikipedia page content is available under
 								<a href="https://creativecommons.org/licenses/by-sa/3.0/" :style="aStyles"
 									>CC BY-SA 3.0</a>.
-								Images were downloaded during June 2022.
+								Images were downloaded during June and August 2022.
 							</li>
 						</ul>
 						<br/>
@@ -292,6 +291,12 @@
 							<li>
 								Images were cropped using
 								<a href="https://github.com/jwagner/smartcrop.js" :style="aStyles">Smartcrop</a>
+							</li>
+							<li>
+								Thanks to <a href="https://www.onezoom.org/" :style="aStyles">OneZoom</a> for having
+								<a href="https://github.com/OneZoom/OZtree/tree/main/OZprivate/ServerScripts/TaxonMappingAndPopularity"
+									:style="aStyles">code</a>
+								that automates node mapping.
 							</li>
 							<li>
 								Thanks to
