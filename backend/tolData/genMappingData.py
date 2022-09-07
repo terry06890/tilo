@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
-import sys, re, os
+import os
 from collections import defaultdict
-import gzip, bz2, csv, sqlite3
+import gzip, csv, sqlite3
 
 import argparse
-parser = argparse.ArgumentParser(description='''
+parser = argparse.ArgumentParser(description="""
 Maps otol IDs to EOL and enwiki titles, using IDs from various
 other sources (like NCBI).
 
@@ -15,7 +15,7 @@ and in a wikidata dump, and stores results in the database.
 
 Based on code from https://github.com/OneZoom/OZtree, located in
 OZprivate/ServerScripts/TaxonMappingAndPopularity/ (22 Aug 2022).
-''', formatter_class=argparse.RawDescriptionHelpFormatter)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
 args = parser.parse_args()
 
 taxonomyFile = 'otol/taxonomy.tsv'
@@ -33,8 +33,8 @@ print('Reading taxonomy file')
 	# uid (otol-id, eg: 93302), parent_uid, name, rank, 
 	# sourceinfo (comma-separated source specifiers, eg: ncbi:2952,gbif:3207147), uniqueName, flags
 OTOL_SRCS = ['ncbi', 'if', 'worms', 'irmng', 'gbif'] # Earlier sources will get higher priority
-nodeToSrcIds = defaultdict(dict) # Maps otol ID to {src1: id1, src2: id2, ...}
-usedSrcIds = set() # {(src1, id1), ...} (used to avoid storing IDs that won't be used)
+nodeToSrcIds: dict[int, dict[str, int]] = defaultdict(dict) # Maps otol ID to {src1: id1, src2: id2, ...}
+usedSrcIds: set[tuple[str, int]] = set() # {(src1, id1), ...} (used to avoid storing IDs that won't be used)
 with open(taxonomyFile) as file: # Had about 4.5e6 lines
 	lineNum = 0
 	for line in file:
@@ -51,12 +51,12 @@ with open(taxonomyFile) as file: # Had about 4.5e6 lines
 		except ValueError:
 			print(f'Skipping non-integral ID {fields[0]} on line {lineNum}')
 			continue
-		srcInfo = fields[4]
+		srcsField = fields[4]
 		# Add source IDs
-		for srcPair in srcInfo.split(','):
-			src, srcId = srcPair.split(':', 1)
-			if srcId.isdecimal() and src in OTOL_SRCS and src not in nodeToSrcIds[otolId]:
-				srcId = int(srcId)
+		for srcPair in srcsField.split(','):
+			src, srcIdStr = srcPair.split(':', 1)
+			if srcIdStr.isdecimal() and src in OTOL_SRCS and src not in nodeToSrcIds[otolId]:
+				srcId = int(srcIdStr)
 				nodeToSrcIds[otolId][src] = srcId
 				usedSrcIds.add((src, srcId))
 print(f'- Result has {sum([len(v) for v in nodeToSrcIds.values()]):,} entries') # Was about 6.7e6
@@ -66,7 +66,7 @@ print('Reading EOL provider_ids file')
 	# node_id, resource_pk (ID from external source), resource_id (int denoting external-source),
 	# page_id (eol ID), preferred_canonical_for_page
 EOL_SRCS = {676: 'ncbi', 459: 'worms', 767: 'gbif'} # Maps ints to external-source names
-srcToEolId = {src: {} for src in EOL_SRCS.values()} # Maps src1 to {id1: eolId1, ...}
+srcToEolId: dict[str, dict[int, int]] = {src: {} for src in EOL_SRCS.values()} # Maps src1 to {id1: eolId1, ...}
 with gzip.open(eolIdsFile, mode='rt') as file: # Had about 13e6 lines
 	for lineNum, row in enumerate(csv.reader(file), 1):
 		if lineNum % 1e6 == 0:
@@ -77,9 +77,9 @@ with gzip.open(eolIdsFile, mode='rt') as file: # Had about 13e6 lines
 		# Parse line
 		eolId = int(row[3])
 		srcVal = int(row[2])
-		srcId = row[1]
-		if srcId.isdecimal() and srcVal in EOL_SRCS:
-			srcId = int(srcId)
+		srcIdStr = row[1]
+		if srcIdStr.isdecimal() and srcVal in EOL_SRCS:
+			srcId = int(srcIdStr)
 			src = EOL_SRCS[srcVal]
 			if (src, srcId) not in usedSrcIds:
 				continue
@@ -92,9 +92,9 @@ print(f'- Result has {sum([len(v) for v in srcToEolId.values()]):,} entries')
 
 print('Resolving candidate EOL IDs')
 # For each otol ID, find eol IDs with matching sources, and choose the 'best' one
-nodeToEolId = {} # Maps otol ID to eol ID
+nodeToEolId: dict[int, int] = {} # Maps otol ID to eol ID
 for otolId, srcInfo in nodeToSrcIds.items():
-	eolIdToCount = defaultdict(int)
+	eolIdToCount: dict[int, int] = defaultdict(int)
 	for src, srcId in srcInfo.items():
 		if src in srcToEolId and srcId in srcToEolId[src]:
 			eolId = srcToEolId[src][srcId]
@@ -109,9 +109,9 @@ for otolId, srcInfo in nodeToSrcIds.items():
 print(f'- Result has {len(nodeToEolId):,} entries') # Was about 2.7e6
 
 print('Reading from Wikidata db')
-srcToWikiTitle = defaultdict(dict) # Maps 'eol'/etc to {srcId1: title1, ...}
+srcToWikiTitle: dict[str, dict[int, str]] = defaultdict(dict) # Maps 'eol'/etc to {srcId1: title1, ...}
 wikiTitles = set()
-titleToIucnStatus = {}
+titleToIucnStatus: dict[str, str] = {}
 dbCon = sqlite3.connect(wikidataDb)
 dbCur = dbCon.cursor()
 for src, srcId, title in dbCur.execute('SELECT src, id, title from src_id_to_title'):
@@ -129,9 +129,9 @@ dbCon.close()
 
 print('Resolving candidate Wikidata items')
 # For each otol ID, find wikidata titles with matching sources, and choose the 'best' one
-nodeToWikiTitle = {}
+nodeToWikiTitle: dict[int, str] = {}
 for otolId, srcInfo in nodeToSrcIds.items():
-	titleToSrcs = defaultdict(list) # Maps candidate titles to {src1: srcId1, ...}
+	titleToSrcs: dict[str, list[str]] = defaultdict(list) # Maps candidate titles to list of sources
 	for src, srcId in srcInfo.items():
 		if src in srcToWikiTitle and srcId in srcToWikiTitle[src]:
 			title = srcToWikiTitle[src][srcId]
@@ -157,7 +157,7 @@ print(f'- Result has {len(nodeToWikiTitle):,} entries') # Was about 4e5
 print('Adding extra EOL mappings from Wikidata')
 eolIdToNode = {eolId: node for node, eolId in nodeToEolId.items()}
 wikiTitleToNode = {title: node for node, title in nodeToWikiTitle.items()}
-addedEntries = {}
+addedEntries: dict[int, int] = {}
 for eolId, title in srcToWikiTitle['eol'].items():
 	if title in wikiTitleToNode:
 		otolId = wikiTitleToNode[title]
@@ -173,8 +173,8 @@ for src in pickedMappings:
 			continue
 		with open(filename) as file:
 			for line in file:
-				otolId, mappedVal = line.rstrip().split('|')
-				otolId = int(otolId)
+				otolIdStr, mappedVal = line.rstrip().split('|')
+				otolId = int(otolIdStr)
 				if src == 'eol':
 					if mappedVal:
 						nodeToEolId[otolId] = int(mappedVal)
@@ -188,15 +188,15 @@ for src in pickedMappings:
 						if otolId in nodeToWikiTitle:
 							del nodeToWikiTitle[otolId]
 
-print(f'Getting enwiki page IDs')
-titleToPageId = {}
+print('Getting enwiki page IDs')
+titleToPageId: dict[str, int] = {}
 numNotFound = 0
 dbCon = sqlite3.connect(enwikiDumpIndexDb)
 dbCur = dbCon.cursor()
 for title in nodeToWikiTitle.values():
-	row = dbCur.execute('SELECT id FROM offsets WHERE title = ?', (title,)).fetchone()
-	if row != None:
-		titleToPageId[title] = row[0]
+	record = dbCur.execute('SELECT id FROM offsets WHERE title = ?', (title,)).fetchone()
+	if record != None:
+		titleToPageId[title] = record[0]
 	else:
 		numNotFound += 1
 dbCon.close()
@@ -206,7 +206,7 @@ print('Writing to db')
 dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 # Get otol id-to-name map
-otolIdToName = {}
+otolIdToName: dict[int, str] = {}
 for nodeName, nodeId in dbCur.execute('SELECT name, id from nodes'):
 	if nodeId.startswith('ott'):
 		otolIdToName[int(nodeId[3:])] = nodeName

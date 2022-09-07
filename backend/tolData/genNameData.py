@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-import sys, re, os
+import re, os
 import html, csv, sqlite3
 
 import argparse
-parser = argparse.ArgumentParser(description='''
+parser = argparse.ArgumentParser(description="""
 Maps nodes to vernacular names, using data from EOL, enwiki, and a
 picked-names file, and stores results in the database.
-''', formatter_class=argparse.RawDescriptionHelpFormatter)
+""", formatter_class=argparse.RawDescriptionHelpFormatter)
 args = parser.parse_args()
 
 eolNamesFile = 'eol/vernacularNames.csv'
@@ -19,9 +19,9 @@ dbCon = sqlite3.connect(dbFile)
 dbCur = dbCon.cursor()
 
 print('Getting node mappings')
-nodeToTips = {}
-eolIdToNode = {} # Maps eol ID to node name (if there are multiple, choose one with most tips)
-wikiIdToNode = {}
+nodeToTips: dict[str, int] = {}
+eolIdToNode: dict[int, str] = {} # Maps eol ID to node name (if there are multiple, choose one with most tips)
+wikiIdToNode: dict[int, str] = {}
 for name, tips in dbCur.execute('SELECT name, tips from nodes'):
 	nodeToTips[name] = tips
 for name, eolId in dbCur.execute('SELECT name, id from eol_ids'):
@@ -58,7 +58,8 @@ with open(eolNamesFile, newline='') as file:
 		# Add to db
 		if eolId in eolIdToNode and name not in namesToSkip and name not in nodeToTips \
 			and lang == 'eng' and len(name.split(' ')) <= 3: # Ignore names with >3 words
-			cmd = 'INSERT OR IGNORE INTO names VALUES (?, ?, ?, \'eol\')' # The 'OR IGNORE' accounts for duplicate lines
+			cmd = 'INSERT OR IGNORE INTO names VALUES (?, ?, ?, \'eol\')'
+				# The 'OR IGNORE' accounts for duplicate lines
 			dbCur.execute(cmd, (eolIdToNode[eolId], name, isPreferred))
 
 print('Getting names from Wikipedia')
@@ -76,7 +77,7 @@ for wikiId, nodeName in wikiIdToNode.items():
 		' INNER JOIN pages p2 ON r1.target = p2.title WHERE p2.id = ?'
 	for (name,) in enwikiCur.execute(query, (wikiId,)):
 		name = name.lower()
-		if altNameRegex.fullmatch(name) != None and name != nodeName and name not in nodeToTips:
+		if altNameRegex.fullmatch(name) is not None and name != nodeName and name not in nodeToTips:
 			dbCur.execute('INSERT OR IGNORE INTO names VALUES (?, ?, ?, \'enwiki\')', (nodeName, name, 0))
 
 print('Getting picked names')
@@ -84,16 +85,15 @@ print('Getting picked names')
 	# nodename1|altName1|isPreferred1 -> Add an alt-name
 	# nodename1|altName1|             -> Remove an alt-name
 	# nodename1|nodeName1|            -> Remove any preferred-alt status
-altNamesToSkip = {} # Maps node names to alt-names to exclude
 if os.path.exists(pickedNamesFile):
 	with open(pickedNamesFile) as file:
 		for line in file:
-			nodeName, altName, isPreferred = line.lower().rstrip().split('|')
+			nodeName, altName, isPreferredStr = line.lower().rstrip().split('|')
 			if nodeName not in nodeToTips:
-				print(f"Skipping \"{nodeName}\", as no such node exists")
+				print(f'Skipping "{nodeName}", as no such node exists')
 				continue
-			if isPreferred:
-				isPreferred = 1 if isPreferred == '1' else 0
+			if isPreferredStr:
+				isPreferred = 1 if isPreferredStr == '1' else 0
 				if isPreferred == 1:
 					# Remove any existing preferred-alt status
 					cmd = 'UPDATE names SET pref_alt = 0 WHERE name = ? AND alt_name = ? AND pref_alt = 1'
@@ -101,7 +101,7 @@ if os.path.exists(pickedNamesFile):
 				# Remove any existing record
 				dbCur.execute('DELETE FROM names WHERE name = ? AND alt_name = ?', (nodeName, altName))
 				# Add record
-				dbCur.execute("INSERT INTO names VALUES (?, ?, ?, 'picked')", (nodeName, altName, isPreferred))
+				dbCur.execute('INSERT INTO names VALUES (?, ?, ?, "picked")', (nodeName, altName, isPreferred))
 			elif nodeName != altName: # Remove any matching record
 				dbCur.execute('DELETE FROM names WHERE name = ? AND alt_name = ?', (nodeName, altName))
 			else: # Remove any preferred-alt status
