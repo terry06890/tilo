@@ -51,7 +51,7 @@ in `backend/tolData/README.md`.
 ### Server Side
 1.  If you don't have Python 3 installed, see <https://www.python.org/downloads>.
     The package manager Pip is included.
-1.  The database used by the server is generated using scripts in `backend/data/`.
+1.  The database used by the server is generated using scripts in `backend/tol_data/`.
     See it's README for instructions. You'll likely need to install a few
     packages using Pip.
 1.  The dev server is started by running `./server.py` in the `backend/` directory.

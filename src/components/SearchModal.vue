@@ -70,7 +70,7 @@ export default defineComponent({
 			let br = this.uiOpts.borderRadius;
 			return {
 				backgroundColor: this.uiOpts.bgColorAlt,
-				borderRadius: this.searchSuggs.length == 0 ? `${br}px` : `${br}px ${br}px 0 0`,
+				borderRadius: (this.searchSuggs.length == 0) ? `${br}px` : `${br}px ${br}px 0 0`,
 				boxShadow: this.uiOpts.shadowNormal,
 			};
 		},

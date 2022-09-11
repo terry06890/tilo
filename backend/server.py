@@ -18,7 +18,7 @@ def wrappingApp(environ: dict[str, str], start_response) -> Iterable[bytes]:
 	if urlPath.startswith('/data/'):
 		# Run WSGI script
 		return application(environ, start_response)
-	elif urlPath.startswith('/tolData/img/'):
+	elif urlPath.startswith('/tol_data/img/'):
 		# Serve image file
 		imgPath = os.path.join(os.getcwd(), urlPath[1:])
 		if os.path.exists(imgPath):

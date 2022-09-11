@@ -8,7 +8,7 @@ import {getBreakpoint, Breakpoint, getScrollBarWidth, onTouchDevice} from './uti
 
 // For server requests
 const SERVER_DATA_URL = (new URL(window.location.href)).origin + '/data/'
-const SERVER_IMG_PATH = '/tolData/img/'
+const SERVER_IMG_PATH = '/tol_data/img/'
 export async function queryServer(params: URLSearchParams){
 	// Construct URL
 	let url = new URL(SERVER_DATA_URL);
