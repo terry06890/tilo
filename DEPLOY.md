@@ -1,28 +1,11 @@
-# Instructions for Deployment on an Apache server (version 2.4) on Ubuntu (20.04 LTS)
+# Instructions for Deployment on an Apache server (version 2.4) on Ubuntu (22.04.1 LTS)
 
 1.  Set up the server environment
     -   If Python3 and jsonpickle aren't installed, this can be done using
         `apt-get update; apt-get install python3 python3-jsonpickle`.
-    -   Install `mod_wsgi`, an Apache module for WSGI. This is for running `backend/tilo.py` to serve
-        tree-of-life data, and is used instead of CGI to avoid starting a new process for each request.
-        You can find instructions
-        [here](https://modwsgi.readthedocs.io/en/master/user-guides/quick-installation-guide.html). The below
-        is a rough summary of setup on Ubuntu.
-        1.  Install some prerequisites
-            1.  `apt-get update`
-            1.  `sudo aptitude install apache2-dev python3-dev`
-        1.  Download and build the module
-            1.  Download the [source](https://github.com/GrahamDumpleton/mod_wsgi/releases) into `mod_wsgi-4.9.2.tar.gz`
-            1.  `tar xvfz mod_wsgi-4.9.2.tar.gz`
-            1.  `cd mod_wsgi-4.9.2`
-            1.  `./configure --with-python=/usr/bin/python3`
-            1.  `make`
-        1.  Install and enable the module
-            1.  `sudo make install`
-            1.  Create /etc/apache2/mods-available/wsgi.load, and add the line
-                `LoadModule wsgi_module /usr/lib/apache2/modules/mod_wsgi.so`
-            1.  `sudo a2enmod wsgi`
-            1.  `sudo systemctl restart apache2`
+    -   Install `mod_wsgi` by running `apt-get install libapache2-mod-wsgi-py3`. This is an Apache module for WSGI.
+        It's for running `backend/tilo.py` to serve tree-of-life data, and is used instead of CGI to avoid starting
+        a new process for each request.
 1.  Change some constants (automated by `prebuild.sh`)
     -   In `src/vite.config.js`: Set `base` to the URL path where Tilo will be accessible (eg: `'/tilo'`)
     -   In `src/lib.ts`:
