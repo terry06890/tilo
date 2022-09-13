@@ -6,8 +6,3 @@
 		d="M112 240v128l144 80 144-80V240M480 368V192M256 320v128"/>
 </svg>
 </template>
-
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
-export default defineComponent({});
-</script>

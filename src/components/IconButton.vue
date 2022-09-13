@@ -5,24 +5,19 @@
 </div>
 </template>
 
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
+<script setup lang="ts">
+import {computed} from 'vue';
 
-export default defineComponent({
-	props: {
-		size: {type: Number, default: 36},
-		disabled: {type: Boolean, default: false},
-	},
-	computed: {
-		styles(): Record<string,string> {
-			return {
-				minWidth: this.size + 'px',
-				maxWidth: this.size + 'px',
-				minHeight: this.size + 'px',
-				maxHeight: this.size + 'px',
-				padding: (this.size / 5) + 'px',
-			};
-		},
-	},
+const props = defineProps({
+	size: {type: Number, default: 36},
+	disabled: {type: Boolean, default: false},
 });
+
+const styles = computed(() => ({
+	minWidth: props.size + 'px',
+	maxWidth: props.size + 'px',
+	minHeight: props.size + 'px',
+	maxHeight: props.size + 'px',
+	padding: (props.size / 5) + 'px',
+}));
 </script>

@@ -5,8 +5,3 @@
 	<rect x="14" y="4" width="4" height="16"></rect>
 </svg>
 </template>
-
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
-export default defineComponent({});
-</script>

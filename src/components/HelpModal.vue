@@ -1,9 +1,9 @@
 <template>
-<div class="fixed left-0 top-0 w-full h-full bg-black/20" @click="onClose">
+<div class="fixed left-0 top-0 w-full h-full bg-black/20" @click="onClose" ref="rootRef">
 	<!-- Outer div is slightly less dark to make scrollbar more distinguishable -->
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
 		w-[90%] max-w-[16cm] max-h-[80%] overflow-auto" :style="styles">
-		<close-icon @click.stop="onClose" ref="closeIcon"
+		<close-icon @click.stop="onClose" ref="closeRef"
 			class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
 		<h1 class="text-center text-xl font-bold pt-2 pb-1">Help</h1>
 		<div class="flex flex-col gap-2 p-2">
@@ -84,7 +84,7 @@
 							</ul>
 						</p>
 						<br/>
-						<p>
+						<div>
 							There are many other methods of visualisation.
 							Examples include <a href="https://itol.embl.de/" :style="aStyles">iTOL</a>
 							and <a href="https://www.onezoom.org/" :style="aStyles">OneZoom</a>
@@ -104,7 +104,7 @@
 									</div>
 								</div>
 							</div>
-						</p>
+						</div>
 						<br/>
 						<h1 class="text-lg font-bold">Settings</h1>
 						<ul class="list-disc pl-4">
@@ -231,7 +231,7 @@
 								<a href="https://tree.opentreeoflife.org" :style="aStyles">Open Tree of Life</a>,
 								in <a href="https://tree.opentreeoflife.org/about/synthesis-release"
 									:style="aStyles">synthesis release</a>
-								 version 13.4, accessed 23/04/2022. The data is licensed under
+								version 13.4, accessed 23/04/2022. The data is licensed under
 								<a href="https://creativecommons.org/publicdomain/zero/1.0/" :style="aStyles">CC0</a>.
 							</li>
 							<li>
@@ -296,7 +296,7 @@
 								Thanks to <a href="https://www.onezoom.org/" :style="aStyles">OneZoom</a> for having
 								<a href="https://github.com/OneZoom/OZtree/tree/main/OZprivate/ServerScripts/TaxonMappingAndPopularity"
 									:style="aStyles">code</a>
-								that automates node mapping.
+								that automates taxon ID mapping
 							</li>
 							<li>
 								Thanks to
@@ -426,67 +426,51 @@
 </div>
 </template>
 
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
+<script setup lang="ts">
+import {ref, computed, PropType} from 'vue';
 import SButton from './SButton.vue';
 import SCollapsible from './SCollapsible.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import DownIcon from './icon/DownIcon.vue';
-import ExternalLinkIcon from './icon/ExternalLinkIcon.vue';
 import {UiOptions} from '../lib';
 
-export default defineComponent({
-	props: {
-		tutOpen: {type: Boolean, default: false},
-		uiOpts: {type: Object as PropType<UiOptions>, required: true},
-	},
-	computed: {
-		styles(): Record<string,string> {
-			return {
-				backgroundColor: this.uiOpts.bgColorAlt,
-				borderRadius: this.uiOpts.borderRadius + 'px',
-				boxShadow: this.uiOpts.shadowNormal,
-			};
-		},
-		scClasses(): string {
-			return 'border border-stone-400 rounded';
-		},
-		scSummaryClasses(): string {
-			return "relative text-center p-1 bg-stone-300 hover:brightness-90 hover:bg-lime-200 md:p-2";
-		},
-		downIconClasses(): string {
-			return 'absolute w-6 h-6 my-auto mx-1 transition-transform duration-300';
-		},
-		downIconExpandedClasses(): string {
-			return this.downIconClasses + ' -rotate-90';
-		},
-		contentClasses(): string {
-			return 'py-2 px-2 text-sm md:text-base';
-		},
-		aStyles(): Record<string,string> {
-			return {
-				color: this.uiOpts.altColorDark,
-			};
-		},
-		linkIconClasses(): string {
-			return 'inline-block w-3 h-3 ml-1';
-		},
-		touchDevice(): boolean {
-			return this.uiOpts.touchDevice;
-		},
-	},
-	methods: {
-		onClose(evt: Event){
-			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
-				this.$emit('close');
-			}
-		},
-		onStartTutorial(){
-			this.$emit('start-tutorial');
-			this.$emit('close');
-		},
-	},
-	components: {SButton, SCollapsible, CloseIcon, DownIcon, ExternalLinkIcon, },
-	emits: ['close', 'start-tutorial', ],
+// Refs
+const rootRef = ref(null as HTMLDivElement | null)
+const closeRef = ref(null as typeof CloseIcon | null);
+
+// Props + events
+const props = defineProps({
+	tutOpen: {type: Boolean, default: false},
+	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 });
+const touchDevice = computed(() => props.uiOpts.touchDevice)
+const emit = defineEmits(['close', 'start-tutorial']);
+
+// Event handlers
+function onClose(evt: Event){
+	if (evt.target == rootRef.value || closeRef.value!.$el.contains(evt.target)){
+		emit('close');
+	}
+}
+function onStartTutorial(){
+	emit('start-tutorial');
+	emit('close');
+}
+
+// Styles
+const styles = computed(() => ({
+	backgroundColor: props.uiOpts.bgColorAlt,
+	borderRadius: props.uiOpts.borderRadius + 'px',
+	boxShadow: props.uiOpts.shadowNormal,
+}));
+const aStyles = computed(() => ({
+	color: props.uiOpts.altColorDark,
+}));
+
+// Classes
+const scClasses = 'border border-stone-400 rounded';
+const scSummaryClasses = 'relative text-center p-1 bg-stone-300 hover:brightness-90 hover:bg-lime-200 md:p-2';
+const downIconClasses = 'absolute w-6 h-6 my-auto mx-1 transition-transform duration-300';
+const downIconExpandedClasses = computed(() => downIconClasses + ' -rotate-90');
+const contentClasses = 'py-2 px-2 text-sm md:text-base';
 </script>

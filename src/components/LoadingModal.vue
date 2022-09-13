@@ -8,26 +8,20 @@
 </div>
 </template>
 
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
+<script setup lang="ts">
+import {computed, PropType} from 'vue';
 import LoaderIcon from './icon/LoaderIcon.vue';
 import {UiOptions} from '../lib';
 
-export default defineComponent({
-	props: {
-		msg: {type: String, required: true},
-		uiOpts: {type: Object as PropType<UiOptions>, required: true},
-	},
-	computed: {
-		styles(): Record<string,string> {
-			return {
-				color: this.uiOpts.textColor,
-				backgroundColor: this.uiOpts.bgColorDark2,
-				borderRadius: this.uiOpts.borderRadius + 'px',
-				boxShadow: this.uiOpts.shadowNormal,
-			};
-		},
-	},
-	components: {LoaderIcon, },
+const props = defineProps({
+	msg: {type: String, required: true},
+	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 });
+
+const styles = computed(() => ({
+	color: props.uiOpts.textColor,
+	backgroundColor: props.uiOpts.bgColorDark2,
+	borderRadius: props.uiOpts.borderRadius + 'px',
+	boxShadow: props.uiOpts.shadowNormal,
+}));
 </script>

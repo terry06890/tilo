@@ -1,9 +1,9 @@
 <template>
-<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose">
+<div class="fixed left-0 top-0 w-full h-full bg-black/40" @click="onClose" ref="rootRef">
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
 		max-w-[80%] w-2/3 min-w-[8cm] md:w-[14cm] lg:w-[16cm] max-h-[80%]" :style="styles">
 		<div class="pb-1 md:pb-2">
-			<close-icon @click.stop="onClose" ref="closeIcon"
+			<close-icon @click.stop="onClose" ref="closeRef"
 				class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
 			<div class="absolute top-1 left-1 md:top-2 md:left-2 flex items-center">
 				<a :href="'/?node=' + encodeURIComponent(nodeName)" class="block w-8 h-8 p-[2px] hover:cursor-pointer"
@@ -23,7 +23,7 @@
 				<div v-if="tolNode.iucn != null">
 					<a href="https://en.wikipedia.org/wiki/Endangered_species_(IUCN_status)"
 						target="_blank" title="IUCN Conservation Status">IUCN</a>:
-					<span :style="iucnStyles">{{getDisplayIucn(tolNode.iucn)}}</span>
+					<span :style="iucnStyles(tolNode.iucn)">{{getDisplayIucn(tolNode.iucn)}}</span>
 				</div>
 				<div>
 					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId"
@@ -111,176 +111,174 @@
 </div>
 </template>
 
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
+<script setup lang="ts">
+import {ref, computed, PropType} from 'vue';
 import SCollapsible from './SCollapsible.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import ExternalLinkIcon from './icon/ExternalLinkIcon.vue';
 import DownIcon from './icon/DownIcon.vue';
 import LinkIcon from './icon/LinkIcon.vue';
-import {TolNode, TolMap} from '../tol';
-import {LayoutNode, LayoutOptions} from '../layout';
-import {getImagePath, DescInfo, ImgInfo, NodeInfo, InfoResponse, UiOptions} from '../lib';
+import {TolNode} from '../tol';
+import {LayoutOptions} from '../layout';
+import {getImagePath, DescInfo, ImgInfo, InfoResponse, UiOptions} from '../lib';
 import {capitalizeWords} from '../util';
 
-export default defineComponent({
-	props: {
-		// Node data to display
-		nodeName: {type: String, required: true},
-		infoResponse: {type: Object as PropType<InfoResponse>, required: true},
-		// Options
-		lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
-		uiOpts: {type: Object as PropType<UiOptions>, required: true},
-	},
-	data(){
-		return {
-			linkCopied: false, // Used to temporarily show a 'link copied' label
-		};
-	},
-	computed: {
-		tolNode(): TolNode {
-			return this.infoResponse.nodeInfo.tolNode;
-		},
-		nodes(): (TolNode | null)[] {
-			if (this.infoResponse.subNodesInfo.length == 0){
-				return [this.tolNode];
-			} else {
-				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.tolNode : null);
-			}
-		},
-		imgInfos(): (ImgInfo | null)[] {
-			if (this.infoResponse.subNodesInfo.length == 0){
-				return [this.infoResponse.nodeInfo.imgInfo];
-			} else {
-				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.imgInfo : null);
-			}
-		},
-		descInfos(): (DescInfo | null)[] {
-			if (this.infoResponse.subNodesInfo.length == 0){
-				return [this.infoResponse.nodeInfo.descInfo];
-			} else {
-				return this.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.descInfo : null);
-			}
-		},
-		subNames(): [string, string] | null {
-			const regex = /\[(.+) \+ (.+)\]/;
-			let results = regex.exec(this.nodeName);
-			return results == null ? null : [results[1], results[2]];
-		},
-		styles(): Record<string,string> {
-			return {
-				backgroundColor: this.uiOpts.bgColorAlt,
-				borderRadius: this.uiOpts.borderRadius + 'px',
-				boxShadow: this.uiOpts.shadowNormal,
-				overflow: 'visible auto',
-			};
-		},
-		iucnStyles(): Record<string,string> {
-			let col = 'currentcolor';
-			switch (this.tolNode.iucn){
-				case 'least concern': col = 'green'; break;
-				case 'near threatened': col = 'limegreen'; break;
-				case 'vulnerable': col = 'goldenrod'; break;
-				case 'endangered': col = 'darkorange'; break;
-				case 'critically endangered': col = 'red'; break;
-				case 'extinct in the wild':
-				case 'extinct species': col = 'gray'; break;
-			}
-			return {
-				color: col,
-			};
-		},
-		linkCopyLabelStyles(): Record<string,string> {
-			return {
-				color: this.uiOpts.textColor,
-				backgroundColor: this.uiOpts.bgColor,
-				borderRadius: this.uiOpts.borderRadius + 'px',
-			};
-		},
-	},
-	methods: {
-		getDisplayName(name: string, tolNode: TolNode | null): string {
-			if (tolNode == null || tolNode.commonName == null){
-				return capitalizeWords(name);
-			} else {
-				return `${capitalizeWords(tolNode.commonName)} (aka ${capitalizeWords(name)})`;
-			}
-		},
-		getDisplayIucn(iucn: string){
-			switch (this.tolNode.iucn){
-				case 'least concern': return 'LC';
-				case 'near threatened': return 'NT';
-				case 'vulnerable': return 'VN';
-				case 'endangered': return 'EN';
-				case 'critically endangered': return 'CR';
-				case 'extinct in the wild': return 'EX';
-				case 'extinct species': return 'ES';
-				case 'data deficient': return 'DD';
-			}
-		},
-		getImgStyles(tolNode: TolNode | null): Record<string,string> {
-			let imgName = null;
-			if (tolNode != null && typeof(tolNode.imgName) === 'string'){ // Exclude string-array case
-				imgName = tolNode.imgName;
-			}
-			return {
-				width: '200px',
-				height: '200px',
-				backgroundImage: imgName != null ?
-					`url('${getImagePath(imgName as string)}')` :
-					'none',
-				backgroundColor: this.uiOpts.bgColorDark,
-				backgroundSize: 'cover',
-				borderRadius: this.uiOpts.borderRadius + 'px',
-				boxShadow: this.uiOpts.shadowNormal,
-			};
-		},
-		licenseToUrl(license: string){
-			license = license.toLowerCase().replaceAll('-', ' ');
-			if (license == 'cc0'){
-				return 'https://creativecommons.org/publicdomain/zero/1.0/';
-			} else if (license == 'cc publicdomain'){
-				return 'https://creativecommons.org/licenses/publicdomain/';
-			} else {
-				const regex = /cc by( nc)?( sa)?( ([0-9.]+)( [a-z]+)?)?/;
-				let results = regex.exec(license);
-				if (results != null){
-					let url = 'https://creativecommons.org/licenses/by';
-					if (results[1] != null){
-						url += '-nc';
-					}
-					if (results[2] != null){
-						url += '-sa';
-					}
-					if (results[4] != null){
-						url += '/' + results[4];
-					} else {
-						url += '/4.0';
-					}
-					if (results[5] != null){
-						url += '/' + results[5].substring(1);
-					}
-					return url;
-				}
-				return "[INVALID LICENSE]";
-			}
-		},
-		onClose(evt: Event){
-			if (evt.target == this.$el || (this.$refs.closeIcon as typeof CloseIcon).$el.contains(evt.target)){
-				this.$emit('close');
-			}
-		},
-		onLinkIconClick(evt: Event){
-			// Copy link to clipboard
-			let url = new URL(window.location.href);
-			url.search = (new URLSearchParams({node: this.nodeName})).toString();
-			navigator.clipboard.writeText(url.toString());
-			// Show visual indicator
-			this.linkCopied = true;
-			setTimeout(() => {this.linkCopied = false}, 1500);
-		},
-	},
-	components: {SCollapsible, CloseIcon, ExternalLinkIcon, DownIcon, LinkIcon, },
-	emits: ['close', ],
+// Refs
+const rootRef = ref(null as HTMLDivElement | null);
+const closeRef = ref(null as typeof CloseIcon | null);
+
+// Props + events
+const props = defineProps({
+	// Node data to display
+	nodeName: {type: String, required: true},
+	infoResponse: {type: Object as PropType<InfoResponse>, required: true},
+	// Options
+	lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
+	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 });
+const emit = defineEmits(['close']);
+
+// InfoResponse computed data
+const tolNode = computed(() => props.infoResponse.nodeInfo.tolNode);
+const nodes = computed((): (TolNode | null)[] => {
+	if (props.infoResponse.subNodesInfo.length == 0){
+		return [tolNode.value];
+	} else {
+		return props.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.tolNode : null);
+	}
+});
+const imgInfos = computed((): (ImgInfo | null)[] => {
+	if (props.infoResponse.subNodesInfo.length == 0){
+		return [props.infoResponse.nodeInfo.imgInfo];
+	} else {
+		return props.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.imgInfo : null);
+	}
+});
+const descInfos = computed((): (DescInfo | null)[] => {
+	if (props.infoResponse.subNodesInfo.length == 0){
+		return [props.infoResponse.nodeInfo.descInfo];
+	} else {
+		return props.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.descInfo : null);
+	}
+});
+const subNames = computed((): [string, string] | null => {
+	const regex = /\[(.+) \+ (.+)\]/;
+	let results = regex.exec(props.nodeName);
+	return results == null ? null : [results[1], results[2]];
+});
+
+// InfoResponse data converters
+function getDisplayName(name: string, tolNode: TolNode | null): string {
+	if (tolNode == null || tolNode.commonName == null){
+		return capitalizeWords(name);
+	} else {
+		return `${capitalizeWords(tolNode.commonName)} (aka ${capitalizeWords(name)})`;
+	}
+}
+function getDisplayIucn(iucn: string){
+	switch (iucn){
+		case 'least concern': return 'LC';
+		case 'near threatened': return 'NT';
+		case 'vulnerable': return 'VN';
+		case 'endangered': return 'EN';
+		case 'critically endangered': return 'CR';
+		case 'extinct in the wild': return 'EX';
+		case 'extinct species': return 'ES';
+		case 'data deficient': return 'DD';
+	}
+}
+function licenseToUrl(license: string){
+	license = license.toLowerCase().replaceAll('-', ' ');
+	if (license == 'cc0'){
+		return 'https://creativecommons.org/publicdomain/zero/1.0/';
+	} else if (license == 'cc publicdomain'){
+		return 'https://creativecommons.org/licenses/publicdomain/';
+	} else {
+		const regex = /cc by( nc)?( sa)?( ([0-9.]+)( [a-z]+)?)?/;
+		let results = regex.exec(license);
+		if (results != null){
+			let url = 'https://creativecommons.org/licenses/by';
+			if (results[1] != null){
+				url += '-nc';
+			}
+			if (results[2] != null){
+				url += '-sa';
+			}
+			if (results[4] != null){
+				url += '/' + results[4];
+			} else {
+				url += '/4.0';
+			}
+			if (results[5] != null){
+				url += '/' + results[5].substring(1);
+			}
+			return url;
+		}
+		return "[INVALID LICENSE]";
+	}
+}
+
+// Close handling
+function onClose(evt: Event){
+	if (evt.target == rootRef.value || closeRef.value!.$el.contains(evt.target)){
+		emit('close');
+	}
+}
+
+// Copy-link handling
+const linkCopied = ref(false); // Used to temporarily show a 'link copied' label
+function onLinkIconClick(){
+	// Copy link to clipboard
+	let url = new URL(window.location.href);
+	url.search = (new URLSearchParams({node: props.nodeName})).toString();
+	navigator.clipboard.writeText(url.toString());
+	// Show visual indicator
+	linkCopied.value = true;
+	setTimeout(() => {linkCopied.value = false}, 1500);
+}
+
+// Styles
+const styles = computed(() => ({
+	backgroundColor: props.uiOpts.bgColorAlt,
+	borderRadius: props.uiOpts.borderRadius + 'px',
+	boxShadow: props.uiOpts.shadowNormal,
+	overflow: 'visible auto',
+}));
+function getImgStyles(tolNode: TolNode | null): Record<string,string> {
+	let imgName = null;
+	if (tolNode != null && typeof(tolNode.imgName) === 'string'){ // Exclude string-array case
+		imgName = tolNode.imgName;
+	}
+	return {
+		width: '200px',
+		height: '200px',
+		backgroundImage: imgName != null ?
+			`url('${getImagePath(imgName as string)}')` :
+			'none',
+		backgroundColor: props.uiOpts.bgColorDark,
+		backgroundSize: 'cover',
+		borderRadius: props.uiOpts.borderRadius + 'px',
+		boxShadow: props.uiOpts.shadowNormal,
+	};
+}
+function iucnStyles(iucn: string): Record<string,string>{
+	let col = 'currentcolor';
+	switch (iucn){
+		case 'least concern': col = 'green'; break;
+		case 'near threatened': col = 'limegreen'; break;
+		case 'vulnerable': col = 'goldenrod'; break;
+		case 'endangered': col = 'darkorange'; break;
+		case 'critically endangered': col = 'red'; break;
+		case 'extinct in the wild':
+		case 'extinct species': col = 'gray'; break;
+	}
+	return {
+		color: col,
+	};
+}
+const linkCopyLabelStyles = computed(() => ({
+	color: props.uiOpts.textColor,
+	backgroundColor: props.uiOpts.bgColor,
+	borderRadius: props.uiOpts.borderRadius + 'px',
+}));
 </script>

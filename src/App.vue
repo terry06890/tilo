@@ -25,7 +25,7 @@
 		</icon-button>
 	</div>
 	<!-- Content area -->
-	<div class="grow min-h-0 flex flex-col relative" ref="contentArea">
+	<div class="grow min-h-0 flex flex-col relative" ref="contentAreaRef">
 		<div :style="tutPaneContainerStyles" class="z-10"> <!-- Used to slide-in/out the tutorial pane -->
 			<transition name="fade">
 				<tutorial-pane v-if="tutPaneOpen" :style="tutPaneStyles"
@@ -62,7 +62,7 @@
 		<search-modal v-if="searchOpen"
 			:tolMap="tolMap" :lytMap="layoutMap" :activeRoot="activeRoot" :lytOpts="lytOpts" :uiOpts="uiOpts"
 			@close="onSearchClose" @search="onSearch" @info-click="onInfoClick" @setting-chg="onSettingChg"
-			@net-wait="onSearchNetWait" @net-get="endLoadInd" class="z-10" ref="searchModal"/>
+			@net-wait="onSearchNetWait" @net-get="endLoadInd" class="z-10"/>
 	</transition>
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null && infoModalData != null"
@@ -86,8 +86,8 @@
 </div>
 </template>
 
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
+<script setup lang="ts">
+import {ref, computed, watch, onMounted, onUnmounted, nextTick} from 'vue';
 // Components
 import TolTile from './components/TolTile.vue';
 import TileInfoModal from './components/TileInfoModal.vue';
@@ -112,14 +112,604 @@ import {LayoutNode, LayoutOptions, LayoutTreeChg,
 	initLayoutTree, initLayoutMap, tryLayout} from './layout';
 import {queryServer, InfoResponse, Action,
 	UiOptions, getDefaultLytOpts, getDefaultUiOpts, OptionType} from './lib';
-import {arraySum, randWeightedChoice, timeout} from './util';
+import {arraySum, randWeightedChoice} from './util';
 
 // Constants
 const SERVER_WAIT_MSG = 'Loading data';
 const PROCESSING_WAIT_MSG = 'Processing';
-// Type representing auto-mode actions
+const EXCESS_TOLNODE_THRESHOLD = 1000; // Threshold where excess tolMap entries get removed
+
+// Refs
+const contentAreaRef = ref(null as HTMLElement | null);
+
+// Get/load option values
+function getLytOpts(): LayoutOptions {
+	let opts = getDefaultLytOpts();
+	for (let prop of Object.getOwnPropertyNames(opts) as (keyof LayoutOptions)[]){
+		let item = localStorage.getItem('LYT ' + prop);
+		if (item != null){
+			switch (typeof(opts[prop])){
+				case 'boolean': (opts[prop] as unknown as boolean) = Boolean(item); break;
+				case 'number': (opts[prop] as unknown as number) = Number(item); break;
+				case 'string': (opts[prop] as unknown as string) = item; break;
+				default: console.log(`WARNING: Found saved layout setting "${prop}" with unexpected type`);
+			}
+		}
+	}
+	return opts;
+}
+function getUiOpts(): UiOptions {
+	let opts = getDefaultUiOpts(getDefaultLytOpts());
+	for (let prop of Object.getOwnPropertyNames(opts) as (keyof UiOptions)[]){
+		let item = localStorage.getItem('UI ' + prop);
+		if (item != null){
+			switch (typeof(opts[prop])){
+				case 'boolean': (opts[prop] as unknown as boolean) = (item == 'true'); break;
+				case 'number': (opts[prop] as unknown as number) = Number(item); break;
+				case 'string': (opts[prop] as unknown as string) = item; break;
+				default: console.log(`WARNING: Found saved UI setting "${prop}" with unexpected type`);
+			}
+		}
+	}
+	return opts;
+}
+const lytOpts = ref(getLytOpts());
+const uiOpts = ref(getUiOpts());
+
+// Tree/layout data
+const tolMap = ref(new Map() as TolMap);
+tolMap.value.set('', new TolNode())
+const layoutTree = ref(initLayoutTree(tolMap.value, "", 0));
+layoutTree.value.hidden = true;
+const activeRoot = ref(layoutTree.value); // Root of the displayed subtree
+const layoutMap = ref(initLayoutMap(layoutTree.value)); // Maps names to LayoutNodes
+// Nodes to show in ancestry-bar (ordered from root downwards)
+const detachedAncestors = computed((): LayoutNode[] | null => {
+	if (activeRoot.value == layoutTree.value){
+		return null;
+	}
+	let ancestors = [];
+	let node = activeRoot.value.parent;
+	while (node != null){
+		ancestors.push(node);
+		node = node.parent;
+	}
+	return ancestors.reverse();
+});
+
+// For initialisation
+const justInitialised = ref(false); // Used to skip transition for the tile initially loaded from server
+async function initTreeFromServer(firstInit = true){
+	// Get possible target node from URL
+	let nodeName = (new URL(window.location.href)).searchParams.get('node');
+	// Query server
+	let urlParams = new URLSearchParams({type: 'node', tree: uiOpts.value.tree});
+	if (nodeName != null && firstInit){
+		urlParams.append('name', nodeName);
+		urlParams.append('toroot', '1');
+	}
+	let responseObj: {[x: string]: TolNode} = await loadFromServer(urlParams);
+	if (responseObj == null){
+		return;
+	}
+	// Get root node name
+	let rootName = null;
+	let nodeNames = Object.getOwnPropertyNames(responseObj);
+	for (let n of nodeNames){
+		if (responseObj[n].parent == null){
+			rootName = n;
+			break;
+		}
+	}
+	if (rootName == null){
+		console.log('ERROR: Server response has no root node');
+		return;
+	}
+	// Initialise tree
+	tolMap.value.clear();
+	nodeNames.forEach(n => {tolMap.value.set(n, responseObj[n])});
+	if (nodeName == null){
+		layoutTree.value = initLayoutTree(tolMap.value, rootName, 0);
+		layoutMap.value = initLayoutMap(layoutTree.value);
+		activeRoot.value = layoutTree.value;
+	} else {
+		layoutTree.value = initLayoutTree(tolMap.value, rootName, -1);
+		layoutMap.value = initLayoutMap(layoutTree.value);
+		// Set active root
+		let targetNode = layoutMap.value.get(nodeName)!;
+		let newRoot = targetNode.parent == null ? targetNode : targetNode.parent;
+		LayoutNode.hideUpward(newRoot, layoutMap.value);
+		activeRoot.value = newRoot;
+		setTimeout(() => setLastFocused(targetNode!), uiOpts.value.transitionDuration);
+	}
+	// Skip initial transition
+	if (firstInit){
+		justInitialised.value = true;
+		setTimeout(() => {justInitialised.value = false}, uiOpts.value.transitionDuration);
+	}
+	// Relayout
+	updateAreaDims();
+	relayoutWithCollapse(false);
+}
+async function reInit(){
+	if (activeRoot.value != layoutTree.value){
+		// Collapse tree to root
+		await onDetachedAncestorClick(layoutTree.value, true);
+	}
+	await onNonleafClick(layoutTree.value, true);
+	await initTreeFromServer(false);
+}
+onMounted(() => initTreeFromServer());
+
+// For layouting
+const mainAreaDims = ref([0, 0] as [number, number]);
+const tileAreaDims = ref([0, 0] as [number, number]);
+const wideMainArea = computed(() => mainAreaDims.value[0] > mainAreaDims.value[1]);
+const overflownRoot = ref(false); // Set when displaying a root tile with many children, with overflow
+function relayoutWithCollapse(secondPass = true, keepOverflow = false): boolean {
+	let success: boolean;
+	if (overflownRoot.value){
+		if (keepOverflow){
+			success = tryLayout(activeRoot.value, tileAreaDims.value,
+				{...lytOpts.value, layoutType: 'sqr-overflow'}, {layoutMap: layoutMap.value});
+			return success;
+		}
+		overflownRoot.value = false;
+	}
+	success = tryLayout(activeRoot.value, tileAreaDims.value, lytOpts.value,
+		{allowCollapse: true, layoutMap: layoutMap.value});
+	if (secondPass){
+		// Relayout again, which can help allocate remaining tiles 'evenly'
+		success = tryLayout(activeRoot.value, tileAreaDims.value, lytOpts.value,
+			{allowCollapse: false, layoutMap: layoutMap.value});
+	}
+	return success;
+}
+function updateAreaDims(){
+	// Set mainAreaDims and tileAreaDims
+		// Note: Tried setting these by querying tut_pane+ancestry_bar dimensions repeatedly,
+		// throughout their transitions, relayouting each time, but this makes the tile movements jerky
+	let contentAreaEl = contentAreaRef.value!;
+	let w = contentAreaEl.offsetWidth, h = contentAreaEl.offsetHeight;
+	if (tutPaneOpen.value && uiOpts.value.breakpoint == 'sm'){
+		h -= uiOpts.value.tutPaneSz;
+	}
+	mainAreaDims.value = [w, h];
+	if (detachedAncestors.value != null){
+		if (w > h){
+			w -= uiOpts.value.ancestryBarBreadth;
+		} else {
+			h -= uiOpts.value.ancestryBarBreadth;
+		}
+	}
+	w -= lytOpts.value.tileSpacing * 2;
+	h -= lytOpts.value.tileSpacing * 2;
+	tileAreaDims.value = [w, h];
+}
+
+// For resize handling
+let lastResizeHdlrTime = 0; // Used to throttle resize handling
+let afterResizeHdlr = 0; // Set via setTimeout() to execute after a run of resize events
+async function onResize(){
+	// Handle event if not recently done
+	let handleResize = async () => {
+		// Update layout/ui options with defaults, excluding user-modified ones
+		let lytOpts2 = getDefaultLytOpts();
+		let uiOpts2 = getDefaultUiOpts(lytOpts2);
+		let changedTree = false;
+		for (let prop of Object.getOwnPropertyNames(lytOpts2) as (keyof LayoutOptions)[]){
+			let item = localStorage.getItem('LYT ' + prop);
+			if (item == null && lytOpts.value[prop] != lytOpts2[prop]){
+				(lytOpts.value[prop] as any) = lytOpts2[prop];
+			}
+		}
+		for (let prop of Object.getOwnPropertyNames(uiOpts2) as (keyof UiOptions)[]){
+			let item = localStorage.getItem('UI ' + prop);
+			//Note: Using JSON.stringify here to roughly deep-compare values
+			if (item == null && JSON.stringify(uiOpts.value[prop]) != JSON.stringify(uiOpts2[prop])){
+				(uiOpts.value[prop] as any) = uiOpts2[prop];
+				if (prop == 'tree'){
+					changedTree = true;
+				}
+			}
+		}
+		// Relayout
+		if (!changedTree){
+			updateAreaDims();
+			relayoutWithCollapse();
+		} else {
+			reInit();
+		}
+	};
+	let currentTime = new Date().getTime();
+	if (currentTime - lastResizeHdlrTime > uiOpts.value.transitionDuration){
+		lastResizeHdlrTime = currentTime;
+		await handleResize();
+		lastResizeHdlrTime = new Date().getTime();
+	}
+	// Also setup a handler to execute after a run of resize events
+	clearTimeout(afterResizeHdlr);
+	afterResizeHdlr = setTimeout(async () => {
+		afterResizeHdlr = 0;
+		await handleResize();
+		lastResizeHdlrTime = new Date().getTime();
+	}, 200); // If too small, touch-device detection when swapping to/from mobile-mode gets unreliable
+}
+onMounted(() => window.addEventListener('resize', onResize));
+onUnmounted(() => window.removeEventListener('resize', onResize));
+
+// For tile expand/collapse events
+async function onLeafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+	if (!subAction && !onActionStart('expand')){
+		return false;
+	}
+	// Function for expanding tile
+	let doExpansion = async () => {
+		primeLoadInd(PROCESSING_WAIT_MSG);
+		let lytFnOpts = {
+			allowCollapse: false,
+			chg: {type: 'expand', node: layoutNode, tolMap: tolMap.value} as LayoutTreeChg,
+			layoutMap: layoutMap.value,
+		};
+		let success = tryLayout(activeRoot.value, tileAreaDims.value, lytOpts.value, lytFnOpts);
+		// Handle auto-hide
+		if (!success && uiOpts.value.autoHide){
+			while (!success && layoutNode != activeRoot.value){
+				let node = layoutNode;
+				while (node.parent != activeRoot.value){
+					node = node.parent!;
+				}
+				// Hide ancestor
+					// Note: Not using onNonleafClickHeld() here to avoid a relayoutWithCollapse()
+				LayoutNode.hideUpward(node, layoutMap.value);
+				activeRoot.value = node;
+				// Try relayout
+				updateAreaDims();
+				success = tryLayout(activeRoot.value, tileAreaDims.value, lytOpts.value, lytFnOpts);
+			}
+		}
+		// If expanding active-root with too many children to fit, allow overflow
+		if (!success && layoutNode == activeRoot.value){
+			success = tryLayout(activeRoot.value, tileAreaDims.value,
+				{...lytOpts.value, layoutType: 'sqr-overflow'}, lytFnOpts);
+			if (success){
+				overflownRoot.value = true;
+			}
+		}
+		//
+		if (!subAction && !success){
+			layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+		}
+		nextTick(endLoadInd);
+		return success;
+	};
+	//
+	let success: boolean;
+	if (overflownRoot.value){ // If clicking child of overflowing active-root
+		if (!uiOpts.value.autoHide){
+			if (!subAction){
+				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+			}
+			success = false;
+		} else {
+			success = await onLeafClickHeld(layoutNode);
+		}
+	} else {
+		// Check if data for node-to-expand exists, getting from server if needed
+		let tolNode = tolMap.value.get(layoutNode.name)!;
+		if (!tolMap.value.has(tolNode.children[0])){
+			let urlParams = new URLSearchParams({type: 'node', name: layoutNode.name, tree: uiOpts.value.tree});
+			let responseObj: {[x: string]: TolNode} = await loadFromServer(urlParams);
+			if (responseObj == null){
+				success = false;
+			} else {
+				Object.getOwnPropertyNames(responseObj).forEach(n => {tolMap.value.set(n, responseObj[n])});
+				success = await doExpansion();
+			}
+		} else {
+			success = await doExpansion();
+		}
+	}
+	if (!subAction){
+		onActionEnd('expand');
+	}
+	return success;
+}
+async function onNonleafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+	if (!subAction && !onActionStart('collapse')){
+		return false;
+	}
+	// Relayout
+	primeLoadInd(PROCESSING_WAIT_MSG);
+	let success = tryLayout(activeRoot.value, tileAreaDims.value, lytOpts.value, {
+		allowCollapse: false,
+		chg: {type: 'collapse', node: layoutNode, tolMap: tolMap.value},
+		layoutMap: layoutMap.value,
+	});
+	// Update overflownRoot if root was collapsed
+	if (success && overflownRoot.value){
+		overflownRoot.value = false;
+	}
+	if (!subAction){
+		if (!success){
+			layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+		} else {
+			// Possibly clear out excess nodes when a threshold is reached
+			let numNodes = tolMap.value.size;
+			let extraNodes = numNodes - layoutMap.value.size;
+			if (extraNodes > EXCESS_TOLNODE_THRESHOLD.value){
+				for (let n of tolMap.value.keys()){
+					if (!layoutMap.value.has(n)){
+						tolMap.value.delete(n)
+					}
+				}
+				console.log(`Cleaned up tolMap (removed ${numNodes - tolMap.value.size} out of ${numNodes})`);
+			}
+		}
+	}
+	if (!subAction){
+		onActionEnd('collapse');
+	}
+	nextTick(endLoadInd);
+	return success;
+}
+// For expand-to-view and ancestry-bar events
+async function onLeafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+	// Special case for active root
+	if (layoutNode == activeRoot.value){
+		console.log('Ignored expand-to-view on active-root node');
+		return false;
+	}
+	//
+	if (!subAction && !onActionStart('expandToView')){
+		return false;
+	}
+	// Function for expanding tile
+	let doExpansion = async () => {
+		primeLoadInd(PROCESSING_WAIT_MSG);
+		// Hide ancestors
+		LayoutNode.hideUpward(layoutNode, layoutMap.value);
+		activeRoot.value = layoutNode;
+		// Relayout
+		updateAreaDims();
+		overflownRoot.value = false;
+		let lytFnOpts = {
+			allowCollapse: false,
+			chg: {type: 'expand', node: layoutNode, tolMap: tolMap.value} as LayoutTreeChg,
+			layoutMap: layoutMap.value,
+		};
+		let success = tryLayout(activeRoot.value, tileAreaDims.value, lytOpts.value, lytFnOpts);
+		// If expanding active-root with too many children to fit, allow overflow
+		if (!success){
+			success = tryLayout(activeRoot.value, tileAreaDims.value,
+				{...lytOpts.value, layoutType: 'sqr-overflow'}, lytFnOpts);
+			if (success){
+				overflownRoot.value = true;
+			}
+		}
+		//
+		if (!success && !subAction){
+			layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+		}
+		nextTick(endLoadInd);
+		return success;
+	};
+	// Check if data for node-to-expand exists, getting from server if needed
+	let success: boolean;
+	let tolNode = tolMap.value.get(layoutNode.name)!;
+	if (!tolMap.value.has(tolNode.children[0])){
+		let urlParams = new URLSearchParams({type: 'node', name: layoutNode.name, tree: uiOpts.value.tree});
+		let responseObj: {[x: string]: TolNode} = await loadFromServer(urlParams);
+		if (responseObj == null){
+			success = false;
+		} else {
+			Object.getOwnPropertyNames(responseObj).forEach(n => {tolMap.value.set(n, responseObj[n])});
+			success = await doExpansion();
+		}
+	} else {
+		success = await doExpansion();
+	}
+	if (!subAction){
+		onActionEnd('expandToView');
+	}
+	return success;
+}
+async function onNonleafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+	// Special case for active root
+	if (layoutNode == activeRoot.value){
+		console.log('Ignored expand-to-view on active-root node');
+		return false;
+	}
+	//
+	if (!subAction && !onActionStart('expandToView')){
+		return false;
+	}
+	primeLoadInd(PROCESSING_WAIT_MSG);
+	// Hide ancestors
+	LayoutNode.hideUpward(layoutNode, layoutMap.value);
+	activeRoot.value = layoutNode;
+	// Relayout
+	updateAreaDims();
+	let success = relayoutWithCollapse();
+	//
+	if (!subAction){
+		onActionEnd('expandToView');
+	}
+	nextTick(endLoadInd);
+	return success;
+}
+async function onDetachedAncestorClick(layoutNode: LayoutNode, subAction = false, collapse = false): Promise<boolean> {
+	if (!subAction && !onActionStart('unhideAncestor')){
+		return false;
+	}
+	primeLoadInd(PROCESSING_WAIT_MSG);
+	// Unhide ancestors
+	activeRoot.value = layoutNode;
+	overflownRoot.value = false;
+	//
+	let success: boolean;
+	updateAreaDims();
+	if (!collapse){
+		// Relayout, attempting to have the ancestor expanded
+		relayoutWithCollapse(false);
+		if (layoutNode.children.length > 0){
+			success = relayoutWithCollapse(false); // Second pass for regularity
+		} else {
+			success = await onLeafClick(layoutNode, true);
+		}
+	} else {
+		success = await onNonleafClick(layoutNode, true); // For reducing tile-flashing on-screen
+	}
+	LayoutNode.showDownward(layoutNode);
+	//
+	if (!subAction){
+		onActionEnd('unhideAncestor');
+	}
+	nextTick(endLoadInd);
+	return success;
+}
+
+// For tile-info modal/events
+const infoModalNodeName = ref(null as string | null); // Name of node to display info for, or null
+const infoModalData = ref(null as InfoResponse | null);
+async function onInfoClick(nodeName: string){
+	if (!onActionStart('tileInfo')){
+		return;
+	}
+	if (!searchOpen.value){ // Close an active non-search mode
+		resetMode();
+	}
+	// Query server for tol-node info
+	let urlParams = new URLSearchParams({type: 'info', name: nodeName, tree: uiOpts.value.tree});
+	let responseObj: InfoResponse = await loadFromServer(urlParams);
+	if (responseObj != null){
+		// Set fields from response
+		infoModalNodeName.value = nodeName;
+		infoModalData.value = responseObj;
+	}
+}
+function onInfoClose(){
+	infoModalNodeName.value = null;
+	onActionEnd('tileInfo');
+}
+
+// For search modal/events
+const searchOpen = ref(false);
+function onSearchIconClick(){
+	if (!onActionStart('search')){
+		return;
+	}
+	if (!searchOpen.value){
+		resetMode();
+		searchOpen.value = true;
+	}
+}
+function onSearch(name: string){
+	if (modeRunning.value != null){
+		console.log('WARNING: Unexpected search event while search/auto mode is running')
+		return;
+	}
+	searchOpen.value = false;
+	modeRunning.value = 'search';
+	if (tutWelcome.value){ // Don't keep welcome message up during an initial search
+		onActionEnd('search');
+	}
+	expandToNode(name);
+}
+async function expandToNode(name: string){
+	if (modeRunning.value == null){
+		return;
+	}
+	// Check if node is displayed
+	let targetNode = layoutMap.value.get(name);
+	if (targetNode != null && !targetNode.hidden){
+		setLastFocused(targetNode);
+		onSearchClose();
+		return;
+	}
+	// Get nearest in-layout-tree ancestor
+	let ancestorName = name;
+	while (layoutMap.value.get(ancestorName) == null){
+		ancestorName = tolMap.value.get(ancestorName)!.parent!;
+	}
+	let layoutNode = layoutMap.value.get(ancestorName)!;
+	// If hidden, expand self/ancestor in ancestry-bar
+	if (layoutNode.hidden){
+		let nodeInAncestryBar = layoutNode;
+		while (!detachedAncestors.value!.includes(nodeInAncestryBar)){
+			nodeInAncestryBar = nodeInAncestryBar.parent!;
+		}
+		if (!uiOpts.value.searchJumpMode){
+			await onDetachedAncestorClick(nodeInAncestryBar!, true);
+			setTimeout(() => expandToNode(name), uiOpts.value.transitionDuration);
+		} else{
+			await onDetachedAncestorClick(nodeInAncestryBar!, true, true);
+			expandToNode(name);
+		}
+		return;
+	}
+	// Attempt tile-expand
+	if (uiOpts.value.searchJumpMode){
+		// Extend layout tree
+		let tolNode = tolMap.value.get(name)!;
+		let nodesToAdd = [name] as string[];
+		while (tolNode.parent != layoutNode.name){
+			nodesToAdd.push(tolNode.parent!);
+			tolNode = tolMap.value.get(tolNode.parent!)!;
+		}
+		nodesToAdd.reverse();
+		layoutNode.addDescendantChain(nodesToAdd, tolMap.value, layoutMap.value);
+		// Expand-to-view on target-node's parent
+		targetNode = layoutMap.value.get(name);
+		if (targetNode!.parent != activeRoot.value){
+			// Hide ancestors
+			LayoutNode.hideUpward(targetNode!.parent!, layoutMap.value);
+			activeRoot.value = targetNode!.parent!;
+			updateAreaDims();
+			await onNonleafClick(activeRoot.value, true);
+			await onLeafClick(activeRoot.value, true);
+		} else {
+			await onLeafClick(activeRoot.value, true);
+		}
+		setTimeout(() => expandToNode(name), uiOpts.value.transitionDuration);
+		return;
+	}
+	if (overflownRoot.value){
+		await onLeafClickHeld(layoutNode, true);
+		setTimeout(() => expandToNode(name), uiOpts.value.transitionDuration);
+		return;
+	}
+	let success = await onLeafClick(layoutNode, true);
+	if (success){
+		setTimeout(() => expandToNode(name), uiOpts.value.transitionDuration);
+		return;
+	}
+	// Attempt expand-to-view on an ancestor halfway to the active root
+	if (layoutNode == activeRoot.value){
+		console.log('Screen too small to expand active root');
+		onSearchClose();
+		return;
+	}
+	let ancestorChain = [layoutNode];
+	while (layoutNode.parent! != activeRoot.value){
+		layoutNode = layoutNode.parent!;
+		ancestorChain.push(layoutNode);
+	}
+	layoutNode = ancestorChain[Math.floor((ancestorChain.length - 1) / 2)]
+	await onNonleafClickHeld(layoutNode, true);
+	setTimeout(() => expandToNode(name), uiOpts.value.transitionDuration);
+}
+function onSearchClose(){
+	modeRunning.value = null;
+	searchOpen.value = false;
+	onActionEnd('search');
+}
+function onSearchNetWait(){
+	primeLoadInd(SERVER_WAIT_MSG);
+}
+
+// For auto-mode
 type AutoAction = 'move across' | 'move down' | 'move up' | Action;
-// Function used in auto-mode to reduce action cycles
 function getReverseAction(action: AutoAction): AutoAction | null {
 	const reversePairs: AutoAction[][] = [
 		['move down', 'move up'],
@@ -133,1013 +723,410 @@ function getReverseAction(action: AutoAction): AutoAction | null {
 		return null;
 	}
 }
-
-export default defineComponent({
-	data(){
-		// Create initial tree-of-life data
-		let initialTolMap: TolMap = new Map();
-		initialTolMap.set("", new TolNode());
-		let layoutTree = initLayoutTree(initialTolMap, "", 0);
-		layoutTree.hidden = true;
-		// Get/load option values
-		let lytOpts = this.getLytOpts();
-		let uiOpts = this.getUiOpts();
-		//
-		return {
-			// Tree/layout data
-			tolMap: initialTolMap,
-			layoutTree: layoutTree,
-			activeRoot: layoutTree, // Root of the displayed subtree
-			layoutMap: initLayoutMap(layoutTree), // Maps names to LayoutNodes
-			overflownRoot: false, // Set when displaying a root tile with many children, with overflow
-			// For modals
-			infoModalNodeName: null as string | null, // Name of node to display info for, or null
-			infoModalData: null as InfoResponse | null,
-			searchOpen: false,
-			settingsOpen: false,
-			helpOpen: false,
-			loadingMsg: null as null | string, // Message to display in loading-indicator
-			// For search and auto-mode
-			modeRunning: null as null | 'search' | 'autoMode',
-			lastFocused: null as LayoutNode | null, // Used to un-focus 
-			// For auto-mode
-			autoPrevAction: null as AutoAction | null, // Used to help prevent action cycles
-			autoPrevActionFail: false, // Used to avoid re-trying a failed expand/collapse
-			// For tutorial pane
-			tutPaneOpen: !uiOpts.tutorialSkip,
-			tutWelcome: !uiOpts.tutorialSkip,
-			tutTriggerAction: null as Action | null, // Used to advance tutorial upon user-actions
-			tutTriggerFlag: false,
-			actionsDone: new Set() as Set<Action>, // Used to avoid disabling actions the user has already seen
-			// Options
-			lytOpts: lytOpts,
-			uiOpts: uiOpts,
-			// For layout and resize-handling
-			mainAreaDims: [0, 0] as [number, number],
-			tileAreaDims: [0, 0] as [number, number],
-			lastResizeHdlrTime: 0, // Used to throttle resize handling
-			afterResizeHdlr: 0, // Set via setTimeout() to execute after a run of resize events
-			// Other
-			justInitialised: false, // Used to skip transition for the tile initially loaded from server
-			pendingLoadingRevealHdlr: 0, // Used to delay showing the loading-indicator
-			changedSweepToParent: false, // Set during search animation for efficiency
-			excessTolNodeThreshold: 1000, // Threshold where excess tolMap entries get removed
-		};
-	},
-	computed: {
-		wideMainArea(): boolean {
-			return this.mainAreaDims[0] > this.mainAreaDims[1];
-		},
-		// Nodes to show in ancestry-bar (ordered from root downwards)
-		detachedAncestors(): LayoutNode[] | null {
-			if (this.activeRoot == this.layoutTree){
-				return null;
-			}
-			let ancestors = [];
-			let node = this.activeRoot.parent;
-			while (node != null){
-				ancestors.push(node);
-				node = node.parent;
-			}
-			return ancestors.reverse();
-		},
-		// Styles
-		buttonStyles(): Record<string,string> {
-			return {
-				color: this.uiOpts.textColor,
-				backgroundColor: this.uiOpts.altColorDark,
+const autoPrevAction = ref(null as AutoAction | null); // Used to help prevent action cycles
+const autoPrevActionFail = ref(false); // Used to avoid re-trying a failed expand/collapse
+function onAutoIconClick(){
+	if (!onActionStart('autoMode')){
+		return;
+	}
+	resetMode();
+	modeRunning.value = 'autoMode';
+	if (tutWelcome.value){ // Don't keep welcome message up during an initial auto-mode
+		onActionEnd('autoMode');
+	}
+	autoAction();
+}
+async function autoAction(){
+	if (modeRunning.value == null){
+		return;
+	}
+	if (lastFocused.value == null){
+		// Pick random leaf LayoutNode
+		let layoutNode = activeRoot.value;
+		while (layoutNode.children.length > 0){
+			let childWeights = layoutNode.children.map(n => n.tips);
+			let idx = randWeightedChoice(childWeights);
+			layoutNode = layoutNode.children[idx!];
+		}
+		setLastFocused(layoutNode);
+		setTimeout(autoAction, uiOpts.value.autoActionDelay);
+	} else {
+		// Determine available actions
+		let action: AutoAction | null;
+		let actionWeights: {[key: string]: number}; // Maps actions to choice weights
+		let node: LayoutNode = lastFocused.value;
+		if (node.children.length == 0){
+			actionWeights = {'move across': 1, 'move up': 2, 'expand': 3};
+		} else {
+			actionWeights = {
+				'move across': 1, 'move down': 2, 'move up': 1,
+				'collapse': 1, 'expandToView': 1, 'unhideAncestor': 1
 			};
-		},
-		tutPaneContainerStyles(): Record<string,string> {
-			if (this.uiOpts.breakpoint == 'sm'){
-				return {
-					minHeight: (this.tutPaneOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
-					maxHeight: (this.tutPaneOpen ? this.uiOpts.tutPaneSz : 0) + 'px',
-					transitionProperty: 'max-height, min-height',
-					transitionDuration: this.uiOpts.transitionDuration + 'ms',
-					overflow: 'hidden',
-				};
-			} else {
-				return {
-					position: 'absolute',
-					bottom: '0.5cm',
-					right: '0.5cm',
-					visibility: this.tutPaneOpen ? 'visible' : 'hidden',
-					transitionProperty: 'visibility',
-					transitionDuration: this.uiOpts.transitionDuration + 'ms',
-				};
+		}
+		// Zero weights for disallowed actions
+		if (node == activeRoot.value || node.parent!.children.length == 1){
+			actionWeights['move across'] = 0;
+		}
+		if (node == activeRoot.value){
+			actionWeights['move up'] = 0;
+		}
+		if (tolMap.value.get(node.name)!.children.length == 0 || overflownRoot.value){
+			actionWeights['expand'] = 0;
+		}
+		if (!node.children.every(n => n.children.length == 0)){
+			actionWeights['collapse'] = 0; // Only collapse if all children are leaves
+		}
+		if (node.parent != activeRoot.value){
+			actionWeights['expandToView'] = 0; // Only expand-to-view if direct child of activeRoot
+		}
+		if (activeRoot.value.parent == null || node != activeRoot.value){
+			actionWeights['unhideAncestor'] = 0; // Only expand ancestry-bar if able and activeRoot
+		}
+		// Avoid undoing previous action
+		if (autoPrevAction.value != null){
+			let revAction = getReverseAction(autoPrevAction.value);
+			if (revAction != null && revAction in actionWeights){
+				actionWeights[revAction as keyof typeof actionWeights] = 0;
 			}
-		},
-		tutPaneStyles(): Record<string,string>  {
-			if (this.uiOpts.breakpoint == 'sm'){
-				return {
-					height: this.uiOpts.tutPaneSz + 'px',
-				}
-			} else {
-				return {
-					height: this.uiOpts.tutPaneSz + 'px',
-					minWidth: '10cm',
-					maxWidth: '10cm',
-					borderRadius: this.uiOpts.borderRadius + 'px',
-					boxShadow: '0 0 3px black',
-				};
+			if (autoPrevActionFail.value){
+				actionWeights[autoPrevAction.value as keyof typeof actionWeights] = 0;
 			}
-		},
-		ancestryBarContainerStyles(): Record<string,string> {
-			let ancestryBarBreadth = this.detachedAncestors == null ? 0 : this.uiOpts.ancestryBarBreadth;
-			let styles = {
-				minWidth: 'auto',
-				maxWidth: 'none',
-				minHeight: 'auto',
-				maxHeight: 'none',
-				transitionDuration: this.uiOpts.transitionDuration + 'ms',
-				transitionProperty: '',
-				overflow: 'hidden',
-			};
-			if (this.wideMainArea){
-				styles.minWidth = ancestryBarBreadth + 'px';
-				styles.maxWidth = ancestryBarBreadth + 'px';
-				styles.transitionProperty = 'min-width, max-width';
-			} else {
-				styles.minHeight = ancestryBarBreadth + 'px';
-				styles.maxHeight = ancestryBarBreadth + 'px';
-				styles.transitionProperty = 'min-height, max-height';
-			}
-			return styles;
-		},
-	},
-	methods: {
-		// For tile expand/collapse events
-		async onLeafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
-			if (!subAction && !this.onActionStart('expand')){
-				return false;
-			}
-			// Function for expanding tile
-			let doExpansion = async () => {
-				this.primeLoadInd(PROCESSING_WAIT_MSG);
-				let lytFnOpts = {
-					allowCollapse: false,
-					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
-					layoutMap: this.layoutMap
-				};
-				let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, lytFnOpts);
-				// Handle auto-hide
-				if (!success && this.uiOpts.autoHide){
-					while (!success && layoutNode != this.activeRoot){
-						let node = layoutNode;
-						while (node.parent != this.activeRoot){
-							node = node.parent!;
-						}
-						// Hide ancestor
-							// Note: Not using onNonleafClickHeld() here to avoid a relayoutWithCollapse()
-						LayoutNode.hideUpward(node, this.layoutMap);
-						this.activeRoot = node;
-						// Try relayout
-						this.updateAreaDims();
-						success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, lytFnOpts);
-					}
-				}
-				// If expanding active-root with too many children to fit, allow overflow
-				if (!success && layoutNode == this.activeRoot){
-					success = tryLayout(this.activeRoot, this.tileAreaDims,
-						{...this.lytOpts, layoutType: 'sqr-overflow'}, lytFnOpts);
-					if (success){
-						this.overflownRoot = true;
-					}
-				}
-				//
-				if (!subAction && !success){
-					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
-				}
-				this.$nextTick(this.endLoadInd);
-				return success;
-			};
-			//
-			let success: boolean;
-			if (this.overflownRoot){ // If clicking child of overflowing active-root
-				if (!this.uiOpts.autoHide){
-					if (!subAction){
-						layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
-					}
-					success = false;
-				} else {
-					success = await this.onLeafClickHeld(layoutNode);
-				}
-			} else {
-				// Check if data for node-to-expand exists, getting from server if needed
-				let tolNode = this.tolMap.get(layoutNode.name)!;
-				if (!this.tolMap.has(tolNode.children[0])){
-					let urlParams = new URLSearchParams({type: 'node', name: layoutNode.name, tree: this.uiOpts.tree});
-					let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
-					if (responseObj == null){
-						success = false;
-					} else {
-						Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
-						success = await doExpansion();
-					}
-				} else {
-					success = await doExpansion();
-				}
-			}
-			if (!subAction){
-				this.onActionEnd('expand');
-			}
-			return success;
-		},
-		async onNonleafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
-			if (!subAction && !this.onActionStart('collapse')){
-				return false;
-			}
-			// Relayout
-			this.primeLoadInd(PROCESSING_WAIT_MSG);
-			let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, {
-				allowCollapse: false,
-				chg: {type: 'collapse', node: layoutNode, tolMap: this.tolMap},
-				layoutMap: this.layoutMap
-			});
-			// Update overflownRoot if root was collapsed
-			if (success && this.overflownRoot){
-				this.overflownRoot = false;
-			}
-			if (!subAction){
-				if (!success){
-					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
-				} else {
-					// Possibly clear out excess nodes when a threshold is reached
-					let numNodes = this.tolMap.size;
-					let extraNodes = numNodes - this.layoutMap.size;
-					if (extraNodes > this.excessTolNodeThreshold){
-						for (let n of this.tolMap.keys()){
-							if (!this.layoutMap.has(n)){
-								this.tolMap.delete(n)
-							}
-						}
-						console.log(`Cleaned up tolMap (removed ${numNodes - this.tolMap.size} out of ${numNodes})`);
-					}
-				}
-			}
-			if (!subAction){
-				this.onActionEnd('collapse');
-			}
-			this.$nextTick(this.endLoadInd);
-			return success;
-		},
-		// For expand-to-view and ancestry-bar events
-		async onLeafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
-			// Special case for active root
-			if (layoutNode == this.activeRoot){
-				console.log('Ignored expand-to-view on active-root node');
-				return false;
-			}
-			//
-			if (!subAction && !this.onActionStart('expandToView')){
-				return false;
-			}
-			// Function for expanding tile
-			let doExpansion = async () => {
-				this.primeLoadInd(PROCESSING_WAIT_MSG);
-				// Hide ancestors
-				LayoutNode.hideUpward(layoutNode, this.layoutMap);
-				this.activeRoot = layoutNode;
-				// Relayout
-				this.updateAreaDims();
-				this.overflownRoot = false;
-				let lytFnOpts = {
-					allowCollapse: false,
-					chg: {type: 'expand', node: layoutNode, tolMap: this.tolMap} as LayoutTreeChg,
-					layoutMap: this.layoutMap
-				};
-				let success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts, lytFnOpts);
-				// If expanding active-root with too many children to fit, allow overflow
-				if (!success){
-					success = tryLayout(this.activeRoot, this.tileAreaDims,
-						{...this.lytOpts, layoutType: 'sqr-overflow'}, lytFnOpts);
-					if (success){
-						this.overflownRoot = true;
-					}
-				}
-				//
-				if (!success && !subAction){
-					layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
-				}
-				this.$nextTick(this.endLoadInd);
-				return success;
-			};
-			// Check if data for node-to-expand exists, getting from server if needed
-			let success: boolean;
-			let tolNode = this.tolMap.get(layoutNode.name)!;
-			if (!this.tolMap.has(tolNode.children[0])){
-				let urlParams = new URLSearchParams({type: 'node', name: layoutNode.name, tree: this.uiOpts.tree});
-				let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
-				if (responseObj == null){
-					success = false;
-				} else {
-					Object.getOwnPropertyNames(responseObj).forEach(n => {this.tolMap.set(n, responseObj[n])});
-					success = await doExpansion();
-				}
-			} else {
-				success = await doExpansion();
-			}
-			if (!subAction){
-				this.onActionEnd('expandToView');
-			}
-			return success;
-		},
-		async onNonleafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
-			// Special case for active root
-			if (layoutNode == this.activeRoot){
-				console.log('Ignored expand-to-view on active-root node');
-				return false;
-			}
-			//
-			if (!subAction && !this.onActionStart('expandToView')){
-				return false;
-			}
-			this.primeLoadInd(PROCESSING_WAIT_MSG);
-			// Hide ancestors
-			LayoutNode.hideUpward(layoutNode, this.layoutMap);
-			this.activeRoot = layoutNode;
-			// Relayout
-			this.updateAreaDims();
-			let success = this.relayoutWithCollapse();
-			//
-			if (!subAction){
-				this.onActionEnd('expandToView');
-			}
-			this.$nextTick(this.endLoadInd);
-			return success;
-		},
-		async onDetachedAncestorClick(layoutNode: LayoutNode, subAction = false, collapse = false): Promise<boolean> {
-			if (!subAction && !this.onActionStart('unhideAncestor')){
-				return false;
-			}
-			this.primeLoadInd(PROCESSING_WAIT_MSG);
-			// Unhide ancestors
-			this.activeRoot = layoutNode;
-			this.overflownRoot = false;
-			//
-			let success: boolean;
-			this.updateAreaDims();
-			if (!collapse){
-				// Relayout, attempting to have the ancestor expanded
-				this.relayoutWithCollapse(false);
-				if (layoutNode.children.length > 0){
-					success = this.relayoutWithCollapse(false); // Second pass for regularity
-				} else {
-					success = await this.onLeafClick(layoutNode, true);
-				}
-			} else {
-				success = await this.onNonleafClick(layoutNode, true); // For reducing tile-flashing on-screen
-			}
-			LayoutNode.showDownward(layoutNode);
-			//
-			if (!subAction){
-				this.onActionEnd('unhideAncestor');
-			}
-			this.$nextTick(this.endLoadInd);
-			return success;
-		},
-		// For tile-info events
-		async onInfoClick(nodeName: string){
-			if (!this.onActionStart('tileInfo')){
-				return;
-			}
-			if (!this.searchOpen){ // Close an active non-search mode
-				this.resetMode();
-			}
-			// Query server for tol-node info
-			let urlParams = new URLSearchParams({type: 'info', name: nodeName, tree: this.uiOpts.tree});
-			let responseObj: InfoResponse = await this.loadFromServer(urlParams);
-			if (responseObj != null){
-				// Set fields from response
-				this.infoModalNodeName = nodeName;
-				this.infoModalData = responseObj;
-			}
-		},
-		onInfoClose(){
-			this.infoModalNodeName = null;
-			this.onActionEnd('tileInfo');
-		},
-		// For search events
-		onSearchIconClick(){
-			if (!this.onActionStart('search')){
-				return;
-			}
-			if (!this.searchOpen){
-				this.resetMode();
-				this.searchOpen = true;
-			}
-		},
-		onSearch(name: string){
-			if (this.modeRunning != null){
-				console.log('WARNING: Unexpected search event while search/auto mode is running')
-				return;
-			}
-			this.searchOpen = false;
-			this.modeRunning = 'search';
-			if (this.tutWelcome){ // Don't keep welcome message up during an initial search
-				this.onActionEnd('search');
-			}
-			this.expandToNode(name);
-		},
-		async expandToNode(name: string){
-			if (this.modeRunning == null){
-				return;
-			}
-			// Check if node is displayed
-			let targetNode = this.layoutMap.get(name);
-			if (targetNode != null && !targetNode.hidden){
-				this.setLastFocused(targetNode);
-				this.onSearchClose();
-				return;
-			}
-			// Get nearest in-layout-tree ancestor
-			let ancestorName = name;
-			while (this.layoutMap.get(ancestorName) == null){
-				ancestorName = this.tolMap.get(ancestorName)!.parent!;
-			}
-			let layoutNode = this.layoutMap.get(ancestorName)!;
-			// If hidden, expand self/ancestor in ancestry-bar
-			if (layoutNode.hidden){
-				let nodeInAncestryBar = layoutNode;
-				while (!this.detachedAncestors!.includes(nodeInAncestryBar)){
-					nodeInAncestryBar = nodeInAncestryBar.parent!;
-				}
-				if (!this.uiOpts.searchJumpMode){
-					await this.onDetachedAncestorClick(nodeInAncestryBar!, true);
-					setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
-				} else{
-					await this.onDetachedAncestorClick(nodeInAncestryBar!, true, true);
-					this.expandToNode(name);
-				}
-				return;
-			}
-			// Attempt tile-expand
-			if (this.uiOpts.searchJumpMode){
-				// Extend layout tree
-				let tolNode = this.tolMap.get(name)!;
-				let nodesToAdd = [name] as string[];
-				while (tolNode.parent != layoutNode.name){
-					nodesToAdd.push(tolNode.parent!);
-					tolNode = this.tolMap.get(tolNode.parent!)!;
-				}
-				nodesToAdd.reverse();
-				layoutNode.addDescendantChain(nodesToAdd, this.tolMap, this.layoutMap);
-				// Expand-to-view on target-node's parent
-				targetNode = this.layoutMap.get(name);
-				if (targetNode!.parent != this.activeRoot){
-					// Hide ancestors
-					LayoutNode.hideUpward(targetNode!.parent!, this.layoutMap);
-					this.activeRoot = targetNode!.parent!;
-					this.updateAreaDims();
-					await this.onNonleafClick(this.activeRoot, true);
-					await this.onLeafClick(this.activeRoot, true);
-				} else {
-					await this.onLeafClick(this.activeRoot, true);
-				}
-				setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
-				return;
-			}
-			if (this.overflownRoot){
-				await this.onLeafClickHeld(layoutNode, true);
-				setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
-				return;
-			}
-			let success = await this.onLeafClick(layoutNode, true);
-			if (success){
-				setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
-				return;
-			}
-			// Attempt expand-to-view on an ancestor halfway to the active root
-			if (layoutNode == this.activeRoot){
-				console.log('Screen too small to expand active root');
-				this.onSearchClose();
-				return;
-			}
-			let ancestorChain = [layoutNode];
-			while (layoutNode.parent! != this.activeRoot){
-				layoutNode = layoutNode.parent!;
-				ancestorChain.push(layoutNode);
-			}
-			layoutNode = ancestorChain[Math.floor((ancestorChain.length - 1) / 2)]
-			await this.onNonleafClickHeld(layoutNode, true);
-			setTimeout(() => this.expandToNode(name), this.uiOpts.transitionDuration);
-		},
-		onSearchClose(){
-			this.modeRunning = null;
-			this.searchOpen = false;
-			this.onActionEnd('search');
-		},
-		onSearchNetWait(){
-			this.primeLoadInd(SERVER_WAIT_MSG);
-		},
-		// For auto-mode events
-		onAutoIconClick(){
-			if (!this.onActionStart('autoMode')){
-				return;
-			}
-			this.resetMode();
-			this.modeRunning = 'autoMode';
-			if (this.tutWelcome){ // Don't keep welcome message up during an initial auto-mode
-				this.onActionEnd('autoMode');
-			}
-			this.autoAction();
-		},
-		async autoAction(){
-			if (this.modeRunning == null){
-				return;
-			}
-			if (this.lastFocused == null){
-				// Pick random leaf LayoutNode
-				let layoutNode = this.activeRoot;
-				while (layoutNode.children.length > 0){
-					let childWeights = layoutNode.children.map(n => n.tips);
-					let idx = randWeightedChoice(childWeights);
-					layoutNode = layoutNode.children[idx!];
-				}
-				this.setLastFocused(layoutNode);
-				setTimeout(this.autoAction, this.uiOpts.autoActionDelay);
-			} else {
-				// Determine available actions
-				let action: AutoAction | null;
-				let actionWeights: {[key: string]: number}; // Maps actions to choice weights
-				let node: LayoutNode = this.lastFocused;
-				if (node.children.length == 0){
-					actionWeights = {'move across': 1, 'move up': 2, 'expand': 3};
-				} else {
-					actionWeights = {
-						'move across': 1, 'move down': 2, 'move up': 1,
-						'collapse': 1, 'expandToView': 1, 'unhideAncestor': 1
-					};
-				}
-				// Zero weights for disallowed actions
-				if (node == this.activeRoot || node.parent!.children.length == 1){
-					actionWeights['move across'] = 0;
-				}
-				if (node == this.activeRoot){
-					actionWeights['move up'] = 0;
-				}
-				if (this.tolMap.get(node.name)!.children.length == 0 || this.overflownRoot){
-					actionWeights['expand'] = 0;
-				}
-				if (!node.children.every(n => n.children.length == 0)){
-					actionWeights['collapse'] = 0; // Only collapse if all children are leaves
-				}
-				if (node.parent != this.activeRoot){
-					actionWeights['expandToView'] = 0; // Only expand-to-view if direct child of activeRoot
-				}
-				if (this.activeRoot.parent == null || node != this.activeRoot){
-					actionWeights['unhideAncestor'] = 0; // Only expand ancestry-bar if able and activeRoot
-				}
-				// Avoid undoing previous action
-				if (this.autoPrevAction != null){
-					let revAction = getReverseAction(this.autoPrevAction);
-					if (revAction != null && revAction in actionWeights){
-						actionWeights[revAction as keyof typeof actionWeights] = 0;
-					}
-					if (this.autoPrevActionFail){
-						actionWeights[this.autoPrevAction as keyof typeof actionWeights] = 0;
-					}
-				}
-				// Choose action
-				let actionList = Object.getOwnPropertyNames(actionWeights);
-				let weightList = actionList.map(action => actionWeights[action]);
-				if (arraySum(weightList) == 0){
-					action = null;
-				} else {
-					action = actionList[randWeightedChoice(weightList)!] as AutoAction;
-				}
-				// Perform action
-				this.autoPrevAction = action;
-				let success = true;
-				try {
-					switch (action){
-						case 'move across': // Bias towards siblings with higher tips
-							let siblings = node.parent!.children.filter(n => n != node);
-							let siblingWeights = siblings.map(n => n.tips + 1);
-							this.setLastFocused(siblings[randWeightedChoice(siblingWeights)!]);
-							break;
-						case 'move down': // Bias towards children with higher tips
-							let childWeights = node.children.map(n => n.tips + 1);
-							this.setLastFocused(node.children[randWeightedChoice(childWeights)!]);
-							break;
-						case 'move up':
-							this.setLastFocused(node.parent!);
-							break;
-						case 'expand':
-							success = await this.onLeafClick(node, true);
-							break;
-						case 'collapse':
-							success = await this.onNonleafClick(node, true);
-							break;
-						case 'expandToView':
-							success = await this.onNonleafClickHeld(node, true);
-							break;
-						case 'unhideAncestor':
-							success = await this.onDetachedAncestorClick(node.parent!, true);
-							break;
-					}
-				} catch (error) {
-					this.autoPrevActionFail = true;
-					this.onAutoClose();
-					return;
-				}
-				this.autoPrevActionFail = !success;
-				setTimeout(this.autoAction, this.uiOpts.transitionDuration + this.uiOpts.autoActionDelay);
-			}
-		},
-		onAutoClose(){
-			this.modeRunning = null;
-			this.onActionEnd('autoMode');
-		},
-		// For settings events
-		onSettingsIconClick(){
-			if (!this.onActionStart('settings')){
-				return;
-			}
-			this.resetMode();
-			this.settingsOpen = true;
-		},
-		async onSettingChg(optionType: OptionType, option: string,
-			{relayout = false, reinit = false} = {}){
-			// Save setting
-			if (optionType == 'LYT'){
-				localStorage.setItem(`${optionType} ${option}`,
-					String(this.lytOpts[option as keyof LayoutOptions]));
-			} else if (optionType == 'UI') {
-				localStorage.setItem(`${optionType} ${option}`,
-					String(this.uiOpts[option as keyof UiOptions]));
-			}
-			// Possibly relayout/reinitialise
-			if (reinit){
-				this.reInit();
-			} else if (relayout){
-				this.relayoutWithCollapse();
-			}
-		},
-		onResetSettings(reinit: boolean){
-			localStorage.clear();
-			if (reinit){
-				this.reInit();
-			} else {
-				this.relayoutWithCollapse();
-			}
-		},
-		onSettingsClose(){
-			this.settingsOpen = false;
-			this.onActionEnd('settings');
-		},
-		// For help events
-		onHelpIconClick(){
-			if (!this.onActionStart('help')){
-				return;
-			}
-			this.resetMode();
-			this.helpOpen = true;
-		},
-		onHelpClose(){
-			this.helpOpen = false;
-			this.onActionEnd('help');
-		},
-		// For tutorial-pane events
-		onStartTutorial(){
-			if (!this.tutPaneOpen){
-				this.tutPaneOpen = true;
-				this.updateAreaDims();
-				this.relayoutWithCollapse();
-			}
-		},
-		onTutorialSkip(){
-			this.uiOpts.tutorialSkip = true;
-			this.onSettingChg('UI', 'tutorialSkip');
-		},
-		onTutStageChg(triggerAction: Action | null){
-			this.tutWelcome = false;
-			this.tutTriggerAction = triggerAction;
-		},
-		onTutPaneClose(){
-			this.tutPaneOpen = false;
-			if (this.tutWelcome){
-				this.tutWelcome = false;
-			} else if (this.uiOpts.tutorialSkip == false){
-				this.uiOpts.tutorialSkip = true;
-				this.onSettingChg('UI', 'tutorialSkip');
-			}
-			this.uiOpts.disabledActions.clear();
-			this.updateAreaDims();
-			this.relayoutWithCollapse(true, true);
-		},
-		// For general action handling
-		onActionStart(action: Action): boolean {
-			if (this.isDisabled(action)){
-				return false;
-			}
-			this.setLastFocused(null);
-			return true;
-		},
-		onActionEnd(action: Action){
-			// Update info used by tutorial pane
-			this.actionsDone.add(action);
-			if (this.tutPaneOpen){
-				// Close welcome message on first action
-				if (this.tutWelcome){
-					this.onTutPaneClose();
-				}
-				// Tell TutorialPane if trigger-action was done
-				if (this.tutTriggerAction == action){
-					this.tutTriggerFlag = !this.tutTriggerFlag;
-				}
-			}
-		},
-		isDisabled(...actions: Action[]): boolean {
-			let disabledActions = this.uiOpts.disabledActions;
-			return actions.some(a => disabledActions.has(a));
-		},
-		resetMode(){
-			if (this.infoModalNodeName != null){
-				this.onInfoClose();
-			}
-			if (this.searchOpen || this.modeRunning == 'search'){
-				this.onSearchClose();
-			}
-			if (this.modeRunning == 'autoMode'){
-				this.onAutoClose();
-			}
-			if (this.settingsOpen){
-				this.onSettingsClose();
-			}
-			if (this.helpOpen){
-				this.onHelpClose();
-			}
-		},
-		// For other events
-		async onResize(){
-			// Handle event if not recently done
-			let handleResize = async () => {
-				// Update layout/ui options with defaults, excluding user-modified ones
-				let lytOpts = getDefaultLytOpts();
-				let uiOpts = getDefaultUiOpts(lytOpts);
-				let changedTree = false;
-				for (let prop of Object.getOwnPropertyNames(lytOpts) as (keyof LayoutOptions)[]){
-					let item = localStorage.getItem('LYT ' + prop);
-					if (item == null && this.lytOpts[prop] != lytOpts[prop]){
-						this.lytOpts[prop] = lytOpts[prop];
-					}
-				}
-				for (let prop of Object.getOwnPropertyNames(uiOpts) as (keyof UiOptions)[]){
-					let item = localStorage.getItem('UI ' + prop);
-					//Note: Using JSON.stringify here to roughly deep-compare values
-					if (item == null && JSON.stringify(this.uiOpts[prop]) != JSON.stringify(uiOpts[prop])){
-						this.uiOpts[prop] = uiOpts[prop];
-						if (prop == 'tree'){
-							changedTree = true;
-						}
-					}
-				}
-				// Relayout
-				if (!changedTree){
-					this.updateAreaDims();
-					this.relayoutWithCollapse();
-				} else {
-					this.reInit();
-				}
-			};
-			let currentTime = new Date().getTime();
-			if (currentTime - this.lastResizeHdlrTime > this.uiOpts.transitionDuration){
-				this.lastResizeHdlrTime = currentTime;
-				await handleResize();
-				this.lastResizeHdlrTime = new Date().getTime();
-			}
-			// Also setup a handler to execute after a run of resize events
-			clearTimeout(this.afterResizeHdlr);
-			this.afterResizeHdlr = setTimeout(async () => {
-				this.afterResizeHdlr = 0;
-				await handleResize();
-				this.lastResizeHdlrTime = new Date().getTime();
-			}, 200); // If too small, touch-device detection when swapping to/from mobile-mode gets unreliable
-		},
-		onKeyUp(evt: KeyboardEvent){
-			if (this.uiOpts.disableShortcuts){
-				return;
-			}
-			if (evt.key == 'Escape'){
-				this.resetMode();
-			} else if (evt.key == 'f' && evt.ctrlKey){
-				evt.preventDefault();
-				// Open/focus search bar
-				if (!this.searchOpen){
-					this.onSearchIconClick();
-				} else {
-					(this.$refs.searchModal as InstanceType<typeof SearchModal>).focusInput();
-				}
-			} else if (evt.key == 'F' && evt.ctrlKey){
-				// If search bar is open, switch search mode
-				if (this.searchOpen){
-					this.uiOpts.searchJumpMode = !this.uiOpts.searchJumpMode;
-					this.onSettingChg('UI', 'searchJumpMode');
-				}
-			}
-		},
-		// For the loading-indicator
-		primeLoadInd(msg: string){ // Sets up a loading message to display after a timeout
-			clearTimeout(this.pendingLoadingRevealHdlr);
-			this.pendingLoadingRevealHdlr = setTimeout(() => {
-				this.loadingMsg = msg;
-			}, 500);
-		},
-		endLoadInd(){ // Cancels or closes a loading message
-			clearTimeout(this.pendingLoadingRevealHdlr);
-			this.pendingLoadingRevealHdlr = 0;
-			if (this.loadingMsg != null){
-				this.loadingMsg = null;
-			}
-		},
-		async loadFromServer(urlParams: URLSearchParams){ // Like queryServer(), but enables the loading indicator
-			this.primeLoadInd(SERVER_WAIT_MSG);
-			let responseObj = await queryServer(urlParams);
-			this.endLoadInd();
-			return responseObj;
-		},
-		// For initialisation
-		async initTreeFromServer(firstInit = true){
-			// Get possible target node from URL
-			let nodeName = (new URL(window.location.href)).searchParams.get('node');
-			// Query server
-			let urlParams = new URLSearchParams({type: 'node', tree: this.uiOpts.tree});
-			if (nodeName != null && firstInit){
-				urlParams.append('name', nodeName);
-				urlParams.append('toroot', '1');
-			}
-			let responseObj: {[x: string]: TolNode} = await this.loadFromServer(urlParams);
-			if (responseObj == null){
-				return;
-			}
-			// Get root node name
-			let rootName = null;
-			let nodeNames = Object.getOwnPropertyNames(responseObj);
-			for (let n of nodeNames){
-				if (responseObj[n].parent == null){
-					rootName = n;
+		}
+		// Choose action
+		let actionList = Object.getOwnPropertyNames(actionWeights);
+		let weightList = actionList.map(action => actionWeights[action]);
+		if (arraySum(weightList) == 0){
+			action = null;
+		} else {
+			action = actionList[randWeightedChoice(weightList)!] as AutoAction;
+		}
+		// Perform action
+		autoPrevAction.value = action;
+		let success = true;
+		try {
+			switch (action){
+				case 'move across': { // Bias towards siblings with higher tips
+					let siblings = node.parent!.children.filter(n => n != node);
+					let siblingWeights = siblings.map(n => n.tips + 1);
+					setLastFocused(siblings[randWeightedChoice(siblingWeights)!]);
 					break;
 				}
-			}
-			if (rootName == null){
-				console.log('ERROR: Server response has no root node');
-				return;
-			}
-			// Initialise tree
-			this.tolMap.clear();
-			nodeNames.forEach(n => {this.tolMap.set(n, responseObj[n])});
-			if (nodeName == null){
-				this.layoutTree = initLayoutTree(this.tolMap, rootName, 0);
-				this.layoutMap = initLayoutMap(this.layoutTree);
-				this.activeRoot = this.layoutTree;
-			} else {
-				this.layoutTree = initLayoutTree(this.tolMap, rootName, -1);
-				this.layoutMap = initLayoutMap(this.layoutTree);
-				// Set active root
-				let targetNode = this.layoutMap.get(nodeName)!;
-				let newRoot = targetNode.parent == null ? targetNode : targetNode.parent;
-				LayoutNode.hideUpward(newRoot, this.layoutMap);
-				this.activeRoot = newRoot;
-				setTimeout(() => this.setLastFocused(targetNode!), this.uiOpts.transitionDuration);
-			}
-			// Skip initial transition
-			if (firstInit){
-				this.justInitialised = true;
-				setTimeout(() => {this.justInitialised = false}, this.uiOpts.transitionDuration);
-			}
-			// Relayout
-			this.updateAreaDims();
-			this.relayoutWithCollapse(false);
-		},
-		async reInit(){
-			if (this.activeRoot != this.layoutTree){
-				// Collapse tree to root
-				await this.onDetachedAncestorClick(this.layoutTree, true);
-			}
-			await this.onNonleafClick(this.layoutTree, true);
-			await this.initTreeFromServer(false);
-		},
-		getLytOpts(): LayoutOptions {
-			let opts = getDefaultLytOpts();
-			for (let prop of Object.getOwnPropertyNames(opts) as (keyof LayoutOptions)[]){
-				let item = localStorage.getItem('LYT ' + prop);
-				if (item != null){
-					switch (typeof(opts[prop])){
-						case 'boolean': (opts[prop] as unknown as boolean) = Boolean(item); break;
-						case 'number': (opts[prop] as unknown as number) = Number(item); break;
-						case 'string': (opts[prop] as unknown as string) = item; break;
-						default: console.log(`WARNING: Found saved layout setting "${prop}" with unexpected type`);
-					}
+				case 'move down': { // Bias towards children with higher tips
+					let childWeights = node.children.map(n => n.tips + 1);
+					setLastFocused(node.children[randWeightedChoice(childWeights)!]);
+					break;
 				}
+				case 'move up':
+					setLastFocused(node.parent!);
+					break;
+				case 'expand':
+					success = await onLeafClick(node, true);
+					break;
+				case 'collapse':
+					success = await onNonleafClick(node, true);
+					break;
+				case 'expandToView':
+					success = await onNonleafClickHeld(node, true);
+					break;
+				case 'unhideAncestor':
+					success = await onDetachedAncestorClick(node.parent!, true);
+					break;
 			}
-			return opts;
-		},
-		getUiOpts(): UiOptions {
-			let opts = getDefaultUiOpts(getDefaultLytOpts());
-			for (let prop of Object.getOwnPropertyNames(opts) as (keyof UiOptions)[]){
-				let item = localStorage.getItem('UI ' + prop);
-				if (item != null){
-					switch (typeof(opts[prop])){
-						case 'boolean': (opts[prop] as unknown as boolean) = (item == 'true'); break;
-						case 'number': (opts[prop] as unknown as number) = Number(item); break;
-						case 'string': (opts[prop] as unknown as string) = item; break;
-						default: console.log(`WARNING: Found saved UI setting "${prop}" with unexpected type`);
-					}
-				}
-			}
-			return opts;
-		},
-		// For relayout
-		relayoutWithCollapse(secondPass = true, keepOverflow = false): boolean {
-			let success: boolean;
-			if (this.overflownRoot){
-				if (keepOverflow){
-					success = tryLayout(this.activeRoot, this.tileAreaDims,
-						{...this.lytOpts, layoutType: 'sqr-overflow'}, {layoutMap: this.layoutMap});
-					return success;
-				}
-				this.overflownRoot = false;
-			}
-			success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
-				{allowCollapse: true, layoutMap: this.layoutMap});
-			if (secondPass){
-				// Relayout again, which can help allocate remaining tiles 'evenly'
-				success = tryLayout(this.activeRoot, this.tileAreaDims, this.lytOpts,
-					{allowCollapse: false, layoutMap: this.layoutMap});
-			}
-			return success;
-		},
-		updateAreaDims(){
-			// Set mainAreaDims and tileAreaDims
-				// Note: Tried setting these by querying tut_pane+ancestry_bar dimensions repeatedly,
-				// throughout their transitions, relayouting each time, but this makes the tile movements jerky
-			let contentAreaEl = this.$refs.contentArea as HTMLElement;
-			let w = contentAreaEl.offsetWidth, h = contentAreaEl.offsetHeight;
-			if (this.tutPaneOpen && this.uiOpts.breakpoint == 'sm'){
-				h -= this.uiOpts.tutPaneSz;
-			}
-			this.mainAreaDims = [w, h];
-			if (this.detachedAncestors != null){
-				if (w > h){
-					w -= this.uiOpts.ancestryBarBreadth;
-				} else {
-					h -= this.uiOpts.ancestryBarBreadth;
-				}
-			}
-			w -= this.lytOpts.tileSpacing * 2;
-			h -= this.lytOpts.tileSpacing * 2;
-			this.tileAreaDims = [w, h];
-		},
-		// Other
-		setLastFocused(node: LayoutNode | null){
-			if (this.lastFocused != null){
-				this.lastFocused.hasFocus = false;
-			}
-			this.lastFocused = node;
-			if (node != null){
-				node.hasFocus = true;
-			}
-		},
-		async collapseTree(){
-			if (this.activeRoot != this.layoutTree){
-				await this.onDetachedAncestorClick(this.layoutTree, true);
-			}
-			if (this.layoutTree.children.length > 0){
-				await this.onNonleafClick(this.layoutTree);
-			}
-		},
-	},
-	watch: {
-		modeRunning(newVal, oldVal){
-			// For sweepToParent setting 'fallback', temporarily change to 'prefer' for efficiency
-			if (newVal != null){
-				if (this.lytOpts.sweepToParent == 'fallback'){
-					this.lytOpts.sweepToParent = 'prefer';
-					this.changedSweepToParent = true;
-				}
-			} else {
-				if (this.changedSweepToParent){
-					this.lytOpts.sweepToParent = 'fallback';
-					this.changedSweepToParent = false;
-				}
-			}
-		},
-	},
-	mounted(){
-		window.addEventListener('resize', this.onResize);
-		window.addEventListener('keydown', this.onKeyUp);
-		this.initTreeFromServer();
-	},
-	unmounted(){
-		window.removeEventListener('resize', this.onResize);
-		window.removeEventListener('keydown', this.onKeyUp);
-	},
-	components: {
-		TolTile, TutorialPane, AncestryBar,
-		IconButton, SearchIcon, PlayIcon, PauseIcon, SettingsIcon, HelpIcon, EduIcon,
-		TileInfoModal, SearchModal, SettingsModal, HelpModal, LoadingModal,
-	},
+		} catch (error) {
+			autoPrevActionFail.value = true;
+			onAutoClose();
+			return;
+		}
+		autoPrevActionFail.value = !success;
+		setTimeout(autoAction, uiOpts.value.transitionDuration + uiOpts.value.autoActionDelay);
+	}
+}
+function onAutoClose(){
+	modeRunning.value = null;
+	onActionEnd('autoMode');
+}
+
+// For settings modal/events
+const settingsOpen = ref(false);
+function onSettingsIconClick(){
+	if (!onActionStart('settings')){
+		return;
+	}
+	resetMode();
+	settingsOpen.value = true;
+}
+function onSettingsClose(){
+	settingsOpen.value = false;
+	onActionEnd('settings');
+}
+async function onSettingChg(optionType: OptionType, option: string, {relayout = false, reinit = false} = {}){
+	// Save setting
+	if (optionType == 'LYT'){
+		localStorage.setItem(`${optionType} ${option}`,
+			String(lytOpts.value[option as keyof LayoutOptions]));
+	} else if (optionType == 'UI') {
+		localStorage.setItem(`${optionType} ${option}`,
+			String(uiOpts.value[option as keyof UiOptions]));
+	}
+	// Possibly relayout/reinitialise
+	if (reinit){
+		reInit();
+	} else if (relayout){
+		relayoutWithCollapse();
+	}
+}
+function onResetSettings(reinit: boolean){
+	localStorage.clear();
+	if (reinit){
+		reInit();
+	} else {
+		relayoutWithCollapse();
+	}
+}
+
+// For help modal/events
+const helpOpen = ref(false);
+function onHelpIconClick(){
+	if (!onActionStart('help')){
+		return;
+	}
+	resetMode();
+	helpOpen.value = true;
+}
+function onHelpClose(){
+	helpOpen.value = false;
+	onActionEnd('help');
+}
+
+// For tutorial pane/events
+const tutPaneOpen = ref(!uiOpts.value.tutorialSkip);
+const tutWelcome = ref(!uiOpts.value.tutorialSkip);
+const tutTriggerAction = ref(null as Action | null); // Used to advance tutorial upon user-actions
+const tutTriggerFlag = ref(false);
+const actionsDone = ref(new Set() as Set<Action>); // Used to avoid disabling actions the user has already seen
+// For tutorial-pane events
+function onStartTutorial(){
+	if (!tutPaneOpen.value){
+		tutPaneOpen.value = true;
+		updateAreaDims();
+		relayoutWithCollapse();
+	}
+}
+function onTutorialSkip(){
+	uiOpts.value.tutorialSkip = true;
+	onSettingChg('UI', 'tutorialSkip');
+}
+function onTutStageChg(triggerAction: Action | null){
+	tutWelcome.value = false;
+	tutTriggerAction.value = triggerAction;
+}
+function onTutPaneClose(){
+	tutPaneOpen.value = false;
+	if (tutWelcome.value){
+		tutWelcome.value = false;
+	} else if (uiOpts.value.tutorialSkip == false){
+		uiOpts.value.tutorialSkip = true;
+		onSettingChg('UI', 'tutorialSkip');
+	}
+	uiOpts.value.disabledActions.clear();
+	updateAreaDims();
+	relayoutWithCollapse(true, true);
+}
+
+// For highlighting a node (after search, auto-mode, or startup)
+const lastFocused = ref(null as LayoutNode | null); // Used to un-focus 
+function setLastFocused(node: LayoutNode | null){
+	if (lastFocused.value != null){
+		lastFocused.value.hasFocus = false;
+	}
+	lastFocused.value = node;
+	if (node != null){
+		node.hasFocus = true;
+	}
+}
+
+// For general action handling
+const modeRunning = ref(null as null | 'search' | 'autoMode');
+function resetMode(){
+	if (infoModalNodeName.value != null){
+		onInfoClose();
+	}
+	if (searchOpen.value || modeRunning.value == 'search'){
+		onSearchClose();
+	}
+	if (modeRunning.value == 'autoMode'){
+		onAutoClose();
+	}
+	if (settingsOpen.value){
+		onSettingsClose();
+	}
+	if (helpOpen.value){
+		onHelpClose();
+	}
+}
+function onActionStart(action: Action): boolean {
+	if (isDisabled(action)){
+		return false;
+	}
+	setLastFocused(null);
+	return true;
+}
+function onActionEnd(action: Action){
+	// Update info used by tutorial pane
+	actionsDone.value.add(action);
+	if (tutPaneOpen.value){
+		// Close welcome message on first action
+		if (tutWelcome.value){
+			onTutPaneClose();
+		}
+		// Tell TutorialPane if trigger-action was done
+		if (tutTriggerAction.value == action){
+			tutTriggerFlag.value = !tutTriggerFlag.value;
+		}
+	}
+}
+function isDisabled(...actions: Action[]): boolean {
+	let disabledActions = uiOpts.value.disabledActions;
+	return actions.some(a => disabledActions.has(a));
+}
+
+// For the loading-indicator
+const loadingMsg = ref(null as null | string); // Message to display in loading-indicator
+const pendingLoadingRevealHdlr = ref(0); // Used to delay showing the loading-indicator
+function primeLoadInd(msg: string){ // Sets up a loading message to display after a timeout
+	clearTimeout(pendingLoadingRevealHdlr.value);
+	pendingLoadingRevealHdlr.value = setTimeout(() => {
+		loadingMsg.value = msg;
+	}, 500);
+}
+function endLoadInd(){ // Cancels or closes a loading message
+	clearTimeout(pendingLoadingRevealHdlr.value);
+	pendingLoadingRevealHdlr.value = 0;
+	if (loadingMsg.value != null){
+		loadingMsg.value = null;
+	}
+}
+async function loadFromServer(urlParams: URLSearchParams){ // Like queryServer(), but enables the loading indicator
+	primeLoadInd(SERVER_WAIT_MSG);
+	let responseObj = await queryServer(urlParams);
+	endLoadInd();
+	return responseObj;
+}
+
+// For collapsing tree upon clicking 'Tilo'
+async function collapseTree(){
+	if (activeRoot.value != layoutTree.value){
+		await onDetachedAncestorClick(layoutTree.value, true);
+	}
+	if (layoutTree.value.children.length > 0){
+		await onNonleafClick(layoutTree.value);
+	}
+}
+
+// For temporarily changing a sweepToParent setting of 'fallback' to 'prefer',  for efficiency
+const changedSweepToParent = ref(false);
+watch(modeRunning, (newVal) => {
+	if (newVal != null){
+		if (lytOpts.value.sweepToParent == 'fallback'){
+			lytOpts.value.sweepToParent = 'prefer';
+			changedSweepToParent.value = true;
+		}
+	} else {
+		if (changedSweepToParent.value){
+			lytOpts.value.sweepToParent = 'fallback';
+			changedSweepToParent.value = false;
+		}
+	}
+});
+
+// For keyboard shortcuts
+function onKeyDown(evt: KeyboardEvent){
+	if (uiOpts.value.disableShortcuts){
+		return;
+	}
+	if (evt.key == 'Escape'){
+		resetMode();
+	} else if (evt.key == 'f' && evt.ctrlKey){
+		evt.preventDefault();
+		// Open/focus search bar
+		if (!searchOpen.value){
+			onSearchIconClick();
+		}
+	} else if (evt.key == 'F' && evt.ctrlKey){
+		// If search bar is open, switch search mode
+		if (searchOpen.value){
+			uiOpts.value.searchJumpMode = !uiOpts.value.searchJumpMode;
+			onSettingChg('UI', 'searchJumpMode');
+		}
+	}
+}
+onMounted(() => {
+	window.addEventListener('keydown', onKeyDown); // 'keydown' needed to override default CTRL-F
+});
+onUnmounted(() => {
+	window.removeEventListener('keydown', onKeyDown);
+});
+
+// Styles
+const buttonStyles = computed(() => ({
+	color: uiOpts.value.textColor,
+	backgroundColor: uiOpts.value.altColorDark,
+}));
+const tutPaneContainerStyles = computed((): Record<string,string> => {
+	if (uiOpts.value.breakpoint == 'sm'){
+		return {
+			minHeight: (tutPaneOpen.value ? uiOpts.value.tutPaneSz : 0) + 'px',
+			maxHeight: (tutPaneOpen.value ? uiOpts.value.tutPaneSz : 0) + 'px',
+			transitionProperty: 'max-height, min-height',
+			transitionDuration: uiOpts.value.transitionDuration + 'ms',
+			overflow: 'hidden',
+		};
+	} else {
+		return {
+			position: 'absolute',
+			bottom: '0.5cm',
+			right: '0.5cm',
+			visibility: tutPaneOpen.value ? 'visible' : 'hidden',
+			transitionProperty: 'visibility',
+			transitionDuration: uiOpts.value.transitionDuration + 'ms',
+		};
+	}
+});
+const tutPaneStyles = computed((): Record<string,string> => {
+	if (uiOpts.value.breakpoint == 'sm'){
+		return {
+			height: uiOpts.value.tutPaneSz + 'px',
+		}
+	} else {
+		return {
+			height: uiOpts.value.tutPaneSz + 'px',
+			minWidth: '10cm',
+			maxWidth: '10cm',
+			borderRadius: uiOpts.value.borderRadius + 'px',
+			boxShadow: '0 0 3px black',
+		};
+	}
+});
+const ancestryBarContainerStyles = computed((): Record<string,string> => {
+	let ancestryBarBreadth = detachedAncestors.value == null ? 0 : uiOpts.value.ancestryBarBreadth;
+	let styles = {
+		minWidth: 'auto',
+		maxWidth: 'none',
+		minHeight: 'auto',
+		maxHeight: 'none',
+		transitionDuration: uiOpts.value.transitionDuration + 'ms',
+		transitionProperty: '',
+		overflow: 'hidden',
+	};
+	if (wideMainArea.value){
+		styles.minWidth = ancestryBarBreadth + 'px';
+		styles.maxWidth = ancestryBarBreadth + 'px';
+		styles.transitionProperty = 'min-width, max-width';
+	} else {
+		styles.minHeight = ancestryBarBreadth + 'px';
+		styles.maxHeight = ancestryBarBreadth + 'px';
+		styles.transitionProperty = 'min-height, max-height';
+	}
+	return styles;
 });
 </script>

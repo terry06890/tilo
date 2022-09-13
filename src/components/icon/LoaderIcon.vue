@@ -11,8 +11,3 @@
 	<line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
 </svg>
 </template>
-
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
-export default defineComponent({});
-</script>

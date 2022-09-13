@@ -2,7 +2,7 @@
 <div :style="styles" class="relative flex flex-col justify-between">
 	<close-icon @click.stop="onClose" class="absolute top-2 right-2 w-8 h-8 hover:cursor-pointer"/>
 	<h1 class="text-center text-lg font-bold pt-3 pb-2">
-		{{stage == 0 ? 'Welcome' : `Tutorial (Step ${stage} of ${lastStage})`}}
+		{{stage == 0 ? 'Welcome' : `Tutorial (Step ${stage} of ${LAST_STAGE})`}}
 	</h1>
 	<transition name="fade" mode="out-in">
 		<div v-if="stage == 0" :style="contentStyles">
@@ -58,119 +58,106 @@
 				Prev
 			</s-button>
 			<s-button :class="{invisible: !hidNextPrevOnce && stage == 1}"
-				@click="stage != lastStage ? onNextClick() : onClose()" :style="buttonStyles">
-				{{stage != lastStage ? 'Next' : 'Finish'}}
+				@click="stage != LAST_STAGE ? onNextClick() : onClose()" :style="buttonStyles">
+				{{stage != LAST_STAGE ? 'Next' : 'Finish'}}
 			</s-button>
 		</template>
 	</div>
 </div>
 </template>
 
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
+<script setup lang="ts">
+import {ref, computed, watch, onMounted, PropType} from 'vue';
 import SButton from './SButton.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import {Action, UiOptions} from '../lib';
 
-export default defineComponent({
-	props: {
-		actionsDone: {type: Object as PropType<Set<Action>>, required: true},
-			// Used to avoid disabling actions already done
-		triggerFlag: {type: Boolean, required: true},
-			// Used to indicate that a tutorial-requested 'trigger' action has been done
-		skipWelcome: {type: Boolean, default: false},
-		uiOpts: {type: Object as PropType<UiOptions>, required: true},
-	},
-	data(){
-		return {
-			stage: 0, // Indicates the current step of the tutorial (stage 0 is the welcome message)
-			lastStage: 9,
-			disabledOnce: false, // Set to true after disabling features at stage 1
-			stageActions: [
-				// Specifies, for stages 1+, what action to enable (can repeat an action to enable nothing new)
-				'expand', 'collapse', 'expandToView', 'unhideAncestor',
-				'tileInfo', 'search', 'autoMode', 'settings', 'help',
-			] as Action[],
-			hidNextPrevOnce: false, // Used to hide prev/next buttons when initially at stage 1
-		};
-	},
-	computed: {
-		 styles(): Record<string,string> {
-			return {
-				backgroundColor: this.uiOpts.bgColorDark,
-				color: this.uiOpts.textColor,
-			};
-		 },
-		 contentStyles(): Record<string,string> {
-			return {
-				padding: '0 0.5cm',
-				overflow: 'auto',
-				textAlign: 'center',
-			};
-		 },
-		 buttonStyles(): Record<string,string> {
-			return {
-				color: this.uiOpts.textColor,
-				backgroundColor: this.uiOpts.bgColor,
-			};
-		},
-		touchDevice(): boolean {
-			return this.uiOpts.touchDevice;
-		},
-	},
-	methods: {
-		onStartTutorial(){
-			this.stage = 1;
-		},
-		onSkipTutorial(){
-			this.$emit('skip');
-			this.$emit('close');
-		},
-		onPrevClick(){
-			this.stage = Math.max(1, this.stage - 1);
-		},
-		onNextClick(){
-			this.stage = Math.min(this.stage + 1, this.lastStage);
-		},
-		onClose(){
-			this.$emit('close');
-		},
-	},
-	watch: {
-		stage(newVal, oldVal){
-			// If starting tutorial, disable 'all' actions
-			if (newVal == 1 && !this.disabledOnce){
-				for (let action of this.stageActions){
-					if (action != null && !this.actionsDone.has(action)){
-						this.uiOpts.disabledActions.add(action);
-					}
-				}
-				this.disabledOnce = true;
-			}
-			// Enable action for this stage
-			this.uiOpts.disabledActions.delete(this.stageActions[this.stage - 1]);
-			// Notify of new trigger-action
-			this.$emit('stage-chg', this.stageActions[this.stage - 1]);
-			// After stage 1, show prev/next buttons
-			if (newVal == 2){
-				this.hidNextPrevOnce = true;
-			}
-		},
-		// Called when a trigger-action is done, and advances to the next stage
-		triggerFlag(){
-			if (this.stage < this.lastStage){
-				this.onNextClick();
-			} else {
-				this.onClose();
-			}
-		},
-	},
-	created(){
-		if (this.skipWelcome){
-			this.stage += 1;
-		}
-	},
-	components: {CloseIcon, SButton, },
-	emits: ['close', 'stage-chg', 'skip', ],
+// Props + events
+const props = defineProps({
+	actionsDone: {type: Object as PropType<Set<Action>>, required: true},
+		// Used to avoid disabling actions already done
+	triggerFlag: {type: Boolean, required: true},
+		// Used to indicate that a tutorial-requested 'trigger' action has been done
+	skipWelcome: {type: Boolean, default: false},
+	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 });
+const touchDevice = computed(() => props.uiOpts.touchDevice);
+const emit = defineEmits(['close', 'stage-chg', 'skip']);
+
+// For tutorial stage
+const stage = ref(props.skipWelcome ? 1 : 0);
+	// Indicates the current step of the tutorial (stage 0 is the welcome message)
+const LAST_STAGE = 9;
+const STAGE_ACTIONS = [
+	// Specifies, for stages 1+, what action to enable (can repeat an action to enable nothing new)
+	'expand', 'collapse', 'expandToView', 'unhideAncestor',
+	'tileInfo', 'search', 'autoMode', 'settings', 'help',
+] as Action[];
+let disabledOnce = false; // Set to true after disabling features at stage 1
+const hidNextPrevOnce = ref(false); // Used to hide prev/next buttons when initially at stage 1
+
+// For stage changes
+function onStartTutorial(){
+	stage.value = 1;
+}
+function onSkipTutorial(){
+	emit('skip');
+	emit('close');
+}
+function onPrevClick(){
+	stage.value = Math.max(1, stage.value - 1);
+}
+function onNextClick(){
+	stage.value = Math.min(stage.value + 1, LAST_STAGE);
+}
+function onClose(){
+	emit('close');
+}
+function onStageChange(){
+	// If starting tutorial, disable 'all' actions
+	if (stage.value == 1 && !disabledOnce){
+		for (let action of STAGE_ACTIONS){
+			if (action != null && !props.actionsDone.has(action)){
+				props.uiOpts.disabledActions.add(action);
+			}
+		}
+		disabledOnce = true;
+	}
+	// Enable action for this stage
+	props.uiOpts.disabledActions.delete(STAGE_ACTIONS[stage.value - 1]);
+	// Notify of new trigger-action
+	emit('stage-chg', STAGE_ACTIONS[stage.value - 1]);
+	// After stage 1, show prev/next buttons
+	if (stage.value == 2){
+		hidNextPrevOnce.value = true;
+	}
+}
+onMounted(() => {
+	if (props.skipWelcome){
+		onStageChange();
+	}
+})
+watch(stage, onStageChange);
+watch(() => props.triggerFlag, () => {
+	if (stage.value < LAST_STAGE){
+		onNextClick();
+	} else {
+		onClose();
+	}
+});
+
+// Styles
+const styles = computed(() => ({
+	backgroundColor: props.uiOpts.bgColorDark,
+	color: props.uiOpts.textColor,
+}));
+const contentStyles = {
+	padding: '0 0.5cm',
+	overflow: 'auto',
+	textAlign: 'center',
+};
+const buttonStyles = computed(() => ({
+	color: props.uiOpts.textColor,
+	backgroundColor: props.uiOpts.bgColor,
+}));
 </script>

@@ -11,62 +11,51 @@
 </div>
 </template>
 
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
+<script setup lang="ts">
+import {ref, computed, watch} from 'vue';
 
-export default defineComponent({
-	props: {
-		modelValue: {type: Boolean, default: false}, // For using v-model on the component
-	},
-	data(){
-		return {
-			open: false,
-		};
-	},
-	computed: {
-		styles(): Record<string,string> {
-			return {
-				overflow: this.open ? 'visible' : 'hidden',
-			};
-		},
-		contentStyles(): Record<string,string> {
-			return {
-				overflow: 'hidden',
-				opacity: this.open ? '1' : '0',
-				transitionProperty: 'max-height, opacity',
-				transitionDuration: '300ms',
-				transitionTimingFunction: 'ease-in-out',
-			};
-		},
-	},
-	methods: {
-		onClick(evt: Event){
-			this.open = !this.open;
-			this.$emit('update:modelValue', this.open);
-			if (this.open){
-				this.$emit('open');
-			}
-		},
-		onEnter(el: HTMLDivElement){
-			el.style.maxHeight = el.scrollHeight + 'px';
-		},
-		onAfterEnter(el: HTMLDivElement){
-			el.style.maxHeight = 'none';
-				// Allows the content to grow after the transition ends, as the scrollHeight sometimes is too short
-		},
-		onBeforeLeave(el: HTMLDivElement){
-			el.style.maxHeight = el.scrollHeight + 'px';
-			el.offsetWidth; // Triggers reflow
-		},
-		onLeave(el: HTMLDivElement){
-			el.style.maxHeight = '0';
-		},
-	},
-	watch: {
-		modelValue(newVal, oldVal){
-			this.open = newVal;
-		},
-	},
-	emits: ['update:modelValue', 'open', ],
+// Props + events
+const props = defineProps({
+	modelValue: {type: Boolean, default: false}, // For using v-model on the component
 });
+const emit = defineEmits(['update:modelValue', 'open']);
+
+// For open status
+const open = ref(false);
+watch(() => props.modelValue, (newVal) => {open.value = newVal})
+function onClick(){
+	open.value = !open.value;
+	emit('update:modelValue', open.value);
+	if (open.value){
+		emit('open');
+	}
+}
+
+// Styles
+const styles = computed(() => ({
+	overflow: open.value ? 'visible' : 'hidden',
+}));
+const contentStyles = computed(() => ({
+	overflow: 'hidden',
+	opacity: open.value ? '1' : '0',
+	transitionProperty: 'max-height, opacity',
+	transitionDuration: '300ms',
+	transitionTimingFunction: 'ease-in-out',
+}));
+
+// Open/close transitions
+function onEnter(el: HTMLDivElement){
+	el.style.maxHeight = el.scrollHeight + 'px';
+}
+function onAfterEnter(el: HTMLDivElement){
+	el.style.maxHeight = 'none';
+		// Allows the content to grow after the transition ends, as the scrollHeight sometimes is too short
+}
+function onBeforeLeave(el: HTMLDivElement){
+	el.style.maxHeight = el.scrollHeight + 'px';
+	el.offsetWidth; // Triggers reflow
+}
+function onLeave(el: HTMLDivElement){
+	el.style.maxHeight = '0';
+}
 </script>

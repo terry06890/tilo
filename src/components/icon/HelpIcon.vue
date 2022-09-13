@@ -5,8 +5,3 @@
 	<circle cx="248" cy="430" r="32" fill="currentColor"/>
 </svg>
 </template>
-
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
-export default defineComponent({});
-</script>

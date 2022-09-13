@@ -4,8 +4,3 @@
 	<polyline points="6 9 12 15 18 9"></polyline>
 </svg>
 </template>
-
-<script lang="ts">
-import {defineComponent, PropType} from 'vue';
-export default defineComponent({});
-</script>
