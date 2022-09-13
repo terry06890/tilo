@@ -27,7 +27,6 @@ export class LayoutNode {
 	hidden: boolean; // Used to hide nodes upon an expand-to-view
 	hiddenWithVisibleTip: boolean;
 	hasFocus: boolean; // Used by search and auto-mode to mark/flash a tile
-	failFlag: boolean; // Used to trigger failure animations
 	// Constructor ('parent' are 'depth' are generally initialised later, 'tips' is computed)
 	constructor(name: string, children: LayoutNode[]){
 		this.name = name;
@@ -45,7 +44,6 @@ export class LayoutNode {
 		this.hidden = false;
 		this.hiddenWithVisibleTip = false;
 		this.hasFocus = false;
-		this.failFlag = false;
 	}
 	// Returns a new tree with the same structure and names
 	// 'chg' is usable to apply a change to the resultant tree

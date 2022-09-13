@@ -165,14 +165,22 @@ function onClick(): void {
 		return;
 	}
 	wasClicked.value = true;
-	emit(isLeaf.value ? 'leaf-click' : 'nonleaf-click', props.layoutNode);
+	if (isLeaf.value){
+		emit('leaf-click', props.layoutNode, onExpandFail);
+	} else {
+		emit('nonleaf-click', props.layoutNode, onCollapseFail);
+	}
 }
 function onClickHold(): void {
 	if (isLeaf.value && !isExpandableLeaf.value){
 		console.log('Ignored click-hold on non-expandable node');
 		return;
 	}
-	emit(isLeaf.value ? 'leaf-click-held' : 'nonleaf-click-held', props.layoutNode);
+	if (isLeaf.value){
+		emit('leaf-click-held', props.layoutNode, onExpandFail);
+	} else {
+		emit('nonleaf-click-held', props.layoutNode, onCollapseFail);
+	}
 }
 function onDblClick(): void {
 	onClickHold();
@@ -181,19 +189,19 @@ function onInfoIconClick(): void {
 	emit('info-click', props.layoutNode.name);
 }
 // Child click-action propagation
-function onInnerLeafClick(node: LayoutNode): void {
+function onInnerLeafClick(node: LayoutNode, onFail: () => void): void {
 	wasClicked.value = true;
-	emit('leaf-click', node);
+	emit('leaf-click', node, onFail);
 }
-function onInnerNonleafClick(node: LayoutNode): void {
+function onInnerNonleafClick(node: LayoutNode, onFail: () => void): void {
 	wasClicked.value = true;
-	emit('nonleaf-click', node);
+	emit('nonleaf-click', node, onFail);
 }
-function onInnerLeafClickHeld(node: LayoutNode): void {
-	emit('leaf-click-held', node);
+function onInnerLeafClickHeld(node: LayoutNode, onFail: () => void): void {
+	emit('leaf-click-held', node, onFail);
 }
-function onInnerNonleafClickHeld(node: LayoutNode): void {
-	emit('nonleaf-click-held', node);
+function onInnerNonleafClickHeld(node: LayoutNode, onFail: () => void): void {
+	emit('nonleaf-click-held', node, onFail);
 }
 function onInnerInfoIconClick(nodeName: string): void {
 	emit('info-click', nodeName);
@@ -265,9 +273,12 @@ function triggerAnimation(animation: string){
 	el.offsetWidth; // Triggers reflow
 	el.classList.add(animation);
 }
-watch(() => props.layoutNode.failFlag, () => 
-	triggerAnimation(isLeaf.value ? 'animate-expand-shrink' : 'animate-shrink-expand')
-);
+function onExpandFail(){
+	triggerAnimation('animate-expand-shrink');
+}
+function onCollapseFail(){
+	triggerAnimation('animate-shrink-expand');
+}
 
 // For 'flashing' the tile when focused
 const inFlash = ref(false); // Used to 'flash' the tile when focused

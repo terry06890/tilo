@@ -236,7 +236,7 @@ async function reInit(){
 		// Collapse tree to root
 		await onDetachedAncestorClick(layoutTree.value, true);
 	}
-	await onNonleafClick(layoutTree.value, true);
+	await onNonleafClick(layoutTree.value, null, true);
 	await initTreeFromServer(false);
 }
 onMounted(() => initTreeFromServer());
@@ -339,7 +339,8 @@ onMounted(() => window.addEventListener('resize', onResize));
 onUnmounted(() => window.removeEventListener('resize', onResize));
 
 // For tile expand/collapse events
-async function onLeafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+async function onLeafClick(
+	layoutNode: LayoutNode, onFail: null | (() => void) = null, subAction = false): Promise<boolean> {
 	if (!subAction && !onActionStart('expand')){
 		return false;
 	}
@@ -377,8 +378,8 @@ async function onLeafClick(layoutNode: LayoutNode, subAction = false): Promise<b
 			}
 		}
 		//
-		if (!subAction && !success){
-			layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+		if (!subAction && !success && onFail != null){
+			onFail(); // Triggers failure animation
 		}
 		nextTick(endLoadInd);
 		return success;
@@ -387,8 +388,8 @@ async function onLeafClick(layoutNode: LayoutNode, subAction = false): Promise<b
 	let success: boolean;
 	if (overflownRoot.value){ // If clicking child of overflowing active-root
 		if (!uiOpts.value.autoHide){
-			if (!subAction){
-				layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+			if (!subAction && onFail != null){
+				onFail(); // Triggers failure animation
 			}
 			success = false;
 		} else {
@@ -415,7 +416,8 @@ async function onLeafClick(layoutNode: LayoutNode, subAction = false): Promise<b
 	}
 	return success;
 }
-async function onNonleafClick(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+async function onNonleafClick(
+	layoutNode: LayoutNode, onFail: null | (() => void) = null, subAction = false): Promise<boolean> {
 	if (!subAction && !onActionStart('collapse')){
 		return false;
 	}
@@ -432,12 +434,14 @@ async function onNonleafClick(layoutNode: LayoutNode, subAction = false): Promis
 	}
 	if (!subAction){
 		if (!success){
-			layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+			if (onFail != null){
+				onFail(); // Triggers failure animation
+			}
 		} else {
 			// Possibly clear out excess nodes when a threshold is reached
 			let numNodes = tolMap.value.size;
 			let extraNodes = numNodes - layoutMap.value.size;
-			if (extraNodes > EXCESS_TOLNODE_THRESHOLD.value){
+			if (extraNodes > EXCESS_TOLNODE_THRESHOLD){
 				for (let n of tolMap.value.keys()){
 					if (!layoutMap.value.has(n)){
 						tolMap.value.delete(n)
@@ -454,7 +458,8 @@ async function onNonleafClick(layoutNode: LayoutNode, subAction = false): Promis
 	return success;
 }
 // For expand-to-view and ancestry-bar events
-async function onLeafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+async function onLeafClickHeld(
+	layoutNode: LayoutNode, onFail: null | (() => void) = null, subAction = false): Promise<boolean> {
 	// Special case for active root
 	if (layoutNode == activeRoot.value){
 		console.log('Ignored expand-to-view on active-root node');
@@ -488,8 +493,8 @@ async function onLeafClickHeld(layoutNode: LayoutNode, subAction = false): Promi
 			}
 		}
 		//
-		if (!success && !subAction){
-			layoutNode.failFlag = !layoutNode.failFlag; // Triggers failure animation
+		if (!success && !subAction && onFail != null){
+			onFail(); // Triggers failure animation
 		}
 		nextTick(endLoadInd);
 		return success;
@@ -514,7 +519,8 @@ async function onLeafClickHeld(layoutNode: LayoutNode, subAction = false): Promi
 	}
 	return success;
 }
-async function onNonleafClickHeld(layoutNode: LayoutNode, subAction = false): Promise<boolean> {
+async function onNonleafClickHeld(
+	layoutNode: LayoutNode, onFail: null | (() => void) = null, subAction = false): Promise<boolean> {
 	// Special case for active root
 	if (layoutNode == activeRoot.value){
 		console.log('Ignored expand-to-view on active-root node');
@@ -555,10 +561,10 @@ async function onDetachedAncestorClick(layoutNode: LayoutNode, subAction = false
 		if (layoutNode.children.length > 0){
 			success = relayoutWithCollapse(false); // Second pass for regularity
 		} else {
-			success = await onLeafClick(layoutNode, true);
+			success = await onLeafClick(layoutNode, null, true);
 		}
 	} else {
-		success = await onNonleafClick(layoutNode, true); // For reducing tile-flashing on-screen
+		success = await onNonleafClick(layoutNode, null, true); // For reducing tile-flashing on-screen
 	}
 	LayoutNode.showDownward(layoutNode);
 	//
@@ -569,7 +575,7 @@ async function onDetachedAncestorClick(layoutNode: LayoutNode, subAction = false
 	return success;
 }
 
-// For tile-info modal/events
+// For tile-info modal
 const infoModalNodeName = ref(null as string | null); // Name of node to display info for, or null
 const infoModalData = ref(null as InfoResponse | null);
 async function onInfoClick(nodeName: string){
@@ -593,7 +599,7 @@ function onInfoClose(){
 	onActionEnd('tileInfo');
 }
 
-// For search modal/events
+// For search modal
 const searchOpen = ref(false);
 function onSearchIconClick(){
 	if (!onActionStart('search')){
@@ -666,20 +672,20 @@ async function expandToNode(name: string){
 			LayoutNode.hideUpward(targetNode!.parent!, layoutMap.value);
 			activeRoot.value = targetNode!.parent!;
 			updateAreaDims();
-			await onNonleafClick(activeRoot.value, true);
-			await onLeafClick(activeRoot.value, true);
+			await onNonleafClick(activeRoot.value, null, true);
+			await onLeafClick(activeRoot.value, null, true);
 		} else {
-			await onLeafClick(activeRoot.value, true);
+			await onLeafClick(activeRoot.value, null, true);
 		}
 		setTimeout(() => expandToNode(name), uiOpts.value.transitionDuration);
 		return;
 	}
 	if (overflownRoot.value){
-		await onLeafClickHeld(layoutNode, true);
+		await onLeafClickHeld(layoutNode, null, true);
 		setTimeout(() => expandToNode(name), uiOpts.value.transitionDuration);
 		return;
 	}
-	let success = await onLeafClick(layoutNode, true);
+	let success = await onLeafClick(layoutNode, null, true);
 	if (success){
 		setTimeout(() => expandToNode(name), uiOpts.value.transitionDuration);
 		return;
@@ -696,7 +702,7 @@ async function expandToNode(name: string){
 		ancestorChain.push(layoutNode);
 	}
 	layoutNode = ancestorChain[Math.floor((ancestorChain.length - 1) / 2)]
-	await onNonleafClickHeld(layoutNode, true);
+	await onNonleafClickHeld(layoutNode, null, true);
 	setTimeout(() => expandToNode(name), uiOpts.value.transitionDuration);
 }
 function onSearchClose(){
@@ -820,13 +826,13 @@ async function autoAction(){
 					setLastFocused(node.parent!);
 					break;
 				case 'expand':
-					success = await onLeafClick(node, true);
+					success = await onLeafClick(node, null, true);
 					break;
 				case 'collapse':
-					success = await onNonleafClick(node, true);
+					success = await onNonleafClick(node, null, true);
 					break;
 				case 'expandToView':
-					success = await onNonleafClickHeld(node, true);
+					success = await onNonleafClickHeld(node, null, true);
 					break;
 				case 'unhideAncestor':
 					success = await onDetachedAncestorClick(node.parent!, true);
@@ -846,7 +852,7 @@ function onAutoClose(){
 	onActionEnd('autoMode');
 }
 
-// For settings modal/events
+// For settings modal
 const settingsOpen = ref(false);
 function onSettingsIconClick(){
 	if (!onActionStart('settings')){
@@ -884,7 +890,7 @@ function onResetSettings(reinit: boolean){
 	}
 }
 
-// For help modal/events
+// For help modal
 const helpOpen = ref(false);
 function onHelpIconClick(){
 	if (!onActionStart('help')){
@@ -898,13 +904,12 @@ function onHelpClose(){
 	onActionEnd('help');
 }
 
-// For tutorial pane/events
+// For tutorial pane
 const tutPaneOpen = ref(!uiOpts.value.tutorialSkip);
 const tutWelcome = ref(!uiOpts.value.tutorialSkip);
 const tutTriggerAction = ref(null as Action | null); // Used to advance tutorial upon user-actions
 const tutTriggerFlag = ref(false);
 const actionsDone = ref(new Set() as Set<Action>); // Used to avoid disabling actions the user has already seen
-// For tutorial-pane events
 function onStartTutorial(){
 	if (!tutPaneOpen.value){
 		tutPaneOpen.value = true;
