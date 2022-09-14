@@ -252,7 +252,9 @@
 								for 01/05/22, the
 								<a href="https://databus.dbpedia.org/dbpedia/collections/latest-core"
 									:style="aStyles">DBpedia knowledge base</a>
-								for 01/03/22, and the Wikidata dump for 23/08/22.
+								for 01/03/22, and the
+								<a href="https://dumps.wikimedia.org/wikidatawiki/entities/" :style="aStyles">
+									Wikidata dump</a> for 23/08/22.
 								Wikipedia page content is available under
 								<a href="https://creativecommons.org/licenses/by-sa/3.0/" :style="aStyles"
 									>CC BY-SA 3.0</a>.
@@ -263,9 +265,11 @@
 						<h1 class="text-lg font-bold">Other Credits</h1>
 						<ul class="list-disc pl-4">
 							<li>
-								The UI was largely coded in
+								The UI was mostly coded in
 								<a href="https://www.typescriptlang.org/" :style="aStyles">Typescript</a>,
-								and built using the <a href="https://vuejs.org/" :style="aStyles">Vue</a> framework
+								and built wth <a href="https://vuejs.org/" :style="aStyles">Vue</a>,
+								<a href="https://vitejs.dev/" :style="aStyles">Vite</a> &amp;
+								<a href="https://pinia.vuejs.org/" :style="aStyles">Pinia</a>
 							</li>
 							<li>
 								Tree data was processed using

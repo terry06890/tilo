@@ -20,12 +20,12 @@
 1.  Copy files to the server (using ssh, sftp, or otherwise)
     1.  Copy `dist/` into Apache's document root, into the directory where Tilo will be served.
         The created directory should match up with the `base` value above (eg: `/var/www/terryt.dev/tilo/`).
-    1.  Copy over `backend/tolData/data.db`. The result should be denoted by the `DB_FILE` value above.
-        Remember to set ownership and permissions as needed.
-    1.  Copy over the images in `backend/tolData/img/`. There are a lot of them, so compressing them
-        before transfer is advisable (eg: `tar czf imgs.tar.gz backend/tolData/img/`). The location should
-        match up with the `SERVER_IMG_PATH` value above (eg: `/var/www/terryt.dev/img/tilo/`).
     1.  Copy over `backend/tilo.py`. The location should be accessible by Apache (eg: `/usr/local/www/wsgi-scripts/`).
+        Remember to set ownership and permissions as needed.
+    1.  Copy over `backend/tol_data/data.db`. The result should be denoted by the `DB_FILE` value above.
+    1.  Copy over the images in `backend/tol_data/img/`. There are a lot of them, so compressing them
+        before transfer is advisable (eg: `tar czf imgs.tar.gz backend/tol_data/img/`). The location should
+        match up with the `SERVER_IMG_PATH` value above (eg: `/var/www/terryt.dev/img/tilo/`).
     1.  Edit the site's config file to serve tilo.py. The file path will likely be something like
         `/etc/apache2/sites-available/terryt.dev-le-ssl.conf`, and the edit should add lines like the following,
         likely within a `<VirtualHost>` section:
