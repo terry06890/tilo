@@ -122,7 +122,7 @@ function getDefaultState(): StoreState {
 		clickHoldDuration: 400, // ms
 		transitionDuration: 300, // ms
 		animationDelay: 100, // ms
-		autoActionDelay: 1000, // ms
+		autoActionDelay: 500, // ms
 		// Other
 		disableShortcuts: false,
 		autoHide: true,

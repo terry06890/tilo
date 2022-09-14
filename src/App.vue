@@ -723,6 +723,9 @@ async function autoAction(){
 		if (node == activeRoot.value || node.parent!.children.length == 1){
 			actionWeights['move across'] = 0;
 		}
+		if (node.children.length == 0 || !layoutMap.value.has(node.children[0].name)){
+			actionWeights['move down'] = 0;
+		}
 		if (node == activeRoot.value){
 			actionWeights['move up'] = 0;
 		}
@@ -794,7 +797,7 @@ async function autoAction(){
 			return;
 		}
 		autoPrevActionFail.value = !success;
-		setTimeout(autoAction, store.transitionDuration + store.autoActionDelay);
+		setTimeout(autoAction, action == null ? 0 : store.transitionDuration + store.autoActionDelay);
 	}
 }
 function onAutoClose(){
