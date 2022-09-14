@@ -43,7 +43,8 @@
 			@info-click="onInnerInfoIconClick"/>
 	</div>
 	<transition name="fadein">
-		<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 rounded-[inherit] bg-amber-500/70"/>
+		<div v-if="inFlash" :style="{top: scrollOffset + 'px'}"
+			class="absolute w-full h-full left-0 rounded-[inherit] bg-amber-500/70"/>
 	</transition>
 </div>
 </template>
@@ -230,6 +231,9 @@ function onScroll(): void {
 		}, store.animationDelay);
 	}
 }
+// Without this, sometimes, if auto-mode enters an overflowing node, scrolls down, collapses, then stops,
+// and the node is then manually expanded, the scroll will be 0, and some nodes will be hidden
+watch(isLeaf, onScroll);
 // Scroll to focused child if overflownRoot
 watch(hasFocusedChild, (newVal: boolean) => {
 	if (newVal && isOverflownRoot.value){
