@@ -385,13 +385,6 @@
 							two species of grass being described like a third closely-related species.
 						</p>
 						<br/>
-						<h1 class="text-lg font-bold">Why did searching for 'goat' send me to the moths?</h1>
-						<p>
-							When you search for a name, then press enter, the first result is used.
-							Currently, search suggestions are not ordered by well-known the taxons are,
-							so the first result might mean 'Goat Moth' instead of 'Domestic Goat'.
-						</p>
-						<br/>
 						<h1 class="text-lg font-bold">Why do a lot of fish have their heads clipped out?</h1>
 						<p>
 							Cropping images into squares was done semi-automatically, and sometimes this
@@ -418,7 +411,7 @@
 				</template>
 			</s-collapsible>
 		</div>
-		<s-button class="mx-auto mb-2" :style="{color: uiOpts.textColor, backgroundColor: uiOpts.bgColor}"
+		<s-button class="mx-auto mb-2" :style="{color: store.color.text, backgroundColor: store.color.bg}"
 			:disabled="tutOpen" @click.stop="onStartTutorial">
 			Start Tutorial
 		</s-button>
@@ -427,23 +420,25 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, PropType} from 'vue';
+import {ref, computed} from 'vue';
 import SButton from './SButton.vue';
 import SCollapsible from './SCollapsible.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import DownIcon from './icon/DownIcon.vue';
-import {UiOptions} from '../lib';
+import {useStore} from '../store';
 
 // Refs
 const rootRef = ref(null as HTMLDivElement | null)
 const closeRef = ref(null as typeof CloseIcon | null);
 
+// Global store
+const store = useStore();
+
 // Props + events
-const props = defineProps({
+defineProps({
 	tutOpen: {type: Boolean, default: false},
-	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 });
-const touchDevice = computed(() => props.uiOpts.touchDevice)
+const touchDevice = computed(() => store.touchDevice)
 const emit = defineEmits(['close', 'start-tutorial']);
 
 // Event handlers
@@ -459,12 +454,12 @@ function onStartTutorial(){
 
 // Styles
 const styles = computed(() => ({
-	backgroundColor: props.uiOpts.bgColorAlt,
-	borderRadius: props.uiOpts.borderRadius + 'px',
-	boxShadow: props.uiOpts.shadowNormal,
+	backgroundColor: store.color.bgAlt,
+	borderRadius: store.borderRadius + 'px',
+	boxShadow: store.shadowNormal,
 }));
 const aStyles = computed(() => ({
-	color: props.uiOpts.altColorDark,
+	color: store.color.altDark,
 }));
 
 // Classes

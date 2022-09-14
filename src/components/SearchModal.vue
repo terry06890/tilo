@@ -10,7 +10,7 @@
 		</div>
 		<div class="absolute top-[100%] w-full overflow-hidden" :style="suggContainerStyles">
 			<div v-for="(sugg, idx) of searchSuggs" :key="sugg.name + '|' + sugg.canonicalName"
-				:style="{backgroundColor: idx == focusedSuggIdx ? uiOpts.bgColorAltDark : uiOpts.bgColorAlt}"
+				:style="{backgroundColor: idx == focusedSuggIdx ? store.color.bgAltDark : store.color.bgAlt}"
 				class="border-b p-1 px-2 hover:underline hover:cursor-pointer flex"
 				@click="resolveSearch(sugg.canonicalName || sugg.name)">
 				<div class="grow overflow-hidden whitespace-nowrap text-ellipsis">
@@ -25,7 +25,7 @@
 			<div v-if="searchHadMoreSuggs" class="text-center">&#x2022; &#x2022; &#x2022;</div>
 		</div>
 		<label :style="animateLabelStyles" class="flex gap-1">
-			<input type="checkbox" v-model="uiOpts.searchJumpMode" @change="$emit('setting-chg', 'searchJumpMode')"/>
+			<input type="checkbox" v-model="store.searchJumpMode" @change="emit('setting-chg', 'searchJumpMode')"/>
 			<div class="text-sm">Jump to result</div>
 		</label>
 	</div>
@@ -37,20 +37,22 @@ import {ref, computed, onMounted, onUnmounted, PropType} from 'vue';
 import SearchIcon from './icon/SearchIcon.vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {TolNode, TolMap} from '../tol';
-import {LayoutNode, LayoutMap, LayoutOptions} from '../layout';
-import {queryServer, SearchSugg, SearchSuggResponse, UiOptions} from '../lib';
+import {LayoutNode, LayoutMap} from '../layout';
+import {queryServer, SearchSugg, SearchSuggResponse} from '../lib';
+import {useStore} from '../store';
 
 // Refs
 const rootRef = ref(null as HTMLDivElement | null);
 const inputRef = ref(null as HTMLInputElement | null);
+
+// Global store
+const store = useStore();
 
 // Props + events
 const props = defineProps({
 	lytMap: {type: Object as PropType<LayoutMap>, required: true}, // Used to check if a searched-for node exists
 	activeRoot: {type: Object as PropType<LayoutNode>, required: true}, // Sent to server to reduce response size
 	tolMap: {type: Object as PropType<TolMap>, required: true}, // Upon a search response, gets new nodes added
-	lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
-	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 });
 const emit = defineEmits(['search', 'close', 'info-click', 'setting-chg', 'net-wait', 'net-get']);
 
@@ -101,8 +103,8 @@ async function onInput(){
 	let urlParams = new URLSearchParams({
 		type: 'sugg',
 		name: input.value,
-		limit: String(props.uiOpts.searchSuggLimit),
-		tree: props.uiOpts.tree,
+		limit: String(store.searchSuggLimit),
+		tree: store.tree,
 	});
 	// Query server, delaying/skipping if a request was recently sent
 	pendingSuggReqParams.value = urlParams;
@@ -168,7 +170,7 @@ async function resolveSearch(tolNodeName: string){
 		name: tolNodeName,
 		toroot: '1',
 		excl: props.activeRoot.name,
-		tree: props.uiOpts.tree,
+		tree: store.tree,
 	});
 	emit('net-wait'); // Allows the parent component to show a loading-indicator
 	let responseObj: {[x: string]: TolNode} = await queryServer(urlParams);
@@ -216,7 +218,7 @@ function onInfoIconClick(nodeName: string){
 
 // For keyboard shortcuts
 function onKeyDown(evt: KeyboardEvent){
-	if (props.uiOpts.disableShortcuts){
+	if (store.disableShortcuts){
 		return;
 	}
 	if (evt.key == 'f' && evt.ctrlKey){
@@ -232,26 +234,26 @@ onMounted(() => inputRef.value!.focus())
 
 // Styles
 const styles = computed((): Record<string,string> => {
-	let br = props.uiOpts.borderRadius;
+	let br = store.borderRadius;
 	return {
-		backgroundColor: props.uiOpts.bgColorAlt,
+		backgroundColor: store.color.bgAlt,
 		borderRadius: (searchSuggs.value.length == 0) ? `${br}px` : `${br}px ${br}px 0 0`,
-		boxShadow: props.uiOpts.shadowNormal,
+		boxShadow: store.shadowNormal,
 	};
 });
 const suggContainerStyles = computed((): Record<string,string> => {
-	let br = props.uiOpts.borderRadius;
+	let br = store.borderRadius;
 	return {
-		backgroundColor: props.uiOpts.bgColorAlt,
-		color: props.uiOpts.textColorAlt,
+		backgroundColor: store.color.bgAlt,
+		color: store.color.textAlt,
 		borderRadius: `0 0 ${br}px ${br}px`,
 	};
 });
 const animateLabelStyles = computed(() => ({
 	position: 'absolute',
-	top: -props.lytOpts.headerSz - 2 + 'px',
+	top: -store.lytOpts.headerSz - 2 + 'px',
 	right: '0',
-	height: props.lytOpts.headerSz + 'px',
-	color: props.uiOpts.textColor,
+	height: store.lytOpts.headerSz + 'px',
+	color: store.color.text,
 }));
 </script>

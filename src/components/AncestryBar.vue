@@ -1,7 +1,7 @@
 <template>
 <div :style="styles" @wheel.stop="onWheelEvt" ref="rootRef">
 	<tol-tile v-for="(node, idx) in dummyNodes" :key="node.name" class="shrink-0"
-		:layoutNode="node" :tolMap="tolMap" :nonAbsPos="true" :lytOpts="lytOpts" :uiOpts="uiOpts"
+		:layoutNode="node" :tolMap="tolMap" :nonAbsPos="true"
 		@leaf-click="onTileClick(nodes[idx])" @info-click="onInfoIconClick"/>
 </div>
 </template>
@@ -10,27 +10,27 @@
 import {ref, computed, watch, onMounted, nextTick, PropType} from 'vue';
 import TolTile from './TolTile.vue';
 import {TolMap} from '../tol';
-import {LayoutNode, LayoutOptions} from '../layout';
-import {UiOptions} from '../lib';
+import {LayoutNode} from '../layout';
+import {useStore} from '../store';
 
 // Refs
 const rootRef = ref(null as HTMLDivElement | null);
+
+// Global store
+const store = useStore();
 
 // Props + events
 const props = defineProps({
 	nodes: {type: Array as PropType<LayoutNode[]>, required: true},
 	vert: {type: Boolean, default: false},
 	breadth: {type: Number, required: true},
-	//
-	lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
-	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	tolMap: {type: Object as PropType<TolMap>, required: true},
 });
 const emit = defineEmits(['ancestor-click', 'info-click']);
 
 // Computed prop data for display
 const imgSz = computed(() =>
-	props.breadth - props.lytOpts.tileSpacing - props.uiOpts.scrollGap
+	props.breadth - store.lytOpts.tileSpacing - store.scrollGap
 		// Intentionally omitting extra tileSpacing, to allow for scrollGap with less image shrinkage
 );
 const dummyNodes = computed(() => props.nodes.map(n => {
@@ -54,11 +54,13 @@ function onWheelEvt(evt: WheelEvent){ // For converting vertical scrolling to ho
 	}
 }
 function scrollToEnd(){
-	let el = rootRef.value!;
-	if (props.vert){
-		el.scrollTop = el.scrollHeight;
-	} else {
-		el.scrollLeft = el.scrollWidth;
+	let el = rootRef.value;
+	if (el != null){
+		if (props.vert){
+			el.scrollTop = el.scrollHeight;
+		} else {
+			el.scrollLeft = el.scrollWidth;
+		}
 	}
 }
 watch(props.nodes, () => {
@@ -75,12 +77,12 @@ const styles = computed(() => ({
 	display: 'flex',
 	flexDirection: props.vert ? 'column' : 'row',
 	alignItems: 'center',
-	gap: props.lytOpts.tileSpacing + 'px',
-	padding: props.lytOpts.tileSpacing + 'px',
+	gap: store.lytOpts.tileSpacing + 'px',
+	padding: store.lytOpts.tileSpacing + 'px',
 	overflowX: props.vert ? 'hidden' : 'auto',
 	overflowY: props.vert ? 'auto' : 'hidden',
 	// Other
-	backgroundColor: props.uiOpts.ancestryBarBgColor,
-	boxShadow: props.uiOpts.shadowNormal,
+	backgroundColor: store.ancestryBarBgColor,
+	boxShadow: store.shadowNormal,
 }));
 </script>

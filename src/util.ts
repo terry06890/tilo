@@ -5,7 +5,7 @@
 // For detecting screen size
 export type Breakpoint = 'sm' | 'md' | 'lg';
 export function getBreakpoint(): Breakpoint {
-	let w = window.innerWidth;
+	const w = window.innerWidth;
 	if (w < 768){
 		return 'sm';
 	} else if (w < 1024){
@@ -17,15 +17,15 @@ export function getBreakpoint(): Breakpoint {
 // For getting scroll-bar width // From stackoverflow.com/questions/13382516/getting-scroll-bar-width-using-javascript
 export function getScrollBarWidth(){
 	// Create hidden outer div
-	let outer = document.createElement('div');
+	const outer = document.createElement('div');
 	outer.style.visibility = 'hidden';
 	outer.style.overflow = 'scroll';
 	document.body.appendChild(outer);
 	// Create inner div
-	let inner = document.createElement('div');
+	const inner = document.createElement('div');
 	outer.appendChild(inner);
 	// Get width difference
-	let scrollBarWidth = outer.offsetWidth - inner.offsetWidth;
+	const scrollBarWidth = outer.offsetWidth - inner.offsetWidth;
 	// Remove temporary divs
 	outer.parentNode!.removeChild(outer);
 	//
@@ -46,8 +46,8 @@ export function arraySum(array: number[]): number {
 }
 // Returns an array of increasing evenly-spaced numbers from 'start' to 'end', with size 'size'
 export function linspace(start: number, end: number, size: number): number[] {
-	let step = (end - start) / (size - 1);
-	let ar = [];
+	const step = (end - start) / (size - 1);
+	const ar = [];
 	for (let i = 0; i < size; i++){
 		ar.push(start + step * i);
 	}
@@ -56,8 +56,8 @@ export function linspace(start: number, end: number, size: number): number[] {
 // Returns array copy with vals clipped to within [min,max], redistributing to compensate
 // Returns null on failure
 export function limitVals(arr: number[], min: number, max: number): number[] | null {
-	let vals = [...arr];
-	let clipped = new Array(vals.length).fill(false);
+	const vals = [...arr];
+	const clipped = new Array(vals.length).fill(false);
 	let owedChg = 0; // Stores total change made after clipping values
 	while (true){
 		// Clip values
@@ -79,13 +79,13 @@ export function limitVals(arr: number[], min: number, max: number): number[] | n
 			return vals;
 		}
 		// Compensate for changes made
-		let indicesToUpdate = (owedChg > 0) ?
+		const indicesToUpdate = (owedChg > 0) ?
 			range(vals.length).filter(idx => vals[idx] < max) :
 			range(vals.length).filter(idx => vals[idx] > min);
 		if (indicesToUpdate.length == 0){
 			return null;
 		}
-		for (let i of indicesToUpdate){
+		for (const i of indicesToUpdate){
 			vals[i] += owedChg / indicesToUpdate.length;
 		}
 		owedChg = 0;
@@ -117,13 +117,13 @@ export function updateAscSeq(seq: number[], maxLen: number): boolean {
 // Given a non-empty array of non-negative weights, returns an array index chosen with weighted pseudorandomness
 // Returns null if array contains all zeros
 export function randWeightedChoice(weights: number[]): number | null {
-	let thresholds = Array(weights.length);
+	const thresholds = Array(weights.length);
 	let sum = 0;
 	for (let i = 0; i < weights.length; i++){
 		sum += weights[i];
 		thresholds[i] = sum;
 	}
-	let rand = Math.random();
+	const rand = Math.random();
 	for (let i = 0; i < weights.length; i++){
 		if (rand <= thresholds[i] / sum){
 			return i;

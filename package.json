@@ -12,6 +12,7 @@
 	"author": "Terry Truong",
 	"license": "MIT",
 	"dependencies": {
+		"pinia": "^2.0.22",
 		"vue": "^3.2.25"
 	},
 	"devDependencies": {

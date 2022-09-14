@@ -37,7 +37,7 @@
 			</transition>
 		</div>
 		<tol-tile v-for="child in visibleChildren" :key="child.name"
-			:layoutNode="child" :tolMap="tolMap" :lytOpts="lytOpts" :uiOpts="uiOpts" :overflownDim="overflownDim"
+			:layoutNode="child" :tolMap="tolMap" :overflownDim="overflownDim"
 			@leaf-click="onInnerLeafClick" @nonleaf-click="onInnerNonleafClick"
 			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
 			@info-click="onInnerInfoIconClick"/>
@@ -52,22 +52,23 @@
 import {ref, computed, watch, PropType} from 'vue';
 import InfoIcon from './icon/InfoIcon.vue';
 import {TolMap} from '../tol';
-import {LayoutNode, LayoutOptions} from '../layout';
-import {getImagePath, UiOptions} from '../lib';
+import {LayoutNode} from '../layout';
+import {getImagePath} from '../lib';
 import {capitalizeWords} from '../util';
+import {useStore} from '../store';
 
 const SCRIM_GRADIENT = 'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.2) 100%)';
 
 // Refs
 const rootRef = ref(null as HTMLDivElement | null);
 
+// Global store
+const store = useStore();
+
 // Props + events
 const props = defineProps({
 	layoutNode: {type: Object as PropType<LayoutNode>, required: true},
 	tolMap: {type: Object as PropType<TolMap>, required: true},
-	// Options
-	lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
-	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 	// Other
 	skipTransition: {type: Boolean, default: false},
 	nonAbsPos: {type: Boolean, default: false},
@@ -120,26 +121,26 @@ const isOverflownRoot = computed(() =>
 	props.overflownDim > 0 && !props.layoutNode.hidden && props.layoutNode.children.length > 0
 );
 const hasFocusedChild = computed(() => props.layoutNode.children.some(n => n.hasFocus));
-const infoIconDisabled = computed(() => !props.uiOpts.disabledActions.has('tileInfo'));
+const infoIconDisabled = computed(() => !store.disabledActions.has('tileInfo'));
 
 // Click/hold handling
 const clickHoldTimer = ref(0); // Used to recognise click-and-hold events
 function onMouseDown(): void {
 	highlight.value = false;
-	if (!props.uiOpts.touchDevice){
+	if (!store.touchDevice){
 		// Wait for a mouseup or click-hold
 		clearTimeout(clickHoldTimer.value);
 		clickHoldTimer.value = setTimeout(() => {
 			clickHoldTimer.value = 0;
 			onClickHold();
-		}, props.uiOpts.clickHoldDuration);
+		}, store.clickHoldDuration);
 	} else {
 		// Wait for or recognise a double-click
 		if (clickHoldTimer.value == 0){
 			clickHoldTimer.value = setTimeout(() => {
 				clickHoldTimer.value = 0;
 				onClick();
-			}, props.uiOpts.clickHoldDuration);
+			}, store.clickHoldDuration);
 		} else {
 			clearTimeout(clickHoldTimer.value)
 			clickHoldTimer.value = 0;
@@ -148,7 +149,7 @@ function onMouseDown(): void {
 	}
 }
 function onMouseUp(): void {
-	if (!props.uiOpts.touchDevice){
+	if (!store.touchDevice){
 		if (clickHoldTimer.value > 0){
 			clearTimeout(clickHoldTimer.value);
 			clickHoldTimer.value = 0;
@@ -226,14 +227,14 @@ function onScroll(): void {
 		pendingScrollHdlr.value = setTimeout(() => {
 			scrollOffset.value = rootRef.value!.scrollTop;
 			pendingScrollHdlr.value = 0;
-		}, props.uiOpts.animationDelay);
+		}, store.animationDelay);
 	}
 }
 // Scroll to focused child if overflownRoot
 watch(hasFocusedChild, (newVal: boolean) => {
 	if (newVal && isOverflownRoot.value){
 		let focusedChild = props.layoutNode.children.find(n => n.hasFocus)!
-		let bottomY = focusedChild.pos[1] + focusedChild.dims[1] + props.lytOpts.tileSpacing;
+		let bottomY = focusedChild.pos[1] + focusedChild.dims[1] + store.lytOpts.tileSpacing;
 		let scrollTop = Math.max(0, bottomY - (props.overflownDim / 2)); // No need to manually cap at max
 		rootRef.value!.scrollTop = scrollTop;
 	}
@@ -253,16 +254,16 @@ function onTransitionEnd(){
 // For setting transition state (allows external triggering, like via search and auto-mode)
 watch(() => props.layoutNode.pos, (newVal: [number, number], oldVal: [number, number]) => {
 	let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
-	if (valChanged && props.uiOpts.transitionDuration > 100 && !inTransition.value){
+	if (valChanged && store.transitionDuration > 100 && !inTransition.value){
 		inTransition.value = true;
-		setTimeout(onTransitionEnd, props.uiOpts.transitionDuration);
+		setTimeout(onTransitionEnd, store.transitionDuration);
 	}
 });
 watch(() => props.layoutNode.dims, (newVal: [number, number], oldVal: [number, number]) => {
 	let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
-	if (valChanged && props.uiOpts.transitionDuration > 100 && !inTransition.value){
+	if (valChanged && store.transitionDuration > 100 && !inTransition.value){
 		inTransition.value = true;
-		setTimeout(onTransitionEnd, props.uiOpts.transitionDuration);
+		setTimeout(onTransitionEnd, store.transitionDuration);
 	}
 });
 
@@ -285,7 +286,7 @@ const inFlash = ref(false); // Used to 'flash' the tile when focused
 watch(() => props.layoutNode.hasFocus, (newVal: boolean, oldVal: boolean) => {
 	if (newVal != oldVal && newVal){
 		inFlash.value = true;
-		setTimeout(() => {inFlash.value = false;}, props.uiOpts.transitionDuration);
+		setTimeout(() => {inFlash.value = false;}, 300);
 	}
 });
 
@@ -294,32 +295,32 @@ const justUnhidden = ref(false); // Used to allow overflow temporarily after bei
 watch(() => props.layoutNode.hidden, (newVal: boolean, oldVal: boolean) => {
 	if (oldVal && !newVal){
 		justUnhidden.value = true;
-		setTimeout(() => {justUnhidden.value = false}, props.uiOpts.transitionDuration + 100);
+		setTimeout(() => {justUnhidden.value = false}, store.transitionDuration + 100);
 	}
 });
 
 // Styles + classes
 const nonleafBgColor = computed(() => {
-	let colorArray = props.uiOpts.nonleafBgColors;
+	let colorArray = store.nonleafBgColors;
 	return colorArray[props.layoutNode.depth % colorArray.length];
 });
 const boxShadow = computed((): string => {
 	if (highlight.value){
-		return props.uiOpts.shadowHovered;
+		return store.shadowHovered;
 	} else if (props.layoutNode.hasFocus && !inTransition.value){
-		return props.uiOpts.shadowFocused;
+		return store.shadowFocused;
 	} else {
-		return props.uiOpts.shadowNormal;
+		return store.shadowNormal;
 	}
 });
 const fontSz = computed((): number => {
 	// These values are a compromise between dynamic font size and code simplicity
 	if (props.layoutNode.dims[0] >= 150){
-		return props.lytOpts.headerSz * 0.8;
+		return store.lytOpts.headerSz * 0.8;
 	} else if (props.layoutNode.dims[0] >= 80){
-		return props.lytOpts.headerSz * 0.7;
+		return store.lytOpts.headerSz * 0.7;
 	} else {
-		return props.lytOpts.headerSz * 0.6;
+		return store.lytOpts.headerSz * 0.6;
 	}
 });
 //
@@ -330,11 +331,11 @@ const styles = computed((): Record<string,string> => {
 		top: props.layoutNode.pos[1] + 'px',
 		width: props.layoutNode.dims[0] + 'px',
 		height: props.layoutNode.dims[1] + 'px',
-		borderRadius: props.uiOpts.borderRadius + 'px',
+		borderRadius: store.borderRadius + 'px',
 		boxShadow: boxShadow.value,
 		visibility: 'visible',
 		// Transition related
-		transitionDuration: (props.skipTransition ? 0 : props.uiOpts.transitionDuration) + 'ms',
+		transitionDuration: (props.skipTransition ? 0 : store.transitionDuration) + 'ms',
 		transitionProperty: 'left, top, width, height, visibility',
 		transitionTimingFunction: 'ease-out',
 		zIndex: inTransition.value && wasClicked.value ? '1' : '0',
@@ -342,10 +343,10 @@ const styles = computed((): Record<string,string> => {
 			'hidden' : 'visible',
 		// CSS variables
 		'--nonleafBgColor': nonleafBgColor.value,
-		'--tileSpacing': props.lytOpts.tileSpacing + 'px',
+		'--tileSpacing': store.lytOpts.tileSpacing + 'px',
 	};
 	if (!isLeaf.value){
-		let borderR = props.uiOpts.borderRadius + 'px';
+		let borderR = store.borderRadius + 'px';
 		if (props.layoutNode.sepSweptArea != null){
 			borderR = props.layoutNode.sepSweptArea.sweptLeft ?
 				`${borderR} ${borderR} ${borderR} 0` :
@@ -354,7 +355,7 @@ const styles = computed((): Record<string,string> => {
 		layoutStyles.borderRadius = borderR;
 	}
 	if (isOverflownRoot.value){
-		layoutStyles.width = (props.layoutNode.dims[0] + props.uiOpts.scrollGap) + 'px';
+		layoutStyles.width = (props.layoutNode.dims[0] + store.scrollGap) + 'px';
 		layoutStyles.height = props.overflownDim + 'px';
 		layoutStyles.overflow = 'hidden scroll';
 	}
@@ -377,7 +378,7 @@ const leafStyles = computed((): Record<string,string> => {
 			backgroundImage: tolNode.value.imgName != null ?
 				`${SCRIM_GRADIENT},url('${getImagePath(tolNode.value.imgName as string)}')` :
 				'none',
-			backgroundColor: props.uiOpts.bgColorDark,
+			backgroundColor: store.color.bgDark,
 			backgroundSize: 'cover',
 		};
 	}
@@ -385,8 +386,8 @@ const leafStyles = computed((): Record<string,string> => {
 });
 const leafHeaderStyles = computed((): Record<string,string> => {
 	let numChildren = tolNode.value.children.length;
-	let textColor = props.uiOpts.textColor;
-	for (let [threshold, color] of props.uiOpts.childQtyColors){
+	let textColor = store.color.text;
+	for (let [threshold, color] of store.childQtyColors){
 		if (numChildren >= threshold){
 			textColor = color;
 		} else {
@@ -413,7 +414,7 @@ function leafSubImgStyles(idx: number): Record<string,string> {
 		backgroundImage: (tolNode.value.imgName![idx]! != null) ?
 			`${SCRIM_GRADIENT},url('${getImagePath(tolNode.value.imgName![idx]! as string)}')` :
 			'none',
-		backgroundColor: props.uiOpts.bgColorDark,
+		backgroundColor: store.color.bgDark,
 		backgroundSize: '125%',
 		borderRadius: 'inherit',
 		clipPath: (idx == 0) ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 100%, 100% 100%)',
@@ -438,10 +439,10 @@ const nonleafStyles = computed((): Record<string,string> => {
 const nonleafHeaderStyles = computed((): Record<string,string> => {
 	let styles: Record<string,string> = {
 		position: 'static',
-		height: props.lytOpts.headerSz + 'px',
+		height: store.lytOpts.headerSz + 'px',
 		borderTopLeftRadius: 'inherit',
 		borderTopRightRadius: 'inherit',
-		backgroundColor: props.uiOpts.nonleafHeaderColor,
+		backgroundColor: store.nonleafHeaderColor,
 	};
 	if (isOverflownRoot.value){
 		styles = {
@@ -451,7 +452,7 @@ const nonleafHeaderStyles = computed((): Record<string,string> => {
 			left: '0',
 			borderTopRightRadius: '0',
 			zIndex: '1',
-			boxShadow: props.uiOpts.shadowNormal,
+			boxShadow: store.shadowNormal,
 		};
 	}
 	return styles;
@@ -461,19 +462,19 @@ const nonleafHeaderTextStyles = computed(() => ({
 	fontSize: fontSz.value + 'px',
 	paddingLeft: (fontSz.value * 0.2) + 'px',
 	textAlign: 'center',
-	color: props.uiOpts.textColor,
+	color: store.color.text,
 	// For ellipsis
 	overflow: 'hidden',
 	textOverflow: 'ellipsis',
 	whiteSpace: 'nowrap',
 }));
 const sepSweptAreaStyles = computed((): Record<string,string> => {
-	let borderR = props.uiOpts.borderRadius + 'px';
+	let borderR = store.borderRadius + 'px';
 	let styles = {
 		position: 'absolute',
 		backgroundColor: nonleafBgColor.value,
 		boxShadow: boxShadow.value,
-		transitionDuration: props.uiOpts.transitionDuration + 'ms',
+		transitionDuration: store.transitionDuration + 'ms',
 		transitionProperty: 'left, top, width, height, visibility',
 		transitionTimingFunction: 'ease-out',
 	};
@@ -495,7 +496,7 @@ const sepSweptAreaStyles = computed((): Record<string,string> => {
 			...styles,
 			visibility: 'hidden',
 			left: '0',
-			top: props.lytOpts.headerSz + 'px',
+			top: store.lytOpts.headerSz + 'px',
 			width: '0',
 			height: '0',
 			borderRadius: borderR,
@@ -512,8 +513,8 @@ const sepSweptAreaHideEdgeClass = computed((): string => {
 	}
 });
 const infoIconStyles = computed((): Record<string,string> => {
-	let size = (props.lytOpts.headerSz * 0.85);
-	let marginSz = (props.lytOpts.headerSz - size);
+	let size = (store.lytOpts.headerSz * 0.85);
+	let marginSz = (store.lytOpts.headerSz - size);
 	return {
 		width: size + 'px',
 		height: size + 'px',

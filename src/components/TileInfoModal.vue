@@ -58,35 +58,35 @@
 						</template>
 						<template v-slot:content>
 							<ul class="rounded shadow overflow-x-auto p-1"
-								:style="{backgroundColor: uiOpts.bgColor, color: uiOpts.textColor}">
+								:style="{backgroundColor: store.color.bg, color: store.color.text}">
 								<li v-if="imgInfos[idx]!.url != ''">
-									<span :style="{color: uiOpts.altColor}">Source: </span>
+									<span :style="{color: store.color.alt}">Source: </span>
 									<a :href="imgInfos[idx]!.url" target="_blank">Link</a>
 									<external-link-icon class="inline-block w-3 h-3 ml-1"/>
 								</li>
 								<li v-if="imgInfos[idx]!.artist != ''" class="whitespace-nowrap">
-									<span :style="{color: uiOpts.altColor}">Artist: </span>
+									<span :style="{color: store.color.alt}">Artist: </span>
 									{{imgInfos[idx]!.artist}}
 								</li>
 								<li v-if="imgInfos[idx]!.credit != ''" class="whitespace-nowrap">
-									<span :style="{color: uiOpts.altColor}">Credits: </span>
+									<span :style="{color: store.color.alt}">Credits: </span>
 									{{imgInfos[idx]!.credit}}
 								</li>
 								<li>
-									<span :style="{color: uiOpts.altColor}">License: </span>
+									<span :style="{color: store.color.alt}">License: </span>
 									<a :href="licenseToUrl(imgInfos[idx]!.license)" target="_blank">
 										{{imgInfos[idx]!.license}}
 									</a>
 									<external-link-icon class="inline-block w-3 h-3 ml-1"/>
 								</li>
 								<li v-if="imgInfos[idx]!.src != 'picked'">
-									<span :style="{color: uiOpts.altColor}">Obtained via: </span>
+									<span :style="{color: store.color.alt}">Obtained via: </span>
 									<a v-if="imgInfos[idx]!.src == 'eol'" href="https://eol.org/">EoL</a>
 									<a v-else href="https://www.wikipedia.org/">Wikipedia</a>
 									<external-link-icon class="inline-block w-3 h-3 ml-1"/>
 								</li>
 								<li>
-									<span :style="{color: uiOpts.altColor}">Changes: </span>
+									<span :style="{color: store.color.alt}">Changes: </span>
 									Cropped and resized
 								</li>
 							</ul>
@@ -119,22 +119,21 @@ import ExternalLinkIcon from './icon/ExternalLinkIcon.vue';
 import DownIcon from './icon/DownIcon.vue';
 import LinkIcon from './icon/LinkIcon.vue';
 import {TolNode} from '../tol';
-import {LayoutOptions} from '../layout';
-import {getImagePath, DescInfo, ImgInfo, InfoResponse, UiOptions} from '../lib';
+import {getImagePath, DescInfo, ImgInfo, InfoResponse} from '../lib';
 import {capitalizeWords} from '../util';
+import {useStore} from '../store';
 
 // Refs
 const rootRef = ref(null as HTMLDivElement | null);
 const closeRef = ref(null as typeof CloseIcon | null);
 
+// Global store
+const store = useStore();
+
 // Props + events
 const props = defineProps({
-	// Node data to display
 	nodeName: {type: String, required: true},
 	infoResponse: {type: Object as PropType<InfoResponse>, required: true},
-	// Options
-	lytOpts: {type: Object as PropType<LayoutOptions>, required: true},
-	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 });
 const emit = defineEmits(['close']);
 
@@ -239,9 +238,9 @@ function onLinkIconClick(){
 
 // Styles
 const styles = computed(() => ({
-	backgroundColor: props.uiOpts.bgColorAlt,
-	borderRadius: props.uiOpts.borderRadius + 'px',
-	boxShadow: props.uiOpts.shadowNormal,
+	backgroundColor: store.color.bgAlt,
+	borderRadius: store.borderRadius + 'px',
+	boxShadow: store.shadowNormal,
 	overflow: 'visible auto',
 }));
 function getImgStyles(tolNode: TolNode | null): Record<string,string> {
@@ -255,10 +254,10 @@ function getImgStyles(tolNode: TolNode | null): Record<string,string> {
 		backgroundImage: imgName != null ?
 			`url('${getImagePath(imgName as string)}')` :
 			'none',
-		backgroundColor: props.uiOpts.bgColorDark,
+		backgroundColor: store.color.bgDark,
 		backgroundSize: 'cover',
-		borderRadius: props.uiOpts.borderRadius + 'px',
-		boxShadow: props.uiOpts.shadowNormal,
+		borderRadius: store.borderRadius + 'px',
+		boxShadow: store.shadowNormal,
 	};
 }
 function iucnStyles(iucn: string): Record<string,string>{
@@ -277,8 +276,8 @@ function iucnStyles(iucn: string): Record<string,string>{
 	};
 }
 const linkCopyLabelStyles = computed(() => ({
-	color: props.uiOpts.textColor,
-	backgroundColor: props.uiOpts.bgColor,
-	borderRadius: props.uiOpts.borderRadius + 'px',
+	color: store.color.text,
+	backgroundColor: store.color.bg,
+	borderRadius: store.borderRadius + 'px',
 }));
 </script>

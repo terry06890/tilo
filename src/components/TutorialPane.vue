@@ -70,7 +70,11 @@
 import {ref, computed, watch, onMounted, PropType} from 'vue';
 import SButton from './SButton.vue';
 import CloseIcon from './icon/CloseIcon.vue';
-import {Action, UiOptions} from '../lib';
+import {Action} from '../lib';
+import {useStore} from '../store';
+
+// Global store
+const store = useStore();
 
 // Props + events
 const props = defineProps({
@@ -79,9 +83,8 @@ const props = defineProps({
 	triggerFlag: {type: Boolean, required: true},
 		// Used to indicate that a tutorial-requested 'trigger' action has been done
 	skipWelcome: {type: Boolean, default: false},
-	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 });
-const touchDevice = computed(() => props.uiOpts.touchDevice);
+const touchDevice = computed(() => store.touchDevice);
 const emit = defineEmits(['close', 'stage-chg', 'skip']);
 
 // For tutorial stage
@@ -118,13 +121,13 @@ function onStageChange(){
 	if (stage.value == 1 && !disabledOnce){
 		for (let action of STAGE_ACTIONS){
 			if (action != null && !props.actionsDone.has(action)){
-				props.uiOpts.disabledActions.add(action);
+				store.disabledActions.add(action);
 			}
 		}
 		disabledOnce = true;
 	}
 	// Enable action for this stage
-	props.uiOpts.disabledActions.delete(STAGE_ACTIONS[stage.value - 1]);
+	store.disabledActions.delete(STAGE_ACTIONS[stage.value - 1]);
 	// Notify of new trigger-action
 	emit('stage-chg', STAGE_ACTIONS[stage.value - 1]);
 	// After stage 1, show prev/next buttons
@@ -148,8 +151,8 @@ watch(() => props.triggerFlag, () => {
 
 // Styles
 const styles = computed(() => ({
-	backgroundColor: props.uiOpts.bgColorDark,
-	color: props.uiOpts.textColor,
+	backgroundColor: store.color.bgDark,
+	color: store.color.text,
 }));
 const contentStyles = {
 	padding: '0 0.5cm',
@@ -157,7 +160,7 @@ const contentStyles = {
 	textAlign: 'center',
 };
 const buttonStyles = computed(() => ({
-	color: props.uiOpts.textColor,
-	backgroundColor: props.uiOpts.bgColor,
+	color: store.color.text,
+	backgroundColor: store.color.bg,
 }));
 </script>

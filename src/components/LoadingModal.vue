@@ -9,19 +9,20 @@
 </template>
 
 <script setup lang="ts">
-import {computed, PropType} from 'vue';
+import {computed} from 'vue';
 import LoaderIcon from './icon/LoaderIcon.vue';
-import {UiOptions} from '../lib';
+import {useStore} from '../store';
 
-const props = defineProps({
+const store = useStore();
+
+defineProps({
 	msg: {type: String, required: true},
-	uiOpts: {type: Object as PropType<UiOptions>, required: true},
 });
 
 const styles = computed(() => ({
-	color: props.uiOpts.textColor,
-	backgroundColor: props.uiOpts.bgColorDark2,
-	borderRadius: props.uiOpts.borderRadius + 'px',
-	boxShadow: props.uiOpts.shadowNormal,
+	color: store.color.text,
+	backgroundColor: store.color.bgDark2,
+	borderRadius: store.borderRadius + 'px',
+	boxShadow: store.shadowNormal,
 }));
 </script>
