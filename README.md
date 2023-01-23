@@ -38,15 +38,14 @@ stored using [Sqlite](https://www.sqlite.org).
 ## Setup Instructions
 
 Note: Running your own version of the client and server should be straightforward,
-but generating the database that they use takes a long time. More details are
-in `backend/tolData/README.md`.
+but generating the database takes a long time. More details are
+in `backend/tol_data/README.md`.
 
 ### Client Side
 1.  If you don't have npm or Node.js installed, you can download a Node installer from
     <https://nodejs.org/en/download>, which includes npm. This project was coded using version 16.
 1.  In this directory, run the command `npm install`, which install packages listed in
     package.json, creating a `node_modules` directory to hold them.
-1.  Running `npm run dev` starts the dev server.
 
 ### Server Side
 1.  If you don't have Python 3 installed, see <https://www.python.org/downloads>.
@@ -54,9 +53,8 @@ in `backend/tolData/README.md`.
 1.  The database used by the server is generated using scripts in `backend/tol_data/`.
     See it's README for instructions. You'll likely need to install a few
     packages using Pip.
-1.  The dev server is started by running `./server.py` in the `backend/` directory.
-    To run it, you'll need to install jsonpickle. This can be done using
-    `python -m pip install jsonpickle`.
+1.  To run the data server via `backend/server.py`, you'll need to install jsonpickle.
+    This can be done using `python -m pip install jsonpickle`.
 
     If you want to keep the installed package separate from your system's packages,
     it's common practice to use [venv](https://docs.python.org/3/tutorial/venv.html).

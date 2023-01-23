@@ -13,7 +13,7 @@ import os, bz2, html, urllib.parse
 import sqlite3
 
 DUMP_FILE = 'enwiki-20220501-pages-articles-multistream.xml.bz2'
-INDEX_DB = 'dumpIndex.db'
+INDEX_DB = 'dump_index.db'
 IMG_DB = 'img_data.db' # The database to create
 DB_FILE = os.path.join('..', 'data.db')
 #

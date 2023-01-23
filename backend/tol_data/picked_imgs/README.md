@@ -4,7 +4,7 @@ on top of those from EOL and Wikipedia.
 Possible Files
 ==============
 -   (Image files)
--   img_data.txt <br>
+-   `img_data.txt` <br>
     Contains lines with the format `filename|url|license|artist|credit`.
     The filename should consist of a node name, with an image extension.
     Other fields correspond to those in the `images` table (see ../README.md).

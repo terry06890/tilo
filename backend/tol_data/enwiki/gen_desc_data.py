@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
 """
-Reads through the wiki dump, and attempts to parse short-descriptions,
-and add them to a database
+Reads through the wiki dump, attempts to parse short-descriptions,
+and adds them to a database
 """
 
 # In testing, this script took over 10 hours to run, and generated about 5GB

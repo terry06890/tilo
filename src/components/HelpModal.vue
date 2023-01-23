@@ -5,7 +5,7 @@
 		w-[90%] max-w-[16cm] max-h-[80%] overflow-auto" :style="styles">
 		<close-icon @click.stop="onClose" ref="closeRef"
 			class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
-		<h1 class="text-center text-xl font-bold pt-2 pb-1">Help</h1>
+		<h1 class="text-center text-xl sm:text-2xl font-bold pt-2 pb-1">Help</h1>
 		<div class="flex flex-col gap-2 p-2">
 			<s-collapsible :class="scClasses">
 				<template #summary="slotProps">

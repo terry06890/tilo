@@ -92,18 +92,18 @@ class TestGenData(unittest.TestCase):
 			('dog', 'endangered'),
 		}
 	def test_wikiItems(self):
-		srcMap, iucnMap = runGenData(self.testWikiItems, False, 1)
-		self.assertEqual(srcMap, self.expectedSrcRows)
-		self.assertEqual(iucnMap, self.expectedIucnRows)
+		srcRows, iucnRows = runGenData(self.testWikiItems, False, 1)
+		self.assertEqual(srcRows, self.expectedSrcRows)
+		self.assertEqual(iucnRows, self.expectedIucnRows)
 	def test_empty_dump(self):
-		srcMap, iucnMap = runGenData([{}], False, 1)
-		self.assertEqual(srcMap, set())
-		self.assertEqual(iucnMap, set())
+		srcRows, iucnRows = runGenData([{}], False, 1)
+		self.assertEqual(srcRows, set())
+		self.assertEqual(iucnRows, set())
 	def test_multiprocessing(self):
-		srcMap, iucnMap = runGenData(self.testWikiItems, False, 4)
-		self.assertEqual(srcMap, self.expectedSrcRows)
-		self.assertEqual(iucnMap, self.expectedIucnRows)
+		srcRows, iucnRows = runGenData(self.testWikiItems, False, 4)
+		self.assertEqual(srcRows, self.expectedSrcRows)
+		self.assertEqual(iucnRows, self.expectedIucnRows)
 	def test_existing_offsets(self):
-		srcMap, iucnMap = runGenData(self.testWikiItems, True, 3)
-		self.assertEqual(srcMap, self.expectedSrcRows)
-		self.assertEqual(iucnMap, self.expectedIucnRows)
+		srcRows, iucnRows = runGenData(self.testWikiItems, True, 3)
+		self.assertEqual(srcRows, self.expectedSrcRows)
+		self.assertEqual(iucnRows, self.expectedIucnRows)

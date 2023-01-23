@@ -3,7 +3,7 @@ This directory holds files used to generate the tree-of-life database data.db.
 # Database Tables
 ## Tree Structure
 -   `nodes` <br>
-    Format : `name TEXT PRIMARY KEY, id TEXT UNIQUE, tips INT` <br>
+    Format: `name TEXT PRIMARY KEY, id TEXT UNIQUE, tips INT` <br>
     Represents a tree-of-life node. `tips` holds the number of no-child descendants
 -   `edges` <br>
     Format: `parent TEXT, child TEXT, p_support INT, PRIMARY KEY (parent, child)` <br>
@@ -59,10 +59,8 @@ takes several days, and occupies over 200 GB.
 ## Environment
 Some of the scripts use third-party packages:
 -   `indexed_bzip2`: For parallelised bzip2 processing.
--   `jsonpickle`: For encoding class objects as JSON.
 -   `requests`: For downloading data.
--   `PIL`: For image processing.
--   `tkinter`: For providing a basic GUI to review images.
+-   `Pillow`: For image processing.
 -   `mwxml`, `mwparserfromhell`: For parsing Wikipedia dumps.
 
 ## Generate Tree Structure Data

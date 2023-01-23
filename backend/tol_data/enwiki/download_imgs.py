@@ -75,7 +75,6 @@ def downloadImgs(imgDb: str, outDir: str, timeout: int) -> None:
 			print(f'WARNING: No filename extension found in URL {url}')
 			continue
 		outFile = os.path.join(outDir, f'{pageId}{extension}')
-		print(outFile)
 		headers = {
 			'user-agent': USER_AGENT,
 			'accept-encoding': 'gzip',

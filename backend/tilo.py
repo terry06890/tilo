@@ -1,11 +1,4 @@
-#!/usr/bin/python3
-
-from typing import Iterable, cast
-import sys, re
-import urllib.parse, sqlite3
-import gzip, jsonpickle
-
-HELP_INFO = """
+"""
 WSGI script that serves tree-of-life data, in JSON form.
 
 Expected HTTP query parameters:
@@ -23,10 +16,11 @@ Expected HTTP query parameters:
     weakly-trimmed, images-only, and picked-nodes trees. The default
     is 'images'.
 """
-if __name__ == '__main__':
-	import argparse
-	parser = argparse.ArgumentParser(description=HELP_INFO, formatter_class=argparse.RawDescriptionHelpFormatter)
-	parser.parse_args()
+
+from typing import Iterable, cast
+import sys, re
+import urllib.parse, sqlite3
+import gzip, jsonpickle
 
 DB_FILE = 'tol_data/data.db'
 DEFAULT_SUGG_LIM = 5

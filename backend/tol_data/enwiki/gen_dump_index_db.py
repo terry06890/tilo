@@ -8,7 +8,7 @@ import bz2
 import sqlite3
 
 INDEX_FILE = 'enwiki-20220501-pages-articles-multistream-index.txt.bz2' # Had about 22e6 lines
-DB_FILE = 'dumpIndex.db'
+DB_FILE = 'dump_index.db'
 
 def genData(indexFile: str, dbFile: str) -> None:
 	""" Reads the index file and creates the db """

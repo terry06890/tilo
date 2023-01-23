@@ -1,5 +1,9 @@
 #!/usr/bin/python3
 
+"""
+Runs a basic dev server that serves a WSGI script and image files
+"""
+
 from typing import Iterable
 import os
 from wsgiref import simple_server, util
@@ -7,9 +11,7 @@ import mimetypes
 from tilo import application
 
 import argparse
-parser = argparse.ArgumentParser(description="""
-Runs a basic dev server that serves a WSGI script and image files
-""")
+parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.parse_args()
 
 def wrappingApp(environ: dict[str, str], start_response) -> Iterable[bytes]:

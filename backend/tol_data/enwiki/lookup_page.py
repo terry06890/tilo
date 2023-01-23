@@ -10,7 +10,7 @@ import bz2
 import sqlite3
 
 DUMP_FILE = 'enwiki-20220501-pages-articles-multistream.xml.bz2'
-INDEX_DB = 'dumpIndex.db'
+INDEX_DB = 'dump_index.db'
 
 def lookupPage(dumpFile: str, indexDb: str, pageTitle: str) -> None:
 	print('Looking up offset in index db')

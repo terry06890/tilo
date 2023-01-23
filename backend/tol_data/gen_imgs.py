@@ -115,7 +115,7 @@ def processPickedImgs(
 def processImgs(
 		imgListFile: str, eolImgDir: str, eolImgDb: str, enwikiImgDb: str,
 		nodesDone: set[str], imgsDone: set[ImgId], outDir: str, dbCur: sqlite3.Cursor) -> bool:
-	""" Converts EOL and enwiki images, and updates db, returning False upon interrupted or failure """
+	""" Converts EOL and enwiki images, and updates db, returning False upon interruption or failure """
 	eolCon = sqlite3.connect(eolImgDb)
 	eolCur = eolCon.cursor()
 	enwikiCon = sqlite3.connect(enwikiImgDb)

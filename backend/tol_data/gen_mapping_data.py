@@ -19,7 +19,7 @@ import gzip, csv, sqlite3
 TAXONOMY_FILE = os.path.join('otol', 'taxonomy.tsv')
 EOL_IDS_FILE = os.path.join('eol', 'provider_ids.csv.gz')
 WIKIDATA_DB = os.path.join('wikidata', 'taxon_srcs.db')
-ENWIKI_DUMP_INDEX_DB = os.path.join('enwiki', 'dumpIndex.db')
+ENWIKI_DUMP_INDEX_DB = os.path.join('enwiki', 'dump_index.db')
 PICKED_MAPPINGS = {
 	'eol': ['picked_eol_ids.txt'],
 	'enwiki': ['picked_wiki_ids.txt', 'picked_wiki_ids_rough.txt']

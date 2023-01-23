@@ -2,7 +2,7 @@
 <div class="absolute left-0 top-0 w-screen h-screen overflow-hidden flex flex-col"
 	:style="{backgroundColor: store.color.bg, scrollbarColor: store.color.altDark + ' ' + store.color.bgDark}">
 	<!-- Title bar -->
-	<div class="flex shadow gap-2 p-2" :style="{backgroundColor: store.color.bgDark2, color: store.color.alt}">
+	<div class="flex gap-2 p-2" :style="{backgroundColor: store.color.bgDark2, color: store.color.alt}">
 		<h1 class="my-auto ml-2 text-4xl hover:cursor-pointer" @click="collapseTree" title="Reset tree">Tilo</h1>
 		<div class="mx-auto"/> <!-- Spacer -->
 		<!-- Icons -->

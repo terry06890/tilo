@@ -12,7 +12,7 @@ from collections import defaultdict
 import bz2, sqlite3
 
 PAGEVIEW_FILES = glob.glob('./pageviews/pageviews-*-user.bz2')
-DUMP_INDEX_DB = 'dumpIndex.db'
+DUMP_INDEX_DB = 'dump_index.db'
 DB_FILE = 'pageview_data.db'
 
 def genData(pageviewFiles: list[str], dumpIndexDb: str, dbFile: str) -> None:
@@ -42,6 +42,7 @@ def genData(pageviewFiles: list[str], dumpIndexDb: str, dbFile: str) -> None:
 				if namespaceRegex.match(title) is not None:
 					continue
 				# Update map
+				title = title.replace('_', ' ')
 				titleToViews[title] += viewCount
 	print(f'Found {len(titleToViews)} titles')
 	#

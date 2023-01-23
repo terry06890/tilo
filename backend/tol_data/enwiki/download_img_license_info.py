@@ -89,7 +89,7 @@ def downloadInfo(imgDb: str) -> None:
 			continue
 		# Parse response-object
 		if 'query' not in responseObj or 'pages' not in responseObj['query']:
-			print('WARNING: Response object for doesn\'t have page data')
+			print('WARNING: Response object doesn\'t have page data')
 			print('\tImage batch: ' + '|'.join(imgBatch))
 			if 'error' in responseObj:
 				errorCode = responseObj['error']['code']
@@ -138,7 +138,6 @@ def downloadInfo(imgDb: str) -> None:
 				credit = html.unescape(credit)
 				credit = urllib.parse.unquote(credit)
 			# Add to db
-			print((title, license, artist, credit, restrictions, url))
 			dbCur.execute('INSERT INTO imgs VALUES (?, ?, ?, ?, ?, ?)',
 				(title, license, artist, credit, restrictions, url))
 	#

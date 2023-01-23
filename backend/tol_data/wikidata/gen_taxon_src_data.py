@@ -50,7 +50,7 @@ IUCN_STATUS_IDS = {
 	'Q237350': 'extinct species', 'Q3245245': 'data deficient'
 }
 # For filtering lines before parsing JSON
-LINE_REGEX = re.compile(('"id":(?:"' + '"|"'.join([s for s in TAXON_IDS + TAXON_ALT_IDS]) + '")\D').encode())
+LINE_REGEX = re.compile(('"id":(?:"' + '"|"'.join([s for s in TAXON_IDS + TAXON_ALT_IDS]) + '")').encode())
 
 def genData(wikidataFile: str, offsetsFile: str, dbFile: str, nProcs: int) -> None:
 	""" Reads the dump and writes source/iucn info to db """
@@ -92,8 +92,8 @@ def genData(wikidataFile: str, offsetsFile: str, dbFile: str, nProcs: int) -> No
 			with multiprocessing.Pool(processes=nProcs, maxtasksperchild=1) as pool:
 				for outFilename in pool.map(
 						readDumpChunkOneParam,
-						((i, wikidataFile, offsetsFile, chunkIdxs[i], chunkIdxs[i+1],
-							os.path.join(tempDirName, f'{i}.pickle')) for i in range(nProcs))):
+						[(i, wikidataFile, offsetsFile, chunkIdxs[i], chunkIdxs[i+1],
+							os.path.join(tempDirName, f'{i}.pickle')) for i in range(nProcs)]):
 					# Get map data from subprocess output file
 					with open(outFilename, 'rb') as file:
 						maps = pickle.load(file)
