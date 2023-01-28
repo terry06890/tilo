@@ -32,7 +32,7 @@
 				<info-icon v-if="infoIconDisabled" :style="infoIconStyles" :class="infoIconClasses"
 					@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 			</div>
-			<transition name="fadein">
+			<transition name="fadeout">
 				<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 rounded-[inherit] bg-amber-500/70 z-20"/>
 			</transition>
 		</div>
@@ -42,7 +42,7 @@
 			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
 			@info-click="onInnerInfoIconClick"/>
 	</div>
-	<transition name="fadein">
+	<transition name="fadeout">
 		<div v-if="inFlash" :style="{top: scrollOffset + 'px'}"
 			class="absolute w-full h-full left-0 rounded-[inherit] bg-amber-500/70"/>
 	</transition>
@@ -226,7 +226,9 @@ const pendingScrollHdlr = ref(0); // Used for throttling updating of scrollOffse
 function onScroll(): void {
 	if (pendingScrollHdlr.value == 0){
 		pendingScrollHdlr.value = setTimeout(() => {
-			scrollOffset.value = rootRef.value!.scrollTop;
+			if (rootRef.value != null){
+				scrollOffset.value = rootRef.value!.scrollTop;
+			}
 			pendingScrollHdlr.value = 0;
 		}, store.animationDelay);
 	}

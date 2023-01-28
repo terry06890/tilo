@@ -26,6 +26,7 @@ export type StoreState = {
 	// Coloring
 	color: {
 		text: string, // CSS color
+		textDark: string,
 		textAlt: string,
 		bg: string,
 		bgLight: string,
@@ -66,6 +67,7 @@ function getDefaultState(): StoreState {
 	const tileSpacing = breakpoint == 'sm' ? 6 : 9;
 	const color = { // Note: For scrollbar colors on chrome, edit ./index.css
 		text: '#fafaf9',      // stone-50
+		textDark: '#a8a29e',  // stone-400
 		textAlt: '#1c1917',   // stone-900
 		bg: '#292524',        // stone-800
 		bgLight: '#44403c',   // stone-700
@@ -216,7 +218,7 @@ export const useStore = defineStore('store', {
 			const defaultState = getDefaultState();
 			for (const key of STORE_COMP_KEYS){
 				const defaultVal = getStoreVal(defaultState, key);
-				if (getStoreVal(this, key) != defaultState && localStorage.getItem(key) == null){
+				if (getStoreVal(this, key) != defaultVal && localStorage.getItem(key) == null){
 					setStoreVal(this, key, defaultVal)
 				}
 			}

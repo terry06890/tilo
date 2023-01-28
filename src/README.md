@@ -14,6 +14,7 @@
     -   **IconButton.vue**:    Simple button component containing an SVG icon.
     -   **SCollapsible.vue**:  Simple collapsible-content component.
     -   **icon**:              Contains components that display SVG icons.
+-   **store.ts**:       App global storage.
 -   **tol.ts**:    Holds types for tree-of-life data.
 -   **layout.ts**: Holds code for laying out tiles.
 -   **lib.ts**:    Holds project-wide globals.

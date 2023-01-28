@@ -25,10 +25,10 @@
 	transition-duration: 1000ms;
 	transition-timing-function: linear;
 }
-.fadein-leave-to {
+.fadeout-leave-to {
 	opacity: 0;
 }
-.fadein-leave-active {
+.fadeout-leave-active {
 	transition-property: opacity;
 	transition-duration: 300ms;
 	transition-timing-function: ease-out;

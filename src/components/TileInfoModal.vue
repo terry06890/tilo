@@ -18,16 +18,17 @@
 				{{getDisplayName(nodeName, tolNode)}}
 			</h1>
 			<div class="flex justify-evenly text-sm md:text-base">
-				<div> Children: {{(tolNode.children.length).toLocaleString()}} </div>
-				<div> Tips: {{(tolNode.tips).toLocaleString()}} </div>
+				<div><span class="font-bold">Children:</span> {{(tolNode.children.length).toLocaleString()}}</div>
+				<div><span class="font-bold">Tips:</span> {{(tolNode.tips).toLocaleString()}}</div>
 				<div v-if="tolNode.iucn != null">
 					<a href="https://en.wikipedia.org/wiki/Endangered_species_(IUCN_status)"
-						target="_blank" title="IUCN Conservation Status">IUCN</a>:
+						target="_blank" title="IUCN Conservation Status" class="font-bold">IUCN: </a>
 					<span :style="iucnStyles(tolNode.iucn)">{{getDisplayIucn(tolNode.iucn)}}</span>
 				</div>
 				<div>
 					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId"
-						target="_blank" title="Look up in Open Tree of Life">OTOL <external-link-icon class="inline-block w-3 h-3"/></a>
+						target="_blank" title="Look up in Open Tree of Life" class="font-bold">OTOL
+						<external-link-icon class="inline-block w-3 h-3"/></a>
 				</div>
 			</div>
 			<div v-if="nodes.length > 1" class="text-center text-sm px-2">
@@ -60,34 +61,35 @@
 							<ul class="rounded shadow overflow-x-auto p-1"
 								:style="{backgroundColor: store.color.bg, color: store.color.text}">
 								<li v-if="imgInfos[idx]!.url != ''">
-									<span :style="{color: store.color.alt}">Source: </span>
-									<a :href="imgInfos[idx]!.url" target="_blank">Link</a>
+									<span :style="sourceLabelStyles">Source: </span>
+									<a :href="imgInfos[idx]!.url" target="_blank" :style="aStyles">Link</a>
 									<external-link-icon class="inline-block w-3 h-3 ml-1"/>
 								</li>
 								<li v-if="imgInfos[idx]!.artist != ''" class="whitespace-nowrap">
-									<span :style="{color: store.color.alt}">Artist: </span>
+									<span :style="sourceLabelStyles">Artist: </span>
 									{{imgInfos[idx]!.artist}}
 								</li>
 								<li v-if="imgInfos[idx]!.credit != ''" class="whitespace-nowrap">
-									<span :style="{color: store.color.alt}">Credits: </span>
+									<span :style="sourceLabelStyles">Credits: </span>
 									{{imgInfos[idx]!.credit}}
 								</li>
 								<li>
-									<span :style="{color: store.color.alt}">License: </span>
-									<a :href="licenseToUrl(imgInfos[idx]!.license)" target="_blank">
+									<span :style="sourceLabelStyles">License: </span>
+									<a :href="licenseToUrl(imgInfos[idx]!.license)" target="_blank" :style="aStyles">
 										{{imgInfos[idx]!.license}}
 									</a>
 									<external-link-icon class="inline-block w-3 h-3 ml-1"/>
 								</li>
 								<li v-if="imgInfos[idx]!.src != 'picked'">
-									<span :style="{color: store.color.alt}">Obtained via: </span>
-									<a v-if="imgInfos[idx]!.src == 'eol'" href="https://eol.org/">EoL</a>
-									<a v-else href="https://www.wikipedia.org/">Wikipedia</a>
+									<span :style="sourceLabelStyles">Obtained via: </span>
+									<a v-if="imgInfos[idx]!.src == 'eol'" href="https://eol.org/"
+										:style="aStyles">EoL</a>
+									<a v-else href="https://www.wikipedia.org/" :style="aStyles">Wikipedia</a>
 									<external-link-icon class="inline-block w-3 h-3 ml-1"/>
 								</li>
 								<li>
-									<span :style="{color: store.color.alt}">Changes: </span>
-									Cropped and resized
+									<span :style="sourceLabelStyles">Changes: </span>
+									Cropped &amp; resized
 								</li>
 							</ul>
 						</template>
@@ -95,7 +97,7 @@
 				</div>
 				<div v-if="descInfos[idx]! != null">
 					<div>{{descInfos[idx]!.text}}</div>
-					<div class="text-sm text-right">
+					<div class="text-sm text-stone-600 text-right">
 						<a :href="'https://en.wikipedia.org/?curid=' + descInfos[idx]!.wikiId"
 							target="_blank">From Wikipedia</a>
 						<external-link-icon class="inline-block w-3 h-3 ml-1"/>
@@ -260,6 +262,15 @@ function getImgStyles(tolNode: TolNode | null): Record<string,string> {
 		boxShadow: store.shadowNormal,
 	};
 }
+const sourceLabelStyles = computed((): Record<string,string> => {
+	return {
+		color: store.color.textDark,
+		fontWeight: 'bold',
+	};
+});
+const aStyles = computed((): Record<string,string> => ({
+	color: store.color.alt,
+}));
 function iucnStyles(iucn: string): Record<string,string>{
 	let col = 'currentcolor';
 	switch (iucn){

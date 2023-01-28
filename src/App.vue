@@ -65,7 +65,7 @@
 	</transition>
 	<transition name="fade">
 		<tile-info-modal v-if="infoModalNodeName != null && infoModalData != null"
-			:nodeName="infoModalNodeName" :infoResponse="infoModalData" :tolMap="tolMap"
+			:nodeName="infoModalNodeName" :infoResponse="infoModalData"
 			class="z-10" @close="onInfoClose"/>
 	</transition>
 	<transition name="fade">

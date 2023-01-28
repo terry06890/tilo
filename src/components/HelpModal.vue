@@ -182,9 +182,10 @@
 						<br/>
 						<h1 class="text-lg font-bold">Keyboard Shortcuts</h1>
 						<ul class="list-disc pl-4">
-							<li>Ctrl-F opens the search bar</li>
-							<li>Ctrl-Shift-F toggles the search animation</li>
-							<li>Esc closes an open pane, and cancels an active search or auto mode</li>
+							<li><span class="font-bold">Ctrl-F</span> opens the search bar</li>
+							<li><span class="font-bold">Ctrl-Shift-F</span> toggles the search animation</li>
+							<li><span class="font-bold">Esc</span> closes an open pane,
+								and cancels an active search or auto mode</li>
 						</ul>
 						<br/>
 						<h1 class="text-lg font-bold">Unusual Node Names</h1>
@@ -419,6 +420,9 @@
 			:disabled="tutOpen" @click.stop="onStartTutorial">
 			Start Tutorial
 		</s-button>
+		<p class="absolute text-xs md:text-sm text-stone-500 right-2 bottom-2">
+			Last updated 28/01/23
+		</p>
 	</div>
 </div>
 </template>
