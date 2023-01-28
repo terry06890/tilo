@@ -268,7 +268,7 @@ async function onResize(){
 			updateAreaDims();
 			relayoutWithCollapse();
 		} else {
-			reInit();
+			await reInit();
 		}
 	};
 	let currentTime = new Date().getTime();
@@ -282,7 +282,10 @@ async function onResize(){
 	afterResizeHdlr = setTimeout(async () => {
 		afterResizeHdlr = 0;
 		await handleResize();
-		lastResizeHdlrTime = new Date().getTime();
+		let newTime = new Date().getTime();
+		if (newTime > lastResizeHdlrTime){
+			lastResizeHdlrTime = newTime;
+		}
 	}, 200); // If too small, touch-device detection when swapping to/from mobile-mode gets unreliable
 }
 onMounted(() => window.addEventListener('resize', onResize));
