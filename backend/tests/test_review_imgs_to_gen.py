@@ -1,5 +1,7 @@
 import unittest
-import tempfile, os, shutil
+import tempfile
+import os
+import shutil
 
 from tests.common import readTestFile, createTestDbTable
 from tol_data.review_imgs_to_gen import reviewImgs
@@ -62,19 +64,24 @@ class TestReviewImgs(unittest.TestCase):
 					('four', 4),
 				}
 			)
+
 			# Run
 			outFile = os.path.join(tempDir, 'imgList.txt')
 			reviewImgs(eolImgDir, enwikiImgDir, dbFile, outFile, 'all')
+
 			# Check
 			self.assertEqual(set(readTestFile(outFile).splitlines()), {
 				'ott1 ' + os.path.join(eolImgDir, '1 10.jpg'),
 				'ott2',
 				'ott3 ' + os.path.join(enwikiImgDir, '3.png'),
 			})
+
 			# Add extra data
 			createTestDbTable(dbFile, None, 'INSERT INTO nodes VALUES (?, ?, ?)',{('four', 'ott4', 2)})
+
 			# Run
 			reviewImgs(eolImgDir, enwikiImgDir, dbFile, outFile, 'all')
+
 			# Check
 			self.assertEqual(set(readTestFile(outFile).splitlines()), {
 				'ott1 ' + os.path.join(eolImgDir, '1 10.jpg'),

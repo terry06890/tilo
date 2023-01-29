@@ -12,9 +12,12 @@ Based on code from https://github.com/OneZoom/OZtree, located in
 OZprivate/ServerScripts/TaxonMappingAndPopularity/ (22 Aug 2022).
 """
 
+import argparse
 import os
 from collections import defaultdict
-import gzip, csv, sqlite3
+import gzip
+import csv
+import sqlite3
 
 TAXONOMY_FILE = os.path.join('otol', 'taxonomy.tsv')
 EOL_IDS_FILE = os.path.join('eol', 'provider_ids.csv.gz')
@@ -43,27 +46,31 @@ def genData(
 	nodeToWikiTitle: dict[int, str] = {} # Maps otol ID to wikipedia title
 	titleToIucnStatus: dict[str, str] = {} # Maps wikipedia title to IUCN string
 	titleToPageId: dict[str, int] = {} # Maps wikipedia title to page ID
+
 	# Get mappings from data input
 	readTaxonomyFile(taxonomyFile, nodeToSrcIds, usedSrcIds)
 	readEolIdsFile(eolIdsFile, nodeToSrcIds, usedSrcIds, nodeToEolId)
 	readWikidataDb(wikidataDb, nodeToSrcIds, usedSrcIds, nodeToWikiTitle, titleToIucnStatus, nodeToEolId)
 	readPickedMappings(pickedMappings, nodeToEolId, nodeToWikiTitle)
 	getEnwikiPageIds(enwikiDumpIndexDb, nodeToWikiTitle, titleToPageId)
-	#
+
 	print('Writing to db')
 	dbCon = sqlite3.connect(dbFile)
 	dbCur = dbCon.cursor()
+
 	# Get otol id-to-name map
 	otolIdToName: dict[int, str] = {}
 	for nodeName, nodeId in dbCur.execute('SELECT name, id from nodes'):
 		if nodeId.startswith('ott'):
 			otolIdToName[int(nodeId[3:])] = nodeName
+
 	# Add eol mappings
 	dbCur.execute('CREATE TABLE eol_ids (name TEXT PRIMARY KEY, id INT)')
 	dbCur.execute('CREATE INDEX eol_id_idx ON eol_ids(id)')
 	for otolId, eolId in nodeToEolId.items():
 		if otolId in otolIdToName:
 			dbCur.execute('INSERT INTO eol_ids VALUES (?, ?)', (otolIdToName[otolId], eolId))
+
 	# Add enwiki mappings
 	dbCur.execute('CREATE TABLE wiki_ids (name TEXT PRIMARY KEY, id INT)')
 	dbCur.execute('CREATE INDEX wiki_id_idx ON wiki_ids(id)')
@@ -73,8 +80,10 @@ def genData(
 			dbCur.execute('INSERT INTO wiki_ids VALUES (?, ?)', (otolIdToName[otolId], titleToPageId[title]))
 			if title in titleToIucnStatus:
 				dbCur.execute('INSERT INTO node_iucn VALUES (?, ?)', (otolIdToName[otolId], titleToIucnStatus[title]))
+
 	dbCon.commit()
 	dbCon.close()
+
 def readTaxonomyFile(
 		taxonomyFile: str,
 		nodeToSrcIds: dict[int, dict[str, int]],
@@ -88,9 +97,11 @@ def readTaxonomyFile(
 		for lineNum, line in enumerate(file, 1):
 			if lineNum % 1e5 == 0:
 				print(f'At line {lineNum}')
+
 			# Skip header line
 			if lineNum == 1:
 				continue
+
 			# Parse line
 			fields = line.split('\t|\t')
 			try:
@@ -99,6 +110,7 @@ def readTaxonomyFile(
 				print(f'Skipping non-integral ID {fields[0]} on line {lineNum}')
 				continue
 			srcsField = fields[4]
+
 			# Add source IDs
 			for srcPair in srcsField.split(','):
 				src, srcIdStr = srcPair.split(':', 1)
@@ -111,6 +123,7 @@ def readTaxonomyFile(
 					nodeToSrcIds[otolId][src] = srcId
 					usedSrcIds.add((src, srcId))
 	print(f'- Result has {sum([len(v) for v in nodeToSrcIds.values()]):,} entries') # Was about 6.7e6
+
 def readEolIdsFile(
 		eolIdsFile: str,
 		nodeToSrcIds: dict[int, dict[str, int]],
@@ -126,9 +139,11 @@ def readEolIdsFile(
 		for lineNum, row in enumerate(csv.reader(file), 1):
 			if lineNum % 1e6 == 0:
 				print(f'At line {lineNum}')
+
 			# Skip header line
 			if lineNum == 1:
 				continue
+
 			# Parse line
 			eolId = int(row[3])
 			srcInt = int(row[2])
@@ -144,7 +159,7 @@ def readEolIdsFile(
 				srcToEolId[src][srcId] = eolId
 	print(f'- Result has {sum([len(v) for v in srcToEolId.values()]):,} entries')
 		# Was about 3.5e6 (4.2e6 without usedSrcIds)
-	#
+
 	print('Resolving candidate EOL IDs')
 	# For each otol ID, find eol IDs with matching sources, and choose the 'best' one
 	for otolId, srcInfo in nodeToSrcIds.items():
@@ -161,6 +176,7 @@ def readEolIdsFile(
 			eolIds = [eolId for eolId, count in eolIdToCount.items() if count == maxCount]
 			nodeToEolId[otolId] = min(eolIds)
 	print(f'- Result has {len(nodeToEolId):,} entries') # Was about 2.7e6
+
 def readWikidataDb(
 		wikidataDb: str,
 		nodeToSrcIds: dict[int, dict[str, int]],
@@ -185,7 +201,7 @@ def readWikidataDb(
 		# Was about 1.1e6 (1.2e6 without usedSrcIds)
 	print(f'- IUCN map has {len(titleToIucnStatus):,} entries') # Was about 7e4 (7.2e4 without usedSrcIds)
 	dbCon.close()
-	#
+
 	print('Resolving candidate Wikidata items')
 	# For each otol ID, find wikidata titles with matching sources, and choose the 'best' one
 	for otolId, srcInfo in nodeToSrcIds.items():
@@ -211,7 +227,7 @@ def readWikidataDb(
 						nodeToWikiTitle[otolId] = srcToTitle[src]
 						break
 	print(f'- Result has {len(nodeToWikiTitle):,} entries') # Was about 4e5
-	#
+
 	print('Adding extra EOL mappings from Wikidata')
 	wikiTitleToNode = {title: node for node, title in nodeToWikiTitle.items()}
 	addedEntries: dict[int, int] = {}
@@ -222,6 +238,7 @@ def readWikidataDb(
 				nodeToEolId[otolId] = eolId
 				addedEntries[otolId] = eolId
 	print(f'- Added {len(addedEntries):,} entries') # Was about 3e3
+
 def readPickedMappings(
 		pickedMappings: dict[str, list[str]],
 		nodeToEolId: dict[int, int],
@@ -248,6 +265,7 @@ def readPickedMappings(
 						else:
 							if otolId in nodeToWikiTitle:
 								del nodeToWikiTitle[otolId]
+
 def getEnwikiPageIds(enwikiDumpIndexDb: str, nodeToWikiTitle: dict[int, str], titleToPageId: dict[str, int]) -> None:
 	""" Read a db for mappings from enwiki titles to page IDs """
 	print('Getting enwiki page IDs')
@@ -264,8 +282,7 @@ def getEnwikiPageIds(enwikiDumpIndexDb: str, nodeToWikiTitle: dict[int, str], ti
 	print(f'Unable to find IDs for {numNotFound} titles') # Was 2913
 
 if __name__ == '__main__':
-	import argparse
 	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	args = parser.parse_args()
-	#
+
 	genData(TAXONOMY_FILE, EOL_IDS_FILE, WIKIDATA_DB, PICKED_MAPPINGS, ENWIKI_DUMP_INDEX_DB, DB_FILE)

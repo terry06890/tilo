@@ -5,6 +5,7 @@ Looks up a page with title title1 in the wiki dump, using the dump-index
 db, and prints the corresponding <page>.
 """
 
+import argparse
 import sys
 import bz2
 import sqlite3
@@ -24,7 +25,7 @@ def lookupPage(dumpFile: str, indexDb: str, pageTitle: str) -> None:
 	_, pageOffset, endOffset = row
 	dbCon.close()
 	print(f'Found chunk at offset {pageOffset}')
-	#
+
 	print('Reading from wiki dump')
 	content: list[str] = []
 	with open(dumpFile, mode='rb') as file:
@@ -32,6 +33,7 @@ def lookupPage(dumpFile: str, indexDb: str, pageTitle: str) -> None:
 		file.seek(pageOffset)
 		compressedData = file.read(None if endOffset == -1 else endOffset - pageOffset)
 		data = bz2.BZ2Decompressor().decompress(compressedData).decode()
+
 		# Look in chunk for page
 		lines = data.splitlines()
 		lineIdx = 0
@@ -58,14 +60,13 @@ def lookupPage(dumpFile: str, indexDb: str, pageTitle: str) -> None:
 						if line.lstrip() == '</page>':
 							break
 			lineIdx += 1
-	#
+
 	print('Content: ')
 	print('\n'.join(content))
 
 if __name__ == '__main__':
-	import argparse
 	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	parser.add_argument('title', help='The title to look up')
 	args = parser.parse_args()
-	#
+
 	lookupPage(DUMP_FILE, INDEX_DB, args.title.replace('_', ' '))

@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestDbTable, readTestDbTable
 from tol_data.gen_linked_imgs import genData
@@ -70,8 +71,10 @@ class TestGenData(unittest.TestCase):
 					('thirteen', 12, 'enwiki'),
 				}
 			)
+
 			# Run
 			genData(dbFile)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(dbFile, 'SELECT name, otol_ids from linked_imgs'),

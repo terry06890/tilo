@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestFile, createTestGzip, createTestDbTable, readTestDbTable
 from tol_data.gen_mapping_data import \
@@ -18,10 +19,12 @@ class TestReadTaxonomyFile(unittest.TestCase):
 				SEP.join(['10', '20', 'ten', 'family', 'if:10,if:100', '', '', '\n']),
 				SEP.join(['11', '100', 'eleven', '', 'igloo:1,ncbi:?', '', '', '\n'])
 			]))
+
 			# Run
 			nodeToSrcIds = {}
 			usedSrcIds = set()
 			readTaxonomyFile(taxonomyFile, nodeToSrcIds, usedSrcIds)
+
 			# Check
 			self.assertEqual(nodeToSrcIds, {
 				1: {'ncbi': 10},
@@ -34,6 +37,7 @@ class TestReadTaxonomyFile(unittest.TestCase):
 				('gbif', 1),
 				('if', 10)
 			})
+
 class TestReadEolIdsFile(unittest.TestCase):
 	def test_read(self):
 		with tempfile.TemporaryDirectory() as tempDir:
@@ -51,15 +55,18 @@ class TestReadEolIdsFile(unittest.TestCase):
 				10: {'ncbi': 10},
 				20: {'ncbi': 23, 'gbif': 234}
 			}
+
 			# Run
 			usedSrcIds = {('ncbi', 10), ('gbif', 234), ('ncbi', 23)}
 			nodeToEolId = {}
 			readEolIdsFile(eolIdsFile, nodeToSrcIds, usedSrcIds, nodeToEolId)
+
 			# Check
 			self.assertEqual(nodeToEolId, {
 				10: 1,
 				20: 101,
 			})
+
 class TestReadWikidataDb(unittest.TestCase):
 	def test_read(self):
 		with tempfile.TemporaryDirectory() as tempDir:
@@ -105,10 +112,12 @@ class TestReadWikidataDb(unittest.TestCase):
 			nodeToEolId = {
 				20: 100,
 			}
+
 			# Run
 			nodeToWikiTitle = {}
 			titleToIucnStatus = {}
 			readWikidataDb(wikidataDb, nodeToSrcIds, usedSrcIds, nodeToWikiTitle, titleToIucnStatus, nodeToEolId)
+
 			# Check
 			self.assertEqual(nodeToWikiTitle, {
 				10: 'one',
@@ -123,6 +132,7 @@ class TestReadWikidataDb(unittest.TestCase):
 				10: 1,
 				20: 100,
 			})
+
 class TestReadPickedMappings(unittest.TestCase):
 	def test_read(self):
 		with tempfile.TemporaryDirectory() as tempDir:
@@ -155,8 +165,10 @@ class TestReadPickedMappings(unittest.TestCase):
 				12: 'two',
 				35: 'goanna',
 			}
+
 			# Run
 			readPickedMappings(pickedMappings, nodeToEolId, nodeToWikiTitle)
+
 			# Check
 			self.assertEqual(nodeToEolId, {
 				1: 1,
@@ -170,6 +182,7 @@ class TestReadPickedMappings(unittest.TestCase):
 				15: 'ghi',
 				35: 'jkl',
 			})
+
 class TestReadGetEnwikiPageIds(unittest.TestCase):
 	def test_read(self):
 		with tempfile.TemporaryDirectory() as tempDir:
@@ -191,14 +204,17 @@ class TestReadGetEnwikiPageIds(unittest.TestCase):
 				20: 'two',
 				30: 'three',
 			}
+
 			# Run
 			titleToPageId = {}
 			getEnwikiPageIds(dumpIndexDb, nodeToWikiTitle, titleToPageId)
+
 			# Check
 			self.assertEqual(titleToPageId, {
 				'one': 1,
 				'two': 22,
 			})
+
 class TestGenData(unittest.TestCase):
 	def test_mapping(self):
 		with tempfile.TemporaryDirectory() as tempDir:
@@ -275,8 +291,10 @@ class TestGenData(unittest.TestCase):
 					('third', 'ott3', 2),
 				]
 			)
+
 			# Run
 			genData(taxonomyFile, eolIdsFile, wikidataDb, pickedMappings, dumpIndexDb, dbFile)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(dbFile, 'SELECT name, id from eol_ids'),

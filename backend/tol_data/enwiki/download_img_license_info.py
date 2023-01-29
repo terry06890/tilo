@@ -9,13 +9,19 @@ The program can be re-run to continue downloading, and looks
 at already-processed names to decide what to skip.
 """
 
+import argparse
 import re
-import sqlite3, urllib.parse, html
+import sqlite3
+
 import requests
-import time, signal
+import urllib.parse
+import html
+
+import time
+import signal
 
 IMG_DB = 'img_data.db'
-#
+
 API_URL = 'https://en.wikipedia.org/w/api.php'
 USER_AGENT = 'terryt.dev (terry06890@gmail.com)'
 BATCH_SZ = 50 # Max 50
@@ -30,19 +36,19 @@ def downloadInfo(imgDb: str) -> None:
 	if dbCur.execute('SELECT name FROM sqlite_master WHERE type="table" AND name="imgs"').fetchone() is None:
 		dbCur.execute('CREATE TABLE imgs (' \
 			'name TEXT PRIMARY KEY, license TEXT, artist TEXT, credit TEXT, restrictions TEXT, url TEXT)')
-	#
+
 	print('Reading image names')
 	imgNames: set[str] = set()
 	for (imgName,) in dbCur.execute('SELECT DISTINCT img_name FROM page_imgs WHERE img_name NOT NULL'):
 		imgNames.add(imgName)
 	print(f'Found {len(imgNames)}')
-	#
+
 	print('Checking for already-processed images')
 	oldSz = len(imgNames)
 	for (imgName,) in dbCur.execute('SELECT name FROM imgs'):
 		imgNames.discard(imgName)
 	print(f'Found {oldSz - len(imgNames)}')
-	#
+
 	# Set SIGINT handler
 	interrupted = False
 	oldHandler = None
@@ -51,7 +57,7 @@ def downloadInfo(imgDb: str) -> None:
 		interrupted = True
 		signal.signal(signal.SIGINT, oldHandler)
 	oldHandler = signal.signal(signal.SIGINT, onSigint)
-	#
+
 	print('Iterating through image names')
 	imgNameList = list(imgNames)
 	iterNum = 0
@@ -62,9 +68,11 @@ def downloadInfo(imgDb: str) -> None:
 		if interrupted:
 			print(f'Exiting loop at iteration {iterNum}')
 			break
+
 		# Get batch
 		imgBatch = imgNameList[i:i+BATCH_SZ]
 		imgBatch = ['File:' + x for x in imgBatch]
+
 		# Make request
 		headers = {
 			'user-agent': USER_AGENT,
@@ -87,6 +95,7 @@ def downloadInfo(imgDb: str) -> None:
 			print(f'ERROR: Exception while downloading info: {e}')
 			print('\tImage batch: ' + '|'.join(imgBatch))
 			continue
+
 		# Parse response-object
 		if 'query' not in responseObj or 'pages' not in responseObj['query']:
 			print('WARNING: Response object doesn\'t have page data')
@@ -126,6 +135,7 @@ def downloadInfo(imgDb: str) -> None:
 			artist: str | None = metadata['Artist']['value'] if 'Artist' in metadata else None
 			credit: str | None = metadata['Credit']['value'] if 'Credit' in metadata else None
 			restrictions: str | None = metadata['Restrictions']['value'] if 'Restrictions' in metadata else None
+
 			# Remove markup
 			if artist is not None:
 				artist = TAG_REGEX.sub(' ', artist).strip()
@@ -137,17 +147,17 @@ def downloadInfo(imgDb: str) -> None:
 				credit = WHITESPACE_REGEX.sub(' ', credit)
 				credit = html.unescape(credit)
 				credit = urllib.parse.unquote(credit)
+
 			# Add to db
 			dbCur.execute('INSERT INTO imgs VALUES (?, ?, ?, ?, ?, ?)',
 				(title, license, artist, credit, restrictions, url))
-	#
+
 	print('Closing database')
 	dbCon.commit()
 	dbCon.close()
 
 if __name__ == '__main__':
-	import argparse
 	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	parser.parse_args()
-	#
+
 	downloadInfo(IMG_DB)

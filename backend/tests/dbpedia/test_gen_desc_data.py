@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestBz2, readTestDbTable
 from tol_data.dbpedia.gen_desc_data import genData
@@ -57,9 +58,11 @@ class TestGenData(unittest.TestCase):
 				'<http://dbpedia.org/resource/A_Hat> <http://www.w3.org/2000/01/rdf-schema#comment>'
 					' "Hats are not parrots, nor are they potatoes."@en .\n'
 			))
+
 			# Run
 			dbFile = os.path.join(tempDir, 'descData.db')
 			genData(labelsFile, idsFile, redirectsFile, disambigFile, typesFile, abstractsFile, dbFile)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(dbFile, 'SELECT iri, label from labels'),

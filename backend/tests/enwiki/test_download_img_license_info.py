@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestDbTable, readTestDbTable
 from tol_data.enwiki.download_img_license_info import downloadInfo
@@ -53,6 +54,7 @@ TEST_RESPONSE1 = {
     }
   }
 }
+
 TEST_RESPONSE2 = {
   'batchcomplete': '',
   'query': {
@@ -152,8 +154,10 @@ class TestDownloadInfo(unittest.TestCase):
 					(1, 'Octopus2.jpg'),
 				}
 			)
+
 			# Run
 			downloadInfo(imgDb)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(imgDb, 'SELECT name, license, artist, credit, restrictions, url from imgs'),
@@ -162,6 +166,7 @@ class TestDownloadInfo(unittest.TestCase):
 						'https://upload.wikimedia.org/wikipedia/commons/5/57/Octopus2.jpg'),
 				}
 			)
+
 			# Run with updated image-data db
 			createTestDbTable(
 				imgDb,
@@ -172,6 +177,7 @@ class TestDownloadInfo(unittest.TestCase):
 				}
 			)
 			downloadInfo(imgDb)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(imgDb, 'SELECT name, license, artist, credit, restrictions, url from imgs'),

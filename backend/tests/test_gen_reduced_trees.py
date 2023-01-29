@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestFile, createTestDbTable, readTestDbTable
 from tol_data.gen_reduced_trees import genData
@@ -98,8 +99,10 @@ class TestGenData(unittest.TestCase):
 				'five\n'
 				'VIII\n'
 			))
+
 			# Run
 			genData(None, dbFile, pickedNodesFile)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(dbFile, 'SELECT name, id, tips from nodes_p'),

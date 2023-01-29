@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestDbTable
 from tilo import handleReq, TolNode, SearchSuggResponse, SearchSugg, InfoResponse, NodeInfo, DescInfo, ImgInfo
@@ -122,8 +123,10 @@ class TestHandleReq(unittest.TestCase):
 		self.tempDir = tempfile.TemporaryDirectory()
 		self.dbFile = os.path.join(self.tempDir.name, 'data.db')
 		initTestDb(self.dbFile)
+
 	def tearDown(self):
 		self.tempDir.cleanup()
+
 	def test_node_req(self):
 		response = handleReq(self.dbFile, {'QUERY_STRING': 'name=two&type=node&tree=trimmed'})
 		self.assertEqual(response, {
@@ -131,6 +134,7 @@ class TestHandleReq(unittest.TestCase):
 			'three': TolNode('ott3', [], 'two', 1, False, None, None, None),
 			'four': TolNode('ott4', [], 'two', 1, True, None, 'ott4.jpg', None),
 		})
+
 	def test_node_toroot_req(self):
 		response = handleReq(self.dbFile, {'QUERY_STRING': 'name=seven&type=node&toroot=1&excl=five&tree=trimmed'})
 		self.assertEqual(response, {
@@ -138,6 +142,7 @@ class TestHandleReq(unittest.TestCase):
 			'six': TolNode('ott6', ['seven'], 'five', 1, 1, 'VI', 'ott6.jpg', 'endangered'),
 			'seven': TolNode('ott7', [], 'six', 1, 1, None, None, None),
 		})
+
 	def test_sugg_req(self):
 		response = handleReq(self.dbFile, {'QUERY_STRING': 'name=t&type=sugg&tree=trimmed'})
 		self.assertEqual(response, SearchSuggResponse(
@@ -148,6 +153,7 @@ class TestHandleReq(unittest.TestCase):
 			],
 			False
 		))
+
 	def test_info_req(self):
 		response = handleReq(self.dbFile, {'QUERY_STRING': 'name=six&type=info&tree=trimmed'})
 		self.assertEqual(response, InfoResponse(

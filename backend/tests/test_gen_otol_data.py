@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestFile, readTestDbTable
 from tol_data.gen_otol_data import genData
@@ -16,9 +17,11 @@ def runGenData(treeFileContents: str, annFileContents: str, pickedFileContents: 
 		# Create temp picked names file
 		pickedFile = os.path.join(tempDir, 'pn.txt')
 		createTestFile(pickedFile, pickedFileContents)
+
 		# Run genData()
 		dbFile = os.path.join(tempDir, 'data.db')
 		genData(treeFile, annFile, pickedFile, dbFile)
+
 		# Read database
 		nodes = readTestDbTable(dbFile, 'SELECT name, id, tips FROM nodes')
 		edges = readTestDbTable(dbFile, 'SELECT parent, child, p_support FROM edges')
@@ -27,6 +30,7 @@ def runGenData(treeFileContents: str, annFileContents: str, pickedFileContents: 
 class TestGenData(unittest.TestCase):
 	def setUp(self):
 		self.maxDiff = None # Remove output-diff size limit
+
 	def test_newick(self):
 		treeFileContents = """
 			(
@@ -40,7 +44,9 @@ class TestGenData(unittest.TestCase):
 			)cellular_organisms_ott1;"""
 		annFileContents = '{"nodes": {}}'
 		pickedFileContents = ''
+
 		nodes, edges = runGenData(treeFileContents, annFileContents, pickedFileContents)
+
 		self.assertEqual(nodes, {
 			('land plants', 'ott2', 1),
 			('traveller\'s tree', 'ott100', 1),
@@ -66,9 +72,11 @@ class TestGenData(unittest.TestCase):
 			('citrus', 'lemon', 0),
 			('citrus', 'orange', 0),
 		})
+
 	def test_newick_invalid(self):
 		with self.assertRaises(Exception):
 			runGenData('(A,B,(C,D));', '{"nodes": {}}', '')
+
 	def test_annotations(self):
 		treeFileContents = '(two_ott2, three_ott3, four_ott4)one_ott1;'
 		annFileContents = """
@@ -91,7 +99,9 @@ class TestGenData(unittest.TestCase):
 					}
 				}
 			}"""
+
 		nodes, edges = runGenData(treeFileContents, annFileContents, '')
+
 		self.assertEqual(nodes, {
 			('one', 'ott1', 3),
 			('two', 'ott2', 1),
@@ -103,10 +113,13 @@ class TestGenData(unittest.TestCase):
 			('one', 'three', 1),
 			('one', 'four', 0),
 		})
+
 	def test_picked_names_file(self):
 		treeFileContents = '(one_ott2, two_ott3)one_ott1;'
 		pickedFileContents = 'one|ott2'
+
 		nodes, edges = runGenData(treeFileContents, '{"nodes": {}}', pickedFileContents)
+
 		self.assertEqual(nodes, {
 			('one [2]', 'ott1', 2),
 			('one', 'ott2', 1),

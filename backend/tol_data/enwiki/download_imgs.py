@@ -11,14 +11,20 @@ in the output directory do decide what to skip.
 
 # In testing, this downloaded about 100k images, over several days
 
-import re, os
+import argparse
+import re
+import os
 import sqlite3
-import urllib.parse, requests
-import time, signal
+
+import requests
+import urllib.parse
+
+import time
+import signal
 
 IMG_DB = 'img_data.db' # About 130k image names
 OUT_DIR = 'imgs'
-#
+
 LICENSE_REGEX = re.compile(r'cc0|cc([ -]by)?([ -]sa)?([ -][1234]\.[05])?( \w\w\w?)?', flags=re.IGNORECASE)
 USER_AGENT = 'terryt.dev (terry06890@gmail.com)'
 TIMEOUT = 1
@@ -34,7 +40,7 @@ def downloadImgs(imgDb: str, outDir: str, timeout: int) -> None:
 	for filename in fileList:
 		pageIdsDone.add(int(os.path.splitext(filename)[0]))
 	print(f'Found {len(pageIdsDone)}')
-	#
+
 	# Set SIGINT handler
 	interrupted = False
 	oldHandler = None
@@ -43,7 +49,7 @@ def downloadImgs(imgDb: str, outDir: str, timeout: int) -> None:
 		interrupted = True
 		signal.signal(signal.SIGINT, oldHandler)
 	oldHandler = signal.signal(signal.SIGINT, onSigint)
-	#
+
 	print('Opening database')
 	dbCon = sqlite3.connect(imgDb)
 	dbCur = dbCon.cursor()
@@ -57,6 +63,7 @@ def downloadImgs(imgDb: str, outDir: str, timeout: int) -> None:
 		if interrupted:
 			print('Exiting loop')
 			break
+
 		# Check for problematic attributes
 		if license is None or LICENSE_REGEX.fullmatch(license) is None:
 			continue
@@ -66,6 +73,7 @@ def downloadImgs(imgDb: str, outDir: str, timeout: int) -> None:
 			continue
 		if restrictions is not None and restrictions != '':
 			continue
+
 		# Download image
 		iterNum += 1
 		print(f'Iteration {iterNum}: Downloading for page-id {pageId}')
@@ -87,12 +95,12 @@ def downloadImgs(imgDb: str, outDir: str, timeout: int) -> None:
 		except Exception as e:
 			print(f'Error while downloading to {outFile}: {e}')
 			return
+
 	print('Closing database')
 	dbCon.close()
 
 if __name__ == '__main__':
-	import argparse
 	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	parser.parse_args()
-	#
+
 	downloadImgs(IMG_DB, OUT_DIR, TIMEOUT)

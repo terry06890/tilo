@@ -1,5 +1,7 @@
 import unittest
-import tempfile, os, shutil
+import tempfile
+import os
+import shutil
 
 from tests.common import createTestDbTable
 from tol_data.eol.review_imgs import reviewImgs
@@ -19,6 +21,7 @@ class TestReviewImgs(unittest.TestCase):
 			shutil.copy(AVOID_IMG, os.path.join(imgDir, '2 22.jpg'))
 			shutil.copy(AVOID_IMG, os.path.join(imgDir, '3 30.png'))
 			shutil.copy(AVOID_IMG, os.path.join(imgDir, '3 31.jpg'))
+
 			# Create temp extra-info db
 			extraInfoDb = os.path.join(tempDir, 'data.db')
 			createTestDbTable(
@@ -39,8 +42,10 @@ class TestReviewImgs(unittest.TestCase):
 					('two','II',1,'eol'),
 				}
 			)
+
 			# Run
 			outDir = os.path.join(tempDir, 'imgs')
 			reviewImgs(imgDir, outDir, extraInfoDb)
+
 			# Check
 			self.assertEqual(set(os.listdir(outDir)), {'1 10.jpg', '2 20.jpeg'})

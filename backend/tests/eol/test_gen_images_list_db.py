@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestFile, readTestDbTable
 from tol_data.eol.gen_images_list_db import genData
@@ -17,9 +18,11 @@ class TestGenData(unittest.TestCase):
 			createTestFile(os.path.join(tempDir, 'imgs-2.csv'), (
 				'3,30,https://example.com/3/,https://content.eol.org/3.png,public,owner3\n'
 			))
+
 			# Run
 			dbFile = os.path.join(tempDir, 'imagesList.db')
 			genData(imageListsGlob, dbFile)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(

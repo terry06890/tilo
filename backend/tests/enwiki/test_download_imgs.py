@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import readTestFile, createTestDbTable
 from tol_data.enwiki.download_imgs import downloadImgs
@@ -40,10 +41,12 @@ class TestDownloadInfo(unittest.TestCase):
 					('six','cc-by','','fred','','https://upload.wikimedia.org/6.png'),
 				}
 			)
+
 			# Create temp output directory
 			with tempfile.TemporaryDirectory() as outDir:
 				# Run
 				downloadImgs(imgDb, outDir, 0)
+
 				# Check
 				expectedImgs = {
 					'1.jpg': 'img:https://upload.wikimedia.org/1.jpg',

@@ -11,8 +11,11 @@ The program looks for an existing output file to determine what choices
 have already been made.
 """
 
-import os, time
+import argparse
+import os
+import time
 import sqlite3
+
 import tkinter as tki
 from tkinter import ttk
 import PIL
@@ -22,7 +25,7 @@ EOL_IMG_DIR = os.path.join('eol', 'imgs')
 ENWIKI_IMG_DIR = os.path.join('enwiki', 'imgs')
 DB_FILE = 'data.db'
 OUT_FILE = 'img_list.txt'
-#
+
 IMG_DISPLAY_SZ = 400
 PLACEHOLDER_IMG = Image.new('RGB', (IMG_DISPLAY_SZ, IMG_DISPLAY_SZ), (88, 28, 135))
 REVIEW = 'only pairs' # Can be: 'all', 'only pairs', 'none'
@@ -32,11 +35,13 @@ class ImgReviewer:
 	def __init__(self, root, nodeToImgs, eolImgDir, enwikiImgDir, outFile, dbCon, review):
 		self.root = root
 		root.title('Image Reviewer')
+
 		# Setup main frame
 		mainFrame = ttk.Frame(root, padding='5 5 5 5')
 		mainFrame.grid(column=0, row=0, sticky=(tki.N, tki.W, tki.E, tki.S))
 		root.columnconfigure(0, weight=1)
 		root.rowconfigure(0, weight=1)
+
 		# Set up images-to-be-reviewed frames
 		self.eolImg = ImageTk.PhotoImage(PLACEHOLDER_IMG)
 		self.enwikiImg = ImageTk.PhotoImage(PLACEHOLDER_IMG)
@@ -47,14 +52,17 @@ class ImgReviewer:
 			label = ttk.Label(frame, image=self.eolImg if i == 0 else self.enwikiImg)
 			label.grid(column=0, row=0)
 			self.labels.append(label)
+
 		# Add padding
 		for child in mainFrame.winfo_children():
 			child.grid_configure(padx=5, pady=5)
+
 		# Add keyboard bindings
 		root.bind('<q>', self.quit)
 		root.bind('<Key-j>', lambda evt: self.accept(0))
 		root.bind('<Key-k>', lambda evt: self.accept(1))
 		root.bind('<Key-l>', lambda evt: self.reject())
+
 		# Set fields
 		self.nodeImgsList = list(nodeToImgs.items())
 		self.listIdx = -1
@@ -69,8 +77,10 @@ class ImgReviewer:
 		self.enwikiImgPath = None
 		self.numReviewed = 0
 		self.startTime = time.time()
+
 		# Initialise images to review
 		self.getNextImgs()
+
 	def getNextImgs(self):
 		""" Updates display with new images to review, or ends program """
 		# Get next image paths
@@ -81,6 +91,7 @@ class ImgReviewer:
 				self.quit()
 				return
 			self.otolId, imgPaths = self.nodeImgsList[self.listIdx]
+
 			# Potentially skip user choice
 			if len(imgPaths) == 1 and (self.review == 'only pairs' or self.review == 'none'):
 				with open(self.outFile, 'a') as file:
@@ -91,6 +102,7 @@ class ImgReviewer:
 					file.write(f'{self.otolId} {imgPaths[-1]}\n') # Prefer enwiki image
 				continue
 			break
+
 		# Update displayed images
 		self.eolImgPath = self.enwikiImgPath = None
 		imageOpenError = False
@@ -113,20 +125,24 @@ class ImgReviewer:
 				print(f'Unexpected image path {imgPath}')
 				self.quit()
 				return
+
 		# Re-iterate if all image paths invalid
 		if self.eolImgPath is None and self.enwikiImgPath is None:
 			if imageOpenError:
 				self.reject()
 			self.getNextImgs()
 			return
+
 		# Add placeholder images
 		if self.eolImgPath is None:
 			self.eolImg = ImageTk.PhotoImage(self.resizeImgForDisplay(PLACEHOLDER_IMG))
 		elif self.enwikiImgPath is None:
 			self.enwikiImg = ImageTk.PhotoImage(self.resizeImgForDisplay(PLACEHOLDER_IMG))
+
 		# Update image-frames
 		self.labels[0].config(image=self.eolImg)
 		self.labels[1].config(image=self.enwikiImg)
+
 		# Update title
 		title = f'Images for otol ID {self.otolId}'
 		query = 'SELECT names.alt_name FROM' \
@@ -137,6 +153,7 @@ class ImgReviewer:
 			title += f', aka {row[0]}'
 		title += f' ({self.listIdx + 1} out of {len(self.nodeImgsList)})'
 		self.root.title(title)
+
 	def accept(self, imgIdx):
 		""" React to a user selecting an image """
 		imgPath = self.eolImgPath if imgIdx == 0 else self.enwikiImgPath
@@ -147,12 +164,14 @@ class ImgReviewer:
 			file.write(f'{self.otolId} {imgPath}\n')
 		self.numReviewed += 1
 		self.getNextImgs()
+
 	def reject(self):
 		""""" React to a user rejecting all images of a set """
 		with open(self.outFile, 'a') as file:
 			file.write(f'{self.otolId}\n')
 		self.numReviewed += 1
 		self.getNextImgs()
+
 	def quit(self, e = None):
 		print(f'Number reviewed: {self.numReviewed}')
 		timeElapsed = time.time() - self.startTime
@@ -161,6 +180,7 @@ class ImgReviewer:
 			print(f'Avg time per review: {timeElapsed/self.numReviewed:.2f} seconds')
 		self.dbCon.close()
 		self.root.destroy()
+
 	def resizeImgForDisplay(self, img):
 		""" Returns a copy of an image, shrunk to fit it's frame (keeps aspect ratio), and with a background """
 		if max(img.width, img.height) > IMG_DISPLAY_SZ:
@@ -180,7 +200,7 @@ def reviewImgs(eolImgDir: str, enwikiImgDir: str, dbFile: str, outFile: str, rev
 	print('Opening database')
 	dbCon = sqlite3.connect(dbFile)
 	dbCur = dbCon.cursor()
-	#
+
 	nodeToImgs: dict[str, list[str]] = {} # Maps otol-ids to arrays of image paths
 	print('Iterating through images from EOL')
 	if os.path.exists(eolImgDir):
@@ -198,6 +218,7 @@ def reviewImgs(eolImgDir: str, enwikiImgDir: str, dbFile: str, outFile: str, rev
 			if not found:
 				print(f'WARNING: No node found for {os.path.join(eolImgDir, filename)}')
 	print(f'Result: {len(nodeToImgs)} nodes with images')
+
 	print('Iterating through images from Wikipedia')
 	if os.path.exists(enwikiImgDir):
 		for filename in os.listdir(enwikiImgDir):
@@ -214,7 +235,7 @@ def reviewImgs(eolImgDir: str, enwikiImgDir: str, dbFile: str, outFile: str, rev
 			if not found:
 				print(f'WARNING: No node found for {os.path.join(enwikiImgDir, filename)}')
 	print(f'Result: {len(nodeToImgs)} nodes with images')
-	#
+
 	print('Filtering out already-made image choices')
 	oldSz = len(nodeToImgs)
 	if os.path.exists(outFile):
@@ -225,7 +246,7 @@ def reviewImgs(eolImgDir: str, enwikiImgDir: str, dbFile: str, outFile: str, rev
 					line = line[:line.find(' ')]
 				del nodeToImgs[line]
 	print(f'Filtered out {oldSz - len(nodeToImgs)} entries')
-	#
+
 	# Create GUI and defer control
 	print('Starting GUI')
 	root = tki.Tk()
@@ -234,8 +255,7 @@ def reviewImgs(eolImgDir: str, enwikiImgDir: str, dbFile: str, outFile: str, rev
 	dbCon.close()
 
 if __name__ == '__main__':
-	import argparse
 	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	parser.parse_args()
-	#
+
 	reviewImgs(EOL_IMG_DIR, ENWIKI_IMG_DIR, DB_FILE, OUT_FILE, REVIEW)

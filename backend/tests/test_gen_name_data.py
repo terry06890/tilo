@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestFile, createTestDbTable, readTestDbTable
 from tol_data.gen_name_data import genData
@@ -78,8 +79,10 @@ class TestGenData(unittest.TestCase):
 					('three', 2),
 				]
 			)
+
 			# Run
 			genData(eolNamesFile, enwikiDb, pickedNamesFile, dbFile)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(dbFile, 'SELECT name, alt_name, pref_alt, src FROM names'),

@@ -5,8 +5,12 @@ Maps nodes to vernacular names, using data from EOL, enwiki, and a
 picked-names file, and stores results in the database.
 """
 
-import re, os
-import html, csv, sqlite3
+import argparse
+import re
+import os
+import html
+import csv
+import sqlite3
 
 EOL_NAMES_FILE = os.path.join('eol', 'vernacularNames.csv')
 ENWIKI_DB = os.path.join('enwiki', 'desc_data.db')
@@ -17,25 +21,26 @@ def genData(eolNamesFile: str, enwikiDb: str, pickedNamesFile: str, dbFile: str)
 	""" Reads the files and adds to db """
 	dbCon = sqlite3.connect(dbFile)
 	dbCur = dbCon.cursor()
-	#
+
 	print('Creating table')
 	dbCur.execute('CREATE TABLE names(name TEXT, alt_name TEXT, pref_alt INT, src TEXT, PRIMARY KEY(name, alt_name))')
 	dbCur.execute('CREATE INDEX names_idx ON names(name)')
 	dbCur.execute('CREATE INDEX names_alt_idx ON names(alt_name)')
 	dbCur.execute('CREATE INDEX names_alt_idx_nc ON names(alt_name COLLATE NOCASE)')
-	#
+
 	print('Getting node mappings')
 	nodeToTips: dict[str, int] = {}
 	for name, tips in dbCur.execute('SELECT name, tips from nodes'):
 		nodeToTips[name] = tips
-	#
+
 	addEolNames(eolNamesFile, nodeToTips, dbCur)
 	addEnwikiNames(enwikiDb, nodeToTips, dbCur)
 	addPickedNames(pickedNamesFile, nodeToTips, dbCur)
-	#
+
 	print('Closing database')
 	dbCon.commit()
 	dbCon.close()
+
 def addEolNames(eolNamesFile: str, nodeToTips: dict[str, int], dbCur: sqlite3.Cursor) -> None:
 	""" Reads EOL names, associates them with otol nodes, and writes to db """
 	# The CSV file has a header line, then lines with these fields:
@@ -47,26 +52,31 @@ def addEolNames(eolNamesFile: str, nodeToTips: dict[str, int], dbCur: sqlite3.Cu
 	for name, eolId in dbCur.execute('SELECT name, id from eol_ids'):
 		if eolId not in eolIdToNode or nodeToTips[eolIdToNode[eolId]] < nodeToTips[name]:
 			eolIdToNode[eolId] = name
+
 	print('Adding names from EOL')
 	namesToSkip = {'unknown', 'unknown species', 'unidentified species'}
 	with open(eolNamesFile, newline='') as file:
 		for lineNum, fields in enumerate(csv.reader(file), 1):
 			if lineNum % 1e5 == 0:
 				print(f'At line {lineNum}') # Reached about 2.8e6
+
 			# Skip header line
 			if lineNum == 1:
 				continue
+
 			# Parse line
 			eolId = int(fields[0])
 			name = html.unescape(fields[2]).lower()
 			lang = fields[3]
 			isPreferred = 1 if fields[6] == 'preferred' else 0
+
 			# Add to db
 			if eolId in eolIdToNode and name not in namesToSkip and name not in nodeToTips \
 				and lang == 'eng' and len(name.split(' ')) <= 3: # Ignore names with >3 words
 				cmd = 'INSERT OR IGNORE INTO names VALUES (?, ?, ?, \'eol\')'
 					# The 'OR IGNORE' accounts for duplicate lines
 				dbCur.execute(cmd, (eolIdToNode[eolId], name, isPreferred))
+
 def addEnwikiNames(enwikiDb: str, nodeToTips: dict[str, int], dbCur: sqlite3.Cursor) -> None:
 	""" Reads enwiki names, associates them with otol nodes, and writes to db """
 	print('Getting enwiki mappings')
@@ -74,6 +84,7 @@ def addEnwikiNames(enwikiDb: str, nodeToTips: dict[str, int], dbCur: sqlite3.Cur
 	for name, wikiId in dbCur.execute('SELECT name, id from wiki_ids'):
 		if wikiId not in wikiIdToNode or nodeToTips[wikiIdToNode[wikiId]] < nodeToTips[name]:
 			wikiIdToNode[wikiId] = name
+
 	print('Adding names from enwiki')
 	altNameRegex = re.compile(r'[a-z]+') # Avoids names like 'evolution of elephants', 'banana fiber', 'fish (zoology)',
 	enwikiCon = sqlite3.connect(enwikiDb)
@@ -83,7 +94,7 @@ def addEnwikiNames(enwikiDb: str, nodeToTips: dict[str, int], dbCur: sqlite3.Cur
 		iterNum += 1
 		if iterNum % 1e4 == 0:
 			print(f'At iteration {iterNum}') # Reached about 3.6e5
-		#
+
 		query = 'SELECT p1.title FROM pages p1' \
 			' INNER JOIN redirects r1 ON p1.id = r1.id' \
 			' INNER JOIN pages p2 ON r1.target = p2.title WHERE p2.id = ?'
@@ -91,6 +102,7 @@ def addEnwikiNames(enwikiDb: str, nodeToTips: dict[str, int], dbCur: sqlite3.Cur
 			name = name.lower()
 			if altNameRegex.fullmatch(name) is not None and name != nodeName and name not in nodeToTips:
 				dbCur.execute('INSERT OR IGNORE INTO names VALUES (?, ?, ?, \'enwiki\')', (nodeName, name, 0))
+
 def addPickedNames(pickedNamesFile: str, nodeToTips: dict[str, int], dbCur: sqlite3.Cursor) -> None:
 	# File format:
 		# nodename1|altName1|isPreferred1 -> Add an alt-name
@@ -121,8 +133,7 @@ def addPickedNames(pickedNamesFile: str, nodeToTips: dict[str, int], dbCur: sqli
 					dbCur.execute(cmd, (nodeName,))
 
 if __name__ == '__main__':
-	import argparse
 	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	args = parser.parse_args()
-	#
+
 	genData(EOL_NAMES_FILE, ENWIKI_DB, PICKED_NAMES_FILE, DB_FILE)

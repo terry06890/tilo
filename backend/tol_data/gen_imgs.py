@@ -11,8 +11,11 @@ processing. It uses already-existing database entries to decide what
 to skip.
 """
 
-import os, subprocess
-import sqlite3, urllib.parse
+import argparse
+import os
+import subprocess
+import sqlite3
+import urllib.parse
 import signal
 
 IMG_LIST_FILE = 'img_list.txt'
@@ -23,10 +26,11 @@ ENWIKI_IMG_DB = os.path.join('enwiki', 'img_data.db')
 PICKED_IMGS_DIR = 'picked_imgs'
 PICKED_IMGS_FILE = 'img_data.txt'
 DB_FILE = 'data.db'
-#
+
 IMG_OUT_SZ = 200
 
 ImgId = tuple[int, str] # Holds an int ID and a source string (eg: 'eol')
+
 class PickedImg:
 	""" Represents a picked-image from pickedImgsDir """
 	def __init__(self, nodeName: str, id: int, filename: str, url: str, license: str, artist: str, credit: str):
@@ -44,9 +48,9 @@ def genImgs(
 	""" Reads the image-list file, generates images, and updates db """
 	if not os.path.exists(outDir):
 		os.mkdir(outDir)
-	#
 	dbCon = sqlite3.connect(dbFile)
 	dbCur = dbCon.cursor()
+
 	print('Checking for image tables')
 	nodesDone: set[str] = set()
 	imgsDone: set[ImgId] = set()
@@ -63,15 +67,16 @@ def genImgs(
 		for imgId, imgSrc in dbCur.execute('SELECT id, src from images'):
 			imgsDone.add((imgId, imgSrc))
 		print(f'Found {len(nodesDone)} nodes and {len(imgsDone)} images to skip')
-	#
+
 	print('Processing picked-images')
 	success = processPickedImgs(pickedImgsDir, pickedImgsFile, nodesDone, imgsDone, outDir, dbCur)
 	if success:
 		print('Processing images from eol and enwiki')
 		processImgs(imgListFile, eolImgDir, eolImgDb, enwikiImgDb, nodesDone, imgsDone, outDir, dbCur)
-	# Close db
+
 	dbCon.commit()
 	dbCon.close()
+
 def processPickedImgs(
 		pickedImgsDir: str, pickedImgsFile: str, nodesDone: set[str], imgsDone: set[ImgId],
 		outDir: str, dbCur: sqlite3.Cursor) -> bool:
@@ -85,25 +90,30 @@ def processPickedImgs(
 				nodeName = os.path.splitext(filename)[0] # Remove extension
 				(otolId,) = dbCur.execute('SELECT id FROM nodes WHERE name = ?', (nodeName,)).fetchone()
 				nodeToPickedImg[otolId] = PickedImg(nodeName, lineNum, filename, url, license, artist, credit)
+
 	# Set SIGINT handler
 	interrupted = False
 	def onSigint(sig, frame):
 		nonlocal interrupted
 		interrupted = True
 	signal.signal(signal.SIGINT, onSigint)
+
 	# Convert images
 	for otolId, imgData in nodeToPickedImg.items():
 		# Check for SIGINT event
 		if interrupted:
 			print('Exiting')
 			return False
+
 		# Skip if already processed
 		if otolId in nodesDone:
 			continue
+
 		# Convert image
 		success = convertImage(os.path.join(pickedImgsDir, imgData.filename), os.path.join(outDir, otolId + '.jpg'))
 		if not success:
 			return False
+
 		# Add entry to db
 		if (imgData.id, 'picked') not in imgsDone:
 			dbCur.execute('INSERT INTO images VALUES (?, ?, ?, ?, ?, ?)',
@@ -112,6 +122,7 @@ def processPickedImgs(
 		dbCur.execute('INSERT INTO node_imgs VALUES (?, ?, ?)', (imgData.nodeName, imgData.id, 'picked'))
 		nodesDone.add(otolId)
 	return True
+
 def processImgs(
 		imgListFile: str, eolImgDir: str, eolImgDb: str, enwikiImgDb: str,
 		nodesDone: set[str], imgsDone: set[ImgId], outDir: str, dbCur: sqlite3.Cursor) -> bool:
@@ -120,12 +131,14 @@ def processImgs(
 	eolCur = eolCon.cursor()
 	enwikiCon = sqlite3.connect(enwikiImgDb)
 	enwikiCur = enwikiCon.cursor()
+
 	# Set SIGINT handler
 	interrupted = False
 	def onSigint(sig, frame):
 		nonlocal interrupted
 		interrupted = True
 	signal.signal(signal.SIGINT, onSigint)
+
 	# Convert images
 	flag = False # Set to True upon interruption or failure
 	with open(imgListFile) as file:
@@ -135,19 +148,24 @@ def processImgs(
 				print('Exiting')
 				flag = True
 				break
+
 			# Skip lines without an image path
 			if line.find(' ') == -1:
 				continue
+
 			# Get filenames
 			otolId, _, imgPath = line.rstrip().partition(' ')
+
 			# Skip if already processed
 			if otolId in nodesDone:
 				continue
+
 			# Convert image
 			success = convertImage(imgPath, os.path.join(outDir, otolId + '.jpg'))
 			if not success:
 				flag = True
 				break
+
 			# Add entry to db
 			(nodeName,) = dbCur.execute('SELECT name FROM nodes WHERE id = ?', (otolId,)).fetchone()
 			fromEol = imgPath.startswith(eolImgDir)
@@ -185,14 +203,17 @@ def processImgs(
 						(enwikiId, 'enwiki', url, license, artist, credit))
 					imgsDone.add((enwikiId, 'enwiki'))
 				dbCur.execute('INSERT INTO node_imgs VALUES (?, ?, ?)', (nodeName, enwikiId, 'enwiki'))
+
 	eolCon.close()
 	enwikiCon.close()
 	return not flag
+
 def convertImage(imgPath: str, outPath: str):
 	print(f'Converting {imgPath} to {outPath}')
 	if os.path.exists(outPath):
 		print('ERROR: Output image already exists')
 		return False
+
 	try:
 		completedProcess = subprocess.run(
 			['npx', 'smartcrop-cli', '--width', str(IMG_OUT_SZ), '--height', str(IMG_OUT_SZ), imgPath, outPath],
@@ -207,8 +228,7 @@ def convertImage(imgPath: str, outPath: str):
 	return True
 
 if __name__ == '__main__':
-	import argparse
 	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	parser.parse_args()
-	#
+
 	genImgs(IMG_LIST_FILE, EOL_IMG_DIR, OUT_DIR, EOL_IMG_DB, ENWIKI_IMG_DB, PICKED_IMGS_DIR, PICKED_IMGS_FILE, DB_FILE)

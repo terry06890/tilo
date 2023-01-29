@@ -13,9 +13,16 @@ already-downloaded files, and continues after the one with
 highest EOL ID.
 """
 
-import sys, re, os, random
+import argparse
+import sys
+import re
+import os
+import random
 import sqlite3
-import urllib.parse, requests
+
+import requests
+import urllib.parse
+
 import time
 from threading import Thread
 import signal
@@ -23,7 +30,7 @@ import signal
 IMAGES_LIST_DB = 'images_list.db'
 OUT_DIR = 'imgs_for_review'
 DB_FILE = os.path.join('..', 'data.db')
-#
+
 MAX_IMGS_PER_ID = 3
 MAX_THREADS = 5
 POST_DL_DELAY_MIN = 2 # Minimum delay in seconds to pause after download before starting another (for each thread)
@@ -43,7 +50,7 @@ def downloadImgs(eolIds, imagesListDb, outDir):
 	eolIdList = sorted(eolIds)
 	nextIdx = 0
 	print(f'Result: {len(eolIdList)} EOL IDs')
-	#
+
 	print('Checking output directory')
 	if not os.path.exists(outDir):
 		os.mkdir(outDir)
@@ -57,7 +64,7 @@ def downloadImgs(eolIds, imagesListDb, outDir):
 	if nextIdx == len(eolIdList):
 		print('No IDs left. Exiting...')
 		return
-	#
+
 	print('Starting download threads')
 	numThreads = 0
 	threadException: Exception | None = None # Used for ending main thread after a non-main thread exception
@@ -81,6 +88,7 @@ def downloadImgs(eolIds, imagesListDb, outDir):
 			print(f'Error while downloading to {outFile}: {str(e)}', file=sys.stderr)
 			threadException = e
 		numThreads -= 1
+
 	# Manage downloading
 	for idx in range(nextIdx, len(eolIdList)):
 		eolId = eolIdList[idx]
@@ -96,9 +104,11 @@ def downloadImgs(eolIds, imagesListDb, outDir):
 			if len(extension) <= 1:
 				print(f'WARNING: No filename extension found in URL {url}', file=sys.stderr)
 				continue
+
 			# Check image-quantity limit
 			if len(ownerSet) == MAX_IMGS_PER_ID:
 				break
+
 			# Check for skip conditions
 			if re.fullmatch(LICENSE_REGEX, license) is None:
 				continue
@@ -107,11 +117,13 @@ def downloadImgs(eolIds, imagesListDb, outDir):
 			if copyrightOwner in ownerSet:
 				continue
 			ownerSet.add(copyrightOwner)
+
 			# Determine output filename
 			outPath = os.path.join(outDir, f'{eolId} {contentId}{extension}')
 			if os.path.exists(outPath):
 				print(f'WARNING: {outPath} already exists. Skipping download.')
 				continue
+
 			# Check thread limit
 			while numThreads == MAX_THREADS:
 				time.sleep(1)
@@ -122,6 +134,7 @@ def downloadImgs(eolIds, imagesListDb, outDir):
 					time.sleep(1)
 				exitLoop = True
 				break
+
 			# Perform download
 			print(f'Downloading image to {outPath}')
 			numThreads += 1
@@ -129,6 +142,7 @@ def downloadImgs(eolIds, imagesListDb, outDir):
 			thread.start()
 		if exitLoop:
 			break
+
 	# Close images-list db
 	while numThreads > 0:
 		time.sleep(1)
@@ -143,10 +157,10 @@ def getEolIdsFromDb(dbFile) -> set[int]:
 		eolIds.add(id)
 	dbCon.close()
 	return eolIds
+
 if __name__ == '__main__':
-	import argparse
 	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	parser.parse_args()
-	#
+
 	eolIds = getEolIdsFromDb(DB_FILE)
 	downloadImgs(eolIds, IMAGES_LIST_DB, OUT_DIR)

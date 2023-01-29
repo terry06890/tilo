@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestDbTable, readTestDbTable
 from tol_data.gen_pop_data import genData
@@ -30,8 +31,10 @@ class TestGenData(unittest.TestCase):
 					('node3', 3),
 				}
 			)
+
 			# Run
 			genData(pageviewsDb, dbFile)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(dbFile, 'SELECT name, pop from node_pop'),

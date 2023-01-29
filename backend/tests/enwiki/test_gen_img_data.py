@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestDbTable, readTestDbTable
 from tol_data.enwiki.gen_img_data import getInputPageIdsFromDb, genData
@@ -20,8 +21,10 @@ class TestGetInputPageIdsFromDb(unittest.TestCase):
 					('and another', 2),
 				}
 			)
+
 			# Run
 			pageIds = getInputPageIdsFromDb(dbFile)
+
 			# Check
 			self.assertEqual(pageIds, {1, 2})
 
@@ -40,9 +43,11 @@ class TestGenData(unittest.TestCase):
 					('Autism',25,0,-1),
 				}
 			)
+
 			# Run
 			imgDb = os.path.join(tempDir, 'imgData.db')
 			genData({10, 25}, TEST_DUMP_FILE, indexDb, imgDb)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(imgDb, 'SELECT page_id, img_name from page_imgs'),
@@ -51,8 +56,10 @@ class TestGenData(unittest.TestCase):
 					(25, 'Autism-stacking-cans 2nd edit.jpg'),
 				}
 			)
+
 			# Run with updated page-ids set
 			genData({13, 10}, TEST_DUMP_FILE, indexDb, imgDb)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(imgDb, 'SELECT page_id, img_name from page_imgs'),

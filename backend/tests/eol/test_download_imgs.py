@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import readTestFile, createTestDbTable
 from tol_data.eol.download_imgs import getEolIdsFromDb, downloadImgs
@@ -19,8 +20,10 @@ class TestGetEolIdsFromDb(unittest.TestCase):
 					('a second', 2),
 				}
 			)
+
 			# Run
 			eolIds = getEolIdsFromDb(dbFile)
+
 			# Check
 			self.assertEqual(eolIds, {1, 2})
 
@@ -30,6 +33,7 @@ class TestDownloadImgs(unittest.TestCase):
 		requestsGetMock.side_effect = lambda url: Mock(content=('img:' + url).encode())
 		with tempfile.TemporaryDirectory() as tempDir:
 			eolIds = {1, 2, 4}
+
 			# Create temp images-list db
 			imagesListDb = os.path.join(tempDir, 'images_list.db')
 			createTestDbTable(
@@ -48,10 +52,12 @@ class TestDownloadImgs(unittest.TestCase):
 					(30, 3, '', 'https://content.eol.org/3.png', 'cc-by', 'owner3'),
 				}
 			)
+
 			# Create temp output dir
 			with tempfile.TemporaryDirectory() as outDir:
 				# Run
 				downloadImgs(eolIds, imagesListDb, outDir)
+
 				# Check
 				expectedImgs1 = {
 					'1 10.jpg': 'img:https://content.eol.org/1.jpg',

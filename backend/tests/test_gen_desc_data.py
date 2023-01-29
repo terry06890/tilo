@@ -1,5 +1,6 @@
 import unittest
-import tempfile, os
+import tempfile
+import os
 
 from tests.common import createTestDbTable, readTestDbTable
 from tol_data.gen_desc_data import genData
@@ -37,6 +38,7 @@ class TestGenData(unittest.TestCase):
 					('<http://dbpedia.org/resource/Three>', 'Three from dbp'),
 				}
 			)
+
 			# Create temp enwiki db
 			enwikiDb = os.path.join(tempDir, 'enwiki_descs.db')
 			createTestDbTable(
@@ -70,6 +72,7 @@ class TestGenData(unittest.TestCase):
 					(5, 'Five from enwiki'),
 				}
 			)
+
 			# Create temp tree-of-life db
 			dbFile = os.path.join(tempDir, 'data.db')
 			createTestDbTable(
@@ -86,8 +89,10 @@ class TestGenData(unittest.TestCase):
 					('seventh', 7),
 				}
 			)
+
 			# Run
 			genData(dbpediaDb, enwikiDb, dbFile)
+
 			# Check
 			self.assertEqual(
 				readTestDbTable(dbFile, 'SELECT wiki_id, desc, from_dbp from descs'),

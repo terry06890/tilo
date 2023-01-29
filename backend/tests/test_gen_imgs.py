@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import patch
-import tempfile, os, shutil
+import tempfile
+import os
+import shutil
 
 from tests.common import createTestFile, createTestDbTable, readTestDbTable
 from tol_data.gen_imgs import genImgs
@@ -95,9 +97,11 @@ class TestGenImgs(unittest.TestCase):
 					('node6', 'ott6', 10),
 				}
 			)
+
 			# Run
 			outDir = os.path.join(tempDir, 'img')
 			genImgs(imgListFile, eolImgDir, outDir, eolImgDb, enwikiImgDb, pickedImgDir, pickedImgsFile, dbFile)
+
 			# Check
 			self.assertEqual(set(os.listdir(outDir)), {
 				'ott1.jpg',
