@@ -13,6 +13,7 @@ export class TolNode {
 	imgName: null | string |
 		[string, string] | [null, string] | [string, null]; // Pairs represent compound images
 	iucn: null | string;
+
 	constructor(children: string[] = [], parent = null, tips = 0, pSupport = false){
 		this.otolId = null;
 		this.children = children;
@@ -24,5 +25,6 @@ export class TolNode {
 		this.iucn = null;
 	}
 }
+
 // Maps TolNode names to TolNode objects
 export type TolMap = Map<string, TolNode>;

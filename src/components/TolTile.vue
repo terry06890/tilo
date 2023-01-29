@@ -17,6 +17,7 @@
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</template>
 	</div>
+
 	<div v-else :style="nonleafStyles">
 		<div v-if="showNonleafHeader" :style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
 			@mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @mousedown="onMouseDown" @mouseup="onMouseUp">
@@ -24,6 +25,7 @@
 			<info-icon v-if="infoIconDisabled" :style="infoIconStyles" :class="infoIconClasses"
 				@click.stop="onInfoIconClick" @mousedown.stop @mouseup.stop/>
 		</div>
+
 		<div :style="sepSweptAreaStyles" :class="sepSweptAreaHideEdgeClass">
 			<div v-if="layoutNode.sepSweptArea?.sweptLeft === false"
 				:style="nonleafHeaderStyles" class="flex hover:cursor-pointer"
@@ -36,12 +38,14 @@
 				<div v-if="inFlash" class="absolute w-full h-full top-0 left-0 rounded-[inherit] bg-amber-500/70 z-20"/>
 			</transition>
 		</div>
+
 		<tol-tile v-for="child in visibleChildren" :key="child.name"
 			:layoutNode="child" :tolMap="tolMap" :overflownDim="overflownDim"
 			@leaf-click="onInnerLeafClick" @nonleaf-click="onInnerNonleafClick"
 			@leaf-click-held="onInnerLeafClickHeld" @nonleaf-click-held="onInnerNonleafClickHeld"
 			@info-click="onInnerInfoIconClick"/>
 	</div>
+
 	<transition name="fadeout">
 		<div v-if="inFlash" :style="{top: scrollOffset + 'px'}"
 			class="absolute w-full h-full left-0 rounded-[inherit] bg-amber-500/70"/>
@@ -51,6 +55,7 @@
 
 <script setup lang="ts">
 import {ref, computed, watch, PropType} from 'vue';
+
 import InfoIcon from './icon/InfoIcon.vue';
 import {TolMap} from '../tol';
 import {LayoutNode} from '../layout';
@@ -60,13 +65,10 @@ import {useStore} from '../store';
 
 const SCRIM_GRADIENT = 'linear-gradient(to bottom, rgba(0,0,0,0.4), #0000 40%, #0000 60%, rgba(0,0,0,0.2) 100%)';
 
-// Refs
 const rootRef = ref(null as HTMLDivElement | null);
 
-// Global store
 const store = useStore();
 
-// Props + events
 const props = defineProps({
 	layoutNode: {type: Object as PropType<LayoutNode>, required: true},
 	tolMap: {type: Object as PropType<TolMap>, required: true},
@@ -77,9 +79,11 @@ const props = defineProps({
 	overflownDim: {type: Number, default: 0},
 		// For a non-leaf node, display with overflow within area of this height
 });
+
 const emit = defineEmits(['leaf-click', 'nonleaf-click', 'leaf-click-held', 'nonleaf-click-held', 'info-click']);
 
-// Data computed from props
+// ========== Data computed from props ==========
+
 const tolNode = computed(() => props.tolMap.get(props.layoutNode.name)!);
 const visibleChildren = computed((): LayoutNode[] => { // Used to reduce slowdown from rendering many nodes
 	let children = props.layoutNode.children;
@@ -124,8 +128,10 @@ const isOverflownRoot = computed(() =>
 const hasFocusedChild = computed(() => props.layoutNode.children.some(n => n.hasFocus));
 const infoIconDisabled = computed(() => !store.disabledActions.has('tileInfo'));
 
-// Click/hold handling
+// ========== Click/hold handling ==========
+
 const clickHoldTimer = ref(0); // Used to recognise click-and-hold events
+
 function onMouseDown(): void {
 	highlight.value = false;
 	if (!store.touchDevice){
@@ -149,6 +155,7 @@ function onMouseDown(): void {
 		}
 	}
 }
+
 function onMouseUp(): void {
 	if (!store.touchDevice){
 		if (clickHoldTimer.value > 0){
@@ -159,8 +166,10 @@ function onMouseUp(): void {
 	}
 }
 
-// Click-action handling
+// ========== Click-action handling ==========
+
 const wasClicked = ref(false); // Used to increase z-index during transition after this tile (or a child) is clicked
+
 function onClick(): void {
 	if (isLeaf.value && !isExpandableLeaf.value){
 		console.log('Ignored click on non-expandable node');
@@ -173,6 +182,7 @@ function onClick(): void {
 		emit('nonleaf-click', props.layoutNode, onCollapseFail);
 	}
 }
+
 function onClickHold(): void {
 	if (isLeaf.value && !isExpandableLeaf.value){
 		console.log('Ignored click-hold on non-expandable node');
@@ -184,45 +194,58 @@ function onClickHold(): void {
 		emit('nonleaf-click-held', props.layoutNode, onCollapseFail);
 	}
 }
+
 function onDblClick(): void {
 	onClickHold();
 }
+
 function onInfoIconClick(): void {
 	emit('info-click', props.layoutNode.name);
 }
-// Child click-action propagation
+
+// ========== Child click-action propagation ==========
+
 function onInnerLeafClick(node: LayoutNode, onFail: () => void): void {
 	wasClicked.value = true;
 	emit('leaf-click', node, onFail);
 }
+
 function onInnerNonleafClick(node: LayoutNode, onFail: () => void): void {
 	wasClicked.value = true;
 	emit('nonleaf-click', node, onFail);
 }
+
 function onInnerLeafClickHeld(node: LayoutNode, onFail: () => void): void {
 	emit('leaf-click-held', node, onFail);
 }
+
 function onInnerNonleafClickHeld(node: LayoutNode, onFail: () => void): void {
 	emit('nonleaf-click-held', node, onFail);
 }
+
 function onInnerInfoIconClick(nodeName: string): void {
 	emit('info-click', nodeName);
 }
 
-// Mouse-hover handling
+// ========== Mouse-hover handling ==========
+
 const highlight = ref(false); // Used to draw a colored outline on mouse hover
+
 function onMouseEnter(): void {
 	if ((!isLeaf.value || isExpandableLeaf.value) && !inTransition.value){
 		highlight.value = true;
 	}
 }
+
 function onMouseLeave(): void {
 	highlight.value = false;
 }
 
-// Scrolling if overflownRoot
+// ========== Scrolling if overflownRoot ==========
+
 const scrollOffset = ref(0); // Used to track scroll offset when displaying with overflow
 const pendingScrollHdlr = ref(0); // Used for throttling updating of scrollOffset
+
 function onScroll(): void {
 	if (pendingScrollHdlr.value == 0){
 		pendingScrollHdlr.value = setTimeout(() => {
@@ -233,9 +256,11 @@ function onScroll(): void {
 		}, store.animationDelay);
 	}
 }
+
 // Without this, sometimes, if auto-mode enters an overflowing node, scrolls down, collapses, then stops,
 // and the node is then manually expanded, the scroll will be 0, and some nodes will be hidden
 watch(isLeaf, onScroll);
+
 // Scroll to focused child if overflownRoot
 watch(hasFocusedChild, (newVal: boolean) => {
 	if (newVal && isOverflownRoot.value){
@@ -246,10 +271,12 @@ watch(hasFocusedChild, (newVal: boolean) => {
 	}
 });
 
-// Transition related
+// ========== Transition related ==========
+
 const inTransition = ref(false); // Used to avoid content overlap and overflow during 'user-perceivable' transitions
 const hasExpanded = ref(false); // Set to true after an expansion transition ends, and false upon collapse
 	// Used to hide overflow on tile expansion, but not hide a sepSweptArea on subsequent transitions
+
 function onTransitionEnd(){
 	if (inTransition.value){
 		inTransition.value = false;
@@ -257,6 +284,7 @@ function onTransitionEnd(){
 		hasExpanded.value = props.layoutNode.children.length > 0;
 	}
 }
+
 // For setting transition state (allows external triggering, like via search and auto-mode)
 watch(() => props.layoutNode.pos, (newVal: [number, number], oldVal: [number, number]) => {
 	let valChanged = newVal[0] != oldVal[0] || newVal[1] != oldVal[1];
@@ -280,15 +308,19 @@ function triggerAnimation(animation: string){
 	el.offsetWidth; // Triggers reflow
 	el.classList.add(animation);
 }
+
 function onExpandFail(){
 	triggerAnimation('animate-expand-shrink');
 }
+
 function onCollapseFail(){
 	triggerAnimation('animate-shrink-expand');
 }
 
-// For 'flashing' the tile when focused
+// ========== For 'flashing' the tile when focused ==========
+
 const inFlash = ref(false); // Used to 'flash' the tile when focused
+
 watch(() => props.layoutNode.hasFocus, (newVal: boolean, oldVal: boolean) => {
 	if (newVal != oldVal && newVal){
 		inFlash.value = true;
@@ -296,8 +328,10 @@ watch(() => props.layoutNode.hasFocus, (newVal: boolean, oldVal: boolean) => {
 	}
 });
 
-// For temporarily enabling overflow after being unhidden
+// ========== For temporarily enabling overflow after being unhidden ==========
+
 const justUnhidden = ref(false); // Used to allow overflow temporarily after being unhidden
+
 watch(() => props.layoutNode.hidden, (newVal: boolean, oldVal: boolean) => {
 	if (oldVal && !newVal){
 		justUnhidden.value = true;
@@ -305,11 +339,13 @@ watch(() => props.layoutNode.hidden, (newVal: boolean, oldVal: boolean) => {
 	}
 });
 
-// Styles + classes
+// ========== For styling ==========
+
 const nonleafBgColor = computed(() => {
 	let colorArray = store.nonleafBgColors;
 	return colorArray[props.layoutNode.depth % colorArray.length];
 });
+
 const boxShadow = computed((): string => {
 	if (highlight.value){
 		return store.shadowHovered;
@@ -319,6 +355,7 @@ const boxShadow = computed((): string => {
 		return store.shadowNormal;
 	}
 });
+
 const fontSz = computed((): number => {
 	// These values are a compromise between dynamic font size and code simplicity
 	if (props.layoutNode.dims[0] >= 150){
@@ -329,7 +366,7 @@ const fontSz = computed((): number => {
 		return store.lytOpts.headerSz * 0.6;
 	}
 });
-//
+
 const styles = computed((): Record<string,string> => {
 	let layoutStyles = {
 		position: 'absolute',
@@ -374,6 +411,7 @@ const styles = computed((): Record<string,string> => {
 	}
 	return layoutStyles;
 });
+
 const leafStyles = computed((): Record<string,string> => {
 	let styles: Record<string,string> = {
 		borderRadius: 'inherit',
@@ -390,6 +428,7 @@ const leafStyles = computed((): Record<string,string> => {
 	}
 	return styles;
 });
+
 const leafHeaderStyles = computed((): Record<string,string> => {
 	let numChildren = tolNode.value.children.length;
 	let textColor = store.color.text;
@@ -411,6 +450,7 @@ const leafHeaderStyles = computed((): Record<string,string> => {
 		whiteSpace: 'nowrap',
 	};
 });
+
 function leafSubImgStyles(idx: number): Record<string,string> {
 	let [w, h] = props.layoutNode.dims;
 	return {
@@ -427,8 +467,10 @@ function leafSubImgStyles(idx: number): Record<string,string> {
 		backgroundPosition: (idx == 0) ? `${-w/4}px ${-h/4}px` : '0px 0px',
 	};
 }
+
 const leafFirstImgStyles = computed(() => leafSubImgStyles(0));
 const leafSecondImgStyles = computed(() => leafSubImgStyles(1));
+
 const nonleafStyles = computed((): Record<string,string> => {
 	let styles = {
 		width: '100%',
@@ -442,6 +484,7 @@ const nonleafStyles = computed((): Record<string,string> => {
 	}
 	return styles;
 });
+
 const nonleafHeaderStyles = computed((): Record<string,string> => {
 	let styles: Record<string,string> = {
 		position: 'static',
@@ -463,6 +506,7 @@ const nonleafHeaderStyles = computed((): Record<string,string> => {
 	}
 	return styles;
 });
+
 const nonleafHeaderTextStyles = computed(() => ({
 	lineHeight: (fontSz.value * 1.3) + 'px',
 	fontSize: fontSz.value + 'px',
@@ -474,6 +518,7 @@ const nonleafHeaderTextStyles = computed(() => ({
 	textOverflow: 'ellipsis',
 	whiteSpace: 'nowrap',
 }));
+
 const sepSweptAreaStyles = computed((): Record<string,string> => {
 	let borderR = store.borderRadius + 'px';
 	let styles = {
@@ -509,6 +554,7 @@ const sepSweptAreaStyles = computed((): Record<string,string> => {
 		};
 	}
 });
+
 const sepSweptAreaHideEdgeClass = computed((): string => {
 	if (props.layoutNode.sepSweptArea == null){
 		return '';
@@ -518,6 +564,7 @@ const sepSweptAreaHideEdgeClass = computed((): string => {
 		return 'hide-top-edge';
 	}
 });
+
 const infoIconStyles = computed((): Record<string,string> => {
 	let size = (store.lytOpts.headerSz * 0.85);
 	let marginSz = (store.lytOpts.headerSz - size);
@@ -529,6 +576,7 @@ const infoIconStyles = computed((): Record<string,string> => {
 		margin: isLeaf.value ? `auto ${marginSz}px ${marginSz}px auto` : `auto ${marginSz}px auto 0`,
 	};
 });
+
 const infoIconClasses = 'text-white/30 hover:text-white hover:cursor-pointer';
 </script>
 

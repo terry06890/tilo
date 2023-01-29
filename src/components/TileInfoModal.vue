@@ -3,8 +3,11 @@
 	<div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
 		max-w-[80%] w-2/3 min-w-[8cm] md:w-[14cm] lg:w-[16cm] max-h-[80%]" :style="styles">
 		<div class="pb-1 md:pb-2">
+			<!-- Close button -->
 			<close-icon @click.stop="onClose" ref="closeRef"
 				class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
+
+			<!-- Copy-link button -->
 			<div class="absolute top-1 left-1 md:top-2 md:left-2 flex items-center">
 				<a :href="'/?node=' + encodeURIComponent(nodeName)" class="block w-8 h-8 p-[2px] hover:cursor-pointer"
 					@click.prevent="onLinkIconClick" title="Copy link to this node">
@@ -14,27 +17,37 @@
 					<div v-if="linkCopied" class="text-sm p-1 ml-2" :style="linkCopyLabelStyles">Link Copied</div>
 				</transition>
 			</div>
+
+			<!-- Title -->
 			<h1 class="text-center text-xl font-bold pt-2 pb-1 mx-10 md:text-2xl md:pt-3 md:pb-1">
 				{{getDisplayName(nodeName, tolNode)}}
 			</h1>
+
+			<!-- Node data -->
 			<div class="flex justify-evenly text-sm md:text-base">
 				<div><span class="font-bold">Children:</span> {{(tolNode.children.length).toLocaleString()}}</div>
+
 				<div><span class="font-bold">Tips:</span> {{(tolNode.tips).toLocaleString()}}</div>
+
 				<div v-if="tolNode.iucn != null">
 					<a href="https://en.wikipedia.org/wiki/Endangered_species_(IUCN_status)"
 						target="_blank" title="IUCN Conservation Status" class="font-bold">IUCN: </a>
 					<span :style="iucnStyles(tolNode.iucn)">{{getDisplayIucn(tolNode.iucn)}}</span>
 				</div>
+
 				<div>
 					<a :href="'https://tree.opentreeoflife.org/opentree/argus/opentree13.4@' + tolNode.otolId"
 						target="_blank" title="Look up in Open Tree of Life" class="font-bold">OTOL
 						<external-link-icon class="inline-block w-3 h-3"/></a>
 				</div>
 			</div>
+
 			<div v-if="nodes.length > 1" class="text-center text-sm px-2">
 				<div> (This is a compound node. The details below describe two descendants) </div>
 			</div>
 		</div>
+
+		<!-- Main content -->
 		<div v-for="(node, idx) in nodes" :key="node == null ? -1 : node.otolId!"
 			class="border-t border-stone-400 p-2 md:p-3 clear-both">
 			<h1 v-if="nodes.length > 1" class="text-center font-bold mb-1">
@@ -45,10 +58,13 @@
 			</div>
 			<div v-else>
 				<div v-if="imgInfos[idx] != null" class="mt-1 mr-2 md:mb-2 md:mr-4 md:float-left">
+					<!-- Image -->
 					<a :href="imgInfos[idx]!.url != '' ? imgInfos[idx]!.url : 'javascript:;'"
 						:target="imgInfos[idx]!.url != '' ? '_blank' : ''" class="block w-fit mx-auto">
 						<div :style="getImgStyles(node)"/>
 					</a>
+
+					<!-- Image Source -->
 					<s-collapsible class="text-sm text-center w-fit max-w-full md:max-w-[200px] mx-auto">
 						<template v-slot:summary="slotProps">
 							<div class="py-1 hover:underline">
@@ -95,6 +111,8 @@
 						</template>
 					</s-collapsible>
 				</div>
+
+				<!-- Description -->
 				<div v-if="descInfos[idx]! != null">
 					<div>{{descInfos[idx]!.text}}</div>
 					<div class="text-sm text-stone-600 text-right">
@@ -115,32 +133,34 @@
 
 <script setup lang="ts">
 import {ref, computed, PropType} from 'vue';
+
 import SCollapsible from './SCollapsible.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import ExternalLinkIcon from './icon/ExternalLinkIcon.vue';
 import DownIcon from './icon/DownIcon.vue';
 import LinkIcon from './icon/LinkIcon.vue';
+
 import {TolNode} from '../tol';
 import {getImagePath, DescInfo, ImgInfo, InfoResponse} from '../lib';
 import {capitalizeWords} from '../util';
 import {useStore} from '../store';
 
-// Refs
 const rootRef = ref(null as HTMLDivElement | null);
 const closeRef = ref(null as typeof CloseIcon | null);
 
-// Global store
 const store = useStore();
 
-// Props + events
 const props = defineProps({
 	nodeName: {type: String, required: true},
 	infoResponse: {type: Object as PropType<InfoResponse>, required: true},
 });
+
 const emit = defineEmits(['close']);
 
-// InfoResponse computed data
+// ========== InfoResponse computed data ==========
+
 const tolNode = computed(() => props.infoResponse.nodeInfo.tolNode);
+
 const nodes = computed((): (TolNode | null)[] => {
 	if (props.infoResponse.subNodesInfo.length == 0){
 		return [tolNode.value];
@@ -148,6 +168,7 @@ const nodes = computed((): (TolNode | null)[] => {
 		return props.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.tolNode : null);
 	}
 });
+
 const imgInfos = computed((): (ImgInfo | null)[] => {
 	if (props.infoResponse.subNodesInfo.length == 0){
 		return [props.infoResponse.nodeInfo.imgInfo];
@@ -155,6 +176,7 @@ const imgInfos = computed((): (ImgInfo | null)[] => {
 		return props.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.imgInfo : null);
 	}
 });
+
 const descInfos = computed((): (DescInfo | null)[] => {
 	if (props.infoResponse.subNodesInfo.length == 0){
 		return [props.infoResponse.nodeInfo.descInfo];
@@ -162,13 +184,15 @@ const descInfos = computed((): (DescInfo | null)[] => {
 		return props.infoResponse.subNodesInfo.map(nodeInfo => nodeInfo != null ? nodeInfo.descInfo : null);
 	}
 });
+
 const subNames = computed((): [string, string] | null => {
 	const regex = /\[(.+) \+ (.+)\]/;
 	let results = regex.exec(props.nodeName);
 	return results == null ? null : [results[1], results[2]];
 });
 
-// InfoResponse data converters
+// ========== InfoResponse data converters ==========
+
 function getDisplayName(name: string, tolNode: TolNode | null): string {
 	if (tolNode == null || tolNode.commonName == null){
 		return capitalizeWords(name);
@@ -176,6 +200,7 @@ function getDisplayName(name: string, tolNode: TolNode | null): string {
 		return `${capitalizeWords(tolNode.commonName)} (aka ${capitalizeWords(name)})`;
 	}
 }
+
 function getDisplayIucn(iucn: string){
 	switch (iucn){
 		case 'least concern': return 'LC';
@@ -188,6 +213,7 @@ function getDisplayIucn(iucn: string){
 		case 'data deficient': return 'DD';
 	}
 }
+
 function licenseToUrl(license: string){
 	license = license.toLowerCase().replaceAll('-', ' ');
 	if (license == 'cc0'){
@@ -219,15 +245,18 @@ function licenseToUrl(license: string){
 	}
 }
 
-// Close handling
+// ========== Close handling ==========
+
 function onClose(evt: Event){
 	if (evt.target == rootRef.value || closeRef.value!.$el.contains(evt.target)){
 		emit('close');
 	}
 }
 
-// Copy-link handling
+// ========== Copy-link handling ==========
+
 const linkCopied = ref(false); // Used to temporarily show a 'link copied' label
+
 function onLinkIconClick(){
 	// Copy link to clipboard
 	let url = new URL(window.location.href);
@@ -238,13 +267,15 @@ function onLinkIconClick(){
 	setTimeout(() => {linkCopied.value = false}, 1500);
 }
 
-// Styles
+// ========== For styling ==========
+
 const styles = computed(() => ({
 	backgroundColor: store.color.bgAlt,
 	borderRadius: store.borderRadius + 'px',
 	boxShadow: store.shadowNormal,
 	overflow: 'visible auto',
 }));
+
 function getImgStyles(tolNode: TolNode | null): Record<string,string> {
 	let imgName = null;
 	if (tolNode != null && typeof(tolNode.imgName) === 'string'){ // Exclude string-array case
@@ -262,15 +293,18 @@ function getImgStyles(tolNode: TolNode | null): Record<string,string> {
 		boxShadow: store.shadowNormal,
 	};
 }
+
 const sourceLabelStyles = computed((): Record<string,string> => {
 	return {
 		color: store.color.textDark,
 		fontWeight: 'bold',
 	};
 });
+
 const aStyles = computed((): Record<string,string> => ({
 	color: store.color.alt,
 }));
+
 function iucnStyles(iucn: string): Record<string,string>{
 	let col = 'currentcolor';
 	switch (iucn){
@@ -286,6 +320,7 @@ function iucnStyles(iucn: string): Record<string,string>{
 		color: col,
 	};
 }
+
 const linkCopyLabelStyles = computed(() => ({
 	color: store.color.text,
 	backgroundColor: store.color.bg,

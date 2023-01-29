@@ -5,7 +5,9 @@
 		w-[90%] max-w-[16cm] max-h-[80%] overflow-auto" :style="styles">
 		<close-icon @click.stop="onClose" ref="closeRef"
 			class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer"/>
+
 		<h1 class="text-center text-xl sm:text-2xl font-bold pt-2 pb-1">Help</h1>
+
 		<div class="flex flex-col gap-2 p-2">
 			<s-collapsible :class="scClasses">
 				<template #summary="slotProps">
@@ -44,6 +46,7 @@
 					</div>
 				</template>
 			</s-collapsible>
+
 			<s-collapsible :class="scClasses">
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
@@ -209,6 +212,7 @@
 					</div>
 				</template>
 			</s-collapsible>
+
 			<s-collapsible :class="scClasses">
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
@@ -312,6 +316,7 @@
 					</div>
 				</template>
 			</s-collapsible>
+
 			<s-collapsible :class="scClasses">
 				<template #summary="slotProps">
 					<div :class="scSummaryClasses">
@@ -416,61 +421,66 @@
 				</template>
 			</s-collapsible>
 		</div>
-		<s-button class="mx-auto mb-2" :style="{color: store.color.text, backgroundColor: store.color.bg}"
-			:disabled="tutOpen" @click.stop="onStartTutorial">
-			Start Tutorial
-		</s-button>
-		<p class="absolute text-xs md:text-sm text-stone-500 right-2 bottom-2">
-			Last updated 28/01/23
-		</p>
+
+		<div class="relative">
+			<s-button class="mx-auto mb-2" :style="{color: store.color.text, backgroundColor: store.color.bg}"
+				:disabled="tutOpen" @click.stop="onStartTutorial">
+				Start Tutorial
+			</s-button>
+			<p class="absolute text-xs md:text-sm text-stone-500 right-2 bottom-0">
+				Last updated 29/01/23
+			</p>
+		</div>
 	</div>
 </div>
 </template>
 
 <script setup lang="ts">
 import {ref, computed} from 'vue';
+
 import SButton from './SButton.vue';
 import SCollapsible from './SCollapsible.vue';
 import CloseIcon from './icon/CloseIcon.vue';
 import DownIcon from './icon/DownIcon.vue';
 import {useStore} from '../store';
 
-// Refs
 const rootRef = ref(null as HTMLDivElement | null)
 const closeRef = ref(null as typeof CloseIcon | null);
 
-// Global store
 const store = useStore();
+const touchDevice = computed(() => store.touchDevice)
 
-// Props + events
 defineProps({
 	tutOpen: {type: Boolean, default: false},
 });
-const touchDevice = computed(() => store.touchDevice)
+
 const emit = defineEmits(['close', 'start-tutorial']);
 
-// Event handlers
+// ========== Event handlers ==========
+
 function onClose(evt: Event){
 	if (evt.target == rootRef.value || closeRef.value!.$el.contains(evt.target)){
 		emit('close');
 	}
 }
+
 function onStartTutorial(){
 	emit('start-tutorial');
 	emit('close');
 }
 
-// Styles
+// ========== For styling ==========
+
 const styles = computed(() => ({
 	backgroundColor: store.color.bgAlt,
 	borderRadius: store.borderRadius + 'px',
 	boxShadow: store.shadowNormal,
 }));
+
 const aStyles = computed(() => ({
 	color: store.color.altDark,
 }));
 
-// Classes
 const scClasses = 'border border-stone-400 rounded';
 const scSummaryClasses = 'relative text-center p-1 bg-stone-300 hover:brightness-90 hover:bg-lime-200 md:p-2';
 const downIconClasses = 'absolute w-6 h-6 my-auto mx-1 transition-transform duration-300';

@@ -7,6 +7,8 @@ import {Action} from './lib';
 import {LayoutOptions} from './layout';
 import {getBreakpoint, Breakpoint, getScrollBarWidth, onTouchDevice} from './util';
 
+// ========== For store state ==========
+
 export type StoreState = {
 	// Device info
 	touchDevice: boolean,
@@ -61,6 +63,7 @@ export type StoreState = {
 	disableShortcuts: boolean,
 	autoHide: boolean, // If true, leaf-click failure results in hiding an ancestor and trying again
 };
+
 function getDefaultState(): StoreState {
 	const breakpoint = getBreakpoint();
 	const scrollGap = getScrollBarWidth();
@@ -80,6 +83,7 @@ function getDefaultState(): StoreState {
 		altDark: '#65a30d',   // lime-600
 		accent: '#f59e0b',    // amber-500
 	};
+
 	return {
 		// Device related
 		touchDevice: onTouchDevice(),
@@ -129,6 +133,7 @@ function getDefaultState(): StoreState {
 		autoHide: true,
 	};
 }
+
 // Gets 'composite keys' which have the form 'key1' or 'key1.key2' (usable to specify properties of store objects)
 function getCompositeKeys(state: StoreState){
 	const compKeys = [];
@@ -143,8 +148,11 @@ function getCompositeKeys(state: StoreState){
 	}
 	return compKeys;
 }
+
 const STORE_COMP_KEYS = getCompositeKeys(getDefaultState());
-// For getting/setting values in store
+
+// ========== For getting/setting/loading store state ==========
+
 function getStoreVal(state: StoreState, compKey: string): any {
 	if (compKey in state){
 		return state[compKey as keyof StoreState];
@@ -158,6 +166,7 @@ function getStoreVal(state: StoreState, compKey: string): any {
 	}
 	return null;
 }
+
 function setStoreVal(state: StoreState, compKey: string, val: any): void {
 	if (compKey in state){
 		(state[compKey as keyof StoreState] as any) = val;
@@ -172,7 +181,7 @@ function setStoreVal(state: StoreState, compKey: string, val: any): void {
 		}
 	}
 }
-// For loading settings into [initial] store state
+
 function loadFromLocalStorage(state: StoreState){
 	for (const key of STORE_COMP_KEYS){
 		const item = localStorage.getItem(key)
@@ -182,16 +191,20 @@ function loadFromLocalStorage(state: StoreState){
 	}
 }
 
+// ========== Main export ==========
+
 export const useStore = defineStore('store', {
 	state: () => {
 		const state = getDefaultState();
 		loadFromLocalStorage(state);
 		return state;
 	},
+
 	actions: {
 		reset(): void {
 			Object.assign(this, getDefaultState());
 		},
+
 		resetOne(key: string){
 			const val = getStoreVal(this, key);
 			if (val != null){
@@ -201,19 +214,23 @@ export const useStore = defineStore('store', {
 				}
 			}
 		},
+
 		save(key: string){
 			if (STORE_COMP_KEYS.includes(key)){
 				localStorage.setItem(key, JSON.stringify(getStoreVal(this, key)));
 			}
 		},
+
 		load(): void {
 			loadFromLocalStorage(this);
 		},
+
 		clear(): void {
 			for (const key of STORE_COMP_KEYS){
 				localStorage.removeItem(key);
 			}
 		},
+
 		softReset(): void { // Like reset(), but keeps saved values
 			const defaultState = getDefaultState();
 			for (const key of STORE_COMP_KEYS){

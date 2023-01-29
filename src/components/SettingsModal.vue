@@ -5,6 +5,7 @@
 		<close-icon @click.stop="onClose" ref="closeRef"
 			class="absolute top-1 right-1 md:top-2 md:right-2 w-8 h-8 hover:cursor-pointer" />
 		<h1 class="text-xl md:text-2xl font-bold text-center py-2" :class="borderBClasses">Settings</h1>
+
 		<div class="pb-2" :class="borderBClasses">
 			<h2 class="font-bold md:text-xl text-center pt-1 md:pt-2 md:pb-1">Timing</h2>
 			<div class="grid grid-cols-[130px_minmax(0,1fr)_65px] gap-1 px-2 md:px-3">
@@ -24,6 +25,7 @@
 				<div class="my-auto text-right">{{store.autoActionDelay}} ms</div>
 			</div>
 		</div>
+
 		<div class="pb-2" :class="borderBClasses">
 			<h2 class="font-bold md:text-xl text-center pt-1 md:pt-2 md:pb-1">Layout</h2>
 			<div class="flex gap-2 justify-around px-2 pb-1">
@@ -76,6 +78,7 @@
 				<div class="my-auto text-right">{{store.lytOpts.tileSpacing}} px</div>
 			</div>
 		</div>
+
 		<div class="pb-2 px-2 md:px-3" :class="borderBClasses">
 			<h2 class="font-bold md:text-xl text-center pt-1 md:pt-2 -mb-2 ">Other</h2>
 			<div>
@@ -102,10 +105,12 @@
 					@change="onSettingChg('disableShortcuts')"/> Disable keyboard shortcuts </label>
 			</div>
 		</div>
+
 		<s-button class="mx-auto my-2" :style="{color: store.color.text, backgroundColor: store.color.bg}"
 			@click="onReset">
 			Reset
 		</s-button>
+
 		<transition name="fade">
 			<div v-if="saved" class="absolute right-1 bottom-1" ref="saveIndRef"> Saved </div>
 		</transition>
@@ -117,28 +122,27 @@
 import {ref, computed, watch} from 'vue';
 import SButton from './SButton.vue';
 import CloseIcon from './icon/CloseIcon.vue';
-import {useStore, StoreState} from '../store';
+import {useStore} from '../store';
 
-// Refs
 const rootRef = ref(null as HTMLDivElement | null);
 const closeRef = ref(null as typeof CloseIcon | null);
 const minTileSzRef = ref(null as HTMLInputElement | null);
 const maxTileSzRef = ref(null as HTMLInputElement | null);
 const saveIndRef = ref(null as HTMLDivElement | null);
 
-// Global store
 const store = useStore();
 
-// Events
 const emit = defineEmits(['close', 'setting-chg', 'reset']);
 
 // For making only two of 'layoutType's values available for user selection)
 const sweepLeaves = ref(store.lytOpts.layoutType == 'sweep');
 watch(sweepLeaves, (newVal) => {store.lytOpts.layoutType = newVal ? 'sweep' : 'rect'})
 
-// Settings change handling
+// ========== Settings change handling ==========
+
 const saved = ref(false); // Set to true after a setting is saved
 let settingChgTimeout = 0; // Used to throttle some setting-change handling
+
 function onSettingChg(option: string){
 	// Maintain min/max-tile-size consistency
 	if (option == 'lytOpts.minTileSz' || option == 'lytOpts.maxTileSz'){
@@ -154,8 +158,10 @@ function onSettingChg(option: string){
 			}
 		}
 	}
+
 	// Notify parent (might need to relayout)
 	emit('setting-chg', option);
+
 	// Possibly make saved-indicator appear/animate
 	if (!saved.value){
 		saved.value = true;
@@ -166,6 +172,7 @@ function onSettingChg(option: string){
 		el.classList.add('animate-flash-green');
 	}
 }
+
 function onSettingChgThrottled(option: string){
 	if (settingChgTimeout == 0){
 		settingChgTimeout = setTimeout(() => {
@@ -174,6 +181,7 @@ function onSettingChgThrottled(option: string){
 		}, store.animationDelay);
 	}
 }
+
 function onResetOne(option: string){
 	store.resetOne(option);
 	if (option == 'lytOpts.layoutType'){
@@ -181,24 +189,28 @@ function onResetOne(option: string){
 	}
 	onSettingChg(option);
 }
+
 function onReset(){
 	emit('reset'); // Notify parent (might need to relayout)
 	saved.value = false; // Clear saved-indicator
 }
 
-// Close handling
+// ========== Close handling ==========
+
 function onClose(evt: Event){
 	if (evt.target == rootRef.value || closeRef.value!.$el.contains(evt.target)){
 		emit('close');
 	}
 }
 
-// Styles and classes
+// ========== For styling ==========
+
 const styles = computed(() => ({
 	backgroundColor: store.color.bgAlt,
 	borderRadius: store.borderRadius + 'px',
 	boxShadow: store.shadowNormal,
 }));
+
 const borderBClasses = 'border-b border-stone-400';
 const rLabelClasses = "w-fit hover:cursor-pointer hover:text-lime-600"; // For reset-upon-click labels
 </script>

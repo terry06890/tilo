@@ -4,9 +4,11 @@
 
 import {TolNode} from './tol';
 
-// For server requests
+// ========== For server requests ==========
+
 const SERVER_DATA_URL = (new URL(window.location.href)).origin + '/data/'
 const SERVER_IMG_PATH = '/tol_data/img/'
+
 export async function queryServer(params: URLSearchParams){
 	// Construct URL
 	const url = new URL(SERVER_DATA_URL);
@@ -22,26 +24,33 @@ export async function queryServer(params: URLSearchParams){
 	}
 	return responseObj;
 }
+
 export function getImagePath(imgName: string): string {
 	return SERVER_IMG_PATH + imgName.replaceAll('\'', '\\\'');
 }
-// For server search responses
-export type SearchSugg = { // Represents a search-string suggestion
+
+// ========== For server responses (matches backend/tilo.py) ==========
+
+// Represents a search-string suggestion
+export type SearchSugg = {
 	name: string,
 	canonicalName: string | null,
 	pop: number,
 };
-export type SearchSuggResponse = { // Holds search suggestions and an indication of if there was more
+
+// Holds search suggestions and an indication of if there was more
+export type SearchSuggResponse = {
 	suggs: SearchSugg[],
 	hasMore: boolean,
 };
-// For server tile-info responses
+
 export type DescInfo = {
 	text: string,
 	wikiId: number,
 	fromRedirect: boolean,
 	fromDbp: boolean,
 };
+
 export type ImgInfo = {
 	id: number,
 	src: string,
@@ -50,17 +59,20 @@ export type ImgInfo = {
 	artist: string,
 	credit: string,
 };
+
 export type NodeInfo = {
 	tolNode: TolNode,
 	descInfo: null | DescInfo,
 	imgInfo: null | ImgInfo,
 };
+
 export type InfoResponse = {
 	nodeInfo: NodeInfo,
 	subNodesInfo: [] | [NodeInfo | null, NodeInfo | null],
 };
 
-// Used by auto-mode and tutorial-pane
+// ========== Used by auto-mode and tutorial-pane ==========
+
 export type Action =
 	'expand' | 'collapse' | 'expandToView' | 'unhideAncestor' |
 	'tileInfo' | 'search' | 'autoMode' | 'settings' | 'help';
