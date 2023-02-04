@@ -309,7 +309,7 @@
 							</li>
 							<li>
 								Thanks to
-								<a href="https://twitter.com/JosephusPaye" :style="aStyles">Josephus Paye II</a>
+								<a href="https://github.com/JosephusPaye/" :style="aStyles">Josephus Paye II</a>
 								for helpful suggestions and clarifications
 							</li>
 						</ul>

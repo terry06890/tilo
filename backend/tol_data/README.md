@@ -56,13 +56,6 @@ As a warning, the whole process takes a lot of time and file space. The
 tree will probably have about 2.6 million nodes. Downloading the images
 takes several days, and occupies over 200 GB.
 
-## Environment
-Some of the scripts use third-party packages:
--   `indexed_bzip2`: For parallelised bzip2 processing.
--   `requests`: For downloading data.
--   `Pillow`: For image processing.
--   `mwxml`, `mwparserfromhell`: For parsing Wikipedia dumps.
-
 ## Generate Tree Structure Data
 1.  Obtain 'tree data files' in otol/, as specified in it's README.
 2.  Run `gen_otol_data.py`, which creates data.db, and adds the `nodes` and `edges` tables,
